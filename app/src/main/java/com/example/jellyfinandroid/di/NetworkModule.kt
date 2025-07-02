@@ -63,8 +63,14 @@ class JellyfinApiServiceFactory @Inject constructor(
     private var currentBaseUrl: String? = null
     
     fun getApiService(baseUrl: String, accessToken: String? = null): JellyfinApiService {
-        val normalizedUrl = baseUrl.trimEnd('/') + "/"
-        val serviceKey = "$normalizedUrl|$accessToken"
+        // Ensure the URL includes the API path
+        val normalizedUrl = baseUrl.trimEnd('/')
+        val apiUrl = if (normalizedUrl.endsWith("/api") || normalizedUrl.contains("/api/")) {
+            normalizedUrl + "/"
+        } else {
+            normalizedUrl + "/api/"
+        }
+        val serviceKey = "$apiUrl|$accessToken"
         
         if (currentApiService == null || currentBaseUrl != serviceKey) {
             val clientBuilder = okHttpClient.newBuilder()
@@ -81,7 +87,7 @@ class JellyfinApiServiceFactory @Inject constructor(
             }
             
             val retrofit = Retrofit.Builder()
-                .baseUrl(normalizedUrl)
+                .baseUrl(apiUrl)
                 .client(clientBuilder.build())
                 .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
                 .build()
