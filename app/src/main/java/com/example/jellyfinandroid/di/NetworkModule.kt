@@ -35,6 +35,7 @@ object NetworkModule {
             .addInterceptor(HttpLoggingInterceptor().apply {
                 level = HttpLoggingInterceptor.Level.BODY
             })
+            .addInterceptor(JellyfinClientInterceptor())
             .addInterceptor(RetryInterceptor())
             .connectionPool(okhttp3.ConnectionPool(5, 5, TimeUnit.MINUTES))
             .connectTimeout(30, TimeUnit.SECONDS)
@@ -90,6 +91,27 @@ class JellyfinApiServiceFactory @Inject constructor(
         }
         
         return currentApiService!!
+    }
+}
+
+class JellyfinClientInterceptor : Interceptor {
+    companion object {
+        private const val CLIENT_NAME = "Jellyfin Android"
+        private const val CLIENT_VERSION = "1.0.0"
+        private const val DEVICE_NAME = "Android Device"
+        private const val DEVICE_ID = "android-jellyfin-client"
+    }
+    
+    override fun intercept(chain: Interceptor.Chain): okhttp3.Response {
+        val originalRequest = chain.request()
+        val requestWithHeaders = originalRequest.newBuilder()
+            .header("X-Emby-Client", CLIENT_NAME)
+            .header("X-Emby-Client-Version", CLIENT_VERSION)
+            .header("X-Emby-Device-Name", DEVICE_NAME)
+            .header("X-Emby-Device-Id", DEVICE_ID)
+            .build()
+        
+        return chain.proceed(requestWithHeaders)
     }
 }
 
