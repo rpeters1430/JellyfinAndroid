@@ -24,8 +24,13 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.ui.util.lerp
+import kotlin.math.absoluteValue
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
@@ -105,14 +110,16 @@ fun JellyfinAndroidApp() {
 
     if (!connectionState.isConnected) {
         ServerConnectionScreen(
-            onConnect = { serverUrl, username, password ->
-                connectionViewModel.connectToServer(serverUrl, username, password)
+            onConnect = { serverUrl, username, password, rememberLogin ->
+                connectionViewModel.connectToServer(serverUrl, username, password, rememberLogin)
             },
             onQuickConnect = {
                 connectionViewModel.startQuickConnect()
             },
             isConnecting = connectionState.isConnecting,
-            errorMessage = connectionState.errorMessage
+            errorMessage = connectionState.errorMessage,
+            savedServerUrl = connectionState.savedServerUrl,
+            savedUsername = connectionState.savedUsername
         )
     } else {
         currentDestination = AppDestinations.HOME
@@ -919,44 +926,83 @@ fun RecentlyAddedCarousel(
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = 24.dp),
-            pageSpacing = 12.dp
+            contentPadding = PaddingValues(horizontal = 32.dp),
+            pageSpacing = 20.dp
         ) { page ->
             val item = items[page]
+            val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction).absoluteValue
             
-            CarouselItemCard(
-                item = item,
-                getImageUrl = getImageUrl,
-                modifier = Modifier.fillMaxSize()
+            // Material 3 Expressive style scaling and alpha
+            val scale = lerp(
+                start = 0.85f,
+                stop = 1f,
+                fraction = 1f - pageOffset.coerceIn(0f, 1f)
             )
+            val alpha = lerp(
+                start = 0.7f,
+                stop = 1f,
+                fraction = 1f - pageOffset.coerceIn(0f, 1f)
+            )
+            
+            Box(
+                modifier = Modifier
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        this.alpha = alpha
+                    }
+            ) {
+                CarouselItemCard(
+                    item = item,
+                    getImageUrl = getImageUrl,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
         
-        // Material 3 style page indicator
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
         
+        // Material 3 Expressive style indicators
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.Center
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             repeat(items.size) { index ->
                 val isSelected = index == pagerState.currentPage
+                val animatedWidth by animateDpAsState(
+                    targetValue = if (isSelected) 32.dp else 8.dp,
+                    animationSpec = tween(
+                        durationMillis = 300,
+                        easing = FastOutSlowInEasing
+                    ),
+                    label = "indicator_width"
+                )
+                val animatedColor by animateColorAsState(
+                    targetValue = if (isSelected) 
+                        MaterialTheme.colorScheme.primary 
+                    else 
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                    animationSpec = tween<androidx.compose.ui.graphics.Color>(
+                        durationMillis = 300,
+                        easing = FastOutSlowInEasing
+                    ),
+                    label = "indicator_color"
+                )
+                
                 Box(
                     modifier = Modifier
-                        .size(
-                            width = if (isSelected) 24.dp else 8.dp,
-                            height = 8.dp
-                        )
+                        .height(8.dp)
+                        .width(animatedWidth)
                         .clip(RoundedCornerShape(4.dp))
-                        .background(
-                            if (isSelected) 
-                                MaterialTheme.colorScheme.primary 
-                            else 
-                                MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                        )
-                        .padding(horizontal = 2.dp)
+                        .background(animatedColor)
                 )
+                
+                if (index < items.size - 1) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                }
             }
         }
     }
