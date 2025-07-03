@@ -14,17 +14,17 @@ import androidx.compose.ui.platform.LocalContext
 
 private val JellyfinDarkColorScheme = darkColorScheme(
     primary = JellyfinPurple80,
-    onPrimary = Neutral10,
+    onPrimary = Neutral0,
     primaryContainer = JellyfinPurple30,
     onPrimaryContainer = JellyfinPurple90,
     
     secondary = JellyfinBlue80,
-    onSecondary = Neutral10,
+    onSecondary = Neutral0,
     secondaryContainer = JellyfinBlue30,
     onSecondaryContainer = JellyfinBlue90,
     
     tertiary = JellyfinTeal80,
-    onTertiary = Neutral10,
+    onTertiary = Neutral0,
     tertiaryContainer = JellyfinTeal30,
     onTertiaryContainer = JellyfinTeal90,
     
@@ -33,15 +33,15 @@ private val JellyfinDarkColorScheme = darkColorScheme(
     errorContainer = Color(0xFF93000A),
     onErrorContainer = Color(0xFFFFDAD6),
     
-    background = Neutral10,
-    onBackground = Neutral90,
-    surface = Neutral10,
-    onSurface = Neutral90,
-    surfaceVariant = Neutral30,
-    onSurfaceVariant = Neutral80,
+    background = Color(0xFF0F0F0F),
+    onBackground = Color(0xFFE8E8E8),
+    surface = Color(0xFF151515),
+    onSurface = Color(0xFFE8E8E8),
+    surfaceVariant = Color(0xFF2A2A2A),
+    onSurfaceVariant = Color(0xFFCCCCCC),
     
-    outline = Neutral60,
-    outlineVariant = Neutral30,
+    outline = Color(0xFF777777),
+    outlineVariant = Color(0xFF404040),
     scrim = Neutral0,
     inverseSurface = Neutral90,
     inverseOnSurface = Neutral20,

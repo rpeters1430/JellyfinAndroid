@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -25,15 +26,18 @@ import androidx.compose.ui.tooling.preview.Preview
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ServerConnectionScreen(
-    onConnect: (String, String, String) -> Unit = { _, _, _ -> },
+    onConnect: (String, String, String, Boolean) -> Unit = { _, _, _, _ -> },
     onQuickConnect: () -> Unit = {},
     isConnecting: Boolean = false,
     errorMessage: String? = null,
+    savedServerUrl: String = "",
+    savedUsername: String = "",
     modifier: Modifier = Modifier
 ) {
-    var serverUrl by remember { mutableStateOf("") }
-    var username by remember { mutableStateOf("") }
+    var serverUrl by remember { mutableStateOf(savedServerUrl) }
+    var username by remember { mutableStateOf(savedUsername) }
     var password by remember { mutableStateOf("") }
+    var rememberLogin by remember { mutableStateOf(savedServerUrl.isNotEmpty() || savedUsername.isNotEmpty()) }
     var showPassword by remember { mutableStateOf(false) }
     
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -60,7 +64,7 @@ fun ServerConnectionScreen(
         Text(
             text = "Connect to your Jellyfin server",
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center
         )
         
@@ -109,7 +113,7 @@ fun ServerConnectionScreen(
                 onDone = {
                     keyboardController?.hide()
                     if (serverUrl.isNotBlank() && username.isNotBlank() && password.isNotBlank()) {
-                        onConnect(serverUrl, username, password)
+                        onConnect(serverUrl, username, password, rememberLogin)
                     }
                 }
             ),
@@ -128,11 +132,35 @@ fun ServerConnectionScreen(
             enabled = !isConnecting
         )
         
+        // Remember login checkbox
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(
+                checked = rememberLogin,
+                onCheckedChange = { rememberLogin = it },
+                enabled = !isConnecting,
+                colors = CheckboxDefaults.colors(
+                    checkedColor = MaterialTheme.colorScheme.primary,
+                    uncheckedColor = MaterialTheme.colorScheme.outline,
+                    checkmarkColor = MaterialTheme.colorScheme.onPrimary
+                )
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Remember login credentials",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
+            )
+        }
+        
         // Error message
         if (errorMessage != null) {
             Card(
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
+                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.9f)
                 ),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -151,7 +179,7 @@ fun ServerConnectionScreen(
         Button(
             onClick = {
                 keyboardController?.hide()
-                onConnect(serverUrl, username, password)
+                onConnect(serverUrl, username, password, rememberLogin)
             },
             enabled = !isConnecting && serverUrl.isNotBlank() && username.isNotBlank() && password.isNotBlank(),
             modifier = Modifier
@@ -179,7 +207,7 @@ fun ServerConnectionScreen(
             Text(
                 text = "or",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
             HorizontalDivider(modifier = Modifier.weight(1f))
@@ -202,7 +230,7 @@ fun ServerConnectionScreen(
         Text(
             text = "Need help setting up your server? Visit jellyfin.org for guides and documentation.",
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
