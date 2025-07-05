@@ -6,6 +6,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -64,9 +66,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
@@ -76,6 +80,21 @@ import com.example.jellyfinandroid.data.JellyfinServer
 import com.example.jellyfinandroid.ui.screens.ServerConnectionScreen
 import com.example.jellyfinandroid.ui.screens.QuickConnectScreen
 import com.example.jellyfinandroid.ui.theme.JellyfinAndroidTheme
+import com.example.jellyfinandroid.ui.theme.getContentTypeColor
+import com.example.jellyfinandroid.ui.theme.getQualityColor
+import com.example.jellyfinandroid.ui.theme.getStatusColor
+import com.example.jellyfinandroid.ui.theme.MovieRed
+import com.example.jellyfinandroid.ui.theme.SeriesBlue
+import com.example.jellyfinandroid.ui.theme.MusicGreen
+import com.example.jellyfinandroid.ui.theme.BookPurple
+import com.example.jellyfinandroid.ui.theme.AudioBookOrange
+import com.example.jellyfinandroid.ui.theme.PhotoYellow
+import com.example.jellyfinandroid.ui.theme.RatingGold
+import com.example.jellyfinandroid.ui.theme.Quality4K
+import com.example.jellyfinandroid.ui.theme.QualityHD
+import com.example.jellyfinandroid.ui.theme.QualitySD
+import com.example.jellyfinandroid.ui.theme.RatingSilver
+import com.example.jellyfinandroid.ui.theme.RatingBronze
 import com.example.jellyfinandroid.ui.viewmodel.MainAppState
 import com.example.jellyfinandroid.ui.viewmodel.MainAppViewModel
 import com.example.jellyfinandroid.ui.viewmodel.ServerConnectionViewModel
@@ -84,6 +103,22 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.SortOrder
+import java.util.Locale
+
+// Quality badge helper must be at the very top for visibility
+fun getQualityLabel(item: BaseItemDto): Pair<String, Color>? {
+    val mediaSource = item.mediaSources?.firstOrNull() ?: return null
+    val videoStream = mediaSource.mediaStreams?.firstOrNull { (it.type as? String)?.lowercase(Locale.ROOT) == "video" }
+    val width = videoStream?.width ?: 0
+    return when {
+        width >= 3800 -> "4K" to Quality4K
+        width >= 1900 -> "HD" to QualityHD
+        width > 0 -> "SD" to QualitySD
+        mediaSource.container?.contains("4k", ignoreCase = true) == true -> "4K" to Quality4K
+        mediaSource.container?.contains("hd", ignoreCase = true) == true -> "HD" to QualityHD
+        else -> null
+    }
+}
 
 @AndroidEntryPoint
 
@@ -237,21 +272,6 @@ enum class AppDestinations(
     PROFILE("Profile", Icons.Default.AccountBox),
 }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    JellyfinAndroidTheme {
-        Greeting("Android")
-    }
-}
 
 @Composable
 fun SearchResultsContent(
@@ -919,10 +939,15 @@ fun LibraryCard(
     getImageUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier
 ) {
+    val contentTypeColor = getContentTypeColor(item.collectionType?.toString())
+    
     Card(
         modifier = modifier.width(200.dp),
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
     ) {
         Column {
             Box {
@@ -943,7 +968,8 @@ fun LibraryCard(
                         ) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.dp
+                                strokeWidth = 2.dp,
+                                color = contentTypeColor
                             )
                         }
                     },
@@ -959,20 +985,20 @@ fun LibraryCard(
                                 imageVector = Icons.AutoMirrored.Filled.List,
                                 contentDescription = null,
                                 modifier = Modifier.size(32.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = contentTypeColor
                             )
                         }
                     }
                 )
                 
-                // Add library type badge
+                // Add library type badge with semantic color
                 item.collectionType?.let { collectionType ->
                     Card(
                         modifier = Modifier
                             .align(Alignment.TopStart)
                             .padding(8.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+                            containerColor = contentTypeColor.copy(alpha = 0.9f)
                         ),
                         shape = RoundedCornerShape(6.dp)
                     ) {
@@ -980,6 +1006,26 @@ fun LibraryCard(
                             text = collectionType.toString(),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+                
+                // Item count badge
+                item.childCount?.let { count ->
+                    Card(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(8.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.9f)
+                        ),
+                        shape = RoundedCornerShape(6.dp)
+                    ) {
+                        Text(
+                            text = "$count items",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
                     }
@@ -1014,10 +1060,15 @@ fun MediaCard(
     getImageUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier
 ) {
+    val contentTypeColor = getContentTypeColor(item.type?.toString())
+    
     Card(
         modifier = modifier.width(140.dp),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
     ) {
         Column {
             Box {
@@ -1038,122 +1089,8 @@ fun MediaCard(
                         ) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.dp
-                            )
-                        }
-                    },
-                    error = {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(2f / 3f)
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PlayArrow,
-                                contentDescription = null,
-                                modifier = Modifier.size(32.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                )
-                
-                // Add favorite indicator if applicable
-                item.userData?.isFavorite?.let { isFavorite ->
-                    if (isFavorite) {
-                        Icon(
-                            imageVector = Icons.Default.Favorite,
-                            contentDescription = "Favorite",
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(8.dp)
-                                .size(16.dp),
-                            tint = Color.Red
-                        )
-                    }
-                }
-            }
-            
-            Column(modifier = Modifier.padding(12.dp)) {
-                Text(
-                    text = item.name ?: "Unknown Title",
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                
-                Spacer(modifier = Modifier.height(4.dp))
-                
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    item.productionYear?.let { year ->
-                        Text(
-                            text = year.toString(),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    
-                    item.communityRating?.let { rating ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(2.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = null,
-                                modifier = Modifier.size(12.dp),
-                                tint = Color(0xFFFFD700)
-                            )
-                            Text(
-                                text = String.format("%.1f", rating),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun RecentlyAddedCard(
-    item: BaseItemDto,
-    getImageUrl: (BaseItemDto) -> String?,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.width(140.dp),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column {
-            Box {
-                SubcomposeAsyncImage(
-                    model = getImageUrl(item),
-                    contentDescription = item.name,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(2f / 3f),
-                    contentScale = ContentScale.Crop,
-                    loading = {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(2f / 3f)
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.dp
+                                strokeWidth = 2.dp,
+                                color = contentTypeColor
                             )
                         }
                     },
@@ -1179,11 +1116,39 @@ fun RecentlyAddedCard(
                                 },
                                 contentDescription = null,
                                 modifier = Modifier.size(32.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = contentTypeColor
                             )
                         }
                     }
                 )
+                
+                // Content type badge with semantic color
+                Card(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = contentTypeColor.copy(alpha = 0.9f)
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = when (item.type) {
+                            BaseItemKind.MOVIE -> "Movie"
+                            BaseItemKind.SERIES -> "Series"
+                            BaseItemKind.EPISODE -> "Episode"
+                            BaseItemKind.AUDIO -> "Music"
+                            BaseItemKind.MUSIC_ALBUM -> "Album"
+                            BaseItemKind.MUSIC_ARTIST -> "Artist"
+                            BaseItemKind.BOOK -> "Book"
+                            BaseItemKind.AUDIO_BOOK -> "Audiobook"
+                            else -> "Media"
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
                 
                 // Add favorite indicator if applicable
                 item.userData?.isFavorite?.let { isFavorite ->
@@ -1200,30 +1165,22 @@ fun RecentlyAddedCard(
                     }
                 }
                 
-                // Add content type badge
-                Text(
-                    text = when (item.type) {
-                        BaseItemKind.MOVIE -> "Movie"
-                        BaseItemKind.SERIES -> "Series"
-                        BaseItemKind.EPISODE -> "Episode"
-                        BaseItemKind.AUDIO -> "Music"
-                        BaseItemKind.MUSIC_ALBUM -> "Album"
-                        BaseItemKind.MUSIC_ARTIST -> "Artist"
-                        BaseItemKind.BOOK -> "Book"
-                        BaseItemKind.AUDIO_BOOK -> "Audiobook"
-                        else -> "Media"
-                    },
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(8.dp)
-                        .background(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
-                            RoundedCornerShape(8.dp)
+                getQualityLabel(item)?.let { (label, color) ->
+                    Card(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp),
+                        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.9f)),
+                        shape = RoundedCornerShape(6.dp)
+                    ) {
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                )
+                    }
+                }
             }
             
             Column(modifier = Modifier.padding(12.dp)) {
@@ -1250,20 +1207,210 @@ fun RecentlyAddedCard(
                     }
                     
                     item.communityRating?.let { rating ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(2.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = null,
-                                modifier = Modifier.size(12.dp),
-                                tint = Color(0xFFFFD700)
+                        val animatedRating by animateFloatAsState(
+                            targetValue = rating.toFloat(),
+                            label = "rating_anim"
+                        )
+                        val ratingColor = when {
+                            rating >= 7.5f -> RatingGold
+                            rating >= 5.0f -> RatingSilver
+                            else -> RatingBronze
+                        }
+                        Box(contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(
+                                progress = { animatedRating / 10f },
+                                modifier = Modifier.size(28.dp),
+                                strokeWidth = 3.dp,
+                                color = ratingColor,
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant
                             )
                             Text(
                                 text = String.format("%.1f", rating),
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = ratingColor
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RecentlyAddedCard(
+    item: BaseItemDto,
+    getImageUrl: (BaseItemDto) -> String?,
+    modifier: Modifier = Modifier
+) {
+    val contentTypeColor = getContentTypeColor(item.type?.toString())
+    
+    Card(
+        modifier = modifier.width(140.dp),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
+    ) {
+        Column {
+            Box {
+                SubcomposeAsyncImage(
+                    model = getImageUrl(item),
+                    contentDescription = item.name,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(2f / 3f),
+                    contentScale = ContentScale.Crop,
+                    loading = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(2f / 3f)
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp,
+                                color = contentTypeColor
+                            )
+                        }
+                    },
+                    error = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(2f / 3f)
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = when (item.type) {
+                                    BaseItemKind.MOVIE -> Icons.Default.PlayArrow
+                                    BaseItemKind.SERIES -> Icons.Default.PlayArrow
+                                    BaseItemKind.EPISODE -> Icons.Default.PlayArrow
+                                    BaseItemKind.AUDIO -> Icons.Default.PlayArrow
+                                    BaseItemKind.MUSIC_ALBUM -> Icons.Default.PlayArrow
+                                    BaseItemKind.MUSIC_ARTIST -> Icons.Default.AccountBox
+                                    BaseItemKind.BOOK -> Icons.Default.AccountBox
+                                    BaseItemKind.AUDIO_BOOK -> Icons.Default.AccountBox
+                                    else -> Icons.Default.PlayArrow
+                                },
+                                contentDescription = null,
+                                modifier = Modifier.size(32.dp),
+                                tint = contentTypeColor
+                            )
+                        }
+                    }
+                )
+                
+                // Add favorite indicator if applicable
+                item.userData?.isFavorite?.let { isFavorite ->
+                    if (isFavorite) {
+                        Icon(
+                            imageVector = Icons.Default.Favorite,
+                            contentDescription = "Favorite",
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(8.dp)
+                                .size(16.dp),
+                            tint = Color.Red
+                        )
+                    }
+                }
+                
+                // Content type badge with semantic color
+                Card(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = contentTypeColor.copy(alpha = 0.9f)
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = when (item.type) {
+                            BaseItemKind.MOVIE -> "Movie"
+                            BaseItemKind.SERIES -> "Series"
+                            BaseItemKind.EPISODE -> "Episode"
+                            BaseItemKind.AUDIO -> "Music"
+                            BaseItemKind.MUSIC_ALBUM -> "Album"
+                            BaseItemKind.MUSIC_ARTIST -> "Artist"
+                            BaseItemKind.BOOK -> "Book"
+                            BaseItemKind.AUDIO_BOOK -> "Audiobook"
+                            else -> "Media"
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+                
+                getQualityLabel(item)?.let { (label, color) ->
+                    Card(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp),
+                        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.9f)),
+                        shape = RoundedCornerShape(6.dp)
+                    ) {
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+            }
+            
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text(
+                    text = item.name ?: "Unknown Title",
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    item.productionYear?.let { year ->
+                        Text(
+                            text = year.toString(),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    
+                    item.communityRating?.let { rating ->
+                        val animatedRating by animateFloatAsState(
+                            targetValue = rating.toFloat(),
+                            label = "rating_anim"
+                        )
+                        val ratingColor = when {
+                            rating >= 7.5f -> RatingGold
+                            rating >= 5.0f -> RatingSilver
+                            else -> RatingBronze
+                        }
+                        Box(contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(
+                                progress = { animatedRating / 10f },
+                                modifier = Modifier.size(28.dp),
+                                strokeWidth = 3.dp,
+                                color = ratingColor,
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                            Text(
+                                text = String.format("%.1f", rating),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = ratingColor
                             )
                         }
                     }
@@ -1327,11 +1474,26 @@ fun RecentlyAddedCarousel(
                     animationSpec = tween(300),
                     label = "indicator_color"
                 )
+                val animatedScale by animateFloatAsState(
+                    targetValue = if (isSelected) 1.3f else 0.9f,
+                    animationSpec = spring(stiffness = 400f),
+                    label = "indicator_scale"
+                )
+                val animatedAlpha by animateFloatAsState(
+                    targetValue = if (isSelected) 1f else 0.5f,
+                    animationSpec = tween(300),
+                    label = "indicator_alpha"
+                )
 
                 Box(
                     modifier = Modifier
                         .height(8.dp)
                         .width(animatedWidth)
+                        .graphicsLayer {
+                            scaleX = animatedScale
+                            scaleY = animatedScale
+                            alpha = animatedAlpha
+                        }
                         .clip(RoundedCornerShape(4.dp))
                         .background(animatedColor)
                 )
@@ -1350,6 +1512,8 @@ fun CarouselItemCard(
     getImageUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier
 ) {
+    val contentTypeColor = getContentTypeColor(item.type?.toString())
+    
     Card(
         modifier = modifier
             .aspectRatio(16f / 9f),
@@ -1373,7 +1537,8 @@ fun CarouselItemCard(
                     ) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(32.dp),
-                            strokeWidth = 2.dp
+                            strokeWidth = 2.dp,
+                            color = contentTypeColor
                         )
                     }
                 },
@@ -1385,14 +1550,52 @@ fun CarouselItemCard(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.PlayArrow,
+                            imageVector = when (item.type) {
+                                BaseItemKind.MOVIE -> Icons.Default.PlayArrow
+                                BaseItemKind.SERIES -> Icons.Default.PlayArrow
+                                BaseItemKind.EPISODE -> Icons.Default.PlayArrow
+                                BaseItemKind.AUDIO -> Icons.Default.PlayArrow
+                                BaseItemKind.MUSIC_ALBUM -> Icons.Default.PlayArrow
+                                BaseItemKind.MUSIC_ARTIST -> Icons.Default.AccountBox
+                                BaseItemKind.BOOK -> Icons.Default.AccountBox
+                                BaseItemKind.AUDIO_BOOK -> Icons.Default.AccountBox
+                                else -> Icons.Default.PlayArrow
+                            },
                             contentDescription = null,
                             modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = contentTypeColor
                         )
                     }
                 }
             )
+            
+            // Content type badge with semantic color
+            Card(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = contentTypeColor.copy(alpha = 0.9f)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = when (item.type) {
+                        BaseItemKind.MOVIE -> "Movie"
+                        BaseItemKind.SERIES -> "Series"
+                        BaseItemKind.EPISODE -> "Episode"
+                        BaseItemKind.AUDIO -> "Music"
+                        BaseItemKind.MUSIC_ALBUM -> "Album"
+                        BaseItemKind.MUSIC_ARTIST -> "Artist"
+                        BaseItemKind.BOOK -> "Book"
+                        BaseItemKind.AUDIO_BOOK -> "Audiobook"
+                        else -> "Media"
+                    },
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+            }
             
             // Gradient Overlay
             Box(
@@ -1439,20 +1642,27 @@ fun CarouselItemCard(
                     }
                     
                     item.communityRating?.let { rating ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(2.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = Color(0xFFFFD700) // Gold color
+                        val animatedRating by animateFloatAsState(
+                            targetValue = rating.toFloat(),
+                            label = "rating_anim"
+                        )
+                        val ratingColor = when {
+                            rating >= 7.5f -> RatingGold
+                            rating >= 5.0f -> RatingSilver
+                            else -> RatingBronze
+                        }
+                        Box(contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(
+                                progress = { animatedRating / 10f },
+                                modifier = Modifier.size(28.dp),
+                                strokeWidth = 3.dp,
+                                color = ratingColor,
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant
                             )
                             Text(
                                 text = String.format("%.1f", rating),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White.copy(alpha = 0.9f)
+                                style = MaterialTheme.typography.labelSmall,
+                                color = ratingColor
                             )
                         }
                     }
@@ -1460,14 +1670,14 @@ fun CarouselItemCard(
                     item.officialRating?.let { rating ->
                         Card(
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.8f)
+                                containerColor = contentTypeColor.copy(alpha = 0.8f)
                             ),
                             shape = RoundedCornerShape(4.dp)
                         ) {
                             Text(
                                 text = rating,
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSecondary,
+                                color = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
                         }
@@ -1487,7 +1697,24 @@ fun CarouselItemCard(
                     }
                 }
             }
+            
+            getQualityLabel(item)?.let { (label, color) ->
+                Card(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp),
+                    colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.9f)),
+                    shape = RoundedCornerShape(6.dp)
+                ) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
         }
     }
 }
-            }
+}

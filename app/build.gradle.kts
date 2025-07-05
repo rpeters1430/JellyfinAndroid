@@ -32,13 +32,16 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+        isCoreLibraryDesugaringEnabled = true
     }
 
-    kotlinOptions {
-        jvmTarget = "1.8"
-        freeCompilerArgs += "-Xannotation-default-target=param-property"
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+            freeCompilerArgs.add("-Xannotation-default-target=param-property")
+        }
     }
 
     buildFeatures {
@@ -95,6 +98,9 @@ dependencies {
     implementation(libs.dagger.hilt.android)
     implementation(libs.androidx.hilt.navigation.compose)
     ksp(libs.dagger.hilt.compiler)
+    
+    // Core library desugaring for modern Java features on older Android versions
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 
     // Testing
     testImplementation(libs.junit)
