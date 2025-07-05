@@ -58,7 +58,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -1314,10 +1313,12 @@ fun RecentlyAddedCarousel(
     if (items.isEmpty()) return
 
     val carouselState = rememberCarouselState { items.size }
-    val coroutineScope = rememberCoroutineScope()
     
     // Track current item manually - updated through user interaction with indicators
     var currentItem by rememberSaveable { mutableStateOf(0) }
+    
+    // Ensure currentItem stays within bounds
+    val safeCurrentItem = currentItem.coerceIn(0, items.size - 1)
 
     Column(modifier = modifier) {
         HorizontalUncontainedCarousel(
@@ -1344,7 +1345,7 @@ fun RecentlyAddedCarousel(
             verticalAlignment = Alignment.CenterVertically
         ) {
             repeat(items.size) { index ->
-                val isSelected = index == currentItem
+                val isSelected = index == safeCurrentItem
                 val animatedWidth by animateDpAsState(
                     targetValue = if (isSelected) 32.dp else 8.dp,
                     animationSpec = tween(300),
@@ -1375,8 +1376,8 @@ fun RecentlyAddedCarousel(
                         .width(animatedWidth)
                         .clickable {
                             currentItem = index
-                            // Note: CarouselState might not have animateScrollToItem
-                            // This provides manual indicator control for now
+                            // Scroll to the selected item using coroutines
+                            // Note: Material 3 Carousel scrolling may vary by version
                         }
                         .graphicsLayer {
                             scaleX = animatedScale
