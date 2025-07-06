@@ -21,6 +21,7 @@ data class MainAppState(
     val searchResults: List<BaseItemDto> = emptyList(),
     val searchQuery: String = "",
     val isSearching: Boolean = false,
+    val allItems: List<BaseItemDto> = emptyList(),
     val errorMessage: String? = null
 )
 
@@ -86,6 +87,24 @@ class MainAppViewModel @Inject constructor(
                     if (_appState.value.errorMessage == null) {
                         _appState.value = _appState.value.copy(
                             errorMessage = "Failed to load recent items by type: ${result.message}"
+                        )
+                    }
+                }
+                is ApiResult.Loading -> {
+                    // Already handled
+                }
+            }
+            
+            // Load all items for library type screens
+            when (val result = repository.getLibraryItems(limit = 1000)) {
+                is ApiResult.Success -> {
+                    _appState.value = _appState.value.copy(allItems = result.data)
+                }
+                is ApiResult.Error -> {
+                    // Don't override other errors, just log this
+                    if (_appState.value.errorMessage == null) {
+                        _appState.value = _appState.value.copy(
+                            errorMessage = "Failed to load all items: ${result.message}"
                         )
                     }
                 }
