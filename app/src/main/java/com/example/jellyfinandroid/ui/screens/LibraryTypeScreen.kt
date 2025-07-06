@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
 package com.example.jellyfinandroid.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
@@ -55,6 +56,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -78,7 +80,6 @@ import com.example.jellyfinandroid.ui.theme.BookPurple
 import com.example.jellyfinandroid.ui.theme.MovieRed
 import com.example.jellyfinandroid.ui.theme.MusicGreen
 import com.example.jellyfinandroid.ui.theme.SeriesBlue
-import com.example.jellyfinandroid.ui.viewmodel.LibraryTypeViewModel
 import com.example.jellyfinandroid.ui.viewmodel.MainAppViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -166,8 +167,8 @@ private fun organizeItemsForCarousel(items: List<BaseItemDto>, libraryType: Libr
     
     // High-rated items (if available)
     val highRatedItems = items
-        .filter { (it.communityRating ?: 0.0) >= 7.0 }
-        .sortedByDescending { it.communityRating }
+        .filter { ((it.communityRating as? Number)?.toDouble() ?: 0.0) >= 7.0 }
+        .sortedByDescending { (it.communityRating as? Number)?.toDouble() ?: 0.0 }
         .take(LibraryScreenDefaults.CarouselItemsPerSection)
     if (highRatedItems.isNotEmpty()) {
         categories.add(CarouselCategory("Highly Rated", highRatedItems))
@@ -178,8 +179,8 @@ private fun organizeItemsForCarousel(items: List<BaseItemDto>, libraryType: Libr
         LibraryType.MOVIES -> {
             // Recent releases (by production year)
             val recentReleases = items
-                .filter { (it.productionYear ?: 0) >= 2020 }
-                .sortedByDescending { it.productionYear }
+                .filter { ((it.productionYear as? Number)?.toInt() ?: 0) >= 2020 }
+                .sortedByDescending { (it.productionYear as? Number)?.toInt() ?: 0 }
                 .take(LibraryScreenDefaults.CarouselItemsPerSection)
             if (recentReleases.isNotEmpty()) {
                 categories.add(CarouselCategory("Recent Releases", recentReleases))
@@ -287,7 +288,6 @@ enum class FilterType(val displayName: String) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryTypeScreen(
     libraryType: LibraryType,
@@ -436,7 +436,7 @@ fun LibraryTypeScreen(
                                 .padding(LibraryScreenDefaults.ContentPadding)
                         ) {
                             Text(
-                                text = appState.errorMessage,
+                                text = appState.errorMessage ?: "Unknown error",
                                 color = MaterialTheme.colorScheme.onErrorContainer,
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.padding(LibraryScreenDefaults.ContentPadding),
