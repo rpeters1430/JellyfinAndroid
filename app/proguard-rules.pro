@@ -22,7 +22,7 @@
 -keepattributes *Annotation*, InnerClasses
 
 # Keep all serializable classes and their serializers
--keep,allowobfuscation @kotlinx.serialization.Serializable class * {
+-keep,allowobfuscation @kotlinx.serialization.Serializable class ** {
     static **$Companion Companion;
     *** Companion;
     kotlinx.serialization.KSerializer serializer(...);
@@ -59,6 +59,9 @@
 # Keep generic signatures for Retrofit
 -keep,allowobfuscation,allowshrinking class retrofit2.Call
 -keep,allowobfuscation,allowshrinking class retrofit2.Response
+
+# Critical for Retrofit suspend functions - prevents Continuation stripping
+-keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
 
 # OkHttp platform used only on JVM and when Conscrypt dependency is available.
 -dontwarn okhttp3.internal.platform.**
@@ -281,11 +284,9 @@
 # ================================
 # OPTIMIZATION SETTINGS
 # ================================
-# Allow aggressive optimization
--allowaccessmodification
--optimizationpasses 5
+# Basic optimization settings (safe for third-party libraries)
+-optimizationpasses 3
 -dontusemixedcaseclassnames
--dontskipnonpubliclibraryclasses
 -verbose
 
 # Don't preverify (not needed for Android)
