@@ -1,5 +1,6 @@
 package com.example.jellyfinandroid.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -207,6 +208,8 @@ fun HomeContent(
             it.type == BaseItemKind.MOVIE 
         }.sortedByDescending { it.dateCreated }.take(8)
         
+        Log.d("HomeScreen", "HomeContent: Displaying ${recentMovies.size} recent movies in carousel")
+        
         if (recentMovies.isNotEmpty()) {
             item {
                 Column {
@@ -270,6 +273,7 @@ fun HomeContent(
         // Library-Specific Recently Added Sections
         val libraryTypes = listOf(
             "Movies" to BaseItemKind.MOVIE,
+            "TV Shows" to BaseItemKind.SERIES,
             "TV Episodes" to BaseItemKind.EPISODE,
             "Music" to BaseItemKind.AUDIO,
             "Home Videos" to BaseItemKind.VIDEO
@@ -279,6 +283,8 @@ fun HomeContent(
             val recentItems = appState.allItems.filter { 
                 it.type == itemKind
             }.sortedByDescending { it.dateCreated }.take(10)
+            
+            Log.d("HomeScreen", "HomeContent: Processing $libraryName - found ${recentItems.size} items of type $itemKind")
             
             if (recentItems.isNotEmpty()) {
                 item {
@@ -307,6 +313,7 @@ fun HomeContent(
                             contentPadding = PaddingValues(horizontal = 16.dp)
                         ) {
                             items(recentItems) { item ->
+                                Log.d("HomeScreen", "HomeContent: Displaying $libraryName item: '${item.name}' (${item.type})")
                                 RecentlyAddedCard(
                                     item = item,
                                     getImageUrl = getImageUrl,

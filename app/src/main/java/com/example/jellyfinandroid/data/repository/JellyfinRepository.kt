@@ -1,5 +1,6 @@
 package com.example.jellyfinandroid.data.repository
 
+import android.util.Log
 import com.example.jellyfinandroid.data.JellyfinServer
 import com.example.jellyfinandroid.di.JellyfinClientFactory
 import kotlinx.coroutines.flow.Flow
@@ -322,6 +323,7 @@ class JellyfinRepository @Inject constructor(
         }
 
         return try {
+            Log.d("JellyfinRepository", "getRecentlyAdded: Requesting $limit items from server")
             val client = getClient(server.url, server.accessToken)
             val response = client.itemsApi.getItems(
                 userId = userUuid,
@@ -334,14 +336,25 @@ class JellyfinRepository @Inject constructor(
                     BaseItemKind.MUSIC_ALBUM,
                     BaseItemKind.MUSIC_ARTIST,
                     BaseItemKind.BOOK,
-                    BaseItemKind.AUDIO_BOOK
+                    BaseItemKind.AUDIO_BOOK,
+                    BaseItemKind.VIDEO
                 ),
                 sortBy = listOf(ItemSortBy.DATE_CREATED),
                 sortOrder = listOf(SortOrder.DESCENDING),
                 limit = limit
             )
-            ApiResult.Success(response.content.items ?: emptyList())
+            val items = response.content.items ?: emptyList()
+            Log.d("JellyfinRepository", "getRecentlyAdded: Retrieved ${items.size} items")
+            
+            // Log details of each item
+            items.forEachIndexed { index, item ->
+                val dateFormatted = item.dateCreated?.toString() ?: "Unknown date"
+                Log.d("JellyfinRepository", "getRecentlyAdded[$index]: ${item.type} - '${item.name}' (Created: $dateFormatted)")
+            }
+            
+            ApiResult.Success(items)
         } catch (e: Exception) {
+            Log.e("JellyfinRepository", "getRecentlyAdded: Failed to load items", e)
             val errorType = when {
                 e.message?.contains("401") == true -> ErrorType.UNAUTHORIZED
                 e.message?.contains("403") == true -> ErrorType.FORBIDDEN
@@ -365,6 +378,7 @@ class JellyfinRepository @Inject constructor(
         }
 
         return try {
+            Log.d("JellyfinRepository", "getRecentlyAddedByType: Requesting $limit items of type $itemType")
             val client = getClient(server.url, server.accessToken)
             val response = client.itemsApi.getItems(
                 userId = userUuid,
@@ -374,8 +388,18 @@ class JellyfinRepository @Inject constructor(
                 sortOrder = listOf(SortOrder.DESCENDING),
                 limit = limit
             )
-            ApiResult.Success(response.content.items ?: emptyList())
+            val items = response.content.items ?: emptyList()
+            Log.d("JellyfinRepository", "getRecentlyAddedByType: Retrieved ${items.size} items of type $itemType")
+            
+            // Log details of each item
+            items.forEachIndexed { index, item ->
+                val dateFormatted = item.dateCreated?.toString() ?: "Unknown date"
+                Log.d("JellyfinRepository", "getRecentlyAddedByType[$itemType][$index]: '${item.name}' (Created: $dateFormatted)")
+            }
+            
+            ApiResult.Success(items)
         } catch (e: Exception) {
+            Log.e("JellyfinRepository", "getRecentlyAddedByType: Failed to load $itemType items", e)
             handleException(e, "Failed to load recently added ${itemType.name.lowercase()}")
         }
     }
@@ -418,6 +442,7 @@ class JellyfinRepository @Inject constructor(
     suspend fun getRecentlyAddedByTypes(limit: Int = 10): ApiResult<Map<String, List<BaseItemDto>>> {
         val contentTypes = listOf(
             BaseItemKind.MOVIE,
+            BaseItemKind.SERIES,
             BaseItemKind.EPISODE,
             BaseItemKind.AUDIO,
             BaseItemKind.BOOK,
@@ -425,6 +450,7 @@ class JellyfinRepository @Inject constructor(
             BaseItemKind.VIDEO
         )
 
+        Log.d("JellyfinRepository", "getRecentlyAddedByTypes: Starting to fetch items for ${contentTypes.size} content types")
         val results = mutableMapOf<String, List<BaseItemDto>>()
         
         for (contentType in contentTypes) {
@@ -433,6 +459,7 @@ class JellyfinRepository @Inject constructor(
                     if (result.data.isNotEmpty()) {
                         val typeName = when (contentType) {
                             BaseItemKind.MOVIE -> "Movies"
+                            BaseItemKind.SERIES -> "TV Shows"
                             BaseItemKind.EPISODE -> "Episodes"
                             BaseItemKind.AUDIO -> "Music"
                             BaseItemKind.BOOK -> "Books"
@@ -441,15 +468,20 @@ class JellyfinRepository @Inject constructor(
                             else -> "Other"
                         }
                         results[typeName] = result.data
+                        Log.d("JellyfinRepository", "getRecentlyAddedByTypes: Added ${result.data.size} items to category '$typeName'")
+                    } else {
+                        Log.d("JellyfinRepository", "getRecentlyAddedByTypes: No items found for type $contentType")
                     }
                 }
                 is ApiResult.Error -> {
+                    Log.w("JellyfinRepository", "getRecentlyAddedByTypes: Failed to load $contentType: ${result.message}")
                     // Continue with other types even if one fails
                 }
                 else -> { /* Loading state not relevant here */ }
             }
         }
 
+        Log.d("JellyfinRepository", "getRecentlyAddedByTypes: Completed with ${results.size} categories: ${results.keys.joinToString(", ")}")
         return ApiResult.Success(results)
     }
     
