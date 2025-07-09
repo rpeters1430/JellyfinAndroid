@@ -1,5 +1,6 @@
 package com.example.jellyfinandroid.ui.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.jellyfinandroid.data.repository.ApiResult
@@ -51,14 +52,18 @@ class MainAppViewModel @Inject constructor(
     
     fun loadInitialData() {
         viewModelScope.launch {
+            Log.d("MainAppViewModel", "loadInitialData: Starting to load all data")
             _appState.value = _appState.value.copy(isLoading = true, errorMessage = null)
             
             // Load libraries
+            Log.d("MainAppViewModel", "loadInitialData: Loading libraries")
             when (val result = repository.getUserLibraries()) {
                 is ApiResult.Success -> {
+                    Log.d("MainAppViewModel", "loadInitialData: Loaded ${result.data.size} libraries")
                     _appState.value = _appState.value.copy(libraries = result.data)
                 }
                 is ApiResult.Error -> {
+                    Log.e("MainAppViewModel", "loadInitialData: Failed to load libraries: ${result.message}")
                     _appState.value = _appState.value.copy(
                         errorMessage = "Failed to load libraries: ${result.message}"
                     )
@@ -69,11 +74,14 @@ class MainAppViewModel @Inject constructor(
             }
             
             // Load recently added items
+            Log.d("MainAppViewModel", "loadInitialData: Loading recently added items")
             when (val result = repository.getRecentlyAdded()) {
                 is ApiResult.Success -> {
+                    Log.d("MainAppViewModel", "loadInitialData: Loaded ${result.data.size} recently added items")
                     _appState.value = _appState.value.copy(recentlyAdded = result.data)
                 }
                 is ApiResult.Error -> {
+                    Log.e("MainAppViewModel", "loadInitialData: Failed to load recent items: ${result.message}")
                     // Don't override library error, just log this
                     if (_appState.value.errorMessage == null) {
                         _appState.value = _appState.value.copy(
@@ -87,11 +95,18 @@ class MainAppViewModel @Inject constructor(
             }
 
             // Load recently added items by types
+            Log.d("MainAppViewModel", "loadInitialData: Loading recently added items by types")
             when (val result = repository.getRecentlyAddedByTypes()) {
                 is ApiResult.Success -> {
+                    val totalItems = result.data.values.sumOf { it.size }
+                    Log.d("MainAppViewModel", "loadInitialData: Loaded $totalItems items across ${result.data.size} types: ${result.data.keys.joinToString(", ")}")
+                    result.data.forEach { (type, items) ->
+                        Log.d("MainAppViewModel", "loadInitialData: $type: ${items.size} items")
+                    }
                     _appState.value = _appState.value.copy(recentlyAddedByTypes = result.data)
                 }
                 is ApiResult.Error -> {
+                    Log.e("MainAppViewModel", "loadInitialData: Failed to load recent items by type: ${result.message}")
                     // Don't override other errors, just log this
                     if (_appState.value.errorMessage == null) {
                         _appState.value = _appState.value.copy(
@@ -105,9 +120,11 @@ class MainAppViewModel @Inject constructor(
             }
             
             // Load initial page of items for library type screens
+            Log.d("MainAppViewModel", "loadInitialData: Loading library items page")
             loadLibraryItemsPage(reset = true)
             
             _appState.value = _appState.value.copy(isLoading = false)
+            Log.d("MainAppViewModel", "loadInitialData: Completed loading all data")
         }
     }
     
@@ -197,6 +214,7 @@ class MainAppViewModel @Inject constructor(
             val currentState = _appState.value
             
             if (reset) {
+                Log.d("MainAppViewModel", "loadLibraryItemsPage: Resetting and loading first page")
                 _appState.value = currentState.copy(
                     allItems = emptyList(),
                     currentPage = 0,
@@ -204,12 +222,15 @@ class MainAppViewModel @Inject constructor(
                     isLoading = true
                 )
             } else {
+                Log.d("MainAppViewModel", "loadLibraryItemsPage: Loading next page")
                 _appState.value = currentState.copy(isLoadingMore = true)
             }
             
             val pageSize = 50 // Reasonable page size
             val page = if (reset) 0 else currentState.currentPage + 1
             val startIndex = page * pageSize
+            
+            Log.d("MainAppViewModel", "loadLibraryItemsPage: Requesting page $page (startIndex: $startIndex, limit: $pageSize)")
             
             when (val result = repository.getLibraryItems(
                 startIndex = startIndex,
@@ -223,6 +244,13 @@ class MainAppViewModel @Inject constructor(
                         currentState.allItems + newItems
                     }
                     
+                    Log.d("MainAppViewModel", "loadLibraryItemsPage: Successfully loaded ${newItems.size} items for page $page")
+                    Log.d("MainAppViewModel", "loadLibraryItemsPage: Total items now: ${allItems.size}")
+                    
+                    // Log item types breakdown
+                    val typeBreakdown = allItems.groupBy { it.type }.mapValues { it.value.size }
+                    Log.d("MainAppViewModel", "loadLibraryItemsPage: Item types breakdown: $typeBreakdown")
+                    
                     _appState.value = _appState.value.copy(
                         allItems = allItems,
                         currentPage = page,
@@ -233,6 +261,7 @@ class MainAppViewModel @Inject constructor(
                     )
                 }
                 is ApiResult.Error -> {
+                    Log.e("MainAppViewModel", "loadLibraryItemsPage: Failed to load page $page: ${result.message}")
                     _appState.value = _appState.value.copy(
                         isLoading = false,
                         isLoadingMore = false,
