@@ -116,13 +116,18 @@ class JellyfinRepository @Inject constructor(
             )
             val response = client.userApi.authenticateUserByName(request)
             val authResult = response.content
-            
-            // Update current server state
+
+            // Fetch public system info to get server name and version
+            val systemInfo = getClient(serverUrl, authResult.accessToken)
+                .systemApi.getPublicSystemInfo().content
+
+            // Update current server state with real name and version
             val server = JellyfinServer(
                 id = authResult.serverId.toString(),
-                name = "Jellyfin Server", // We'll get the actual name from server info
+                name = systemInfo.serverName ?: "Unknown Server",
                 url = serverUrl.trimEnd('/'),
                 isConnected = true,
+                version = systemInfo.version,
                 userId = authResult.user?.id.toString(),
                 username = authResult.user?.name,
                 accessToken = authResult.accessToken
@@ -210,12 +215,17 @@ class JellyfinRepository @Inject constructor(
                 serverId = UUID.randomUUID().toString()
             )
             
-            // Update current server state
+            // Fetch public system info for server details
+            val systemInfo = getClient(serverUrl, mockAuthResult.accessToken)
+                .systemApi.getPublicSystemInfo().content
+
+            // Update current server state with real name and version
             val server = JellyfinServer(
                 id = mockAuthResult.serverId ?: "",
-                name = "Jellyfin Server",
+                name = systemInfo.serverName ?: "Unknown Server",
                 url = serverUrl.trimEnd('/'),
                 isConnected = true,
+                version = systemInfo.version,
                 userId = mockAuthResult.user?.id?.toString(),
                 username = mockAuthResult.user?.name,
                 accessToken = mockAuthResult.accessToken
