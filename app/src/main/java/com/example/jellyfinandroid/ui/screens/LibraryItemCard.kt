@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.layout.size
 import coil.compose.SubcomposeAsyncImage
 import com.example.jellyfinandroid.ui.ShimmerBox
 import org.jellyfin.sdk.model.api.BaseItemDto

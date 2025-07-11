@@ -219,6 +219,9 @@ fun JellyfinAndroidApp() {
                             }
                         }
                     }
+                    AppDestinations.TV_EPISODES -> {
+                        // This is handled within TV_SHOWS case
+                    }
                     AppDestinations.MUSIC -> {
                         MusicScreen(
                             modifier = Modifier.padding(innerPadding)

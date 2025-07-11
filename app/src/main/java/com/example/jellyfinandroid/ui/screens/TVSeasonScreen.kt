@@ -434,7 +434,7 @@ private fun SeasonCard(
 }
 
 @Composable
-private fun ErrorContent(
+fun ErrorContent(
     message: String,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier
