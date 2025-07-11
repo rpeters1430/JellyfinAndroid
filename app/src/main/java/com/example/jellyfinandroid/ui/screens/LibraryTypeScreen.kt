@@ -275,9 +275,6 @@ private fun CarouselContent(
     onTVShowClick: ((String) -> Unit)?
 ) {
     val categories = remember(items) { organizeItemsForCarousel(items, libraryType) }
-    val carouselStates = remember(categories.size) {
-        List(categories.size) { rememberCarouselState { categories[it].items.size } }
-    }
     LazyColumn(
         contentPadding = PaddingValues(vertical = LibraryScreenDefaults.ContentPadding),
         verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.SectionSpacing),
@@ -285,10 +282,11 @@ private fun CarouselContent(
     ) {
         items(categories.size) { index ->
             val category = categories[index]
+            val carouselState = rememberCarouselState { category.items.size }
             CarouselSection(
                 title = category.title,
                 items = category.items,
-                carouselState = carouselStates[index],
+                carouselState = carouselState,
                 libraryType = libraryType,
                 getImageUrl = getImageUrl,
                 onTVShowClick = onTVShowClick

@@ -258,7 +258,7 @@ class JellyfinRepository @Inject constructor(
             _currentServer.value = server
             _isConnected.value = true
 
-            ApiResult.Success(authResult)
+            ApiResult.Success(mockAuthResult)
         } catch (e: Exception) {
             val errorType = when {
                 e.message?.contains("401") == true -> ErrorType.AUTHENTICATION

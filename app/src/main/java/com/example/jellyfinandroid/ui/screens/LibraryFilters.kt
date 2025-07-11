@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 /** Available filtering options for library items. */
