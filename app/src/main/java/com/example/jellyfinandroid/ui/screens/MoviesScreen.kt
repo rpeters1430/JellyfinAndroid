@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import com.example.jellyfinandroid.utils.getRatingAsDouble
+import com.example.jellyfinandroid.utils.hasHighRating
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -144,9 +146,7 @@ fun MoviesScreen(
                 val year = (it.productionYear as? Number)?.toInt() ?: 0
                 year >= 1990 && year <= 1999
             }
-            MovieFilter.HIGH_RATED -> movieItems.filter { 
-                ((it.communityRating as? Number)?.toDouble() ?: 0.0) >= 7.0 
-            }
+            MovieFilter.HIGH_RATED -> movieItems.filter { it.hasHighRating() }
             MovieFilter.UNWATCHED -> movieItems.filter { 
                 it.userData?.played != true 
             }
@@ -161,12 +161,8 @@ fun MoviesScreen(
             MovieSortOrder.YEAR_ASC -> filtered.sortedBy { 
                 (it.productionYear as? Number)?.toInt() ?: 0 
             }
-            MovieSortOrder.RATING_DESC -> filtered.sortedByDescending { 
-                (it.communityRating as? Number)?.toDouble() ?: 0.0 
-            }
-            MovieSortOrder.RATING_ASC -> filtered.sortedBy { 
-                (it.communityRating as? Number)?.toDouble() ?: 0.0 
-            }
+            MovieSortOrder.RATING_DESC -> filtered.sortedByDescending { it.getRatingAsDouble() }
+            MovieSortOrder.RATING_ASC -> filtered.sortedBy { it.getRatingAsDouble() }
             MovieSortOrder.RUNTIME_DESC -> filtered.sortedByDescending { 
                 it.runTimeTicks ?: 0L 
             }
