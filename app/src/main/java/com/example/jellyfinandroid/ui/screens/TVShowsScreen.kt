@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import com.example.jellyfinandroid.utils.getRatingAsDouble
+import com.example.jellyfinandroid.utils.hasHighRating
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -137,9 +139,7 @@ fun TVShowsScreen(
                 (it.userData?.playedPercentage ?: 0.0) > 0.0 && 
                 (it.userData?.playedPercentage ?: 0.0) < 100.0 
             }
-            TVShowFilter.HIGH_RATED -> tvShowItems.filter { 
-                ((it.communityRating as? Number)?.toDouble() ?: 0.0) >= 7.0 
-            }
+            TVShowFilter.HIGH_RATED -> tvShowItems.filter { it.hasHighRating() }
         }
         
         when (sortOrder) {
@@ -151,12 +151,8 @@ fun TVShowsScreen(
             TVShowSortOrder.YEAR_ASC -> filtered.sortedBy { 
                 (it.productionYear as? Number)?.toInt() ?: 0 
             }
-            TVShowSortOrder.RATING_DESC -> filtered.sortedByDescending { 
-                (it.communityRating as? Number)?.toDouble() ?: 0.0 
-            }
-            TVShowSortOrder.RATING_ASC -> filtered.sortedBy { 
-                (it.communityRating as? Number)?.toDouble() ?: 0.0 
-            }
+            TVShowSortOrder.RATING_DESC -> filtered.sortedByDescending { it.getRatingAsDouble() }
+            TVShowSortOrder.RATING_ASC -> filtered.sortedBy { it.getRatingAsDouble() }
             TVShowSortOrder.DATE_ADDED_DESC -> filtered.sortedByDescending { it.dateCreated }
             TVShowSortOrder.DATE_ADDED_ASC -> filtered.sortedBy { it.dateCreated }
             TVShowSortOrder.LAST_PLAYED_DESC -> filtered.sortedByDescending { 

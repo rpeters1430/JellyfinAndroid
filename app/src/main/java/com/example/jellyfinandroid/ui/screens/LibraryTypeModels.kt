@@ -12,6 +12,8 @@ import com.example.jellyfinandroid.ui.theme.BookPurple
 import com.example.jellyfinandroid.ui.theme.MovieRed
 import com.example.jellyfinandroid.ui.theme.MusicGreen
 import com.example.jellyfinandroid.ui.theme.SeriesBlue
+import com.example.jellyfinandroid.utils.getRatingAsDouble
+import com.example.jellyfinandroid.utils.hasHighRating
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
@@ -122,8 +124,8 @@ fun organizeItemsForCarousel(items: List<BaseItemDto>, libraryType: LibraryType)
     }
 
     val highRatedItems = items
-        .filter { ((it.communityRating as? Number)?.toDouble() ?: 0.0) >= 7.0 }
-        .sortedByDescending { (it.communityRating as? Number)?.toDouble() ?: 0.0 }
+        .filter { it.hasHighRating() }
+        .sortedByDescending { it.getRatingAsDouble() }
         .take(LibraryScreenDefaults.CarouselItemsPerSection)
     if (highRatedItems.isNotEmpty()) {
         categories.add(CarouselCategory("Highly Rated", highRatedItems))

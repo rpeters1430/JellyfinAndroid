@@ -14,6 +14,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.rememberNavController
+import coil.ImageLoader
+import coil.memory.MemoryCache
 import com.example.jellyfinandroid.ui.components.BottomNavBar
 import com.example.jellyfinandroid.ui.navigation.JellyfinNavGraph
 import com.example.jellyfinandroid.ui.navigation.Screen
@@ -26,6 +28,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // ✅ Optimize image loading performance
+        setupImageLoader()
+        
         setContent {
             JellyfinAndroidTheme(
                 dynamicColor = true
@@ -61,5 +67,30 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+    
+    /**
+     * ✅ IMPROVEMENT: Configure Coil for better image loading performance
+     * - Memory cache: 25% of app memory for faster image loading
+     * - Disk cache: Persistent storage for offline viewing
+     * - Hardware acceleration: Better performance on supported devices
+     */
+    private fun setupImageLoader() {
+        val imageLoader = ImageLoader.Builder(this)
+            .memoryCache {
+                MemoryCache.Builder(this)
+                    .maxSizePercent(0.25) // 25% of app memory
+                    .build()
+            }
+            .diskCache {
+                coil.disk.DiskCache.Builder()
+                    .directory(cacheDir.resolve("image_cache"))
+                    .maxSizeBytes(50 * 1024 * 1024) // 50MB
+                    .build()
+            }
+            .respectCacheHeaders(false) // Better for media content
+            .build()
+        
+        coil.Coil.setImageLoader(imageLoader)
     }
 }

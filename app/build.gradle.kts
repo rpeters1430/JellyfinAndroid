@@ -13,7 +13,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.jellyfinandroid"
-        minSdk = 31
+        minSdk = 26  // Android 8.0+ (was 31) - Broader device compatibility
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
