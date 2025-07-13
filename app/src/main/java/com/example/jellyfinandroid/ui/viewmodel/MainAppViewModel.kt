@@ -65,10 +65,15 @@ class MainAppViewModel @Inject constructor(
                     _appState.value = _appState.value.copy(libraries = result.data)
                 }
                 is ApiResult.Error -> {
-                    Log.e("MainAppViewModel", "loadInitialData: Failed to load libraries: ${result.message}")
-                    _appState.value = _appState.value.copy(
-                        errorMessage = "Failed to load libraries: ${result.message}"
-                    )
+                    // ✅ FIX: Don't show error messages for cancelled operations (navigation/lifecycle)
+                    if (result.errorType == com.example.jellyfinandroid.data.repository.ErrorType.OPERATION_CANCELLED) {
+                        Log.d("MainAppViewModel", "loadInitialData: Library loading was cancelled (navigation)")
+                    } else {
+                        Log.e("MainAppViewModel", "loadInitialData: Failed to load libraries: ${result.message}")
+                        _appState.value = _appState.value.copy(
+                            errorMessage = "Failed to load libraries: ${result.message}"
+                        )
+                    }
                 }
                 is ApiResult.Loading -> {
                     // Already handled
@@ -83,12 +88,17 @@ class MainAppViewModel @Inject constructor(
                     _appState.value = _appState.value.copy(recentlyAdded = result.data)
                 }
                 is ApiResult.Error -> {
-                    Log.e("MainAppViewModel", "loadInitialData: Failed to load recent items: ${result.message}")
-                    // Don't override library error, just log this
-                    if (_appState.value.errorMessage == null) {
-                        _appState.value = _appState.value.copy(
-                            errorMessage = "Failed to load recent items: ${result.message}"
-                        )
+                    // ✅ FIX: Don't show error messages for cancelled operations
+                    if (result.errorType == com.example.jellyfinandroid.data.repository.ErrorType.OPERATION_CANCELLED) {
+                        Log.d("MainAppViewModel", "loadInitialData: Recent items loading was cancelled (navigation)")
+                    } else {
+                        Log.e("MainAppViewModel", "loadInitialData: Failed to load recent items: ${result.message}")
+                        // Don't override library error, just log this
+                        if (_appState.value.errorMessage == null) {
+                            _appState.value = _appState.value.copy(
+                                errorMessage = "Failed to load recent items: ${result.message}"
+                            )
+                        }
                     }
                 }
                 is ApiResult.Loading -> {
@@ -108,12 +118,17 @@ class MainAppViewModel @Inject constructor(
                     _appState.value = _appState.value.copy(recentlyAddedByTypes = result.data)
                 }
                 is ApiResult.Error -> {
-                    Log.e("MainAppViewModel", "loadInitialData: Failed to load recent items by type: ${result.message}")
-                    // Don't override other errors, just log this
-                    if (_appState.value.errorMessage == null) {
-                        _appState.value = _appState.value.copy(
-                            errorMessage = "Failed to load recent items by type: ${result.message}"
-                        )
+                    // ✅ FIX: Don't show error messages for cancelled operations  
+                    if (result.errorType == com.example.jellyfinandroid.data.repository.ErrorType.OPERATION_CANCELLED) {
+                        Log.d("MainAppViewModel", "loadInitialData: Recent items by type loading was cancelled (navigation)")
+                    } else {
+                        Log.e("MainAppViewModel", "loadInitialData: Failed to load recent items by type: ${result.message}")
+                        // Don't override other errors, just log this
+                        if (_appState.value.errorMessage == null) {
+                            _appState.value = _appState.value.copy(
+                                errorMessage = "Failed to load recent items by type: ${result.message}"
+                            )
+                        }
                     }
                 }
                 is ApiResult.Loading -> {

@@ -53,6 +53,7 @@ enum class ErrorType {
     NOT_FOUND,
     UNAUTHORIZED,
     FORBIDDEN,
+    OPERATION_CANCELLED,
     UNKNOWN
 }
 
@@ -74,8 +75,27 @@ class JellyfinRepository @Inject constructor(
         return clientFactory.getClient(serverUrl, accessToken)
     }
     
+    // ✅ FIX: Helper method to get current authenticated client 
+    private fun getCurrentAuthenticatedClient(): ApiClient? {
+        val currentServer = _currentServer.value
+        return currentServer?.let { 
+            getClient(it.url, it.accessToken)
+        }
+    }
+    
+    // ✅ FIX: Helper to safely handle exceptions while preserving cancellation
+    private fun <T> handleExceptionSafely(e: Exception, defaultMessage: String = "An error occurred"): ApiResult.Error<T> {
+        // Let cancellation exceptions bubble up instead of converting to ApiResult.Error
+        if (e is java.util.concurrent.CancellationException || e is kotlinx.coroutines.CancellationException) {
+            throw e
+        }
+        
+        return handleException(e, defaultMessage)
+    }
+    
     private fun <T> handleException(e: Exception, defaultMessage: String = "An error occurred"): ApiResult.Error<T> {
         val errorType = when {
+            e is java.util.concurrent.CancellationException || e is kotlinx.coroutines.CancellationException -> ErrorType.OPERATION_CANCELLED
             e is java.net.UnknownHostException -> ErrorType.NETWORK
             e is java.net.ConnectException -> ErrorType.NETWORK  
             e is java.net.SocketTimeoutException -> ErrorType.NETWORK
@@ -295,14 +315,8 @@ class JellyfinRepository @Inject constructor(
             )
             ApiResult.Success(response.content.items ?: emptyList())
         } catch (e: Exception) {
-            val errorType = when {
-                e.message?.contains("401") == true -> ErrorType.UNAUTHORIZED
-                e.message?.contains("403") == true -> ErrorType.FORBIDDEN
-                e.message?.contains("404") == true -> ErrorType.NOT_FOUND
-                e.message?.contains("5") == true -> ErrorType.SERVER_ERROR
-                else -> ErrorType.NETWORK
-            }
-            ApiResult.Error("Failed to load libraries: ${e.message}", e, errorType)
+            // ✅ FIX: Use helper to preserve cancellation exceptions
+            handleExceptionSafely(e, "Failed to load libraries")
         }
     }
     
@@ -400,6 +414,11 @@ class JellyfinRepository @Inject constructor(
             
             ApiResult.Success(items)
         } catch (e: Exception) {
+            // ✅ FIX: Let cancellation exceptions bubble up instead of converting to ApiResult.Error
+            if (e is java.util.concurrent.CancellationException || e is kotlinx.coroutines.CancellationException) {
+                throw e
+            }
+            
             Log.e("JellyfinRepository", "getRecentlyAdded: Failed to load items", e)
             val errorType = when {
                 e.message?.contains("401") == true -> ErrorType.UNAUTHORIZED
@@ -461,6 +480,12 @@ class JellyfinRepository @Inject constructor(
             } catch (e: Exception) {
                 lastException = e
                 
+                // ✅ FIX: Don't retry if the job was cancelled (navigation/lifecycle cancellation)
+                if (e is java.util.concurrent.CancellationException || e is kotlinx.coroutines.CancellationException) {
+                    Log.d("JellyfinRepository", "Operation was cancelled, not retrying")
+                    throw e
+                }
+                
                 // If it's a 401 error and we have saved credentials, try to re-authenticate
                 if (e.message?.contains("401") == true && attempt < maxRetries) {
                     Log.w("JellyfinRepository", "Got 401 error on attempt ${attempt + 1}, attempting to re-authenticate")
@@ -468,8 +493,10 @@ class JellyfinRepository @Inject constructor(
                     // Try to re-authenticate
                     if (reAuthenticate()) {
                         Log.d("JellyfinRepository", "Re-authentication successful, retrying operation")
+                        // ✅ FIX: Invalidate client factory to ensure new token is used
+                        clientFactory.invalidateClient()
                         // Additional delay to ensure token propagation
-                        kotlinx.coroutines.delay(2000L)
+                        kotlinx.coroutines.delay(1000L)
                         continue
                     } else {
                         Log.w("JellyfinRepository", "Re-authentication failed, will not retry")
@@ -502,9 +529,15 @@ class JellyfinRepository @Inject constructor(
             Log.d("JellyfinRepository", "getRecentlyAddedByType: Requesting $limit items of type $itemType")
             
             val items = executeWithRetry {
-                val client = getClient(server.url, server.accessToken)
+                // ✅ FIX: Get current server state for each retry attempt
+                val currentServer = _currentServer.value 
+                    ?: throw IllegalStateException("Server not available")
+                val client = getClient(currentServer.url, currentServer.accessToken)
+                val currentUserUuid = runCatching { UUID.fromString(currentServer.userId ?: "") }.getOrNull()
+                    ?: throw IllegalStateException("Invalid user ID")
+                    
                 val response = client.itemsApi.getItems(
-                    userId = userUuid,
+                    userId = currentUserUuid,
                     recursive = true,
                     includeItemTypes = listOf(itemType),
                     sortBy = listOf(ItemSortBy.DATE_CREATED),
@@ -525,7 +558,7 @@ class JellyfinRepository @Inject constructor(
             ApiResult.Success(items)
         } catch (e: Exception) {
             Log.e("JellyfinRepository", "getRecentlyAddedByType: Failed to load $itemType items", e)
-            handleException(e, "Failed to load recently added ${itemType.name.lowercase()}")
+            handleExceptionSafely(e, "Failed to load recently added ${itemType.name.lowercase()}")
         }
     }
 
