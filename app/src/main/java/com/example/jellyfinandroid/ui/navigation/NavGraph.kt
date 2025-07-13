@@ -161,6 +161,18 @@ fun JellyfinNavGraph(
                 errorMessage = appState.errorMessage,
                 onRefresh = { viewModel.loadInitialData() },
                 getImageUrl = { item -> viewModel.getImageUrl(item) },
+                onLibraryClick = { library ->
+                    // Navigate to appropriate screen based on library collection type
+                    when (library.collectionType?.toString()?.lowercase()) {
+                        "movies" -> navController.navigate(Screen.Movies.route)
+                        "tvshows" -> navController.navigate(Screen.TVShows.route)
+                        "music" -> navController.navigate(Screen.Music.route)
+                        else -> {
+                            // For mixed or unknown types, default to Movies screen
+                            navController.navigate(Screen.Movies.route)
+                        }
+                    }
+                },
                 onSettingsClick = { navController.navigate(Screen.Profile.route) }
             )
         }
@@ -171,6 +183,7 @@ fun JellyfinNavGraph(
             
             LaunchedEffect(Unit) {
                 // Load initial movies data if needed
+                viewModel.loadInitialData()
             }
             
             MoviesScreen(
@@ -189,7 +202,8 @@ fun JellyfinNavGraph(
             val lifecycleOwner = LocalLifecycleOwner.current
             
             LaunchedEffect(Unit) {
-                // Load initial TV shows data if needed
+                // Load initial TV shows data
+                viewModel.loadInitialData()
             }
             
             TVShowsScreen(
