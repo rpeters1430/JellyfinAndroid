@@ -7,6 +7,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Alignment
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -34,6 +38,7 @@ import com.example.jellyfinandroid.ui.screens.TVSeasonScreen
 import com.example.jellyfinandroid.ui.screens.TVShowsScreen
 import com.example.jellyfinandroid.ui.viewmodel.MainAppViewModel
 import com.example.jellyfinandroid.ui.viewmodel.SeasonEpisodesViewModel
+import com.example.jellyfinandroid.ui.viewmodel.MovieDetailViewModel
 import com.example.jellyfinandroid.ui.viewmodel.ServerConnectionViewModel
 import com.example.jellyfinandroid.ui.utils.MediaPlayerUtils
 import com.example.jellyfinandroid.ui.utils.ShareUtils
@@ -357,9 +362,11 @@ fun JellyfinNavGraph(
             arguments = listOf(navArgument(Screen.MOVIE_ID_ARG) { type = NavType.StringType })
         ) { backStackEntry ->
             val movieId = backStackEntry.arguments?.getString(Screen.MOVIE_ID_ARG) ?: return@composable
-            val viewModel = hiltViewModel<MainAppViewModel>()
+            val mainViewModel = hiltViewModel<MainAppViewModel>()
+            val detailViewModel = hiltViewModel<MovieDetailViewModel>()
+
             val lifecycleOwner = LocalLifecycleOwner.current
-            val appState by viewModel.appState.collectAsStateWithLifecycle(
+            val appState by mainViewModel.appState.collectAsStateWithLifecycle(
                 lifecycle = lifecycleOwner.lifecycle,
                 minActiveState = Lifecycle.State.STARTED
             )
