@@ -24,6 +24,7 @@ import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.ItemFilter
 import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.SortOrder
+import org.jellyfin.sdk.model.api.ItemFields
 import com.example.jellyfinandroid.data.model.QuickConnectConstants
 import java.util.UUID
 import java.security.SecureRandom
