@@ -307,18 +307,95 @@ class MainAppViewModel @Inject constructor(
         loadLibraryItemsPage(reset = true)
     }
     
-    fun loadTVShowDetails(seriesId: String) {
-        // This method exists for navigation compatibility but doesn't need implementation
-        // The actual TV show details loading happens in the appropriate screens
+    fun toggleFavorite(item: BaseItemDto) {
+        viewModelScope.launch {
+            val currentFavoriteState = item.userData?.isFavorite ?: false
+            when (val result = repository.toggleFavorite(item.id.toString(), !currentFavoriteState)) {
+                is ApiResult.Success -> {
+                    Log.d("MainAppViewModel", "Successfully toggled favorite for ${item.name}")
+                    // Refresh data to update UI state
+                    loadInitialData()
+                }
+                is ApiResult.Error -> {
+                    Log.e("MainAppViewModel", "Failed to toggle favorite: ${result.message}")
+                    _appState.value = _appState.value.copy(
+                        errorMessage = "Failed to update favorite: ${result.message}"
+                    )
+                }
+                is ApiResult.Loading -> {
+                    // Handle loading state if needed
+                }
+            }
+        }
+    }
+
+    fun markAsWatched(item: BaseItemDto) {
+        viewModelScope.launch {
+            when (val result = repository.markAsWatched(item.id.toString())) {
+                is ApiResult.Success -> {
+                    Log.d("MainAppViewModel", "Successfully marked ${item.name} as watched")
+                    // Refresh data to update UI state
+                    loadInitialData()
+                }
+                is ApiResult.Error -> {
+                    Log.e("MainAppViewModel", "Failed to mark as watched: ${result.message}")
+                    _appState.value = _appState.value.copy(
+                        errorMessage = "Failed to mark as watched: ${result.message}"
+                    )
+                }
+                is ApiResult.Loading -> {
+                    // Handle loading state if needed
+                }
+            }
+        }
+    }
+
+    fun markAsUnwatched(item: BaseItemDto) {
+        viewModelScope.launch {
+            when (val result = repository.markAsUnwatched(item.id.toString())) {
+                is ApiResult.Success -> {
+                    Log.d("MainAppViewModel", "Successfully marked ${item.name} as unwatched")
+                    // Refresh data to update UI state
+                    loadInitialData()
+                }
+                is ApiResult.Error -> {
+                    Log.e("MainAppViewModel", "Failed to mark as unwatched: ${result.message}")
+                    _appState.value = _appState.value.copy(
+                        errorMessage = "Failed to mark as unwatched: ${result.message}"
+                    )
+                }
+                is ApiResult.Loading -> {
+                    // Handle loading state if needed
+                }
+            }
+        }
+    }
+
+    fun getStreamUrl(item: BaseItemDto): String? {
+        return repository.getStreamUrl(item.id.toString())
     }
     
-    fun loadEpisodes(seasonId: String) {
-        // This method exists for navigation compatibility but doesn't need implementation  
-        // Episode loading is handled by SeasonEpisodesViewModel
+    /**
+     * Gets the download URL for a media item.
+     * This URL can be used with DownloadManager for offline storage.
+     */
+    fun getDownloadUrl(item: BaseItemDto): String? {
+        return repository.getDownloadUrl(item.id.toString())
+    }
+    
+    /**
+     * Gets a direct stream URL optimized for downloads.
+     */
+    fun getDirectStreamUrl(item: BaseItemDto, container: String? = null): String? {
+        return repository.getDirectStreamUrl(item.id.toString(), container)
+    }
+
+    // Navigation compatibility methods - no-op for now
+    fun loadTVShowDetails(seriesId: String) {
+        // Navigation compatibility method - actual details loading handled by dedicated ViewModels
     }
     
     fun loadMusic() {
-        // This method exists for navigation compatibility but doesn't need implementation
-        // Music loading can use the existing loadLibraryItems functionality
+        // Navigation compatibility method - music loading handled by existing functionality
     }
 }

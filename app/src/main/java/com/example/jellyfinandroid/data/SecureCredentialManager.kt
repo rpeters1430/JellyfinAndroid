@@ -70,7 +70,7 @@ class SecureCredentialManager @Inject constructor(
 
     private fun decrypt(encryptedData: String): String? {
         return try {
-            val combined = Base64.decode(encryptedData, Base64.DEFAULT)
+            val combined = Base64.decode(encryptedData, Base64.NO_WRAP)
             val iv = combined.sliceArray(0 until AppConstants.Security.IV_LENGTH)
             val cipherData = combined.sliceArray(AppConstants.Security.IV_LENGTH until combined.size)
             

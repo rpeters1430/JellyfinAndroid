@@ -35,6 +35,12 @@ import com.example.jellyfinandroid.ui.screens.TVShowsScreen
 import com.example.jellyfinandroid.ui.viewmodel.MainAppViewModel
 import com.example.jellyfinandroid.ui.viewmodel.SeasonEpisodesViewModel
 import com.example.jellyfinandroid.ui.viewmodel.ServerConnectionViewModel
+import com.example.jellyfinandroid.ui.utils.MediaPlayerUtils
+import com.example.jellyfinandroid.ui.utils.ShareUtils
+import com.example.jellyfinandroid.ui.utils.MediaDownloadManager
+import android.util.Log
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
 @Composable
 fun JellyfinNavGraph(
@@ -369,8 +375,25 @@ fun JellyfinNavGraph(
                     getImageUrl = { item -> viewModel.getImageUrl(item) },
                     getBackdropUrl = { item -> viewModel.getBackdropUrl(item) },
                     onBackClick = { navController.popBackStack() },
-                    onPlayClick = { /* TODO: Implement play functionality */ },
-                    onFavoriteClick = { /* TODO: Implement favorite toggle */ },
+                    onPlayClick = { movieItem ->
+                        try {
+                            val streamUrl = viewModel.getStreamUrl(movieItem)
+                            if (streamUrl != null) {
+                                MediaPlayerUtils.playMedia(context = navController.context, streamUrl = streamUrl, item = movieItem)
+                                Log.d("NavGraph", "Playing movie: ${movieItem.name}")
+                            } else {
+                                Log.e("NavGraph", "No stream URL available for movie: ${movieItem.name}")
+                            }
+                        } catch (e: Exception) {
+                            Log.e("NavGraph", "Failed to play movie: ${e.message}", e)
+                        }
+                    },
+                    onFavoriteClick = { movieItem ->
+                        viewModel.toggleFavorite(movieItem)
+                    },
+                    onShareClick = { movieItem ->
+                        ShareUtils.shareMedia(context = navController.context, item = movieItem)
+                    },
                     relatedItems = relatedItems
                 )
             } else {
@@ -408,12 +431,56 @@ fun JellyfinNavGraph(
                     getImageUrl = { item -> viewModel.getImageUrl(item) },
                     getBackdropUrl = { item -> viewModel.getBackdropUrl(item) },
                     onBackClick = { navController.popBackStack() },
-                    onPlayClick = { /* TODO: Implement play functionality */ },
-                    onDownloadClick = { /* TODO: Implement download functionality */ },
-                    onDeleteClick = { /* TODO: Implement delete functionality */ },
-                    onMarkWatchedClick = { /* TODO: Implement mark watched functionality */ },
-                    onMarkUnwatchedClick = { /* TODO: Implement mark unwatched functionality */ },
-                    onFavoriteClick = { /* TODO: Implement favorite toggle functionality */ }
+                    onPlayClick = { episodeItem ->
+                        try {
+                            val streamUrl = viewModel.getStreamUrl(episodeItem)
+                            if (streamUrl != null) {
+                                MediaPlayerUtils.playMedia(context = navController.context, streamUrl = streamUrl, item = episodeItem)
+                                Log.d("NavGraph", "Playing episode: ${episodeItem.name}")
+                            } else {
+                                Log.e("NavGraph", "No stream URL available for episode: ${episodeItem.name}")
+                            }
+                        } catch (e: Exception) {
+                            Log.e("NavGraph", "Failed to play episode: ${e.message}", e)
+                        }
+                    },
+                    onDownloadClick = { episodeItem ->
+                        try {
+                            val context = navController.context
+                            val downloadUrl = viewModel.getDownloadUrl(episodeItem)
+                            
+                            if (downloadUrl != null) {
+                                val downloadId = MediaDownloadManager.downloadMedia(
+                                    context = context,
+                                    item = episodeItem,
+                                    streamUrl = downloadUrl
+                                )
+                                
+                                if (downloadId != null) {
+                                    Log.d("NavGraph", "Started download for episode: ${episodeItem.name} (ID: $downloadId)")
+                                } else {
+                                    Log.e("NavGraph", "Failed to start download for episode: ${episodeItem.name}")
+                                }
+                            } else {
+                                Log.e("NavGraph", "No download URL available for episode: ${episodeItem.name}")
+                            }
+                        } catch (e: Exception) {
+                            Log.e("NavGraph", "Failed to download episode: ${e.message}", e)
+                        }
+                    },
+                    onDeleteClick = { episodeItem ->
+                        // TODO: Implement delete functionality - requires admin permissions
+                        Log.d("NavGraph", "Delete requested for episode: ${episodeItem.name}")
+                    },
+                    onMarkWatchedClick = { episodeItem ->
+                        viewModel.markAsWatched(episodeItem)
+                    },
+                    onMarkUnwatchedClick = { episodeItem ->
+                        viewModel.markAsUnwatched(episodeItem)
+                    },
+                    onFavoriteClick = { episodeItem ->
+                        viewModel.toggleFavorite(episodeItem)
+                    }
                 )
             } else {
                 // Episode not found, show error or navigate back
