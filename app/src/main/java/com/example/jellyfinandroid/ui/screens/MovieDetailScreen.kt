@@ -58,6 +58,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import android.content.Intent
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -81,6 +82,7 @@ fun MovieDetailScreen(
     onBackClick: () -> Unit,
     onPlayClick: (BaseItemDto) -> Unit = {},
     onFavoriteClick: (BaseItemDto) -> Unit = {},
+    onShareClick: (BaseItemDto) -> Unit = {},
     relatedItems: List<BaseItemDto> = emptyList(),
     modifier: Modifier = Modifier
 ) {
@@ -118,7 +120,7 @@ fun MovieDetailScreen(
                             tint = if (isFavorite) Color.Red else MaterialTheme.colorScheme.onSurface
                         )
                     }
-                    IconButton(onClick = { /* TODO: Share functionality */ }) {
+                    IconButton(onClick = { onShareClick(movie) }) {
                         Icon(
                             imageVector = Icons.Default.Share,
                             contentDescription = "Share"
