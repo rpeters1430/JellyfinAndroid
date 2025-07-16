@@ -392,44 +392,107 @@ class MainAppViewModel @Inject constructor(
 
     fun getMovieDetails(movieId: String) {
         viewModelScope.launch {
-            _appState.update { it.copy(isLoading = true, errorMessage = null) }
+            _appState.value = _appState.value.copy(isLoading = true, errorMessage = null)
             when (val result = repository.getMovieDetails(movieId)) {
                 is ApiResult.Success -> {
-                    _appState.update { currentState ->
-                        val items = currentState.allItems.toMutableList()
-val items = currentState.allItems.associateBy { it.id.toString() }.toMutableMap()
-        if (items.containsKey(movieId)) {
-            items[movieId] = result.data
-        } else {
-            items[result.data.id.toString()] = result.data
-        }
-                        } else {
-                            items.add(result.data)
-                        }
-                        currentState.copy(allItems = items, isLoading = false)
+                    val currentItems = _appState.value.allItems.toMutableList()
+                    val existingIndex = currentItems.indexOfFirst { it.id.toString() == movieId }
+                    
+                    if (existingIndex >= 0) {
+                        currentItems[existingIndex] = result.data
+                    } else {
+                        currentItems.add(result.data)
                     }
+                    
+                    _appState.value = _appState.value.copy(allItems = currentItems, isLoading = false)
                 }
                 is ApiResult.Error -> {
-                    _appState.update {
-                        it.copy(
-                            isLoading = false,
-                            errorMessage = "Failed to load movie details: ${result.message}"
-                        )
-                    }
+                    _appState.value = _appState.value.copy(
+                        isLoading = false,
+                        errorMessage = "Failed to load movie details: ${result.message}"
+                    )
                 }
                 is ApiResult.Loading -> {
-                    // no-op
+                    // Already handled
                 }
             }
         }
     }
 
-    // Navigation compatibility methods - no-op for now
+    // Navigation compatibility methods
     fun loadTVShowDetails(seriesId: String) {
-        // Navigation compatibility method - actual details loading handled by dedicated ViewModels
+        viewModelScope.launch {
+            Log.d("MainAppViewModel", "loadTVShowDetails: Loading series details for $seriesId")
+            
+            // Load the series details and add to allItems if not already there
+            when (val result = repository.getSeriesDetails(seriesId)) {
+                is ApiResult.Success -> {
+                    val currentItems = _appState.value.allItems.toMutableList()
+                    val existingIndex = currentItems.indexOfFirst { it.id.toString() == seriesId }
+                    
+                    if (existingIndex >= 0) {
+                        currentItems[existingIndex] = result.data
+                    } else {
+                        currentItems.add(result.data)
+                    }
+                    
+                    _appState.value = _appState.value.copy(allItems = currentItems)
+                    Log.d("MainAppViewModel", "loadTVShowDetails: Successfully loaded series ${result.data.name}")
+                }
+                is ApiResult.Error -> {
+                    Log.e("MainAppViewModel", "loadTVShowDetails: Failed to load series details: ${result.message}")
+                    if (result.errorType != com.example.jellyfinandroid.data.repository.ErrorType.OPERATION_CANCELLED) {
+                        _appState.value = _appState.value.copy(
+                            errorMessage = "Failed to load series details: ${result.message}"
+                        )
+                    }
+                }
+                is ApiResult.Loading -> {
+                    // Already handled
+                }
+            }
+        }
     }
     
     fun loadMusic() {
         // Navigation compatibility method - music loading handled by existing functionality
+    }
+    
+    /**
+     * Loads episode details for episode detail screen navigation
+     */
+    fun loadEpisodeDetails(episodeId: String) {
+        viewModelScope.launch {
+            Log.d("MainAppViewModel", "loadEpisodeDetails: Loading episode details for $episodeId")
+            
+            // Check if episode already exists in allItems
+            val existingEpisode = _appState.value.allItems.find { it.id.toString() == episodeId }
+            if (existingEpisode != null) {
+                Log.d("MainAppViewModel", "loadEpisodeDetails: Episode already loaded: ${existingEpisode.name}")
+                return@launch
+            }
+            
+            // If not found, try to load it via series context
+            // This is a fallback - episodes should ideally be loaded when viewing seasons
+            Log.d("MainAppViewModel", "loadEpisodeDetails: Episode not found in current data, episode detail screen will handle loading")
+        }
+    }
+    
+    /**
+     * Adds or updates an item in the main app state
+     */
+    fun addOrUpdateItem(item: BaseItemDto) {
+        val currentItems = _appState.value.allItems.toMutableList()
+        val existingIndex = currentItems.indexOfFirst { it.id == item.id }
+        
+        if (existingIndex >= 0) {
+            currentItems[existingIndex] = item
+            Log.d("MainAppViewModel", "addOrUpdateItem: Updated existing item ${item.name}")
+        } else {
+            currentItems.add(item)
+            Log.d("MainAppViewModel", "addOrUpdateItem: Added new item ${item.name}")
+        }
+        
+        _appState.value = _appState.value.copy(allItems = currentItems)
     }
 }
