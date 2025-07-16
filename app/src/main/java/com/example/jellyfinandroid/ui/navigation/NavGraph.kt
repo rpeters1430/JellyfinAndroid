@@ -273,6 +273,9 @@ fun JellyfinNavGraph(
                 onBackClick = { navController.popBackStack() },
                 getImageUrl = { item -> mainViewModel.getImageUrl(item) },
                 onEpisodeClick = { episode ->
+                    // Add episode to main app state for detail screen access
+                    mainViewModel.addOrUpdateItem(episode)
+                    
                     episode.id?.let { episodeId ->
                         navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
                     }

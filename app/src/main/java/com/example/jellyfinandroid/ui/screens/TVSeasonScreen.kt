@@ -57,7 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.SubcomposeAsyncImage
 import com.example.jellyfinandroid.R
-import com.example.jellyfinandroid.ui.ShimmerBox
+import com.example.jellyfinandroid.ui.components.ShimmerBox
 import com.example.jellyfinandroid.ui.theme.SeriesBlue
 import com.example.jellyfinandroid.ui.viewmodel.TVSeasonState
 import com.example.jellyfinandroid.ui.viewmodel.TVSeasonViewModel
@@ -289,7 +289,7 @@ private fun SeriesDetailsHeader(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(200.dp),
-                        shape = RoundedCornerShape(16.dp)
+                        cornerRadius = 16
                     )
                 },
                 error = {
@@ -433,7 +433,7 @@ private fun SeasonCard(
                         modifier = Modifier
                             .width(80.dp)
                             .height(120.dp),
-                        shape = RoundedCornerShape(8.dp)
+                        cornerRadius = 8
                     )
                 },
                 error = {

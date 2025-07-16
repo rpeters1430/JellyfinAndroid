@@ -48,7 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.SubcomposeAsyncImage
 import com.example.jellyfinandroid.R
-import com.example.jellyfinandroid.ui.ShimmerBox
+import com.example.jellyfinandroid.ui.components.ShimmerBox
 import com.example.jellyfinandroid.ui.theme.SeriesBlue
 import com.example.jellyfinandroid.ui.viewmodel.SeasonEpisodesViewModel
 import com.example.jellyfinandroid.ui.viewmodel.SeasonEpisodesState
@@ -241,7 +241,7 @@ private fun EpisodeRow(
                         modifier = Modifier
                             .width(80.dp)
                             .height(120.dp),
-                        shape = RoundedCornerShape(8.dp)
+                        cornerRadius = 8
                     )
                 },
                 modifier = Modifier
