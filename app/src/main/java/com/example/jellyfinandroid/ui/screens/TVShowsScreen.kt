@@ -393,7 +393,11 @@ private fun TVShowsContent(
                     MediaCard(
                         item = tvShow,
                         getImageUrl = getImageUrl,
-                        onClick = { onTVShowClick(tvShow.id.toString()) }
+                        onClick = { 
+                            tvShow.id?.let { seriesId ->
+                                onTVShowClick(seriesId.toString())
+                            }
+                        }
                     )
                 }
                 
@@ -420,7 +424,11 @@ private fun TVShowsContent(
                     MediaCard(
                         item = tvShow,
                         getImageUrl = getImageUrl,
-                        onClick = { onTVShowClick(tvShow.id.toString()) }
+                        onClick = { 
+                            tvShow.id?.let { seriesId ->
+                                onTVShowClick(seriesId.toString())
+                            }
+                        }
                     )
                 }
                 

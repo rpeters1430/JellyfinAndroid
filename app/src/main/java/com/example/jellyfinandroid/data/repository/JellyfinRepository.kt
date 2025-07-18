@@ -964,6 +964,61 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
         val server = _currentServer.value ?: return null
         return "${server.url}/Videos/${itemId}/stream?static=true&api_key=${server.accessToken}"
     }
+    
+    /**
+     * Gets a transcoded stream URL with specific quality parameters
+     */
+    fun getTranscodedStreamUrl(
+        itemId: String,
+        maxBitrate: Int? = null,
+        maxWidth: Int? = null,
+        maxHeight: Int? = null,
+        videoCodec: String = "h264",
+        audioCodec: String = "aac",
+        container: String = "mp4"
+    ): String? {
+        val server = _currentServer.value ?: return null
+        val params = mutableListOf<String>()
+        
+        // Add transcoding parameters
+        maxBitrate?.let { params.add("MaxStreamingBitrate=$it") }
+        maxWidth?.let { params.add("MaxWidth=$it") }
+        maxHeight?.let { params.add("MaxHeight=$it") }
+        params.add("VideoCodec=$videoCodec")
+        params.add("AudioCodec=$audioCodec")
+        params.add("Container=$container")
+        params.add("TranscodingMaxAudioChannels=2")
+        params.add("BreakOnNonKeyFrames=true")
+        params.add("api_key=${server.accessToken}")
+        
+        return "${server.url}/Videos/${itemId}/master.m3u8?${params.joinToString("&")}"
+    }
+    
+    /**
+     * Gets HLS (HTTP Live Streaming) URL for adaptive bitrate streaming
+     */
+    fun getHlsStreamUrl(itemId: String): String? {
+        val server = _currentServer.value ?: return null
+        return "${server.url}/Videos/${itemId}/master.m3u8?" +
+                "VideoCodec=h264&" +
+                "AudioCodec=aac&" +
+                "MaxStreamingBitrate=140000000&" +
+                "PlaySessionId=${java.util.UUID.randomUUID()}&" +
+                "api_key=${server.accessToken}"
+    }
+    
+    /**
+     * Gets DASH (Dynamic Adaptive Streaming over HTTP) URL
+     */
+    fun getDashStreamUrl(itemId: String): String? {
+        val server = _currentServer.value ?: return null
+        return "${server.url}/Videos/${itemId}/stream.mpd?" +
+                "VideoCodec=h264&" +
+                "AudioCodec=aac&" +
+                "MaxStreamingBitrate=140000000&" +
+                "PlaySessionId=${java.util.UUID.randomUUID()}&" +
+                "api_key=${server.accessToken}"
+    }
 
     fun getCurrentServer(): JellyfinServer? = _currentServer.value
     

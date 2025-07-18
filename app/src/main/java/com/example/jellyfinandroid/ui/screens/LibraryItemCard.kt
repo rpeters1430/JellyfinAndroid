@@ -50,7 +50,9 @@ fun LibraryItemCard(
         elevation = CardDefaults.cardElevation(defaultElevation = LibraryScreenDefaults.CardElevation),
         onClick = {
             if (libraryType == LibraryType.TV_SHOWS && item.type == BaseItemKind.SERIES) {
-                onTVShowClick?.invoke(item.id.toString())
+                item.id?.let { seriesId ->
+                    onTVShowClick?.invoke(seriesId.toString())
+                }
             }
         },
         colors = CardDefaults.cardColors(
