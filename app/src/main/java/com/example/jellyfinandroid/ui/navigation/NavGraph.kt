@@ -230,7 +230,11 @@ fun JellyfinNavGraph(
             route = Screen.TVSeasons.route,
             arguments = listOf(navArgument(Screen.SERIES_ID_ARG) { type = NavType.StringType })
         ) { backStackEntry ->
-            val seriesId = backStackEntry.arguments?.getString(Screen.SERIES_ID_ARG) ?: return@composable
+            val seriesId = backStackEntry.arguments?.getString(Screen.SERIES_ID_ARG)
+            if (seriesId.isNullOrBlank()) {
+                Log.e("NavGraph", "TVSeasons navigation cancelled: seriesId is null or blank")
+                return@composable
+            }
             val viewModel = hiltViewModel<MainAppViewModel>()
             val lifecycleOwner = LocalLifecycleOwner.current
             
@@ -253,7 +257,11 @@ fun JellyfinNavGraph(
             route = Screen.TVEpisodes.route,
             arguments = listOf(navArgument(Screen.SEASON_ID_ARG) { type = NavType.StringType })
         ) { backStackEntry ->
-            val seasonId = backStackEntry.arguments?.getString(Screen.SEASON_ID_ARG) ?: return@composable
+            val seasonId = backStackEntry.arguments?.getString(Screen.SEASON_ID_ARG)
+            if (seasonId.isNullOrBlank()) {
+                Log.e("NavGraph", "TVEpisodes navigation cancelled: seasonId is null or blank")
+                return@composable
+            }
             val viewModel = hiltViewModel<SeasonEpisodesViewModel>()
             val mainViewModel = hiltViewModel<MainAppViewModel>()
             val lifecycleOwner = LocalLifecycleOwner.current
@@ -359,7 +367,11 @@ fun JellyfinNavGraph(
             route = Screen.MovieDetail.route,
             arguments = listOf(navArgument(Screen.MOVIE_ID_ARG) { type = NavType.StringType })
         ) { backStackEntry ->
-            val movieId = backStackEntry.arguments?.getString(Screen.MOVIE_ID_ARG) ?: return@composable
+            val movieId = backStackEntry.arguments?.getString(Screen.MOVIE_ID_ARG)
+            if (movieId.isNullOrBlank()) {
+                Log.e("NavGraph", "MovieDetail navigation cancelled: movieId is null or blank")
+                return@composable
+            }
             val mainViewModel = hiltViewModel<MainAppViewModel>()
             val detailViewModel = hiltViewModel<MovieDetailViewModel>()
 
@@ -370,7 +382,7 @@ fun JellyfinNavGraph(
             )
             
             // Find the movie from the loaded items
-            val movie = appState.allItems.find { it.id.toString() == movieId }
+            val movie = appState.allItems.find { it.id?.toString() == movieId }
 
             LaunchedEffect(movieId, movie) {
                 if (movie == null) {
@@ -381,7 +393,7 @@ fun JellyfinNavGraph(
             if (movie != null) {
                 // Get related items (movies from same genre or similar)
                 val relatedItems = appState.allItems.filter { item ->
-                    item.id.toString() != movieId &&
+                    item.id?.toString() != movieId &&
                     item.type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE &&
                     movie.genres?.any { genre -> item.genres?.contains(genre) == true } == true
                 }.take(10)
@@ -423,7 +435,11 @@ fun JellyfinNavGraph(
             route = Screen.TVEpisodeDetail.route,
             arguments = listOf(navArgument(Screen.EPISODE_ID_ARG) { type = NavType.StringType })
         ) { backStackEntry ->
-            val episodeId = backStackEntry.arguments?.getString(Screen.EPISODE_ID_ARG) ?: return@composable
+            val episodeId = backStackEntry.arguments?.getString(Screen.EPISODE_ID_ARG)
+            if (episodeId.isNullOrBlank()) {
+                Log.e("NavGraph", "TVEpisodeDetail navigation cancelled: episodeId is null or blank")
+                return@composable
+            }
             val viewModel = hiltViewModel<MainAppViewModel>()
             val lifecycleOwner = LocalLifecycleOwner.current
             val appState by viewModel.appState.collectAsStateWithLifecycle(
@@ -432,12 +448,12 @@ fun JellyfinNavGraph(
             )
             
             // Find the episode from the loaded items
-            val episode = appState.allItems.find { it.id.toString() == episodeId }
+            val episode = appState.allItems.find { it.id?.toString() == episodeId }
             
             if (episode != null) {
                 // Find the series information if available
                 val seriesInfo = episode.seriesId?.let { seriesId ->
-                    appState.allItems.find { it.id.toString() == seriesId.toString() }
+                    appState.allItems.find { it.id?.toString() == seriesId.toString() }
                 }
                 
                 TVEpisodeDetailScreen(

@@ -4,6 +4,7 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     
     <!-- Storage permissions for downloads -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" 
@@ -17,6 +18,16 @@
     
     <!-- Download manager access -->
     <uses-permission android:name="android.permission.ACCESS_DOWNLOAD_MANAGER" />
+    
+    <!-- Video player permissions -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    
+    <!-- Picture-in-Picture support -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    
+    <!-- Offline download permissions -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".JellyfinApplication"
@@ -39,6 +50,19 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        
+        <activity
+            android:name=".ui.player.VideoPlayerActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|keyboardHidden|screenLayout"
+            android:supportsPictureInPicture="true"
+            android:theme="@style/Theme.JellyfinAndroid.VideoPlayer"
+            android:launchMode="singleTask" />
+        
+        <!-- Cast support -->
+        <meta-data
+            android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
+            android:value="com.example.jellyfinandroid.ui.player.CastOptionsProvider" />
     </application>
 
 </manifest>

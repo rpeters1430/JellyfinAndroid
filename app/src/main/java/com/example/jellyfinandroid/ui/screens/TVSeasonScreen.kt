@@ -413,7 +413,11 @@ private fun SeasonCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { onClick(season.id.toString()) },
+            .clickable { 
+                season.id?.let { seasonId ->
+                    onClick(seasonId.toString())
+                }
+            },
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(

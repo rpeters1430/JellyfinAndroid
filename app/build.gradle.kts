@@ -108,6 +108,10 @@ dependencies {
     // Media3 for video playback
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)
+    implementation(libs.androidx.media3.common)
+    implementation(libs.androidx.media3.cast)
+    implementation(libs.androidx.media3.session)
+    implementation(libs.google.cast.framework)
 
     // Hilt for dependency injection
     implementation(libs.dagger.hilt.android)

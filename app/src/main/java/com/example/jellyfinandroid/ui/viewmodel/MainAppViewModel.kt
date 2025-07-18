@@ -404,7 +404,7 @@ class MainAppViewModel @Inject constructor(
             when (val result = repository.getMovieDetails(movieId)) {
                 is ApiResult.Success -> {
                     val currentItems = _appState.value.allItems.toMutableList()
-                    val existingIndex = currentItems.indexOfFirst { it.id.toString() == movieId }
+                    val existingIndex = currentItems.indexOfFirst { it.id?.toString() == movieId }
                     
                     if (existingIndex >= 0) {
                         currentItems[existingIndex] = result.data
@@ -436,7 +436,7 @@ class MainAppViewModel @Inject constructor(
             when (val result = repository.getSeriesDetails(seriesId)) {
                 is ApiResult.Success -> {
                     val currentItems = _appState.value.allItems.toMutableList()
-                    val existingIndex = currentItems.indexOfFirst { it.id.toString() == seriesId }
+                    val existingIndex = currentItems.indexOfFirst { it.id?.toString() == seriesId }
                     
                     if (existingIndex >= 0) {
                         currentItems[existingIndex] = result.data
