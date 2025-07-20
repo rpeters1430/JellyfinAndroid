@@ -1128,6 +1128,51 @@ class JellyfinRepository @Inject constructor(
         }
     }
 
+    /**
+     * Checks if the currently authenticated user has administrator privileges
+     * or permission to delete content.
+     */
+private suspend fun hasAdminDeletePermission(server: JellyfinServer): ApiResult<Boolean> {
+    val userId = server.userId ?: return ApiResult.Success(false)
+    return try {
+        val userUuid = parseUuid(userId, "user")
+        val client = getClient(server.url, server.accessToken)
+        val user = client.userApi.getUser(userUuid).content
+        ApiResult.Success(user.policy?.isAdministrator == true || user.policy?.enableContentDeletion == true)
+    } catch (e: Exception) {
+        Log.e("JellyfinRepository", "Failed to verify admin permissions: ${e.message}", e)
+        ApiResult.Error("Failed to verify admin permissions: ${e.message}", e, getErrorType(e))
+    }
+}
+
+    /**
+     * Deletes an item only if the current user has administrator permissions.
+     */
+    suspend fun deleteItemAsAdmin(itemId: String): ApiResult<Boolean> {
+        val server = _currentServer.value
+        if (server?.accessToken == null || server.userId == null) {
+            return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
+        }
+
+        val itemUuid = runCatching { UUID.fromString(itemId) }.getOrNull()
+        if (itemUuid == null) {
+            return ApiResult.Error("Invalid item ID", errorType = ErrorType.NOT_FOUND)
+        }
+
+        if (!hasAdminDeletePermission(server)) {
+            return ApiResult.Error("Administrator permissions required", errorType = ErrorType.FORBIDDEN)
+        }
+
+        return try {
+            val client = getClient(server.url, server.accessToken)
+            client.itemsApi.deleteItem(itemId = itemUuid)
+            ApiResult.Success(true)
+        } catch (e: Exception) {
+            val errorType = getErrorType(e)
+            ApiResult.Error("Failed to delete item: ${e.message}", e, errorType)
+        }
+    }
+
     fun getStreamUrl(itemId: String): String? {
         val server = _currentServer.value ?: return null
         return "${server.url}/Videos/${itemId}/stream?static=true&api_key=${server.accessToken}"
