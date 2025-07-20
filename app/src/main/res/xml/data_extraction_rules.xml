@@ -5,10 +5,14 @@
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <!-- Include user preferences -->
+        <include domain="sharedpref" path="." />
+
+        <!-- Exclude caches and large or sensitive files -->
+        <exclude domain="cache" path="." />
+        <exclude domain="file" path="datastore/secure_credentials.preferences_pb" />
+        <exclude domain="file" path="datastore/offline_downloads.preferences_pb" />
+        <exclude domain="external" path="Movies/JellyfinOffline" />
     </cloud-backup>
     <!--
     <device-transfer>
