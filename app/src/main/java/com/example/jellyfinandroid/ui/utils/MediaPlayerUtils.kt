@@ -17,7 +17,8 @@ object MediaPlayerUtils {
             Log.d("MediaPlayerUtils", "Launching internal video player for: ${item.name}")
             
             val itemId = item.id?.toString() ?: ""
-            val resumePosition = kotlinx.coroutines.runBlocking {
+            val itemId = item.id?.toString() ?: ""
+            val resumePosition = withContext(Dispatchers.IO) {
                 com.example.jellyfinandroid.data.PlaybackPositionStore.getPlaybackPosition(context, itemId)
             }.takeIf { it > 0 }
                 ?: item.userData?.playbackPositionTicks?.div(10_000) ?: 0L
