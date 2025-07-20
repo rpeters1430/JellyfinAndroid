@@ -75,7 +75,7 @@ Feature requests are welcome! Please provide:
 ### **Setup Steps**
 ```bash
 # Clone your fork
-git clone https://github.com/rpeters1430/JellyfinAndroid.git
+git clone https://github.com/YOUR_USERNAME/JellyfinAndroid.git
 cd JellyfinAndroid
 
 # Add upstream remote
