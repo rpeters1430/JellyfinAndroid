@@ -355,9 +355,8 @@ fun JellyfinNavGraph(
                 onLogout = {
                     viewModel.logout()
                     onLogout()
-                    navController.popBackStack(Screen.Main.route, inclusive = true)
                     navController.navigate(Screen.ServerConnection.route) {
-                        popUpTo(Screen.ServerConnection.route) { inclusive = true }
+                        popUpTo(0) { inclusive = true }
                     }
                 },
                 onBackClick = { navController.popBackStack() }
