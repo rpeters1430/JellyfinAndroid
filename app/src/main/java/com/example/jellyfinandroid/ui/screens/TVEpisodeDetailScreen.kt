@@ -376,8 +376,39 @@ private fun EpisodeInfoCard(
                     }
                     
                     episode.premiereDate?.let { date ->
-                        val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.getDefault())
-                        InfoRow(label = "Air Date", value = date.format(formatter))
+                        // Handle different date types from Jellyfin SDK
+                        val dateString = try {
+                            when {
+                                date is java.time.LocalDate -> {
+                                    val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.getDefault())
+                                    date.format(formatter)
+                                }
+                                date is java.time.OffsetDateTime -> {
+                                    val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.getDefault())
+                                    date.toLocalDate().format(formatter)
+                                }
+                                date is java.time.LocalDateTime -> {
+                                    val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.getDefault())
+                                    date.toLocalDate().format(formatter)
+                                }
+                                else -> {
+                                    // Fallback to string representation
+                                    date.toString().substringBefore('T').let { dateStr ->
+                                        try {
+                                            val localDate = java.time.LocalDate.parse(dateStr)
+                                            val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.getDefault())
+                                            localDate.format(formatter)
+                                        } catch (e: Exception) {
+                                            dateStr // Use raw date string if parsing fails
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (e: Exception) {
+                            // Fallback to simple string representation if all else fails
+                            date.toString().substringBefore('T')
+                        }
+                        InfoRow(label = "Air Date", value = dateString)
                     }
                     
                     episode.productionYear?.let { year ->
@@ -399,8 +430,39 @@ private fun EpisodeInfoCard(
                         }
                         
                         userData.lastPlayedDate?.let { date ->
-                            val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.getDefault())
-                            InfoRow(label = "Last Played", value = date.format(formatter))
+                            // Handle different date types from Jellyfin SDK
+                            val dateString = try {
+                                when {
+                                    date is java.time.LocalDate -> {
+                                        val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.getDefault())
+                                        date.format(formatter)
+                                    }
+                                    date is java.time.OffsetDateTime -> {
+                                        val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.getDefault())
+                                        date.toLocalDate().format(formatter)
+                                    }
+                                    date is java.time.LocalDateTime -> {
+                                        val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.getDefault())
+                                        date.toLocalDate().format(formatter)
+                                    }
+                                    else -> {
+                                        // Fallback to string representation
+                                        date.toString().substringBefore('T').let { dateStr ->
+                                            try {
+                                                val localDate = java.time.LocalDate.parse(dateStr)
+                                                val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.getDefault())
+                                                localDate.format(formatter)
+                                            } catch (e: Exception) {
+                                                dateStr // Use raw date string if parsing fails
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                // Fallback to simple string representation if all else fails
+                                date.toString().substringBefore('T')
+                            }
+                            InfoRow(label = "Last Played", value = dateString)
                         }
                     }
                 }

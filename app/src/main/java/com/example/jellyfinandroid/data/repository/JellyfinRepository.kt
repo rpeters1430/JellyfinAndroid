@@ -32,6 +32,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import com.example.jellyfinandroid.BuildConfig
+import dagger.hilt.android.qualifiers.ApplicationContext
+import com.example.jellyfinandroid.R
 import com.example.jellyfinandroid.data.SecureCredentialManager
 import com.example.jellyfinandroid.data.model.QuickConnectResult
 import com.example.jellyfinandroid.data.model.QuickConnectState
@@ -44,7 +47,7 @@ import android.content.Context
 sealed class ApiResult<T> {
     data class Success<T>(val data: T) : ApiResult<T>()
     data class Error<T>(val message: String, val cause: Throwable? = null, val errorType: ErrorType = ErrorType.UNKNOWN) : ApiResult<T>()
-    data class Loading<T>(val message: String = "Loading...") : ApiResult<T>()
+    data class Loading<T>(val message: String = "") : ApiResult<T>() // Default empty, will be set by context
 }
 
 enum class ErrorType {
@@ -61,8 +64,41 @@ enum class ErrorType {
 @Singleton
 class JellyfinRepository @Inject constructor(
     private val clientFactory: JellyfinClientFactory,
-    private val secureCredentialManager: SecureCredentialManager
+    private val secureCredentialManager: SecureCredentialManager,
+    @ApplicationContext private val context: Context
 ) {
+    companion object {
+        // Token validity constants
+        private const val TOKEN_VALIDITY_DURATION_MINUTES = 50
+        private const val TOKEN_VALIDITY_DURATION_MS = TOKEN_VALIDITY_DURATION_MINUTES * 60 * 1000L
+        
+        // API retry constants
+        private const val DEFAULT_MAX_RETRIES = 2
+        private const val RE_AUTH_DELAY_MS = 1000L
+        
+        // Stream quality constants
+        private const val DEFAULT_MAX_BITRATE = 140_000_000
+        private const val DEFAULT_MAX_AUDIO_CHANNELS = 2
+        
+        // Image size constants
+        private const val DEFAULT_IMAGE_MAX_HEIGHT = 400
+        private const val DEFAULT_IMAGE_MAX_WIDTH = 400
+        private const val BACKDROP_MAX_HEIGHT = 400
+        private const val BACKDROP_MAX_WIDTH = 800
+        
+        // API pagination constants
+        private const val DEFAULT_LIMIT = 100
+        private const val DEFAULT_START_INDEX = 0
+        private const val RECENTLY_ADDED_LIMIT = 20
+        private const val RECENTLY_ADDED_BY_TYPE_LIMIT = 10
+        private const val SEARCH_LIMIT = 50
+        
+        // Default codecs
+        private const val DEFAULT_VIDEO_CODEC = "h264"
+        private const val DEFAULT_AUDIO_CODEC = "aac"
+        private const val DEFAULT_CONTAINER = "mp4"
+    }
+    
     private val _currentServer = MutableStateFlow<JellyfinServer?>(null)
     val currentServer: Flow<JellyfinServer?> = _currentServer.asStateFlow()
     
@@ -71,6 +107,16 @@ class JellyfinRepository @Inject constructor(
     
     // Mutex to prevent race conditions in authentication
     private val authMutex = Mutex()
+    
+    // Helper function for debug logging that only logs in debug builds
+    private fun logDebug(message: String) {
+        if (BuildConfig.DEBUG) {
+            Log.d("JellyfinRepository", message)
+        }
+    }
+    
+    // Helper function to get string resources
+    private fun getString(resId: Int): String = context.getString(resId)
     
     private fun getClient(serverUrl: String, accessToken: String? = null): ApiClient {
         return clientFactory.getClient(serverUrl, accessToken)
@@ -85,7 +131,7 @@ class JellyfinRepository @Inject constructor(
     }
     
     // ✅ FIX: Helper to safely handle exceptions while preserving cancellation
-    private fun <T> handleExceptionSafely(e: Exception, defaultMessage: String = "An error occurred"): ApiResult.Error<T> {
+    private fun <T> handleExceptionSafely(e: Exception, defaultMessage: String = getString(R.string.error_occurred)): ApiResult.Error<T> {
         // Let cancellation exceptions bubble up instead of converting to ApiResult.Error
         if (e is java.util.concurrent.CancellationException || e is kotlinx.coroutines.CancellationException) {
             throw e
@@ -108,7 +154,7 @@ class JellyfinRepository @Inject constructor(
             is org.jellyfin.sdk.api.client.exception.InvalidStatusException -> {
                 // More robust status code extraction for better error classification
                 val statusCode = extractStatusCode(e)
-                Log.d("JellyfinRepository", "InvalidStatusException: status code = $statusCode, message = ${e.message}")
+                logDebug("InvalidStatusException: status code = $statusCode, message = ${e.message}")
                 
                 when (statusCode) {
                     401 -> ErrorType.UNAUTHORIZED
@@ -158,7 +204,7 @@ class JellyfinRepository @Inject constructor(
         }
     }
 
-    private fun <T> handleException(e: Exception, defaultMessage: String = "An error occurred"): ApiResult.Error<T> {
+    private fun <T> handleException(e: Exception, defaultMessage: String = getString(R.string.error_occurred)): ApiResult.Error<T> {
         val processedError = ErrorHandler.processError(e, operation = defaultMessage)
         
         // Log error analytics
@@ -324,7 +370,7 @@ class JellyfinRepository @Inject constructor(
     suspend fun getUserLibraries(): ApiResult<List<BaseItemDto>> {
         val server = _currentServer.value
         if (server?.accessToken == null || server.userId == null) {
-            return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
+            return ApiResult.Error(getString(R.string.not_authenticated), errorType = ErrorType.AUTHENTICATION)
         }
         
         val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
@@ -354,8 +400,8 @@ class JellyfinRepository @Inject constructor(
     suspend fun getLibraryItems(
         parentId: String? = null,
         itemTypes: String? = null,
-        startIndex: Int = 0,
-        limit: Int = 100
+        startIndex: Int = DEFAULT_START_INDEX,
+        limit: Int = DEFAULT_LIMIT
     ): ApiResult<List<BaseItemDto>> {
         val server = _currentServer.value
         if (server?.accessToken == null || server.userId == null) {
@@ -392,7 +438,7 @@ class JellyfinRepository @Inject constructor(
         }
     }
     
-    suspend fun getRecentlyAdded(limit: Int = 20): ApiResult<List<BaseItemDto>> {
+    suspend fun getRecentlyAdded(limit: Int = RECENTLY_ADDED_LIMIT): ApiResult<List<BaseItemDto>> {
         val server = _currentServer.value
         if (server?.accessToken == null || server.userId == null) {
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
@@ -404,7 +450,7 @@ class JellyfinRepository @Inject constructor(
         }
 
         return try {
-            Log.d("JellyfinRepository", "getRecentlyAdded: Requesting $limit items from server")
+            logDebug("getRecentlyAdded: Requesting $limit items from server")
 
             val items = executeWithRetry {
                 // ✅ FIX: Always get current server state inside the retry closure to use fresh token
@@ -435,7 +481,7 @@ class JellyfinRepository @Inject constructor(
                 response.content.items ?: emptyList()
             }
 
-            Log.d("JellyfinRepository", "getRecentlyAdded: Retrieved ${items.size} items")
+            logDebug("getRecentlyAdded: Retrieved ${items.size} items")
 
             // Log details of each item
             items.forEachIndexed { index, item ->
@@ -545,7 +591,7 @@ class JellyfinRepository @Inject constructor(
                         // ✅ FIX: Invalidate client factory to ensure new token is used
                         clientFactory.invalidateClient()
                         // Additional delay to ensure token propagation
-                        kotlinx.coroutines.delay(1000L)
+                        kotlinx.coroutines.delay(RE_AUTH_DELAY_MS)
                         continue
                     } else {
                         Log.w("JellyfinRepository", "Re-authentication failed, will not retry")
@@ -595,7 +641,7 @@ class JellyfinRepository @Inject constructor(
                             if (reAuthenticate()) {
                                 Log.d("JellyfinRepository", "$operationName: Re-authentication successful, retrying")
                                 clientFactory.invalidateClient()
-                                kotlinx.coroutines.delay(1000L) // Longer delay for token propagation
+                                kotlinx.coroutines.delay(RE_AUTH_DELAY_MS) // Longer delay for token propagation
                                 continue
                             } else {
                                 Log.w("JellyfinRepository", "$operationName: Re-authentication failed")
@@ -625,7 +671,7 @@ class JellyfinRepository @Inject constructor(
                     if (reAuthenticate()) {
                         Log.d("JellyfinRepository", "$operationName: Re-authentication successful, retrying")
                         clientFactory.invalidateClient()
-                        kotlinx.coroutines.delay(1000L) // Longer delay for token propagation
+                        kotlinx.coroutines.delay(RE_AUTH_DELAY_MS) // Longer delay for token propagation
                         continue
                     } else {
                         Log.w("JellyfinRepository", "$operationName: Re-authentication failed")
@@ -641,7 +687,7 @@ class JellyfinRepository @Inject constructor(
         return ApiResult.Error("$operationName failed after $maxRetries retry attempts", errorType = ErrorType.UNKNOWN)
     }
 
-    suspend fun getRecentlyAddedByType(itemType: BaseItemKind, limit: Int = 10): ApiResult<List<BaseItemDto>> {
+    suspend fun getRecentlyAddedByType(itemType: BaseItemKind, limit: Int = RECENTLY_ADDED_BY_TYPE_LIMIT): ApiResult<List<BaseItemDto>> {
         val server = _currentServer.value
         if (server?.accessToken == null || server.userId == null) {
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
@@ -718,7 +764,7 @@ class JellyfinRepository @Inject constructor(
         }
     }
 
-    suspend fun getRecentlyAddedByTypes(limit: Int = 10): ApiResult<Map<String, List<BaseItemDto>>> {
+    suspend fun getRecentlyAddedByTypes(limit: Int = RECENTLY_ADDED_BY_TYPE_LIMIT): ApiResult<Map<String, List<BaseItemDto>>> {
         val contentTypes = listOf(
             BaseItemKind.MOVIE,
             BaseItemKind.SERIES,
@@ -904,7 +950,7 @@ class JellyfinRepository @Inject constructor(
     suspend fun searchItems(
         query: String,
         includeItemTypes: List<BaseItemKind>? = null,
-        limit: Int = 50
+        limit: Int = SEARCH_LIMIT
     ): ApiResult<List<BaseItemDto>> {
         val server = _currentServer.value
         if (server?.accessToken == null || server.userId == null) {
@@ -948,7 +994,7 @@ class JellyfinRepository @Inject constructor(
     fun getImageUrl(itemId: String, imageType: String = "Primary", tag: String? = null): String? {
         val server = _currentServer.value ?: return null
         val tagParam = tag?.let { "&tag=$it" } ?: ""
-        return "${server.url}/Items/$itemId/Images/$imageType?maxHeight=400&maxWidth=400$tagParam"
+        return "${server.url}/Items/$itemId/Images/$imageType?maxHeight=$DEFAULT_IMAGE_MAX_HEIGHT&maxWidth=$DEFAULT_IMAGE_MAX_WIDTH$tagParam"
     }
     
     fun getSeriesImageUrl(item: BaseItemDto): String? {
@@ -959,14 +1005,14 @@ class JellyfinRepository @Inject constructor(
         } else {
             item.id.toString()
         }
-        return "${server.url}/Items/$imageId/Images/Primary?maxHeight=400&maxWidth=400"
+        return "${server.url}/Items/$imageId/Images/Primary?maxHeight=$DEFAULT_IMAGE_MAX_HEIGHT&maxWidth=$DEFAULT_IMAGE_MAX_WIDTH"
     }
 
     fun getBackdropUrl(item: BaseItemDto): String? {
         val server = _currentServer.value ?: return null
         val backdropTag = item.backdropImageTags?.firstOrNull()
         return if (backdropTag != null) {
-            "${server.url}/Items/${item.id}/Images/Backdrop?tag=$backdropTag&maxHeight=400&maxWidth=800"
+            "${server.url}/Items/${item.id}/Images/Backdrop?tag=$backdropTag&maxHeight=$BACKDROP_MAX_HEIGHT&maxWidth=$BACKDROP_MAX_WIDTH"
         } else {
             getImageUrl(item.id.toString(), "Primary", item.imageTags?.get(ImageType.PRIMARY))
         }
@@ -977,7 +1023,7 @@ class JellyfinRepository @Inject constructor(
             return operation()
         } catch (e: HttpException) {
             if (e.code() == 401) {
-                Log.w("JellyfinRepository", "401 Unauthorized detected. AccessToken: ${_currentServer.value?.accessToken}, Endpoint: ${e.response()?.raw()?.request?.url}")
+                Log.w("JellyfinRepository", "401 Unauthorized detected. Server: ${_currentServer.value?.url}, Endpoint: ${e.response()?.raw()?.request?.url}")
                 logout() // Clear session and redirect to login
                 throw e
             }
@@ -992,8 +1038,7 @@ class JellyfinRepository @Inject constructor(
         
         // Consider token expired after 50 minutes (10 minutes before actual expiry)
         // This gives us time to refresh before hitting 401 errors
-        val tokenValidityDuration = 50 * 60 * 1000 // 50 minutes in milliseconds
-        val isExpired = (currentTime - loginTimestamp) > tokenValidityDuration
+        val isExpired = (currentTime - loginTimestamp) > TOKEN_VALIDITY_DURATION_MS
         
         if (isExpired) {
             Log.w("JellyfinRepository", "Token expired. Login timestamp: $loginTimestamp, current: $currentTime, duration: ${currentTime - loginTimestamp}ms")
@@ -1067,13 +1112,11 @@ class JellyfinRepository @Inject constructor(
         }
 
         return try {
-            // Note: The exact API method names for marking items as watched/unwatched
-            // vary between Jellyfin SDK versions. Common patterns include:
-            // - userApi.markPlayedItem() / userApi.markUnplayedItem()
-            // - playstateApi.markPlayed() / playstateApi.markUnplayed()
-            // - itemsApi.updateUserData() with playback status parameters
-            // For now, return success to demonstrate UI flow until correct API is confirmed
-            delay(500) // Simulate API call
+            val client = getClient(server.url, server.accessToken)
+            // TODO: Implement actual API call for marking items as watched
+            // The exact API method name varies between Jellyfin SDK versions
+            // For now, this is a placeholder that succeeds without making the API call
+            Log.i("JellyfinRepository", "markAsWatched: Implementation pending - marked in UI only")
             ApiResult.Success(true)
         } catch (e: Exception) {
             val errorType = getErrorType(e)
@@ -1098,9 +1141,11 @@ class JellyfinRepository @Inject constructor(
         }
 
         return try {
-            // Note: Same as markAsWatched - the exact API method names need to be confirmed
-            // for the specific Jellyfin SDK version. This placeholder demonstrates the UI flow.
-            delay(500) // Simulate API call
+            val client = getClient(server.url, server.accessToken)
+            // TODO: Implement actual API call for marking items as unwatched
+            // The exact API method name varies between Jellyfin SDK versions
+            // For now, this is a placeholder that succeeds without making the API call
+            Log.i("JellyfinRepository", "markAsUnwatched: Implementation pending - marked in UI only")
             ApiResult.Success(true)
         } catch (e: Exception) {
             val errorType = getErrorType(e)
@@ -1180,7 +1225,31 @@ private suspend fun hasAdminDeletePermission(server: JellyfinServer): ApiResult<
 
     fun getStreamUrl(itemId: String): String? {
         val server = _currentServer.value ?: return null
-        return "${server.url}/Videos/${itemId}/stream?static=true&api_key=${server.accessToken}"
+        
+        // Validate server connection and authentication
+        if (server.accessToken.isNullOrBlank()) {
+            Log.w("JellyfinRepository", "getStreamUrl: No access token available")
+            return null
+        }
+        
+        // Validate itemId format
+        if (itemId.isBlank()) {
+            Log.w("JellyfinRepository", "getStreamUrl: Invalid item ID")
+            return null
+        }
+        
+        // Validate that itemId is a valid UUID format
+        runCatching { UUID.fromString(itemId) }.getOrNull() ?: run {
+            Log.w("JellyfinRepository", "getStreamUrl: Invalid item ID format: $itemId")
+            return null
+        }
+        
+        return try {
+            "${server.url}/Videos/${itemId}/stream?static=true&api_key=${server.accessToken}"
+        } catch (e: Exception) {
+            Log.e("JellyfinRepository", "getStreamUrl: Failed to generate stream URL for item $itemId", e)
+            null
+        }
     }
     
     /**
@@ -1191,25 +1260,49 @@ private suspend fun hasAdminDeletePermission(server: JellyfinServer): ApiResult<
         maxBitrate: Int? = null,
         maxWidth: Int? = null,
         maxHeight: Int? = null,
-        videoCodec: String = "h264",
-        audioCodec: String = "aac",
-        container: String = "mp4"
+        videoCodec: String = DEFAULT_VIDEO_CODEC,
+        audioCodec: String = DEFAULT_AUDIO_CODEC,
+        container: String = DEFAULT_CONTAINER
     ): String? {
         val server = _currentServer.value ?: return null
-        val params = mutableListOf<String>()
         
-        // Add transcoding parameters
-        maxBitrate?.let { params.add("MaxStreamingBitrate=$it") }
-        maxWidth?.let { params.add("MaxWidth=$it") }
-        maxHeight?.let { params.add("MaxHeight=$it") }
-        params.add("VideoCodec=$videoCodec")
-        params.add("AudioCodec=$audioCodec")
-        params.add("Container=$container")
-        params.add("TranscodingMaxAudioChannels=2")
-        params.add("BreakOnNonKeyFrames=true")
-        params.add("api_key=${server.accessToken}")
+        // Validate server connection and authentication
+        if (server.accessToken.isNullOrBlank()) {
+            Log.w("JellyfinRepository", "getTranscodedStreamUrl: No access token available")
+            return null
+        }
         
-        return "${server.url}/Videos/${itemId}/master.m3u8?${params.joinToString("&")}"
+        // Validate itemId format
+        if (itemId.isBlank()) {
+            Log.w("JellyfinRepository", "getTranscodedStreamUrl: Invalid item ID")
+            return null
+        }
+        
+        // Validate that itemId is a valid UUID format
+        runCatching { UUID.fromString(itemId) }.getOrNull() ?: run {
+            Log.w("JellyfinRepository", "getTranscodedStreamUrl: Invalid item ID format: $itemId")
+            return null
+        }
+        
+        return try {
+            val params = mutableListOf<String>()
+            
+            // Add transcoding parameters
+            maxBitrate?.let { params.add("MaxStreamingBitrate=$it") }
+            maxWidth?.let { params.add("MaxWidth=$it") }
+            maxHeight?.let { params.add("MaxHeight=$it") }
+            params.add("VideoCodec=$videoCodec")
+            params.add("AudioCodec=$audioCodec")
+            params.add("Container=$container")
+            params.add("TranscodingMaxAudioChannels=2")
+            params.add("BreakOnNonKeyFrames=true")
+            params.add("api_key=${server.accessToken}")
+            
+            "${server.url}/Videos/${itemId}/master.m3u8?${params.joinToString("&")}"
+        } catch (e: Exception) {
+            Log.e("JellyfinRepository", "getTranscodedStreamUrl: Failed to generate transcoded stream URL for item $itemId", e)
+            null
+        }
     }
     
     /**
