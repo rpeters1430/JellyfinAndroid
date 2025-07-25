@@ -159,4 +159,41 @@
     <string name="sort_last_played_desc">Recently Watched</string>
     <string name="sort_episode_count_desc">Most Episodes</string>
     <string name="sort_episode_count_asc">Fewest Episodes</string>
+    
+    <!-- Common States and Messages -->
+    <string name="loading">Loading…</string>
+    <string name="error_occurred">An error occurred</string>
+    <string name="not_authenticated">Not authenticated</string>
+    <string name="authentication_failed">Authentication failed</string>
+    <string name="invalid_user_id">Invalid user ID</string>
+    <string name="invalid_item_id">Invalid item ID</string>
+    <string name="invalid_library_id">Invalid library ID</string>
+    <string name="server_not_available">Server not available</string>
+    <string name="failed_to_connect">Failed to connect to server</string>
+    <string name="failed_to_load_items">Failed to load items</string>
+    <string name="failed_to_load_recently_added">Failed to load recently added items</string>
+    <string name="failed_to_load_library_items">Failed to load library items from library</string>
+    <string name="failed_to_load_favorites">Failed to load favorites</string>
+    <string name="failed_to_load_seasons">Failed to load seasons</string>
+    <string name="failed_to_load_episodes">Failed to load episodes</string>
+    <string name="failed_to_load_series_details">Failed to load series details</string>
+    <string name="failed_to_load_movie_details">Failed to load movie details</string>
+    <string name="failed_to_load_episode_details">Failed to load episode details</string>
+    <string name="search_failed">Search failed</string>
+    <string name="failed_to_toggle_favorite">Failed to toggle favorite</string>
+    <string name="failed_to_mark_watched">Failed to mark as watched</string>
+    <string name="failed_to_mark_unwatched">Failed to mark as unwatched</string>
+    <string name="failed_to_delete_item">Failed to delete item</string>
+    <string name="admin_permissions_required">Administrator permissions required</string>
+    
+    <!-- Quick Connect -->
+    <string name="failed_to_initiate_quick_connect">Failed to initiate Quick Connect</string>
+    <string name="failed_to_get_quick_connect_state">Failed to get Quick Connect state</string>
+    <string name="quick_connect_authentication_failed">Quick Connect authentication failed</string>
+    
+    <!-- Logging and Debug Messages -->
+    <string name="no_access_token_available">No access token available</string>
+    <string name="invalid_item_id_format">Invalid item ID format</string>
+    <string name="failed_to_generate_stream_url">Failed to generate stream URL</string>
+    <string name="failed_to_generate_transcoded_stream_url">Failed to generate transcoded stream URL</string>
 </resources>
