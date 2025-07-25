@@ -68,7 +68,7 @@ import coil.request.ImageRequest
 import com.example.jellyfinandroid.ui.components.ShimmerBox
 import com.example.jellyfinandroid.ui.theme.SeriesBlue
 import org.jellyfin.sdk.model.api.BaseItemDto
-import java.text.SimpleDateFormat
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
@@ -376,8 +376,8 @@ private fun EpisodeInfoCard(
                     }
                     
                     episode.premiereDate?.let { date ->
-                        val formatter = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
-                        InfoRow(label = "Air Date", value = formatter.format(date))
+                        val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.getDefault())
+                        InfoRow(label = "Air Date", value = date.format(formatter))
                     }
                     
                     episode.productionYear?.let { year ->
@@ -399,8 +399,8 @@ private fun EpisodeInfoCard(
                         }
                         
                         userData.lastPlayedDate?.let { date ->
-                            val formatter = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
-                            InfoRow(label = "Last Played", value = formatter.format(date))
+                            val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.getDefault())
+                            InfoRow(label = "Last Played", value = date.format(formatter))
                         }
                     }
                 }
