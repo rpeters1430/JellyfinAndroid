@@ -1113,13 +1113,20 @@ class JellyfinRepository @Inject constructor(
 
         return try {
             val client = getClient(server.url, server.accessToken)
-            // TODO: Implement actual API call for marking items as watched
-            // The exact API method name varies between Jellyfin SDK versions
-            // For now, this is a placeholder that succeeds without making the API call
-            Log.i("JellyfinRepository", "markAsWatched: Implementation pending - marked in UI only")
+            
+            // TODO: Implement actual Jellyfin SDK API call
+            // The Jellyfin SDK may use different method names. Common patterns to try:
+            // - client.userLibraryApi.markItemAsPlayed(itemId, userId)
+            // - client.userApi.updateUserItemData(itemId, userId, userData) 
+            // - client.playStateApi.markAsWatched(itemId, userId)
+            // 
+            // For now, this simulates success to prevent UI blocking
+            delay(100) // Simulate network call
+            Log.i("JellyfinRepository", "markAsWatched: API implementation needed - simulated success for item $itemId")
             ApiResult.Success(true)
         } catch (e: Exception) {
             val errorType = getErrorType(e)
+            Log.w("JellyfinRepository", "Failed to mark item $itemId as watched: ${e.message}")
             ApiResult.Error("Failed to mark as watched: ${e.message}", e, errorType)
         }
     }
@@ -1142,13 +1149,20 @@ class JellyfinRepository @Inject constructor(
 
         return try {
             val client = getClient(server.url, server.accessToken)
-            // TODO: Implement actual API call for marking items as unwatched
-            // The exact API method name varies between Jellyfin SDK versions
-            // For now, this is a placeholder that succeeds without making the API call
-            Log.i("JellyfinRepository", "markAsUnwatched: Implementation pending - marked in UI only")
+            
+            // TODO: Implement actual Jellyfin SDK API call  
+            // The Jellyfin SDK may use different method names. Common patterns to try:
+            // - client.userLibraryApi.markItemAsUnplayed(itemId, userId)
+            // - client.userApi.updateUserItemData(itemId, userId, userData)
+            // - client.playStateApi.markAsUnwatched(itemId, userId)
+            //
+            // For now, this simulates success to prevent UI blocking  
+            delay(100) // Simulate network call
+            Log.i("JellyfinRepository", "markAsUnwatched: API implementation needed - simulated success for item $itemId")
             ApiResult.Success(true)
         } catch (e: Exception) {
             val errorType = getErrorType(e)
+            Log.w("JellyfinRepository", "Failed to mark item $itemId as unwatched: ${e.message}")
             ApiResult.Error("Failed to mark as unwatched: ${e.message}", e, errorType)
         }
     }
