@@ -45,9 +45,7 @@ class WatchStatusRepositoryTest {
             userId = UUID.randomUUID().toString(),
             accessToken = "token"
         )
-        val field = JellyfinRepository::class.java.getDeclaredField("_currentServer")
-        field.isAccessible = true
-        (field.get(repository) as MutableStateFlow<JellyfinServer?>).value = server
+        repository.setCurrentServerForTest(server)
     }
 
     @Test
