@@ -28,6 +28,16 @@ ProGuard_Rules_Implementation.md
 *.swp
 *.swo
 
+# Exclude specific .idea files that might get created
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/misc.xml
+.idea/vcs.xml
+
 # Visual Studio Code
 .vscode/
 *.code-workspace
