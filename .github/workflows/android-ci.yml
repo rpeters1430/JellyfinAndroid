@@ -37,7 +37,12 @@ jobs:
       run: chmod +x gradlew
 
     - name: Configure SDK path
-      run: echo "sdk.dir=$ANDROID_HOME" > local.properties
+      run: |
+        if [ -z "$ANDROID_HOME" ]; then
+          echo "Error: ANDROID_HOME is not set."
+          exit 1
+        fi
+        echo "sdk.dir=$ANDROID_HOME" > local.properties
 
     - name: Build with Gradle
       run: ./gradlew assembleDebug --stacktrace
