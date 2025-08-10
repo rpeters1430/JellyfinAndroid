@@ -278,7 +278,7 @@ fun MovieDetailScreen(
                                 overflow = TextOverflow.Ellipsis,
                             )
 
-                            // Year and Runtime
+                            // Year, Release Date and Runtime
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -315,6 +315,22 @@ fun MovieDetailScreen(
                                         )
                                     }
                                 }
+                            }
+
+                            // Release Date (if different from production year)
+                            movie.premiereDate?.let { premiereDate ->
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                ) {
+                                    Text(
+                                        text = "Released: ${premiereDate.toString().substring(0, 10)}", // Format as YYYY-MM-DD
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
                             }
 
                             // Genres
@@ -439,23 +455,80 @@ fun MovieDetailScreen(
 
             // Cast and Crew (if available)
             movie.people?.takeIf { it.isNotEmpty() }?.let { people ->
-                item {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Text(
-                            text = "Cast & Crew",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.SemiBold,
-                        )
+                // Separate cast and crew
+                val cast = people.filter { it.type?.name == "Actor" }
+                val crew = people.filter { 
+                    val typeName = it.type?.name
+                    typeName in listOf("Director", "Producer", "Writer", "Executive Producer")
+                }
 
-                        LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            contentPadding = PaddingValues(horizontal = 4.dp),
+                // Cast section
+                if (cast.isNotEmpty()) {
+                    item {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            items(people.take(10)) { person ->
-                                PersonCard(person = person)
+                            Text(
+                                text = "Cast",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp),
+                            ) {
+                                items(cast.take(10)) { person ->
+                                    PersonCard(
+                                        person = person,
+                                        getImageUrl = { id, tag -> 
+                                            // Create a temporary BaseItemDto for the person to use with existing getImageUrl
+                                            val personItem = BaseItemDto(
+                                                id = id, 
+                                                type = org.jellyfin.sdk.model.api.BaseItemKind.PERSON,
+                                                imageTags = tag?.let { mapOf(org.jellyfin.sdk.model.api.ImageType.PRIMARY to it) }
+                                            )
+                                            getImageUrl(personItem)
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Crew section (Directors, Producers, etc.)
+                if (crew.isNotEmpty()) {
+                    item {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Text(
+                                text = "Crew",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp),
+                            ) {
+                                items(crew.take(8)) { person ->
+                                    PersonCard(
+                                        person = person,
+                                        getImageUrl = { id, tag -> 
+                                            // Create a temporary BaseItemDto for the person to use with existing getImageUrl
+                                            val personItem = BaseItemDto(
+                                                id = id, 
+                                                type = org.jellyfin.sdk.model.api.BaseItemKind.PERSON,
+                                                imageTags = tag?.let { mapOf(org.jellyfin.sdk.model.api.ImageType.PRIMARY to it) }
+                                            )
+                                            getImageUrl(personItem)
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
@@ -501,8 +574,9 @@ fun MovieDetailScreen(
 @Composable
 private fun PersonCard(
     person: org.jellyfin.sdk.model.api.BaseItemPerson,
+    getImageUrl: (java.util.UUID, String?) -> String?,
     modifier: Modifier = Modifier,
-) {
+    ) {
     Card(
         modifier = modifier.width(100.dp),
         colors = CardDefaults.cardColors(
@@ -515,9 +589,9 @@ private fun PersonCard(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             // Actor photo or initials
-            if (person.imageTag != null && person.id != null) {
+            if (person.primaryImageTag != null) {
                 AsyncImage(
-                    model = getImageUrl(org.jellyfin.sdk.model.api.BaseItemDto().apply { id = person.id }),
+                    model = getImageUrl(person.id, person.primaryImageTag),
                     contentDescription = person.name,
                     modifier = Modifier
                         .size(60.dp)
@@ -542,7 +616,7 @@ private fun PersonCard(
                     )
                 }
             }
-
+            // ...existing code...
             Text(
                 text = person.name ?: "Unknown",
                 style = MaterialTheme.typography.bodySmall,
@@ -552,9 +626,16 @@ private fun PersonCard(
                 textAlign = TextAlign.Center,
             )
 
-            person.role?.let { role ->
+            // Show role for actors or type for crew
+            val displayText = when {
+                !person.role.isNullOrBlank() -> person.role
+                person.type?.name?.isNotBlank() == true -> person.type.name
+                else -> null
+            }
+            
+            displayText?.let { text ->
                 Text(
-                    text = role,
+                    text = text,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,

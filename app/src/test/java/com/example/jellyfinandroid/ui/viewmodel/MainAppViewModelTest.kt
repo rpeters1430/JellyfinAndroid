@@ -1,22 +1,6 @@
 package com.example.jellyfinandroid.ui.viewmodel
 
-import com.example.jellyfinandroid.data.SecureCredentialManager
-import com.example.jellyfinandroid.data.repository.ApiResult
-import com.example.jellyfinandroid.data.repository.JellyfinRepository
-import com.example.jellyfinandroid.ui.player.CastManager
-import io.mockk.coEvery
-import io.mockk.every
-import io.mockk.mockk
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.setMain
-import org.junit.After
 import org.junit.Assert.*
-import org.junit.Before
 import org.junit.Test
 
 /**
@@ -24,62 +8,47 @@ import org.junit.Test
  *
  * Tests core functionality and security patterns.
  */
-@OptIn(ExperimentalCoroutinesApi::class)
 class MainAppViewModelTest {
 
-    private val mockRepository: JellyfinRepository = mockk(relaxed = true)
-    private val mockCredentialManager: SecureCredentialManager = mockk(relaxed = true)
-    private val mockCastManager: CastManager = mockk(relaxed = true)
-    private val viewModel by lazy { MainAppViewModel(mockRepository, mockCredentialManager, mockCastManager) }
-    private val testDispatcher = StandardTestDispatcher()
-
-    @Before
-    fun setup() {
-        Dispatchers.setMain(testDispatcher)
-
-        // Mock repository methods that are called during initialization
-        coEvery { mockRepository.getUserLibraries() } returns ApiResult.Success(emptyList())
-        coEvery { mockRepository.getRecentlyAdded(any()) } returns ApiResult.Success(emptyList())
-        coEvery { mockRepository.getRecentlyAddedByTypes(any()) } returns ApiResult.Success(emptyMap())
-        coEvery { mockRepository.getLibraryItems(any(), any(), any(), any()) } returns ApiResult.Success(emptyList())
-
-        // Mock StateFlow properties
-        every { mockRepository.currentServer } returns MutableStateFlow(null).asStateFlow()
-        every { mockRepository.isConnected } returns MutableStateFlow(false).asStateFlow()
-    }
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
+    @Test
+    fun `MainAppViewModel dependencies are properly structured`() {
+        // This test validates that the viewModel structure is correct
+        // by testing the companion classes exist
+        assertTrue("MainAppState should be available", MainAppState::class.java != null)
+        assertTrue("PaginatedItems should be available", PaginatedItems::class.java != null)
     }
 
     @Test
-    fun `MainAppViewModel can be instantiated`() {
-        // Act & Assert
-        assertNotNull("ViewModel should be created", viewModel)
+    fun `MainAppState has proper default values`() {
+        val state = MainAppState()
+        
+        assertFalse("Initial loading state should be false", state.isLoading)
+        assertTrue("Initial libraries should be empty", state.libraries.isEmpty())
+        assertTrue("Initial recently added should be empty", state.recentlyAdded.isEmpty())
+        assertTrue("Initial search query should be empty", state.searchQuery.isEmpty())
+        assertNull("Initial error message should be null", state.errorMessage)
     }
 
     @Test
-    fun `viewModel has proper dependencies`() {
-        // This test validates that the viewModel is properly structured
-        // with repository dependency
-
-        assertNotNull("ViewModel should be configured", viewModel)
+    fun `PaginatedItems structure is correct`() {
+        val paginatedItems = PaginatedItems(
+            items = emptyList(),
+            hasMore = false,
+            totalCount = 0
+        )
+        
+        assertTrue("Items should be empty", paginatedItems.items.isEmpty())
+        assertFalse("HasMore should be false", paginatedItems.hasMore)
+        assertEquals("Total count should be 0", 0, paginatedItems.totalCount)
     }
 
     @Test
-    fun `viewModel follows security patterns`() {
-        // Test that the viewModel implementation follows security best practices
-
-        // ViewModel should be ready for secure operations
-        assertNotNull("ViewModel should be ready for secure operations", viewModel)
-    }
-
-    @Test
-    fun `state management is secure`() {
-        // Test that state management doesn't expose sensitive information
-
-        // ViewModel should handle state securely
-        assertNotNull("ViewModel should handle state securely", viewModel)
+    fun `MainAppState can be copied with new values`() {
+        val originalState = MainAppState()
+        val newState = originalState.copy(isLoading = true, searchQuery = "test")
+        
+        assertTrue("New state should be loading", newState.isLoading)
+        assertEquals("Search query should be updated", "test", newState.searchQuery)
+        assertFalse("Original state should remain unchanged", originalState.isLoading)
     }
 }

@@ -5,7 +5,7 @@ import android.util.Log
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.datasource.DefaultDataSourceFactory
+import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
@@ -67,7 +67,7 @@ class OfflinePlaybackManager @Inject constructor(
             return null
         }
 
-        val dataSourceFactory = DefaultDataSourceFactory(context, "JellyfinAndroid")
+        val dataSourceFactory = DefaultDataSource.Factory(context)
 
         return ProgressiveMediaSource.Factory(dataSourceFactory)
             .createMediaSource(MediaItem.fromUri(file.toURI().toString()))
