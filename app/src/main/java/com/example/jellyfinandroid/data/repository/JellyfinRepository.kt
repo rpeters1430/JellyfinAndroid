@@ -64,6 +64,8 @@ class JellyfinRepository @Inject constructor(
     private val clientFactory: JellyfinClientFactory,
     private val secureCredentialManager: SecureCredentialManager,
     @ApplicationContext private val context: Context,
+    private val authRepository: JellyfinAuthRepository,
+    private val streamRepository: JellyfinStreamRepository,
 ) {
     companion object {
         // Token validity constants
@@ -97,11 +99,13 @@ class JellyfinRepository @Inject constructor(
         private const val DEFAULT_CONTAINER = "mp4"
     }
 
+    // ===== STATE FLOWS - Delegated to JellyfinAuthRepository =====
+    val currentServer: Flow<JellyfinServer?> = authRepository.currentServer
+    val isConnected: Flow<Boolean> = authRepository.isConnected
+    
+    // Internal state flows for backward compatibility in remaining methods
     private val _currentServer = MutableStateFlow<JellyfinServer?>(null)
-    val currentServer: Flow<JellyfinServer?> = _currentServer.asStateFlow()
-
     private val _isConnected = MutableStateFlow(false)
-    val isConnected: Flow<Boolean> = _isConnected.asStateFlow()
 
     // Mutex to prevent race conditions in authentication
     private val authMutex = Mutex()
@@ -227,60 +231,24 @@ class JellyfinRepository @Inject constructor(
         )
     }
 
-    suspend fun testServerConnection(serverUrl: String): ApiResult<PublicSystemInfo> {
-        return try {
-            val client = getClient(serverUrl)
-            val response = client.systemApi.getPublicSystemInfo()
-            ApiResult.Success(response.content)
-        } catch (e: Exception) {
-            handleException(e, "Failed to connect to server")
-        }
-    }
+    // ===== AUTHENTICATION METHODS - Delegated to JellyfinAuthRepository =====
+    
+    suspend fun testServerConnection(serverUrl: String): ApiResult<PublicSystemInfo> =
+        authRepository.testServerConnection(serverUrl)
 
     suspend fun authenticateUser(
         serverUrl: String,
         username: String,
         password: String,
-    ): ApiResult<AuthenticationResult> = authMutex.withLock {
-        return try {
-            val client = getClient(serverUrl)
-            val request = AuthenticateUserByName(
-                username = username,
-                pw = password,
-            )
-            val response = client.userApi.authenticateUserByName(request)
-            val authResult = response.content
-
-            // Fetch public system info to get server name and version
-            val systemInfo = try {
-                getClient(serverUrl, authResult.accessToken)
-                    .systemApi.getPublicSystemInfo().content
-            } catch (e: Exception) {
-                Log.e("JellyfinRepository", "Failed to fetch public system info: ${e.message}", e)
-                PublicSystemInfo(serverName = "Unknown Server", version = "Unknown Version")
-            }
-
-            // Update current server state with real name and version
-            val server = JellyfinServer(
-                id = authResult.serverId.toString(),
-                name = systemInfo.serverName ?: "Unknown Server",
-                url = serverUrl.trimEnd('/'),
-                isConnected = true,
-                version = systemInfo.version,
-                userId = authResult.user?.id.toString(),
-                username = authResult.user?.name,
-                accessToken = authResult.accessToken,
-                loginTimestamp = System.currentTimeMillis(),
-            )
-
-            _currentServer.value = server
-            _isConnected.value = true
-
-            ApiResult.Success(authResult)
-        } catch (e: Exception) {
-            val errorType = getErrorType(e)
-            ApiResult.Error("Authentication failed: ${e.message}", e, errorType)
-        }
+    ): ApiResult<AuthenticationResult> {
+        // Delegate to auth repository and also update local state for backward compatibility
+        val result = authRepository.authenticateUser(serverUrl, username, password)
+        
+        // Sync local state with auth repository state for methods that still use local state
+        _currentServer.value = authRepository.getCurrentServer()
+        _isConnected.value = authRepository.isUserAuthenticated()
+        
+        return result
     }
 
     /**
@@ -370,10 +338,13 @@ class JellyfinRepository @Inject constructor(
         }
     }
 
+    // ===== LIBRARY METHODS - Simplified for better maintainability =====
+    
     suspend fun getUserLibraries(): ApiResult<List<BaseItemDto>> {
-        val server = _currentServer.value
+        // Simplified implementation - delegate complex auth logic to auth repository
+        val server = authRepository.getCurrentServer()
         if (server?.accessToken == null || server.userId == null) {
-            return ApiResult.Error(getString(R.string.not_authenticated), errorType = ErrorType.AUTHENTICATION)
+            return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
         }
 
         val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
@@ -381,22 +352,16 @@ class JellyfinRepository @Inject constructor(
             return ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
         }
 
-        // Proactively check and refresh token if needed
-        validateAndRefreshToken()
-
-        return executeWithAuthRetry("getUserLibraries") {
-            // ✅ FIX: Always get current server state inside the retry closure to use fresh token
-            val currentServer = _currentServer.value
-                ?: return@executeWithAuthRetry ApiResult.Error("Server not available", errorType = ErrorType.AUTHENTICATION)
-            val currentUserUuid = runCatching { UUID.fromString(currentServer.userId ?: "") }.getOrNull()
-                ?: return@executeWithAuthRetry ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
-
-            val client = getClient(currentServer.url, currentServer.accessToken)
+        return try {
+            val client = getClient(server.url, server.accessToken)
             val response = client.itemsApi.getItems(
-                userId = currentUserUuid,
+                userId = userUuid,
                 includeItemTypes = listOf(org.jellyfin.sdk.model.api.BaseItemKind.COLLECTION_FOLDER),
             )
             ApiResult.Success(response.content.items ?: emptyList())
+        } catch (e: Exception) {
+            val errorType = getErrorType(e)
+            ApiResult.Error("Failed to load libraries: ${e.message}", e, errorType)
         }
     }
 
@@ -567,13 +532,10 @@ class JellyfinRepository @Inject constructor(
     }
 
     suspend fun logout() {
-        if (BuildConfig.DEBUG) {
-            Log.d("JellyfinRepository", "Logging out user")
-        }
-        clientFactory.invalidateClient()
+        authRepository.logout()
+        // Clear local state for backward compatibility
         _currentServer.value = null
         _isConnected.value = false
-        secureCredentialManager.clearCredentials()
     }
 
     private suspend fun <T> executeWithRetry(
@@ -985,8 +947,8 @@ class JellyfinRepository @Inject constructor(
                     ItemFields.DATE_CREATED,
                     ItemFields.STUDIOS,
                     ItemFields.TAGS,
-                    ItemFields.CHAPTERS,
-                ),
+                    ItemFields.CHAPTERS
+                )
             )
             val item = response.content.items?.firstOrNull()
             if (item != null) {
@@ -1012,18 +974,20 @@ class JellyfinRepository @Inject constructor(
         return getItemDetailsById(episodeId, "episode")
     }
 
+    // ===== SEARCH METHODS - Simplified implementation =====
+    
     suspend fun searchItems(
         query: String,
         includeItemTypes: List<BaseItemKind>? = null,
         limit: Int = SEARCH_LIMIT,
     ): ApiResult<List<BaseItemDto>> {
-        val server = _currentServer.value
-        if (server?.accessToken == null || server.userId == null) {
-            return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
-        }
-
         if (query.isBlank()) {
             return ApiResult.Success(emptyList())
+        }
+
+        val server = authRepository.getCurrentServer()
+        if (server?.accessToken == null || server.userId == null) {
+            return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
         }
 
         val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
@@ -1056,32 +1020,16 @@ class JellyfinRepository @Inject constructor(
         }
     }
 
-    fun getImageUrl(itemId: String, imageType: String = "Primary", tag: String? = null): String? {
-        val server = _currentServer.value ?: return null
-        val tagParam = tag?.let { "&tag=$it" } ?: ""
-        return "${server.url}/Items/$itemId/Images/$imageType?maxHeight=$DEFAULT_IMAGE_MAX_HEIGHT&maxWidth=$DEFAULT_IMAGE_MAX_WIDTH$tagParam"
-    }
+    // ===== IMAGE METHODS - Delegated to JellyfinStreamRepository =====
+    
+    fun getImageUrl(itemId: String, imageType: String = "Primary", tag: String? = null): String? =
+        streamRepository.getImageUrl(itemId, imageType, tag)
 
-    fun getSeriesImageUrl(item: BaseItemDto): String? {
-        val server = _currentServer.value ?: return null
-        // For episodes, use the series poster if available
-        val imageId = if (item.type == BaseItemKind.EPISODE && item.seriesId != null) {
-            item.seriesId.toString()
-        } else {
-            item.id.toString()
-        }
-        return "${server.url}/Items/$imageId/Images/Primary?maxHeight=$DEFAULT_IMAGE_MAX_HEIGHT&maxWidth=$DEFAULT_IMAGE_MAX_WIDTH"
-    }
+    fun getSeriesImageUrl(item: BaseItemDto): String? =
+        streamRepository.getSeriesImageUrl(item)
 
-    fun getBackdropUrl(item: BaseItemDto): String? {
-        val server = _currentServer.value ?: return null
-        val backdropTag = item.backdropImageTags?.firstOrNull()
-        return if (backdropTag != null) {
-            "${server.url}/Items/${item.id}/Images/Backdrop?tag=$backdropTag&maxHeight=$BACKDROP_MAX_HEIGHT&maxWidth=$BACKDROP_MAX_WIDTH"
-        } else {
-            getImageUrl(item.id.toString(), "Primary", item.imageTags?.get(ImageType.PRIMARY))
-        }
-    }
+    fun getBackdropUrl(item: BaseItemDto): String? =
+        streamRepository.getBackdropUrl(item)
 
     private suspend fun <T> safeApiCall(operation: suspend () -> T): T {
         try {
@@ -1284,38 +1232,11 @@ class JellyfinRepository @Inject constructor(
         }
     }
 
-    fun getStreamUrl(itemId: String): String? {
-        val server = _currentServer.value ?: return null
+    // ===== STREAMING METHODS - Delegated to JellyfinStreamRepository =====
+    
+    fun getStreamUrl(itemId: String): String? =
+        streamRepository.getStreamUrl(itemId)
 
-        // Validate server connection and authentication
-        if (server.accessToken.isNullOrBlank()) {
-            Log.w("JellyfinRepository", "getStreamUrl: No access token available")
-            return null
-        }
-
-        // Validate itemId format
-        if (itemId.isBlank()) {
-            Log.w("JellyfinRepository", "getStreamUrl: Invalid item ID")
-            return null
-        }
-
-        // Validate that itemId is a valid UUID format
-        runCatching { UUID.fromString(itemId) }.getOrNull() ?: run {
-            Log.w("JellyfinRepository", "getStreamUrl: Invalid item ID format: $itemId")
-            return null
-        }
-
-        return try {
-            "${server.url}/Videos/$itemId/stream?static=true&api_key=${server.accessToken}"
-        } catch (e: Exception) {
-            Log.e("JellyfinRepository", "getStreamUrl: Failed to generate stream URL for item $itemId", e)
-            null
-        }
-    }
-
-    /**
-     * Gets a transcoded stream URL with specific quality parameters
-     */
     fun getTranscodedStreamUrl(
         itemId: String,
         maxBitrate: Int? = null,
@@ -1324,112 +1245,33 @@ class JellyfinRepository @Inject constructor(
         videoCodec: String = DEFAULT_VIDEO_CODEC,
         audioCodec: String = DEFAULT_AUDIO_CODEC,
         container: String = DEFAULT_CONTAINER,
-    ): String? {
-        val server = _currentServer.value ?: return null
+    ): String? =
+        streamRepository.getTranscodedStreamUrl(
+            itemId = itemId,
+            maxBitrate = maxBitrate,
+            maxWidth = maxWidth,
+            maxHeight = maxHeight,
+            videoCodec = videoCodec,
+            audioCodec = audioCodec,
+            container = container
+        )
 
-        // Validate server connection and authentication
-        if (server.accessToken.isNullOrBlank()) {
-            Log.w("JellyfinRepository", "getTranscodedStreamUrl: No access token available")
-            return null
-        }
+    fun getHlsStreamUrl(itemId: String): String? =
+        streamRepository.getHlsStreamUrl(itemId)
 
-        // Validate itemId format
-        if (itemId.isBlank()) {
-            Log.w("JellyfinRepository", "getTranscodedStreamUrl: Invalid item ID")
-            return null
-        }
+    fun getDashStreamUrl(itemId: String): String? =
+        streamRepository.getDashStreamUrl(itemId)
 
-        // Validate that itemId is a valid UUID format
-        runCatching { UUID.fromString(itemId) }.getOrNull() ?: run {
-            Log.w("JellyfinRepository", "getTranscodedStreamUrl: Invalid item ID format: $itemId")
-            return null
-        }
+    fun getCurrentServer(): JellyfinServer? = authRepository.getCurrentServer()
 
-        return try {
-            val params = mutableListOf<String>()
+    fun isUserAuthenticated(): Boolean = authRepository.isUserAuthenticated()
 
-            // Add transcoding parameters
-            maxBitrate?.let { params.add("MaxStreamingBitrate=$it") }
-            maxWidth?.let { params.add("MaxWidth=$it") }
-            maxHeight?.let { params.add("MaxHeight=$it") }
-            params.add("VideoCodec=$videoCodec")
-            params.add("AudioCodec=$audioCodec")
-            params.add("Container=$container")
-            params.add("TranscodingMaxAudioChannels=2")
-            params.add("BreakOnNonKeyFrames=true")
-            params.add("api_key=${server.accessToken}")
+    fun getDownloadUrl(itemId: String): String? =
+        streamRepository.getDownloadUrl(itemId)
 
-            "${server.url}/Videos/$itemId/master.m3u8?${params.joinToString("&")}"
-        } catch (e: Exception) {
-            Log.e("JellyfinRepository", "getTranscodedStreamUrl: Failed to generate transcoded stream URL for item $itemId", e)
-            null
-        }
-    }
+    fun getDirectStreamUrl(itemId: String, container: String? = null): String? =
+        streamRepository.getDirectStreamUrl(itemId, container)
 
-    /**
-     * Gets HLS (HTTP Live Streaming) URL for adaptive bitrate streaming
-     */
-    fun getHlsStreamUrl(itemId: String): String? {
-        val server = _currentServer.value ?: return null
-        return "${server.url}/Videos/$itemId/master.m3u8?" +
-            "VideoCodec=h264&" +
-            "AudioCodec=aac&" +
-            "MaxStreamingBitrate=140000000&" +
-            "PlaySessionId=${java.util.UUID.randomUUID()}&" +
-            "api_key=${server.accessToken}"
-    }
-
-    /**
-     * Gets DASH (Dynamic Adaptive Streaming over HTTP) URL
-     */
-    fun getDashStreamUrl(itemId: String): String? {
-        val server = _currentServer.value ?: return null
-        return "${server.url}/Videos/$itemId/stream.mpd?" +
-            "VideoCodec=h264&" +
-            "AudioCodec=aac&" +
-            "MaxStreamingBitrate=140000000&" +
-            "PlaySessionId=${java.util.UUID.randomUUID()}&" +
-            "api_key=${server.accessToken}"
-    }
-
-    fun getCurrentServer(): JellyfinServer? = _currentServer.value
-
-    fun isUserAuthenticated(): Boolean = _currentServer.value?.accessToken != null
-
-    /**
-     * Gets a download URL for a media item.
-     * This URL can be used with DownloadManager for offline storage.
-     *
-     * @param itemId The ID of the item to download
-     * @return The download URL, or null if not authenticated
-     */
-    fun getDownloadUrl(itemId: String): String? {
-        val server = _currentServer.value ?: return null
-        return "${server.url}/Items/$itemId/Download?api_key=${server.accessToken}"
-    }
-
-    /**
-     * Gets a direct stream URL optimized for downloads.
-     * This provides better file management than the regular stream URL.
-     *
-     * @param itemId The ID of the item to download
-     * @param container The preferred container format (optional)
-     * @return The direct stream URL, or null if not authenticated
-     */
-    fun getDirectStreamUrl(itemId: String, container: String? = null): String? {
-        val server = _currentServer.value ?: return null
-        val containerParam = container?.let { "&Container=$it" } ?: ""
-        return "${server.url}/Videos/$itemId/stream.${container ?: "mp4"}?static=true&api_key=${server.accessToken}$containerParam"
-    }
-
-    /**
-     * Gets the best stream URL for an item considering offline availability.
-     *
-     * @param itemId The ID of the item
-     * @param offlineManager The offline manager to check availability
-     * @param container Preferred container format
-     * @return The best available stream URL (local file or remote stream)
-     */
     fun getBestStreamUrl(itemId: String, offlineManager: OfflineManager, container: String? = null): String? {
         // This would require BaseItemDto to determine offline availability
         // For now, fall back to regular stream URL
