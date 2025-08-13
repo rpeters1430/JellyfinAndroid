@@ -61,6 +61,7 @@ import com.example.jellyfinandroid.ui.components.RecentlyAddedCard
 import com.example.jellyfinandroid.ui.components.ShimmerBox
 import com.example.jellyfinandroid.ui.theme.getContentTypeColor
 import com.example.jellyfinandroid.ui.viewmodel.MainAppState
+import com.example.jellyfinandroid.utils.getItemKey
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
@@ -378,7 +379,10 @@ private fun HomeLibrariesSection(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 16.dp),
         ) {
-            items(libraries) { library ->
+            items(
+                items = libraries,
+                key = { library -> library.getItemKey() }
+            ) { library ->
                 HomeLibraryCard(
                     library = library,
                     getImageUrl = getImageUrl,
@@ -420,7 +424,10 @@ private fun HomeRecentSection(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 16.dp),
         ) {
-            items(recentItems) { item ->
+            items(
+                items = recentItems,
+                key = { item -> item.getItemKey() }
+            ) { item ->
                 RecentlyAddedCard(
                     item = item,
                     getImageUrl = getImageUrl,
@@ -518,7 +525,10 @@ fun SearchResultsContent(
                 )
             }
 
-            items(items.chunked(2)) { rowItems ->
+            items(
+                items = items.chunked(2),
+                key = { rowItems -> rowItems.firstOrNull()?.getItemKey() ?: "" }
+            ) { rowItems ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
