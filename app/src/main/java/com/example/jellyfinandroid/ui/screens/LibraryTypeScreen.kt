@@ -52,6 +52,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.jellyfinandroid.ui.viewmodel.MainAppViewModel
+import com.example.jellyfinandroid.utils.getItemKey
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 /**
@@ -230,7 +231,10 @@ private fun GridContent(
         horizontalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ItemSpacing),
         modifier = Modifier.fillMaxSize(),
     ) {
-        items(items) { item ->
+        items(
+            items = items,
+            key = { item -> item.getItemKey() }
+        ) { item ->
             LibraryItemCard(
                 item = item,
                 libraryType = libraryType,
@@ -262,7 +266,10 @@ private fun ListContent(
         verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ItemSpacing),
         modifier = Modifier.fillMaxSize(),
     ) {
-        items(items) { item ->
+        items(
+            items = items,
+            key = { item -> item.getItemKey() }
+        ) { item ->
             LibraryItemCard(
                 item = item,
                 libraryType = libraryType,

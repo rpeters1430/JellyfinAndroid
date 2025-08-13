@@ -58,6 +58,7 @@ import com.example.jellyfinandroid.ui.theme.MovieRed
 import com.example.jellyfinandroid.ui.viewmodel.MainAppViewModel
 import com.example.jellyfinandroid.utils.getRatingAsDouble
 import com.example.jellyfinandroid.utils.hasHighRating
+import com.example.jellyfinandroid.utils.getItemKey
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 enum class MovieFilter(val displayNameResId: Int) {
@@ -394,7 +395,10 @@ private fun MoviesContent(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = modifier.fillMaxSize(),
             ) {
-                items(movies) { movie ->
+                items(
+                    items = movies,
+                    key = { movie -> movie.getItemKey() }
+                ) { movie ->
                     MediaCard(
                         item = movie,
                         getImageUrl = getImageUrl,
@@ -421,7 +425,10 @@ private fun MoviesContent(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = modifier.fillMaxSize(),
             ) {
-                items(movies) { movie ->
+                items(
+                    items = movies,
+                    key = { movie -> movie.getItemKey() }
+                ) { movie ->
                     MediaCard(
                         item = movie,
                         getImageUrl = getImageUrl,

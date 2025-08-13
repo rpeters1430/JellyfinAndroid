@@ -58,6 +58,7 @@ import com.example.jellyfinandroid.ui.theme.SeriesBlue
 import com.example.jellyfinandroid.ui.viewmodel.MainAppViewModel
 import com.example.jellyfinandroid.utils.getRatingAsDouble
 import com.example.jellyfinandroid.utils.hasHighRating
+import com.example.jellyfinandroid.utils.getItemKey
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 enum class TVShowFilter(val displayNameResId: Int) {
@@ -389,7 +390,10 @@ private fun TVShowsContent(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = modifier.fillMaxSize(),
             ) {
-                items(tvShows) { tvShow ->
+                items(
+                    items = tvShows,
+                    key = { tvShow -> tvShow.getItemKey() }
+                ) { tvShow ->
                     MediaCard(
                         item = tvShow,
                         getImageUrl = getImageUrl,
@@ -420,7 +424,10 @@ private fun TVShowsContent(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = modifier.fillMaxSize(),
             ) {
-                items(tvShows) { tvShow ->
+                items(
+                    items = tvShows,
+                    key = { tvShow -> tvShow.getItemKey() }
+                ) { tvShow ->
                     MediaCard(
                         item = tvShow,
                         getImageUrl = getImageUrl,
