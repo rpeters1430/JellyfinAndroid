@@ -18,11 +18,18 @@ This is a Jellyfin Android client application built with Kotlin and Jetpack Comp
 - **Authentication**: Token-based with secure credential storage using AndroidX Security
 
 ### Key Architectural Components
-- **Repository Layer**: `JellyfinRepository` handles all API interactions and caching
+- **Repository Layer**: Modular repository pattern with specialized repositories:
+  - `JellyfinRepository` - Main coordinator for API interactions
+  - `JellyfinAuthRepository` - Authentication and server management
+  - `JellyfinStreamRepository` - Media streaming and image URL generation
+  - `JellyfinMediaRepository` - Media content and metadata
+  - `JellyfinSearchRepository` - Search functionality
+  - `JellyfinUserRepository` - User management and preferences
 - **ViewModels**: Manage UI state and business logic (`MainAppViewModel`, `ServerConnectionViewModel`, etc.)
-- **Secure Storage**: `SecureCredentialManager` for encrypted credential persistence
-- **Client Factory**: `JellyfinClientFactory` manages API client instances and authentication
+- **Secure Storage**: `SecureCredentialManager` for encrypted credential persistence with biometric support
+- **Client Factory**: `JellyfinClientFactory` manages API client instances with token-based authentication
 - **Data Models**: `JellyfinServer`, `ApiResult<T>` for structured data handling
+- **Error Handling**: Centralized `ErrorHandler` with comprehensive error types and retry mechanisms
 
 ## Common Development Commands
 
@@ -74,6 +81,8 @@ This is a Jellyfin Android client application built with Kotlin and Jetpack Comp
 
 ### Navigation
 - `app/src/main/java/com/example/jellyfinandroid/ui/navigation/AppDestinations.kt` - App navigation destinations
+- `app/src/main/java/com/example/jellyfinandroid/ui/navigation/NavGraph.kt` - Navigation graph configuration
+- `app/src/main/java/com/example/jellyfinandroid/ui/navigation/NavRoutes.kt` - Route definitions and parameters
 
 ## API Integration Patterns
 
@@ -91,9 +100,12 @@ The app uses a comprehensive `ApiResult<T>` sealed class with specific error typ
 
 ### Media Loading Patterns
 - **Lazy Loading**: Paginated content with startIndex/limit parameters
-- **Image URLs**: Dynamic image URL generation with size constraints
-- **Content Types**: Supports Movies, TV Shows, Music, Books, etc.
-- **Recently Added**: Specialized endpoints for recent content by type
+- **Image URLs**: Dynamic image URL generation with size constraints and backdrop support
+- **Content Types**: Supports Movies, TV Shows, Episodes, Music, Books, Audiobooks, Videos
+- **Recently Added**: Specialized endpoints for recent content by type with configurable limits
+- **Streaming**: Multiple format support (direct, transcoded, HLS, DASH) with quality adaptation
+- **Offline Support**: Download management with `OfflineDownloadManager` and playback capabilities
+- **Cast Integration**: Google Cast framework support with Media3 for Chromecast
 
 ## UI Components and Patterns
 
@@ -122,36 +134,44 @@ The app uses a comprehensive `ApiResult<T>` sealed class with specific error typ
 - Implement retry mechanisms for network failures
 
 ### Testing Strategy
-- Unit tests for repository and business logic
-- Mock external dependencies (network, storage)
+- Unit tests for repository and business logic using JUnit 4 and MockK
+- Mock external dependencies (network, storage) with MockK framework
 - Focus on ViewModels and data transformation logic
+- Instrumentation tests for UI components using Espresso
+- Architecture Core Testing for LiveData and coroutines
+- Test files organized by feature in corresponding test directories
 
 ## Dependencies Management
 
 Dependencies are managed using Gradle version catalogs in `gradle/libs.versions.toml`. Key dependencies include:
 
 ### Core Android
-- Jetpack Compose BOM (2025.06.01)
-- Material 3 with adaptive navigation suite
+- Jetpack Compose BOM (2025.07.00)
+- Material 3 (1.5.0-alpha02) with adaptive navigation suite
 - AndroidX core libraries and lifecycle components
+- Media3 (1.8.0) for video playback with ExoPlayer
+- Coil (2.7.0) for image loading
 
 ### Jellyfin Integration
 - Jellyfin SDK (1.6.8) for API communication
 - Retrofit (3.0.0) with Kotlinx Serialization
 - OkHttp (5.1.0) with logging interceptor
+- SLF4J Android (1.7.36) for SDK logging
 
 ### Architecture
-- Hilt (2.56.2) for dependency injection
+- Hilt (2.57) for dependency injection
 - Kotlin Coroutines (1.10.2) for async operations
-- DataStore Preferences for settings storage
+- DataStore Preferences (1.1.7) for settings storage
+- AndroidX Security (1.1.0) for encrypted credential storage
+- AndroidX Biometric (1.1.0) for biometric authentication
 
 ## Development Notes
 
 ### Build Configuration
 - **Kotlin**: 2.2.0 with Compose compiler plugin
-- **Gradle**: 8.13 with Kotlin DSL
-- **Java**: Target/Source compatibility Version 11
-- **Android SDK**: Target 36, Min 31 (Android 12+)
+- **Gradle**: 8.12.0 with Kotlin DSL
+- **Java**: Target/Source compatibility Version 17
+- **Android SDK**: Target 36, Min 26 (Android 8.0+) for broader device compatibility
 
 ### Code Style
 - Follow Kotlin coding conventions from CONTRIBUTING.md
@@ -161,6 +181,21 @@ Dependencies are managed using Gradle version catalogs in `gradle/libs.versions.
 
 ### Security Considerations
 - Never log sensitive information (tokens, passwords)
-- Use SecureCredentialManager for credential storage
+- Use SecureCredentialManager for credential storage with AndroidKeyStore
 - Validate all user inputs and API responses
 - Implement proper SSL/TLS certificate validation
+- Use biometric authentication where available
+- Follow secure coding practices for network communication
+
+### Constants and Configuration
+- Application constants centralized in `AppConstants.kt` and `Constants.kt`
+- API retry limits, timeout configurations, and pagination constants
+- Image size constraints and streaming quality defaults
+- Token expiration handling with proactive refresh (50-minute validity)
+
+### Media Player Integration
+- ExoPlayer integration through Media3 framework
+- Expressive video controls with playback progress management
+- Cast support with `CastManager` and `CastOptionsProvider`
+- Track selection management for audio/subtitle streams
+- Dedicated `VideoPlayerActivity` for full-screen playback
