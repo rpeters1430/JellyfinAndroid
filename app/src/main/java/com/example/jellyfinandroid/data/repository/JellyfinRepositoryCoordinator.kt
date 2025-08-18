@@ -12,6 +12,7 @@ import javax.inject.Singleton
 class JellyfinRepositoryCoordinator @Inject constructor(
     val media: JellyfinMediaRepository,
     val user: JellyfinUserRepository,
+    val search: JellyfinSearchRepository,
     val stream: JellyfinStreamRepository,
     val auth: JellyfinAuthRepository,
 )

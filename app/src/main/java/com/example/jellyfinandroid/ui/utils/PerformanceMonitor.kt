@@ -28,8 +28,10 @@ class PerformanceMonitor @Inject constructor() {
 
     companion object {
         private const val TAG = "PerformanceMonitor"
-        private const val SAMPLE_INTERVAL_MS = 5000L // 5 seconds
+        private const val SAMPLE_INTERVAL_MS = 5000L // 5 seconds  
         private const val MAX_PERFORMANCE_SAMPLES = 100
+        private const val MAX_OPERATION_SAMPLES = 50 // Limit operation timing samples
+        private const val MONITORING_ENABLED_ONLY_IN_DEBUG = true // Only run in debug builds
     }
 
     // Performance metrics
@@ -105,9 +107,16 @@ class PerformanceMonitor @Inject constructor() {
         val times = operationTimes.getOrPut(operationName) { mutableListOf() }
         times.add(timeMs)
 
-        // Keep only recent samples
-        if (times.size > 50) {
+        // Keep only recent samples to prevent memory leaks
+        if (times.size > MAX_OPERATION_SAMPLES) {
             times.removeAt(0)
+        }
+        
+        // Clean up operation times map if it gets too large
+        if (operationTimes.size > 20) {
+            // Remove least recently used operations
+            val sortedByUsage = operationTimes.toList().sortedBy { it.second.size }
+            operationTimes.remove(sortedByUsage.first().first)
         }
     }
 
@@ -120,12 +129,14 @@ class PerformanceMonitor @Inject constructor() {
     }
 
     /**
-     * Start continuous performance monitoring
+     * Start continuous performance monitoring (only in debug builds)
      */
     suspend fun startMonitoring() {
-        while (true) {
-            updatePerformanceMetrics()
-            delay(SAMPLE_INTERVAL_MS)
+        if (!MONITORING_ENABLED_ONLY_IN_DEBUG || BuildConfig.DEBUG) {
+            while (true) {
+                updatePerformanceMetrics()
+                delay(SAMPLE_INTERVAL_MS)
+            }
         }
     }
 

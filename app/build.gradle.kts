@@ -122,6 +122,10 @@ dependencies {
     // Android TV Compose
     implementation(libs.androidx.tv.material)
 
+    // Paging 3
+    implementation(libs.androidx.paging.runtime)
+    implementation(libs.androidx.paging.compose)
+
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
