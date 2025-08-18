@@ -3,9 +3,12 @@ package com.example.jellyfinandroid.data.repository
 import com.example.jellyfinandroid.data.cache.JellyfinCache
 import com.example.jellyfinandroid.data.repository.common.ApiResult
 import com.example.jellyfinandroid.data.repository.common.BaseJellyfinRepository
+import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.api.client.extensions.playStateApi
+import org.jellyfin.sdk.api.client.extensions.userApi
 import org.jellyfin.sdk.api.client.extensions.userLibraryApi
+import org.jellyfin.sdk.model.api.BaseItemDto
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -55,11 +58,55 @@ class JellyfinUserRepository @Inject constructor(
         true
     }
 
-    suspend fun deleteItemAsAdmin(itemId: String): ApiResult<Boolean> = execute {
+    suspend fun getFavorites(): ApiResult<List<BaseItemDto>> = executeWithCache(
+        operationName = "getFavorites",
+        cacheKey = "user_favorites",
+        cacheTtlMs = 10 * 60 * 1000L, // 10 minutes
+    ) {
+        val server = validateServer()
+        val userUuid = parseUuid(server.userId ?: "", "user")
+        val client = getClient(server.url, server.accessToken)
+        
+        val response = client.itemsApi.getItems(
+            userId = userUuid,
+            recursive = true,
+            sortBy = listOf(org.jellyfin.sdk.model.api.ItemSortBy.SORT_NAME),
+            filters = listOf(org.jellyfin.sdk.model.api.ItemFilter.IS_FAVORITE),
+        )
+        response.content.items ?: emptyList()
+    }
+
+    suspend fun deleteItem(itemId: String): ApiResult<Boolean> = execute {
         val server = validateServer()
         val itemUuid = parseUuid(itemId, "item")
         val client = getClient(server.url, server.accessToken)
         client.libraryApi.deleteItem(itemId = itemUuid)
         true
+    }
+
+    suspend fun deleteItemAsAdmin(itemId: String): ApiResult<Boolean> = execute {
+        val server = validateServer()
+        val itemUuid = parseUuid(itemId, "item")
+        
+        // Check admin permissions first
+        val hasPermission = hasAdminDeletePermission(server)
+        if (!hasPermission) {
+            throw SecurityException("Administrator permissions required")
+        }
+        
+        val client = getClient(server.url, server.accessToken)
+        client.libraryApi.deleteItem(itemId = itemUuid)
+        true
+    }
+
+    private suspend fun hasAdminDeletePermission(server: com.example.jellyfinandroid.data.JellyfinServer): Boolean {
+        return try {
+            val userUuid = parseUuid(server.userId ?: "", "user")
+            val client = getClient(server.url, server.accessToken)
+            val user = client.userApi.getCurrentUser().content
+            user.policy?.isAdministrator == true || user.policy?.enableContentDeletion == true
+        } catch (e: Exception) {
+            false
+        }
     }
 }

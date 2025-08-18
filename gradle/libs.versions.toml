@@ -33,6 +33,7 @@ mockk = "1.14.5"
 kotlinxCoroutinesTest = "1.10.2"
 androidxArchCoreTest = "2.2.0"
 androidxTvMaterial = "1.0.1"
+paging = "3.3.5"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -96,6 +97,10 @@ kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 androidx-arch-core-testing = { group = "androidx.arch.core", name = "core-testing", version.ref = "androidxArchCoreTest" }
 # Android TV Compose
 androidx-tv-material = { group = "androidx.tv", name = "tv-material", version.ref = "androidxTvMaterial" }
+
+# Paging 3
+androidx-paging-runtime = { group = "androidx.paging", name = "paging-runtime", version.ref = "paging" }
+androidx-paging-compose = { group = "androidx.paging", name = "paging-compose", version.ref = "paging" }
 
 
 [plugins]

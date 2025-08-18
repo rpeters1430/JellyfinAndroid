@@ -48,6 +48,7 @@ class JellyfinMediaRepository @Inject constructor(
         val userUuid = parseUuid(server.userId ?: "", "user")
         val client = getClient(server.url, server.accessToken)
         val parent = parentId?.let { parseUuid(it, "parent") }
+        
         val itemKinds = itemTypes?.split(",")?.mapNotNull { type ->
             when (type.trim()) {
                 "Movie" -> BaseItemKind.MOVIE
@@ -57,6 +58,7 @@ class JellyfinMediaRepository @Inject constructor(
                 else -> null
             }
         }
+        
         val response = client.itemsApi.getItems(
             userId = userUuid,
             parentId = parent,
@@ -68,14 +70,15 @@ class JellyfinMediaRepository @Inject constructor(
         response.content.items ?: emptyList()
     }
 
-    suspend fun getRecentlyAdded(limit: Int = 20): ApiResult<List<BaseItemDto>> = executeWithCache(
+    suspend fun getRecentlyAdded(limit: Int = 50): ApiResult<List<BaseItemDto>> = executeWithCache(
         operationName = "getRecentlyAdded",
-        cacheKey = "recently_added_$limit",
-        cacheTtlMs = 30 * 60 * 1000L, // 30 minutes
+        cacheKey = "recently_added",
+        cacheTtlMs = 5 * 60 * 1000L, // 5 minutes
     ) {
         val server = validateServer()
         val userUuid = parseUuid(server.userId ?: "", "user")
         val client = getClient(server.url, server.accessToken)
+        
         val response = client.itemsApi.getItems(
             userId = userUuid,
             recursive = true,
@@ -97,16 +100,15 @@ class JellyfinMediaRepository @Inject constructor(
         response.content.items ?: emptyList()
     }
 
-    suspend fun getRecentlyAddedByType(
-        itemType: BaseItemKind,
-        limit: Int = 20,
-    ): ApiResult<List<BaseItemDto>> = executeWithRetry(
-        operationName = "getRecentlyAddedByType_${itemType.name}",
-        maxAttempts = 3,
+    suspend fun getRecentlyAddedByType(itemType: BaseItemKind, limit: Int = 20): ApiResult<List<BaseItemDto>> = executeWithCache(
+        operationName = "getRecentlyAddedByType",
+        cacheKey = "recently_added_${itemType.name.lowercase()}",
+        cacheTtlMs = 5 * 60 * 1000L,
     ) {
         val server = validateServer()
         val userUuid = parseUuid(server.userId ?: "", "user")
         val client = getClient(server.url, server.accessToken)
+        
         val response = client.itemsApi.getItems(
             userId = userUuid,
             recursive = true,
@@ -118,87 +120,92 @@ class JellyfinMediaRepository @Inject constructor(
         response.content.items ?: emptyList()
     }
 
-    suspend fun getRecentlyAddedByTypes(limit: Int = 20): ApiResult<Map<String, List<BaseItemDto>>> = executeWithRetry(
-        operationName = "getRecentlyAddedByTypes",
-        maxAttempts = 3,
-    ) {
-        val types = listOf(
-            BaseItemKind.MOVIE,
-            BaseItemKind.SERIES,
-            BaseItemKind.EPISODE,
-        )
-        val result = mutableMapOf<String, List<BaseItemDto>>()
-        for (type in types) {
-            when (val res = getRecentlyAddedByType(type, limit)) {
-                is ApiResult.Success -> if (res.data.isNotEmpty()) {
-                    result[type.name] = res.data
-                }
-                else -> {}
-            }
-        }
-        result
+    suspend fun getMovieDetails(movieId: String): ApiResult<BaseItemDto> = execute {
+        getItemDetailsById(movieId, "movie")
     }
 
-    suspend fun getSeasonsForSeries(seriesId: String): ApiResult<List<BaseItemDto>> = execute {
+    suspend fun getSeriesDetails(seriesId: String): ApiResult<BaseItemDto> = execute {
+        getItemDetailsById(seriesId, "series")
+    }
+
+    suspend fun getEpisodeDetails(episodeId: String): ApiResult<BaseItemDto> = execute {
+        getItemDetailsById(episodeId, "episode")
+    }
+
+    suspend fun getSeasonsForSeries(seriesId: String): ApiResult<List<BaseItemDto>> = executeWithCache(
+        operationName = "getSeasonsForSeries",
+        cacheKey = "seasons_$seriesId",
+        cacheTtlMs = 30 * 60 * 1000L,
+    ) {
         val server = validateServer()
         val userUuid = parseUuid(server.userId ?: "", "user")
         val seriesUuid = parseUuid(seriesId, "series")
         val client = getClient(server.url, server.accessToken)
+        
         val response = client.itemsApi.getItems(
             userId = userUuid,
             parentId = seriesUuid,
             includeItemTypes = listOf(BaseItemKind.SEASON),
             sortBy = listOf(ItemSortBy.SORT_NAME),
             sortOrder = listOf(SortOrder.ASCENDING),
+            fields = listOf(
+                org.jellyfin.sdk.model.api.ItemFields.MEDIA_SOURCES,
+                org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
+                org.jellyfin.sdk.model.api.ItemFields.OVERVIEW
+            ),
         )
         response.content.items ?: emptyList()
     }
 
-    /**
-     * Refresh methods that force cache invalidation and fetch fresh data.
-     */
-
-    suspend fun refreshUserLibraries(): ApiResult<List<BaseItemDto>> = executeRefreshWithCache(
-        operationName = "refreshUserLibraries",
-        cacheKey = "user_libraries",
-        cacheTtlMs = 60 * 60 * 1000L,
-    ) {
-        val server = validateServer()
-        val userUuid = parseUuid(server.userId ?: "", "user")
-        val client = getClient(server.url, server.accessToken)
-        val response = client.itemsApi.getItems(
-            userId = userUuid,
-            includeItemTypes = listOf(BaseItemKind.COLLECTION_FOLDER),
-        )
-        response.content.items ?: emptyList()
-    }
-
-    suspend fun refreshRecentlyAdded(limit: Int = 20): ApiResult<List<BaseItemDto>> = executeRefreshWithCache(
-        operationName = "refreshRecentlyAdded",
-        cacheKey = "recently_added_$limit",
+    suspend fun getEpisodesForSeason(seasonId: String): ApiResult<List<BaseItemDto>> = executeWithCache(
+        operationName = "getEpisodesForSeason",
+        cacheKey = "episodes_$seasonId",
         cacheTtlMs = 30 * 60 * 1000L,
     ) {
         val server = validateServer()
         val userUuid = parseUuid(server.userId ?: "", "user")
+        val seasonUuid = parseUuid(seasonId, "season")
         val client = getClient(server.url, server.accessToken)
+        
         val response = client.itemsApi.getItems(
             userId = userUuid,
-            recursive = true,
-            includeItemTypes = listOf(
-                BaseItemKind.MOVIE,
-                BaseItemKind.SERIES,
-                BaseItemKind.EPISODE,
-                BaseItemKind.AUDIO,
-                BaseItemKind.MUSIC_ALBUM,
-                BaseItemKind.MUSIC_ARTIST,
-                BaseItemKind.BOOK,
-                BaseItemKind.AUDIO_BOOK,
-                BaseItemKind.VIDEO,
+            parentId = seasonUuid,
+            includeItemTypes = listOf(BaseItemKind.EPISODE),
+            sortBy = listOf(ItemSortBy.INDEX_NUMBER),
+            sortOrder = listOf(SortOrder.ASCENDING),
+            fields = listOf(
+                org.jellyfin.sdk.model.api.ItemFields.MEDIA_SOURCES,
+                org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
+                org.jellyfin.sdk.model.api.ItemFields.OVERVIEW
             ),
-            sortBy = listOf(ItemSortBy.DATE_CREATED),
-            sortOrder = listOf(SortOrder.DESCENDING),
-            limit = limit,
         )
         response.content.items ?: emptyList()
+    }
+
+    private suspend fun getItemDetailsById(itemId: String, itemTypeName: String): BaseItemDto {
+        val server = validateServer()
+        val userUuid = parseUuid(server.userId ?: "", "user")
+        val itemUuid = parseUuid(itemId, itemTypeName)
+        val client = getClient(server.url, server.accessToken)
+        
+        val response = client.itemsApi.getItems(
+            userId = userUuid,
+            ids = listOf(itemUuid),
+            limit = 1,
+            fields = listOf(
+                org.jellyfin.sdk.model.api.ItemFields.OVERVIEW,
+                org.jellyfin.sdk.model.api.ItemFields.GENRES,
+                org.jellyfin.sdk.model.api.ItemFields.PEOPLE,
+                org.jellyfin.sdk.model.api.ItemFields.MEDIA_SOURCES,
+                org.jellyfin.sdk.model.api.ItemFields.MEDIA_STREAMS,
+                org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
+                org.jellyfin.sdk.model.api.ItemFields.STUDIOS,
+                org.jellyfin.sdk.model.api.ItemFields.TAGS,
+                org.jellyfin.sdk.model.api.ItemFields.CHAPTERS,
+            ),
+        )
+        
+        return response.content.items?.firstOrNull() 
+            ?: throw IllegalStateException("$itemTypeName not found")
     }
 }
