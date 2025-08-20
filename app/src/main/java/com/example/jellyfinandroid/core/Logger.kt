@@ -217,7 +217,14 @@ object Logger {
                     if (backupFile.exists()) {
                         backupFile.delete()
                     }
-                    logFile.renameTo(backupFile)
+                    val renamed = logFile.renameTo(backupFile)
+                    if (!renamed) {
+                        if (BuildConfig.DEBUG) {
+                            println("FILE_LOG_ERROR: Failed to rotate log file. Could not rename ${logFile.absolutePath} to ${backupFile.absolutePath}")
+                        }
+                        // Skip further file operations to avoid uncontrolled file growth
+                        return@launch
+                    }
                     logFile.createNewFile()
                     val created = logFile.createNewFile()
                     if (!created && !logFile.exists()) {
