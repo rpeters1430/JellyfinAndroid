@@ -297,4 +297,3 @@ inline fun <reified T> T.logNetworkError(error: String, url: String? = null, thr
     SecureLogger.networkError(T::class.java.simpleName, error, url, throwable)
 }
 // endregion
-
