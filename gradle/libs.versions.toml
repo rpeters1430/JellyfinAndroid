@@ -1,8 +1,8 @@
 [versions]
-agp = "8.0.2"
+agp = "8.0.0"
 desugar_jdk_libs = "2.1.5"
-kotlin = "2.2.10"
-ksp = "2.2.10-2.0.2"
+kotlin = "1.9.20"
+ksp = "1.9.20-1.0.14"
 coreKtx = "1.17.0"
 junit = "4.13.2"
 junitVersion = "1.3.0"
