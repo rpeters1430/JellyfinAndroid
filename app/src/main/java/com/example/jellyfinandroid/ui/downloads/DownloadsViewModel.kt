@@ -11,7 +11,6 @@ import com.example.jellyfinandroid.data.offline.OfflineDownloadManager
 import com.example.jellyfinandroid.data.offline.OfflinePlaybackManager
 import com.example.jellyfinandroid.data.offline.OfflineStorageInfo
 import com.example.jellyfinandroid.data.offline.VideoQuality
-import org.jellyfin.sdk.model.api.BaseItemDto
 import com.example.jellyfinandroid.ui.player.VideoPlayerActivity
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -23,6 +22,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.jellyfin.sdk.model.api.BaseItemDto
 import javax.inject.Inject
 
 @androidx.media3.common.util.UnstableApi
