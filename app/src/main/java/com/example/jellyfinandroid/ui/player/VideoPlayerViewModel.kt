@@ -35,6 +35,15 @@ enum class AspectRatioMode(val label: String, val resizeMode: Int) {
 }
 
 @UnstableApi
+data class TrackInfo(
+    val groupIndex: Int,
+    val trackIndex: Int,
+    val format: androidx.media3.common.Format,
+    val isSelected: Boolean,
+    val displayName: String
+)
+
+@UnstableApi
 data class VideoPlayerState(
     val isPlaying: Boolean = false,
     val isLoading: Boolean = false,
@@ -51,8 +60,13 @@ data class VideoPlayerState(
     val itemId: String = "",
     val itemName: String = "",
     val aspectRatio: Float = 16f / 9f,
-    val selectedAspectRatio: AspectRatioMode = AspectRatioMode.FIT,
+    val selectedAspectRatio: AspectRatioMode = AspectRatioMode.FILL,
     val availableAspectRatios: List<AspectRatioMode> = AspectRatioMode.values().toList(),
+    val showSubtitleDialog: Boolean = false,
+    val availableSubtitleTracks: List<TrackInfo> = emptyList(),
+    val selectedSubtitleTrack: TrackInfo? = null,
+    val showCastDialog: Boolean = false,
+    val availableCastDevices: List<String> = emptyList(),
 )
 
 data class VideoQuality(
@@ -247,7 +261,6 @@ class VideoPlayerViewModel @Inject constructor(
 
     fun showCastDialog() {
         try {
-            // Try to show cast dialog through Cast framework
             val castContext = com.google.android.gms.cast.framework.CastContext.getSharedInstance(context)
             val sessionManager = castContext.sessionManager
 
@@ -258,9 +271,8 @@ class VideoPlayerViewModel @Inject constructor(
                     Log.d("VideoPlayerViewModel", "Disconnected from Cast device")
                 }
             } else {
-                // Show device selection dialog by attempting to start a session
-                // This is handled by the Cast framework
-                startCasting()
+                // Show cast device selection dialog
+                _playerState.value = _playerState.value.copy(showCastDialog = true)
                 if (BuildConfig.DEBUG) {
                     Log.d("VideoPlayerViewModel", "Cast dialog requested")
                 }
@@ -269,21 +281,97 @@ class VideoPlayerViewModel @Inject constructor(
             Log.e("VideoPlayerViewModel", "Failed to show cast dialog", e)
         }
     }
+    
+    fun hideCastDialog() {
+        _playerState.value = _playerState.value.copy(showCastDialog = false)
+    }
+    
+    fun selectCastDevice(deviceName: String) {
+        try {
+            // This is a simplified implementation - in reality you'd need to 
+            // interface with the Cast framework to connect to specific devices
+            startCasting()
+            _playerState.value = _playerState.value.copy(showCastDialog = false)
+            if (BuildConfig.DEBUG) {
+                Log.d("VideoPlayerViewModel", "Connecting to Cast device: $deviceName")
+            }
+        } catch (e: Exception) {
+            Log.e("VideoPlayerViewModel", "Failed to connect to Cast device", e)
+        }
+    }
 
     fun showSubtitleDialog() {
-        // This will show subtitle/audio track selection
         trackSelector?.let { selector ->
             try {
-                // This would open a track selection dialog
-                // For now, log the action
-                if (BuildConfig.DEBUG) {
-                    Log.d("VideoPlayerViewModel", "Subtitle dialog requested")
+                // Get current track groups and selections
+                val trackGroups = exoPlayer?.currentTracks
+                val subtitleTracks = mutableListOf<TrackInfo>()
+                
+                trackGroups?.groups?.forEachIndexed { groupIndex, trackGroup ->
+                    if (trackGroup.type == androidx.media3.common.C.TRACK_TYPE_TEXT) {
+                        for (i in 0 until trackGroup.length) {
+                            val format = trackGroup.getTrackFormat(i)
+                            val isSelected = trackGroup.isTrackSelected(i)
+                            subtitleTracks.add(
+                                TrackInfo(
+                                    groupIndex = groupIndex,
+                                    trackIndex = i,
+                                    format = format,
+                                    isSelected = isSelected,
+                                    displayName = format.label ?: format.language ?: "Track ${i + 1}"
+                                )
+                            )
+                        }
+                    }
                 }
-                // TODO: Implement track selection dialog using ExoPlayer's track selection
+                
+                // Update state with available subtitle tracks
+                _playerState.value = _playerState.value.copy(
+                    availableSubtitleTracks = subtitleTracks,
+                    showSubtitleDialog = true
+                )
+                
+                if (BuildConfig.DEBUG) {
+                    Log.d("VideoPlayerViewModel", "Found ${subtitleTracks.size} subtitle tracks")
+                }
             } catch (e: Exception) {
-                Log.e("VideoPlayerViewModel", "Failed to show subtitle dialog", e)
+                Log.e("VideoPlayerViewModel", "Failed to get subtitle tracks", e)
             }
         }
+    }
+    
+    fun selectSubtitleTrack(trackInfo: TrackInfo?) {
+        trackSelector?.let { selector ->
+            try {
+                val parametersBuilder = selector.parameters.buildUpon()
+                
+                if (trackInfo != null) {
+                    // Enable the selected track
+                    parametersBuilder.setTrackTypeDisabled(androidx.media3.common.C.TRACK_TYPE_TEXT, false)
+                } else {
+                    // Disable all subtitle tracks
+                    parametersBuilder.setTrackTypeDisabled(androidx.media3.common.C.TRACK_TYPE_TEXT, true)
+                }
+                
+                selector.setParameters(parametersBuilder.build())
+                
+                // Update UI state
+                _playerState.value = _playerState.value.copy(
+                    showSubtitleDialog = false,
+                    selectedSubtitleTrack = trackInfo
+                )
+                
+                if (BuildConfig.DEBUG) {
+                    Log.d("VideoPlayerViewModel", "Selected subtitle track: ${trackInfo?.displayName ?: "None"}")
+                }
+            } catch (e: Exception) {
+                Log.e("VideoPlayerViewModel", "Failed to select subtitle track", e)
+            }
+        }
+    }
+    
+    fun hideSubtitleDialog() {
+        _playerState.value = _playerState.value.copy(showSubtitleDialog = false)
     }
 
     fun changeAspectRatio(aspectRatioMode: AspectRatioMode) {
