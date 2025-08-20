@@ -8,6 +8,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -39,6 +40,8 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -70,6 +73,10 @@ fun VideoPlayerScreen(
     onPictureInPictureClick: () -> Unit,
     onBackClick: () -> Unit,
     onOrientationToggle: () -> Unit,
+    onSubtitleTrackSelect: (TrackInfo?) -> Unit,
+    onSubtitleDialogDismiss: () -> Unit,
+    onCastDeviceSelect: (String) -> Unit,
+    onCastDialogDismiss: () -> Unit,
     exoPlayer: ExoPlayer?,
     modifier: Modifier = Modifier,
 ) {
@@ -200,6 +207,75 @@ fun VideoPlayerScreen(
                     }
                 }
             }
+        }
+        
+        // Subtitle Selection Dialog
+        if (playerState.showSubtitleDialog) {
+            AlertDialog(
+                onDismissRequest = onSubtitleDialogDismiss,
+                title = { Text("Select Subtitles") },
+                text = {
+                    Column {
+                        // Option to disable subtitles
+                        TextButton(
+                            onClick = { onSubtitleTrackSelect(null) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Off",
+                                fontWeight = if (playerState.selectedSubtitleTrack == null) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                        
+                        // List available subtitle tracks
+                        playerState.availableSubtitleTracks.forEach { track ->
+                            TextButton(
+                                onClick = { onSubtitleTrackSelect(track) },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = track.displayName,
+                                    fontWeight = if (track.isSelected) FontWeight.Bold else FontWeight.Normal
+                                )
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = onSubtitleDialogDismiss) {
+                        Text("Close")
+                    }
+                }
+            )
+        }
+        
+        // Cast Device Selection Dialog
+        if (playerState.showCastDialog) {
+            AlertDialog(
+                onDismissRequest = onCastDialogDismiss,
+                title = { Text("Cast to Device") },
+                text = {
+                    Column {
+                        if (playerState.availableCastDevices.isEmpty()) {
+                            Text("No Cast devices found. Make sure your Chromecast or other Cast-enabled device is on the same network.")
+                        } else {
+                            playerState.availableCastDevices.forEach { device ->
+                                TextButton(
+                                    onClick = { onCastDeviceSelect(device) },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(device)
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = onCastDialogDismiss) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
     }
 }

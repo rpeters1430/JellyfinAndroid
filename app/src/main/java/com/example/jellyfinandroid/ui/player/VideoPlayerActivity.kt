@@ -90,6 +90,10 @@ class VideoPlayerActivity : ComponentActivity() {
                         onPictureInPictureClick = ::enterPictureInPictureModeCustom,
                         onBackClick = ::finish,
                         onOrientationToggle = ::toggleOrientation,
+                        onSubtitleTrackSelect = playerViewModel::selectSubtitleTrack,
+                        onSubtitleDialogDismiss = playerViewModel::hideSubtitleDialog,
+                        onCastDeviceSelect = playerViewModel::selectCastDevice,
+                        onCastDialogDismiss = playerViewModel::hideCastDialog,
                         exoPlayer = playerViewModel.exoPlayer,
                     )
                 }
