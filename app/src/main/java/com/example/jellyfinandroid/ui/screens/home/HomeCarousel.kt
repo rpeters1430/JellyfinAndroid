@@ -29,6 +29,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.jellyfinandroid.ui.image.OptimizedImage
+import com.example.jellyfinandroid.ui.image.ImageSize
+import com.example.jellyfinandroid.ui.image.ImageQuality
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -85,16 +88,14 @@ private fun CarouselMovieCard(
         ),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(getBackdropUrl(movie) ?: "")
-                    .crossfade(true)
-                    .build(),
-                contentDescription = movie.name ?: "Movie backdrop",
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(16.dp)),
+            OptimizedImage(
+                imageUrl = getBackdropUrl(movie),
+                contentDescription = "${movie.name} backdrop",
+                modifier = Modifier.fillMaxSize(),
+                size = ImageSize.BANNER,
+                quality = ImageQuality.HIGH,
                 contentScale = ContentScale.Crop,
+                cornerRadius = 16.dp,
             )
             movie.communityRating?.let { rating ->
                 Surface(
@@ -204,16 +205,14 @@ private fun CarouselContentCard(
                 else -> getBackdropUrl(item) ?: getImageUrl(item)
             }
 
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(imageUrl ?: "")
-                    .crossfade(true)
-                    .build(),
+            OptimizedImage(
+                imageUrl = imageUrl,
                 contentDescription = "${item.name} image",
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(16.dp)),
+                modifier = Modifier.fillMaxSize(),
+                size = ImageSize.BANNER,
+                quality = ImageQuality.HIGH,
                 contentScale = ContentScale.Crop,
+                cornerRadius = 16.dp,
             )
 
             // Rating badge
