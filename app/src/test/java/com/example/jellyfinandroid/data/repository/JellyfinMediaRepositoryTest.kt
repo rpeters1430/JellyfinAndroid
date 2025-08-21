@@ -115,9 +115,10 @@ class JellyfinMediaRepositoryTest {
 
         // Then
         assertTrue(result is ApiResult.Success<List<BaseItemDto>>)
-        assertEquals(1, result.data.size)
-        assertEquals("Test Movie", result.data[0].name)
-        assertEquals(BaseItemKind.MOVIE, result.data[0].type)
+        val successResult = result as ApiResult.Success<List<BaseItemDto>>
+        assertEquals(1, successResult.data.size)
+        assertEquals("Test Movie", successResult.data[0].name)
+        assertEquals(BaseItemKind.MOVIE, successResult.data[0].type)
     }
 
     @Test
@@ -145,9 +146,10 @@ class JellyfinMediaRepositoryTest {
 
         // Then
         assertTrue(result is ApiResult.Success<List<BaseItemDto>>)
-        assertEquals(2, result.data.size)
-        assertTrue(result.data.any { it.name == "Recent Movie" })
-        assertTrue(result.data.any { it.name == "Recent Episode" })
+        val successResult = result as ApiResult.Success<List<BaseItemDto>>
+        assertEquals(2, successResult.data.size)
+        assertTrue(successResult.data.any { it.name == "Recent Movie" })
+        assertTrue(successResult.data.any { it.name == "Recent Episode" })
     }
 
     @Test
@@ -176,8 +178,9 @@ class JellyfinMediaRepositoryTest {
 
         // Then
         assertTrue(result is ApiResult.Success<List<BaseItemDto>>)
-        assertEquals(2, result.data.size)
-        assertTrue(result.data.all { it.type == BaseItemKind.MOVIE })
+        val successResult = result as ApiResult.Success<List<BaseItemDto>>
+        assertEquals(2, successResult.data.size)
+        assertTrue(successResult.data.all { it.type == BaseItemKind.MOVIE })
     }
 
     @Test
@@ -200,9 +203,10 @@ class JellyfinMediaRepositoryTest {
 
         // Then
         assertTrue(result is ApiResult.Success<BaseItemDto>)
-        assertEquals("Test Movie", result.data.name)
-        assertEquals(BaseItemKind.MOVIE, result.data.type)
-        assertEquals("A great test movie", result.data.overview)
+        val successResult = result as ApiResult.Success<BaseItemDto>
+        assertEquals("Test Movie", successResult.data.name)
+        assertEquals(BaseItemKind.MOVIE, successResult.data.type)
+        assertEquals("A great test movie", successResult.data.overview)
     }
 
     @Test
@@ -233,9 +237,10 @@ class JellyfinMediaRepositoryTest {
 
         // Then
         assertTrue(result is ApiResult.Success<List<BaseItemDto>>)
-        assertEquals(2, result.data.size)
-        assertEquals("Season 1", result.data[0].name)
-        assertEquals("Season 2", result.data[1].name)
+        val successResult = result as ApiResult.Success<List<BaseItemDto>>
+        assertEquals(2, successResult.data.size)
+        assertEquals("Season 1", successResult.data[0].name)
+        assertEquals("Season 2", successResult.data[1].name)
     }
 
     @Test
@@ -266,9 +271,10 @@ class JellyfinMediaRepositoryTest {
 
         // Then
         assertTrue(result is ApiResult.Success<List<BaseItemDto>>)
-        assertEquals(2, result.data.size)
-        assertEquals("Episode 1", result.data[0].name)
-        assertEquals("Episode 2", result.data[1].name)
+        val successResult = result as ApiResult.Success<List<BaseItemDto>>
+        assertEquals(2, successResult.data.size)
+        assertEquals("Episode 1", successResult.data[0].name)
+        assertEquals("Episode 2", successResult.data[1].name)
     }
 
     @Test
@@ -278,14 +284,15 @@ class JellyfinMediaRepositoryTest {
 
         coEvery {
             repository.getUserLibraries()
-        } returns ApiResult.Error(errorMessage, "NETWORK_ERROR")
+        } returns ApiResult.Error(errorMessage, null, com.example.jellyfinandroid.data.repository.common.ErrorType.NETWORK_ERROR)
 
         // When
         val result = repository.getUserLibraries()
 
         // Then
         assertTrue(result is ApiResult.Error<List<BaseItemDto>>)
-        assertEquals(errorMessage, result.message)
-        assertEquals("NETWORK_ERROR", result.errorType)
+        val errorResult = result as ApiResult.Error<List<BaseItemDto>>
+        assertEquals(errorMessage, errorResult.message)
+        assertEquals(com.example.jellyfinandroid.data.repository.common.ErrorType.NETWORK_ERROR, errorResult.errorType)
     }
 }
