@@ -198,6 +198,14 @@ class JellyfinRepository @Inject constructor(
         startIndex: Int = DEFAULT_START_INDEX,
         limit: Int = DEFAULT_LIMIT,
     ): ApiResult<List<BaseItemDto>> {
+        // ✅ FIX: Validate token before making requests
+        if (isTokenExpired()) {
+            Log.w("JellyfinRepository", "getLibraryItems: Token expired, attempting proactive refresh")
+            if (!reAuthenticate()) {
+                return ApiResult.Error("Authentication expired", errorType = ErrorType.AUTHENTICATION)
+            }
+        }
+
         val server = authRepository.getCurrentServer()
         if (server?.accessToken == null || server.userId == null) {
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
@@ -652,6 +660,14 @@ class JellyfinRepository @Inject constructor(
     }
 
     suspend fun getFavorites(): ApiResult<List<BaseItemDto>> {
+        // ✅ FIX: Validate token before making requests
+        if (isTokenExpired()) {
+            Log.w("JellyfinRepository", "getFavorites: Token expired, attempting proactive refresh")
+            if (!reAuthenticate()) {
+                return ApiResult.Error("Authentication expired", errorType = ErrorType.AUTHENTICATION)
+            }
+        }
+
         val server = authRepository.getCurrentServer()
         if (server?.accessToken == null || server.userId == null) {
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
@@ -816,6 +832,14 @@ class JellyfinRepository @Inject constructor(
     ): ApiResult<List<BaseItemDto>> {
         if (query.isBlank()) {
             return ApiResult.Success(emptyList())
+        }
+
+        // ✅ FIX: Validate token before making requests
+        if (isTokenExpired()) {
+            Log.w("JellyfinRepository", "searchItems: Token expired, attempting proactive refresh")
+            if (!reAuthenticate()) {
+                return ApiResult.Error("Authentication expired", errorType = ErrorType.AUTHENTICATION)
+            }
         }
 
         val server = authRepository.getCurrentServer()
