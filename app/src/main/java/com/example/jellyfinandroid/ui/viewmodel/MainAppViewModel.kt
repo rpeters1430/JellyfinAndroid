@@ -20,6 +20,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import com.example.jellyfinandroid.utils.PerformanceMonitor
+import com.example.jellyfinandroid.utils.measureSuspendTime
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import javax.inject.Inject
@@ -79,22 +81,32 @@ class MainAppViewModel @Inject constructor(
 
     fun loadInitialData() {
         viewModelScope.launch {
-            if (BuildConfig.DEBUG) {
-                Log.d("MainAppViewModel", "loadInitialData: Starting to load all data")
-            }
+            measureSuspendTime("loadInitialData") {
+                if (BuildConfig.DEBUG) {
+                    Log.d("MainAppViewModel", "loadInitialData: Starting to load all data")
+                    PerformanceMonitor.logMemoryUsage("Before loading data")
+                }
 
-            // ✅ FIX: Clear any previously loaded library type flags for fresh start
-            clearLoadedLibraryTypes()
+                // ✅ FIX: Clear any previously loaded library type flags for fresh start
+                clearLoadedLibraryTypes()
 
-            _appState.value = _appState.value.copy(isLoading = true, errorMessage = null)
+                _appState.value = _appState.value.copy(isLoading = true, errorMessage = null)
 
-            // Launch libraries and recently added loading in parallel
-            if (BuildConfig.DEBUG) {
-                Log.d("MainAppViewModel", "loadInitialData: Loading libraries and recently added in parallel")
-            }
-            
-            val librariesDeferred = async { mediaRepository.getUserLibraries() }
-            val recentlyAddedDeferred = async { mediaRepository.getRecentlyAdded() }
+                // Launch libraries and recently added loading in parallel
+                if (BuildConfig.DEBUG) {
+                    Log.d("MainAppViewModel", "loadInitialData: Loading libraries and recently added in parallel")
+                }
+                
+                val librariesDeferred = async { 
+                    measureSuspendTime("getUserLibraries") { 
+                        mediaRepository.getUserLibraries() 
+                    }
+                }
+                val recentlyAddedDeferred = async { 
+                    measureSuspendTime("getRecentlyAdded") { 
+                        mediaRepository.getRecentlyAdded() 
+                    }
+                }
             
             // Process libraries result
             when (val librariesResult = librariesDeferred.await()) {
@@ -222,6 +234,13 @@ class MainAppViewModel @Inject constructor(
             _appState.value = _appState.value.copy(isLoading = false)
             if (BuildConfig.DEBUG) {
                 Log.d("MainAppViewModel", "loadInitialData: Completed loading essential data. Library-specific data will load on-demand.")
+                PerformanceMonitor.logMemoryUsage("After loading data")
+                
+                // Check for memory pressure and suggest GC if needed
+                if (PerformanceMonitor.checkMemoryPressure()) {
+                    PerformanceMonitor.forceGarbageCollection("High memory usage after data loading")
+                }
+            }
             }
         }
     }

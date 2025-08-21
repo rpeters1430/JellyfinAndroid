@@ -39,6 +39,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.SubcomposeAsyncImage
 import com.example.jellyfinandroid.ui.ShimmerBox
+import com.example.jellyfinandroid.ui.image.OptimizedImage
+import com.example.jellyfinandroid.ui.image.ImageSize
+import com.example.jellyfinandroid.ui.image.ImageQuality
 import com.example.jellyfinandroid.ui.accessibility.mediaCardSemantics
 import com.example.jellyfinandroid.ui.theme.RatingBronze
 import com.example.jellyfinandroid.ui.theme.RatingGold
@@ -70,10 +73,15 @@ fun MediaCard(
         ),
     ) {
         Box {
-            // Background Image
-            SubcomposeAsyncImage(
-                model = getImageUrl(item),
+            // Background Image - Optimized
+            OptimizedImage(
+                imageUrl = getImageUrl(item),
                 contentDescription = "${item.name} poster image",
+                modifier = Modifier.fillMaxSize(),
+                size = ImageSize.BANNER,
+                quality = ImageQuality.HIGH,
+                contentScale = ContentScale.Crop,
+                cornerRadius = 12.dp,
                 loading = {
                     ShimmerBox(
                         modifier = Modifier.fillMaxSize(),
@@ -95,10 +103,6 @@ fun MediaCard(
                         )
                     }
                 },
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(12.dp)),
             )
 
             // Content type badge with semantic color
@@ -290,59 +294,44 @@ fun RecentlyAddedCard(
                 } else {
                     getImageUrl(item)
                 }
-                if (imageUrl != null) {
-                    SubcomposeAsyncImage(
-                        model = imageUrl,
-                        contentDescription = item.name,
-                        loading = {
-                            ShimmerBox(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(200.dp),
-                                shape = RoundedCornerShape(
-                                    topStart = 12.dp,
-                                    topEnd = 12.dp,
-                                ),
-                            )
-                        },
-                        error = {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(200.dp)
-                                    .background(contentTypeColor.copy(alpha = 0.1f)),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.PlayArrow,
-                                    contentDescription = "No image available",
-                                    modifier = Modifier.size(32.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        },
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
-                            .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
-                            .background(contentTypeColor.copy(alpha = 0.1f)),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = "No image available",
-                            modifier = Modifier.size(32.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                OptimizedImage(
+                    imageUrl = imageUrl,
+                    contentDescription = item.name,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    size = ImageSize.CARD,
+                    quality = ImageQuality.MEDIUM,
+                    contentScale = ContentScale.Crop,
+                    cornerRadius = 12.dp,
+                    loading = {
+                        ShimmerBox(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp),
+                            shape = RoundedCornerShape(
+                                topStart = 12.dp,
+                                topEnd = 12.dp,
+                            ),
                         )
-                    }
-                }
+                    },
+                    error = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .background(contentTypeColor.copy(alpha = 0.1f)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = "No image available",
+                                modifier = Modifier.size(32.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    },
+                )
 
                 // Content type badge with semantic color
                 Card(
