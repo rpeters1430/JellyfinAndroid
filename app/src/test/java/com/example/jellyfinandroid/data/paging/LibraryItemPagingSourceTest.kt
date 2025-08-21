@@ -89,7 +89,7 @@ class LibraryItemPagingSourceTest {
                 startIndex = 0,
                 limit = 20,
             )
-        } returns ApiResult.Error(errorMessage, "NETWORK_ERROR")
+        } returns ApiResult.Error(errorMessage, null, com.example.jellyfinandroid.data.repository.common.ErrorType.NETWORK_ERROR)
 
         // When
         val result = pagingSource.load(

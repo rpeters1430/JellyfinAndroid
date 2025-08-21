@@ -225,7 +225,6 @@ object Logger {
                         // Skip further file operations to avoid uncontrolled file growth
                         return@launch
                     }
-                    logFile.createNewFile()
                     val created = logFile.createNewFile()
                     if (!created && !logFile.exists()) {
                         if (BuildConfig.DEBUG) {
@@ -233,6 +232,7 @@ object Logger {
                         }
                         return@launch
                     }
+                }
 
                 BufferedWriter(FileWriter(logFile, true)).use { writer ->
                     writer.appendLine(logLine)

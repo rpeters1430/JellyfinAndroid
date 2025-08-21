@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import javax.inject.Inject
@@ -86,27 +88,32 @@ class MainAppViewModel @Inject constructor(
 
             _appState.value = _appState.value.copy(isLoading = true, errorMessage = null)
 
-            // Load libraries
+            // Launch libraries and recently added loading in parallel
             if (BuildConfig.DEBUG) {
-                Log.d("MainAppViewModel", "loadInitialData: Loading libraries")
+                Log.d("MainAppViewModel", "loadInitialData: Loading libraries and recently added in parallel")
             }
-            when (val result = mediaRepository.getUserLibraries()) {
+            
+            val librariesDeferred = async { mediaRepository.getUserLibraries() }
+            val recentlyAddedDeferred = async { mediaRepository.getRecentlyAdded() }
+            
+            // Process libraries result
+            when (val librariesResult = librariesDeferred.await()) {
                 is ApiResult.Success -> {
                     if (BuildConfig.DEBUG) {
-                        Log.d("MainAppViewModel", "loadInitialData: Loaded ${result.data.size} libraries")
+                        Log.d("MainAppViewModel", "loadInitialData: Loaded ${librariesResult.data.size} libraries")
                     }
-                    _appState.value = _appState.value.copy(libraries = result.data)
+                    _appState.value = _appState.value.copy(libraries = librariesResult.data)
                 }
                 is ApiResult.Error -> {
                     // ✅ FIX: Don't show error messages for cancelled operations (navigation/lifecycle)
-                    if (result.errorType == ErrorType.OPERATION_CANCELLED) {
+                    if (librariesResult.errorType == ErrorType.OPERATION_CANCELLED) {
                         if (BuildConfig.DEBUG) {
                             Log.d("MainAppViewModel", "loadInitialData: Library loading was cancelled (navigation)")
                         }
                     } else {
-                        Log.e("MainAppViewModel", "loadInitialData: Failed to load libraries: ${result.message}")
+                        Log.e("MainAppViewModel", "loadInitialData: Failed to load libraries: ${librariesResult.message}")
                         _appState.value = _appState.value.copy(
-                            errorMessage = "Failed to load libraries: ${result.message}",
+                            errorMessage = "Failed to load libraries: ${librariesResult.message}",
                         )
                     }
                 }
@@ -115,29 +122,26 @@ class MainAppViewModel @Inject constructor(
                 }
             }
 
-            // Load recently added items
-            if (BuildConfig.DEBUG) {
-                Log.d("MainAppViewModel", "loadInitialData: Loading recently added items")
-            }
-            when (val result = mediaRepository.getRecentlyAdded()) {
+            // Process recently added result
+            when (val recentlyAddedResult = recentlyAddedDeferred.await()) {
                 is ApiResult.Success -> {
                     if (BuildConfig.DEBUG) {
-                        Log.d("MainAppViewModel", "loadInitialData: Loaded ${result.data.size} recently added items")
+                        Log.d("MainAppViewModel", "loadInitialData: Loaded ${recentlyAddedResult.data.size} recently added items")
                     }
-                    _appState.value = _appState.value.copy(recentlyAdded = result.data)
+                    _appState.value = _appState.value.copy(recentlyAdded = recentlyAddedResult.data)
                 }
                 is ApiResult.Error -> {
                     // ✅ FIX: Don't show error messages for cancelled operations
-                    if (result.errorType == ErrorType.OPERATION_CANCELLED) {
+                    if (recentlyAddedResult.errorType == ErrorType.OPERATION_CANCELLED) {
                         if (BuildConfig.DEBUG) {
                             Log.d("MainAppViewModel", "loadInitialData: Recent items loading was cancelled (navigation)")
                         }
                     } else {
-                        Log.e("MainAppViewModel", "loadInitialData: Failed to load recent items: ${result.message}")
+                        Log.e("MainAppViewModel", "loadInitialData: Failed to load recent items: ${recentlyAddedResult.message}")
                         // Don't override library error, just log this
                         if (_appState.value.errorMessage == null) {
                             _appState.value = _appState.value.copy(
-                                errorMessage = "Failed to load recent items: ${result.message}",
+                                errorMessage = "Failed to load recent items: ${recentlyAddedResult.message}",
                             )
                         }
                     }
@@ -147,11 +151,12 @@ class MainAppViewModel @Inject constructor(
                 }
             }
 
-            // Load recently added items by types
+            // Load recently added items by types - PARALLEL LOADING
             if (BuildConfig.DEBUG) {
-                Log.d("MainAppViewModel", "loadInitialData: Loading recently added items by types")
+                Log.d("MainAppViewModel", "loadInitialData: Loading recently added items by types (parallel)")
             }
-            // Load recently added content by type using the new MediaRepository
+            
+            // Launch all API calls concurrently
             val types = listOf(
                 BaseItemKind.MOVIE to "MOVIE",
                 BaseItemKind.SERIES to "SERIES",
@@ -160,9 +165,19 @@ class MainAppViewModel @Inject constructor(
                 BaseItemKind.VIDEO to "VIDEO",
             )
 
+            val contentTypeDeferreds = types.map { (itemType, typeKey) ->
+                async { 
+                    typeKey to mediaRepository.getRecentlyAddedByType(itemType, limit = 20)
+                }
+            }
+
+            // Await all results concurrently
+            val contentTypeResults = contentTypeDeferreds.awaitAll()
+            
+            // Process results
             val recentlyAddedByTypes = mutableMapOf<String, List<BaseItemDto>>()
-            for ((itemType, typeKey) in types) {
-                when (val result = mediaRepository.getRecentlyAddedByType(itemType, limit = 20)) {
+            contentTypeResults.forEach { (typeKey, result) ->
+                when (result) {
                     is ApiResult.Success -> {
                         recentlyAddedByTypes[typeKey] = result.data
                         val displayName = when (typeKey) {
@@ -186,8 +201,10 @@ class MainAppViewModel @Inject constructor(
                             "VIDEO" -> "Home Videos"
                             else -> typeKey
                         }
-                        if (BuildConfig.DEBUG) {
-                            Log.e("MainAppViewModel", "loadInitialData: Failed to load recent $displayName: ${result.message}")
+                        if (result.errorType != ErrorType.OPERATION_CANCELLED) {
+                            if (BuildConfig.DEBUG) {
+                                Log.e("MainAppViewModel", "loadInitialData: Failed to load recent $displayName: ${result.message}")
+                            }
                         }
                     }
                     is ApiResult.Loading -> {

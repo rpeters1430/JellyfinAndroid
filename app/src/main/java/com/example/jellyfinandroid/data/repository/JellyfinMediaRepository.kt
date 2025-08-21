@@ -43,7 +43,7 @@ class JellyfinMediaRepository @Inject constructor(
         itemTypes: String? = null,
         startIndex: Int = 0,
         limit: Int = 100,
-    ): ApiResult<List<BaseItemDto>> = execute {
+    ): ApiResult<List<BaseItemDto>> = execute("getLibraryItems") {
         val server = validateServer()
         val userUuid = parseUuid(server.userId ?: "", "user")
         val client = getClient(server.url, server.accessToken)
@@ -73,7 +73,7 @@ class JellyfinMediaRepository @Inject constructor(
     suspend fun getRecentlyAdded(limit: Int = 50): ApiResult<List<BaseItemDto>> = executeWithCache(
         operationName = "getRecentlyAdded",
         cacheKey = "recently_added",
-        cacheTtlMs = 5 * 60 * 1000L, // 5 minutes
+        cacheTtlMs = 15 * 60 * 1000L, // 15 minutes - improved cache efficiency
     ) {
         val server = validateServer()
         val userUuid = parseUuid(server.userId ?: "", "user")
@@ -103,7 +103,7 @@ class JellyfinMediaRepository @Inject constructor(
     suspend fun getRecentlyAddedByType(itemType: BaseItemKind, limit: Int = 20): ApiResult<List<BaseItemDto>> = executeWithCache(
         operationName = "getRecentlyAddedByType",
         cacheKey = "recently_added_${itemType.name.lowercase()}",
-        cacheTtlMs = 5 * 60 * 1000L,
+        cacheTtlMs = 15 * 60 * 1000L, // 15 minutes - improved cache efficiency
     ) {
         val server = validateServer()
         val userUuid = parseUuid(server.userId ?: "", "user")
@@ -120,15 +120,15 @@ class JellyfinMediaRepository @Inject constructor(
         response.content.items ?: emptyList()
     }
 
-    suspend fun getMovieDetails(movieId: String): ApiResult<BaseItemDto> = execute {
+    suspend fun getMovieDetails(movieId: String): ApiResult<BaseItemDto> = execute("getMovieDetails") {
         getItemDetailsById(movieId, "movie")
     }
 
-    suspend fun getSeriesDetails(seriesId: String): ApiResult<BaseItemDto> = execute {
+    suspend fun getSeriesDetails(seriesId: String): ApiResult<BaseItemDto> = execute("getSeriesDetails") {
         getItemDetailsById(seriesId, "series")
     }
 
-    suspend fun getEpisodeDetails(episodeId: String): ApiResult<BaseItemDto> = execute {
+    suspend fun getEpisodeDetails(episodeId: String): ApiResult<BaseItemDto> = execute("getEpisodeDetails") {
         getItemDetailsById(episodeId, "episode")
     }
 
