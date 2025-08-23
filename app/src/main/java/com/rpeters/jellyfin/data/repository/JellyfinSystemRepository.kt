@@ -21,7 +21,10 @@ class JellyfinSystemRepository @Inject constructor(
         private const val TAG = "JellyfinSystemRepository"
     }
 
-    private fun getClient(serverUrl: String): ApiClient {
+    /**
+     * Get Jellyfin API client on background thread to avoid StrictMode violations.
+     */
+    private suspend fun getClient(serverUrl: String): ApiClient {
         return clientFactory.getClient(serverUrl, null)
     }
 

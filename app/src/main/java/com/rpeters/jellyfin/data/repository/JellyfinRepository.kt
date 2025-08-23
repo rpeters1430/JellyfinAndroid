@@ -94,12 +94,15 @@ class JellyfinRepository @Inject constructor(
     // Helper function to get string resources
     private fun getString(resId: Int): String = context.getString(resId)
 
-    private fun getClient(serverUrl: String, accessToken: String? = null): ApiClient {
+    /**
+     * Get Jellyfin API client on background thread to avoid StrictMode violations.
+     */
+    private suspend fun getClient(serverUrl: String, accessToken: String? = null): ApiClient {
         return clientFactory.getClient(serverUrl, accessToken)
     }
 
     // ✅ FIX: Helper method to get current authenticated client
-    private fun getCurrentAuthenticatedClient(): ApiClient? {
+    private suspend fun getCurrentAuthenticatedClient(): ApiClient? {
         val currentServer = authRepository.getCurrentServer()
         return currentServer?.let {
             getClient(it.url, it.accessToken)
