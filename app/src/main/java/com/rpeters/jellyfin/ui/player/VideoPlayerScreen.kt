@@ -10,15 +10,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.CastConnected
@@ -51,6 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -71,7 +68,6 @@ fun VideoPlayerScreen(
     onCastClick: () -> Unit,
     onSubtitlesClick: () -> Unit,
     onPictureInPictureClick: () -> Unit,
-    onBackClick: () -> Unit,
     onOrientationToggle: () -> Unit,
     onSubtitleTrackSelect: (TrackInfo?) -> Unit,
     onSubtitleDialogDismiss: () -> Unit,
@@ -175,7 +171,6 @@ fun VideoPlayerScreen(
                 onCastClick = onCastClick,
                 onSubtitlesClick = onSubtitlesClick,
                 onPictureInPictureClick = onPictureInPictureClick,
-                onBackClick = onBackClick,
                 onOrientationToggle = onOrientationToggle,
                 showQualityMenu = showQualityMenu,
                 onShowQualityMenu = { showQualityMenu = it },
@@ -298,7 +293,6 @@ private fun VideoControlsOverlay(
     onCastClick: () -> Unit,
     onSubtitlesClick: () -> Unit,
     onPictureInPictureClick: () -> Unit,
-    onBackClick: () -> Unit,
     onOrientationToggle: () -> Unit,
     showQualityMenu: Boolean,
     onShowQualityMenu: (Boolean) -> Unit,
@@ -311,231 +305,184 @@ private fun VideoControlsOverlay(
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.3f)),
     ) {
-        // Top Controls
-        Row(
+        Text(
+            text = playerState.itemName,
+            color = Color.White,
+            style = MaterialTheme.typography.titleMedium,
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .fillMaxWidth()
                 .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBackClick) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.White,
-                    )
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = playerState.itemName,
-                    color = Color.White,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium,
-                )
-            }
+        )
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                // Quality settings
-                Box {
-                    IconButton(onClick = { onShowQualityMenu(true) }) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Quality Settings",
-                            tint = Color.White,
-                        )
-                    }
-
-                    DropdownMenu(
-                        expanded = showQualityMenu,
-                        onDismissRequest = { onShowQualityMenu(false) },
-                    ) {
-                        playerState.availableQualities.forEach { quality ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = quality.label,
-                                        fontWeight = if (quality == playerState.selectedQuality) {
-                                            FontWeight.Bold
-                                        } else {
-                                            FontWeight.Normal
-                                        },
-                                    )
-                                },
-                                onClick = {
-                                    onQualityChange(quality)
-                                    onShowQualityMenu(false)
-                                },
-                            )
-                        }
-                    }
-                }
-
-                // Aspect ratio settings
-                Box {
-                    IconButton(onClick = { onShowAspectRatioMenu(true) }) {
-                        Icon(
-                            imageVector = Icons.Default.AspectRatio,
-                            contentDescription = "Aspect Ratio: ${playerState.selectedAspectRatio.label}",
-                            tint = if (playerState.selectedAspectRatio != AspectRatioMode.FILL) {
-                                MaterialTheme.colorScheme.primary // Highlight when not default
-                            } else {
-                                Color.White
-                            },
-                        )
-                    }
-
-                    DropdownMenu(
-                        expanded = showAspectRatioMenu,
-                        onDismissRequest = { onShowAspectRatioMenu(false) },
-                    ) {
-                        playerState.availableAspectRatios.forEach { aspectRatio ->
-                            DropdownMenuItem(
-                                text = {
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        Text(
-                                            text = aspectRatio.label,
-                                            fontWeight = if (aspectRatio == playerState.selectedAspectRatio) {
-                                                FontWeight.Bold
-                                            } else {
-                                                FontWeight.Normal
-                                            },
-                                        )
-                                        if (aspectRatio == playerState.selectedAspectRatio) {
-                                            Icon(
-                                                imageVector = Icons.Default.Check,
-                                                contentDescription = "Selected",
-                                                tint = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(16.dp),
-                                            )
-                                        }
-                                    }
-                                },
-                                onClick = {
-                                    onAspectRatioChange(aspectRatio)
-                                    onShowAspectRatioMenu(false)
-                                },
-                            )
-                        }
-                    }
-                }
-
-                // Subtitles button
-                IconButton(onClick = onSubtitlesClick) {
-                    Icon(
-                        imageVector = Icons.Default.ClosedCaption,
-                        contentDescription = "Subtitles",
-                        tint = Color.White,
-                    )
-                }
-
-                // Cast button with device selection
-                CastButton(
-                    isCasting = playerState.isCasting,
-                    onClick = onCastClick,
-                )
-
-                // Picture in Picture
-                IconButton(onClick = onPictureInPictureClick) {
-                    Icon(
-                        imageVector = Icons.Default.PictureInPicture,
-                        contentDescription = "Picture in Picture",
-                        tint = Color.White,
-                    )
-                }
-
-                // Orientation toggle
-                IconButton(onClick = onOrientationToggle) {
-                    Icon(
-                        imageVector = Icons.Default.Fullscreen,
-                        contentDescription = "Toggle Orientation",
-                        tint = Color.White,
-                    )
-                }
-            }
-        }
-
-        // Center Play/Pause Button
-        Box(
-            modifier = Modifier.align(Alignment.Center),
-        ) {
-            IconButton(
-                onClick = onPlayPause,
-                modifier = Modifier
-                    .size(80.dp)
-                    .background(
-                        Color.Black.copy(alpha = 0.5f),
-                        CircleShape,
-                    ),
-            ) {
-                Icon(
-                    imageVector = if (playerState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = if (playerState.isPlaying) "Pause" else "Play",
-                    tint = Color.White,
-                    modifier = Modifier.size(48.dp),
-                )
-            }
-        }
-
-        // Bottom Controls
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .padding(16.dp),
         ) {
-            // Progress Bar
-            if (playerState.duration > 0) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                ControlButton(
+                    onClick = onPlayPause,
+                    imageVector = if (playerState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    contentDescription = if (playerState.isPlaying) "Pause" else "Play",
+                )
+
+                if (playerState.duration > 0) {
+                    val duration = playerState.duration.toFloat()
+                    val progress = playerState.currentPosition.toFloat() / duration
+                    val buffered = playerState.bufferedPosition.toFloat() / duration
+
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = formatTime(playerState.currentPosition),
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+
+                        Box(modifier = Modifier.weight(1f)) {
+                            LinearProgressIndicator(
+                                progress = { buffered },
+                                modifier = Modifier.fillMaxWidth(),
+                                color = Color.White.copy(alpha = 0.3f),
+                                trackColor = Color.White.copy(alpha = 0.1f),
+                            )
+
+                            Slider(
+                                value = progress,
+                                onValueChange = { newProgress ->
+                                    val newPosition = (newProgress * playerState.duration).toLong()
+                                    onSeek(newPosition)
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+
+                        Text(
+                            text = formatTime(playerState.duration),
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                } else {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text(
-                        text = formatTime(playerState.currentPosition),
-                        color = Color.White,
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-
-                    Box(modifier = Modifier.weight(1f)) {
-                        // Buffered progress (background)
-                        LinearProgressIndicator(
-                            progress = {
-                                if (playerState.duration > 0) {
-                                    playerState.bufferedPosition.toFloat() / playerState.duration.toFloat()
-                                } else {
-                                    0f
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            color = Color.White.copy(alpha = 0.3f),
-                            trackColor = Color.White.copy(alpha = 0.1f),
+                    Box {
+                        ControlButton(
+                            onClick = { onShowQualityMenu(true) },
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Quality Settings",
                         )
 
-                        // Playback progress
-                        Slider(
-                            value = if (playerState.duration > 0) {
-                                playerState.currentPosition.toFloat() / playerState.duration.toFloat()
-                            } else {
-                                0f
-                            },
-                            onValueChange = { progress ->
-                                val newPosition = (progress * playerState.duration).toLong()
-                                onSeek(newPosition)
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                        )
+                        DropdownMenu(
+                            expanded = showQualityMenu,
+                            onDismissRequest = { onShowQualityMenu(false) },
+                        ) {
+                            playerState.availableQualities.forEach { quality ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = quality.label,
+                                            fontWeight = if (quality == playerState.selectedQuality) {
+                                                FontWeight.Bold
+                                            } else {
+                                                FontWeight.Normal
+                                            },
+                                        )
+                                    },
+                                    onClick = {
+                                        onQualityChange(quality)
+                                        onShowQualityMenu(false)
+                                    },
+                                )
+                            }
+                        }
                     }
 
-                    Text(
-                        text = formatTime(playerState.duration),
-                        color = Color.White,
-                        style = MaterialTheme.typography.bodySmall,
+                    Box {
+                        ControlButton(
+                            onClick = { onShowAspectRatioMenu(true) },
+                            imageVector = Icons.Default.AspectRatio,
+                            contentDescription = "Aspect Ratio: ${playerState.selectedAspectRatio.label}",
+                            tint = if (playerState.selectedAspectRatio != AspectRatioMode.FILL) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                Color.White
+                            },
+                        )
+
+                        DropdownMenu(
+                            expanded = showAspectRatioMenu,
+                            onDismissRequest = { onShowAspectRatioMenu(false) },
+                        ) {
+                            playerState.availableAspectRatios.forEach { aspectRatio ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            Text(
+                                                text = aspectRatio.label,
+                                                fontWeight = if (aspectRatio == playerState.selectedAspectRatio) {
+                                                    FontWeight.Bold
+                                                } else {
+                                                    FontWeight.Normal
+                                                },
+                                            )
+                                            if (aspectRatio == playerState.selectedAspectRatio) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Check,
+                                                    contentDescription = "Selected",
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(16.dp),
+                                                )
+                                            }
+                                        }
+                                    },
+                                    onClick = {
+                                        onAspectRatioChange(aspectRatio)
+                                        onShowAspectRatioMenu(false)
+                                    },
+                                )
+                            }
+                        }
+                    }
+
+                    ControlButton(
+                        onClick = onSubtitlesClick,
+                        imageVector = Icons.Default.ClosedCaption,
+                        contentDescription = "Subtitles",
+                    )
+
+                    CastButton(
+                        isCasting = playerState.isCasting,
+                        onClick = onCastClick,
+                    )
+
+                    ControlButton(
+                        onClick = onPictureInPictureClick,
+                        imageVector = Icons.Default.PictureInPicture,
+                        contentDescription = "Picture in Picture",
+                    )
+
+                    ControlButton(
+                        onClick = onOrientationToggle,
+                        imageVector = Icons.Default.Fullscreen,
+                        contentDescription = "Toggle Orientation",
                     )
                 }
             }
@@ -549,14 +496,31 @@ private fun CastButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    ControlButton(
+        onClick = onClick,
+        imageVector = if (isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
+        contentDescription = if (isCasting) "Disconnect Cast" else "Cast to Device",
+        tint = if (isCasting) Color.Green else Color.White,
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun ControlButton(
+    onClick: () -> Unit,
+    imageVector: ImageVector,
+    contentDescription: String?,
+    tint: Color = Color.White,
+    modifier: Modifier = Modifier,
+) {
     IconButton(
         onClick = onClick,
         modifier = modifier.size(40.dp),
     ) {
         Icon(
-            imageVector = if (isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
-            contentDescription = if (isCasting) "Disconnect Cast" else "Cast to Device",
-            tint = if (isCasting) Color.Green else Color.White,
+            imageVector = imageVector,
+            contentDescription = contentDescription,
+            tint = tint,
         )
     }
 }
