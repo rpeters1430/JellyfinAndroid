@@ -509,14 +509,14 @@ private fun VideoControlsOverlay(
                         isCasting = playerState.isCasting,
                         onClick = onCastClick,
                     )
-                    ControlButton(
-                        onClick = onPictureInPictureClick,
-                        imageVector = Icons.Default.PictureInPicture,
-                        contentDescription = "Picture in Picture",
-                    )
+                }
 
-                    ControlButton(
-                        onClick = onOrientationToggle,
+                // Orientation toggle that also enables pop-up mode when exiting fullscreen
+                IconButton(onClick = {
+                    onOrientationToggle()
+                    onPictureInPictureClick()
+                }) {
+                    Icon(
                         imageVector = Icons.Default.Fullscreen,
                         contentDescription = "Toggle Orientation",
                     )
@@ -530,6 +530,27 @@ private fun VideoControlsOverlay(
                             )
                         }
                     }
+                }
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = if (playerState.duration > 0) 8.dp else 0.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CastButton(
+                    isCasting = playerState.isCasting,
+                    onClick = onCastClick,
+                )
+
+                IconButton(onClick = onPictureInPictureClick) {
+                    Icon(
+                        imageVector = Icons.Default.PictureInPicture,
+                        contentDescription = "Picture in Picture",
+                        tint = Color.White,
+                    )
                 }
             }
         }
