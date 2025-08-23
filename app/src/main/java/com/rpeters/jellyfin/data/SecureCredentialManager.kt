@@ -14,8 +14,10 @@ import androidx.datastore.preferences.preferencesDataStore
 import androidx.fragment.app.FragmentActivity
 import com.rpeters.jellyfin.core.constants.Constants
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import java.security.KeyStore
 import java.security.MessageDigest
 import javax.crypto.Cipher
@@ -65,9 +67,10 @@ class SecureCredentialManager @Inject constructor(
     }
 
     /**
-     * Gets or creates a secret key with an expiration timestamp for key rotation
+     * Gets or creates a secret key with an expiration timestamp for key rotation.
+     * Performs keystore operations on background thread.
      */
-    private fun getOrCreateSecretKey(forceNew: Boolean = false): SecretKey {
+    private suspend fun getOrCreateSecretKey(forceNew: Boolean = false): SecretKey = withContext(Dispatchers.IO) {
         val currentAlias = getKeyAlias()
 
         // Check if we should rotate the key (force new key or key doesn't exist)
@@ -96,17 +99,18 @@ class SecureCredentialManager @Inject constructor(
                 .build()
 
             keyGenerator.init(keyGenParameterSpec)
-            return keyGenerator.generateKey()
+            return@withContext keyGenerator.generateKey()
         }
 
-        return keyStore.getKey(currentAlias, null) as SecretKey
+        return@withContext keyStore.getKey(currentAlias, null) as SecretKey
     }
 
     /**
-     * Encrypts data using AES/GCM/NoPadding with a new IV for each encryption
+     * Encrypts data using AES/GCM/NoPadding with a new IV for each encryption.
+     * Performs keystore operations on background thread.
      */
-    private fun encrypt(data: String): String {
-        return try {
+    private suspend fun encrypt(data: String): String = withContext(Dispatchers.IO) {
+        try {
             val cipher = Cipher.getInstance(Constants.Security.ENCRYPTION_TRANSFORMATION)
             cipher.init(Cipher.ENCRYPT_MODE, getOrCreateSecretKey())
 
@@ -123,10 +127,11 @@ class SecureCredentialManager @Inject constructor(
     }
 
     /**
-     * Decrypts data using AES/GCM/NoPadding
+     * Decrypts data using AES/GCM/NoPadding.
+     * Performs keystore operations on background thread.
      */
-    private fun decrypt(encryptedData: String): String? {
-        return try {
+    private suspend fun decrypt(encryptedData: String): String? = withContext(Dispatchers.IO) {
+        try {
             val combined = Base64.decode(encryptedData, Base64.NO_WRAP)
             val iv = combined.sliceArray(0 until Constants.Security.IV_LENGTH)
             val cipherData = combined.sliceArray(Constants.Security.IV_LENGTH until combined.size)

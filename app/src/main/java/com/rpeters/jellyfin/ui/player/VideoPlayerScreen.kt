@@ -22,6 +22,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.CastConnected
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Pause
@@ -83,11 +84,18 @@ fun VideoPlayerScreen(
     var showQualityMenu by remember { mutableStateOf(false) }
     var showAspectRatioMenu by remember { mutableStateOf(false) }
 
-    // Auto-hide controls after 3 seconds
-    LaunchedEffect(controlsVisible) {
+    // Auto-hide controls after 5 seconds (increased from 3)
+    LaunchedEffect(controlsVisible, playerState.isPlaying) {
         if (controlsVisible && playerState.isPlaying) {
-            delay(3000)
+            delay(5000) // Longer timeout for better UX
             controlsVisible = false
+        }
+    }
+
+    // Show controls when video starts loading or pauses
+    LaunchedEffect(playerState.isLoading, playerState.isPlaying) {
+        if (playerState.isLoading || !playerState.isPlaying) {
+            controlsVisible = true
         }
     }
 
@@ -370,8 +378,12 @@ private fun VideoControlsOverlay(
                     IconButton(onClick = { onShowAspectRatioMenu(true) }) {
                         Icon(
                             imageVector = Icons.Default.AspectRatio,
-                            contentDescription = "Aspect Ratio Settings",
-                            tint = Color.White,
+                            contentDescription = "Aspect Ratio: ${playerState.selectedAspectRatio.label}",
+                            tint = if (playerState.selectedAspectRatio != AspectRatioMode.FILL) {
+                                MaterialTheme.colorScheme.primary // Highlight when not default
+                            } else {
+                                Color.White
+                            },
                         )
                     }
 
@@ -382,14 +394,27 @@ private fun VideoControlsOverlay(
                         playerState.availableAspectRatios.forEach { aspectRatio ->
                             DropdownMenuItem(
                                 text = {
-                                    Text(
-                                        text = aspectRatio.label,
-                                        fontWeight = if (aspectRatio == playerState.selectedAspectRatio) {
-                                            FontWeight.Bold
-                                        } else {
-                                            FontWeight.Normal
-                                        },
-                                    )
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Text(
+                                            text = aspectRatio.label,
+                                            fontWeight = if (aspectRatio == playerState.selectedAspectRatio) {
+                                                FontWeight.Bold
+                                            } else {
+                                                FontWeight.Normal
+                                            },
+                                        )
+                                        if (aspectRatio == playerState.selectedAspectRatio) {
+                                            Icon(
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = "Selected",
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(16.dp),
+                                            )
+                                        }
+                                    }
                                 },
                                 onClick = {
                                     onAspectRatioChange(aspectRatio)

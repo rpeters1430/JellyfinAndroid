@@ -31,6 +31,16 @@ object NetworkModule {
     @Singleton
     fun provideOkHttpClient(): OkHttpClient {
         return OkHttpClient.Builder().apply {
+            // Add interceptor to tag network traffic for StrictMode compliance
+            addNetworkInterceptor { chain ->
+                android.net.TrafficStats.setThreadStatsTag("jellyfin_api".hashCode())
+                try {
+                    chain.proceed(chain.request())
+                } finally {
+                    android.net.TrafficStats.clearThreadStatsTag()
+                }
+            }
+            
             if (BuildConfig.DEBUG) {
                 addInterceptor(
                     HttpLoggingInterceptor().apply {
