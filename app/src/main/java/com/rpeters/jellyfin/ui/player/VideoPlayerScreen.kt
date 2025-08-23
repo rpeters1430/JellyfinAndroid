@@ -47,6 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -304,6 +305,15 @@ private fun VideoControlsOverlay(
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.3f)),
     ) {
+        Text(
+            text = playerState.itemName,
+            color = Color.White,
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(16.dp),
+        )
+
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -314,15 +324,17 @@ private fun VideoControlsOverlay(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(onClick = onPlayPause) {
-                    Icon(
-                        imageVector = if (playerState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                        contentDescription = if (playerState.isPlaying) "Pause" else "Play",
-                        tint = Color.White,
-                    )
-                }
+                ControlButton(
+                    onClick = onPlayPause,
+                    imageVector = if (playerState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    contentDescription = if (playerState.isPlaying) "Pause" else "Play",
+                )
 
                 if (playerState.duration > 0) {
+                    val duration = playerState.duration.toFloat()
+                    val progress = playerState.currentPosition.toFloat() / duration
+                    val buffered = playerState.bufferedPosition.toFloat() / duration
+
                     Row(
                         modifier = Modifier
                             .weight(1f)
@@ -338,26 +350,16 @@ private fun VideoControlsOverlay(
 
                         Box(modifier = Modifier.weight(1f)) {
                             LinearProgressIndicator(
-                                progress = {
-                                    if (playerState.duration > 0) {
-                                        playerState.bufferedPosition.toFloat() / playerState.duration.toFloat()
-                                    } else {
-                                        0f
-                                    }
-                                },
+                                progress = { buffered },
                                 modifier = Modifier.fillMaxWidth(),
                                 color = Color.White.copy(alpha = 0.3f),
                                 trackColor = Color.White.copy(alpha = 0.1f),
                             )
 
                             Slider(
-                                value = if (playerState.duration > 0) {
-                                    playerState.currentPosition.toFloat() / playerState.duration.toFloat()
-                                } else {
-                                    0f
-                                },
-                                onValueChange = { progress ->
-                                    val newPosition = (progress * playerState.duration).toLong()
+                                value = progress,
+                                onValueChange = { newProgress ->
+                                    val newPosition = (newProgress * playerState.duration).toLong()
                                     onSeek(newPosition)
                                 },
                                 modifier = Modifier.fillMaxWidth(),
@@ -379,13 +381,11 @@ private fun VideoControlsOverlay(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Box {
-                        IconButton(onClick = { onShowQualityMenu(true) }) {
-                            Icon(
-                                imageVector = Icons.Default.Settings,
-                                contentDescription = "Quality Settings",
-                                tint = Color.White,
-                            )
-                        }
+                        ControlButton(
+                            onClick = { onShowQualityMenu(true) },
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Quality Settings",
+                        )
 
                         DropdownMenu(
                             expanded = showQualityMenu,
@@ -413,17 +413,16 @@ private fun VideoControlsOverlay(
                     }
 
                     Box {
-                        IconButton(onClick = { onShowAspectRatioMenu(true) }) {
-                            Icon(
-                                imageVector = Icons.Default.AspectRatio,
-                                contentDescription = "Aspect Ratio: ${playerState.selectedAspectRatio.label}",
-                                tint = if (playerState.selectedAspectRatio != AspectRatioMode.FILL) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    Color.White
-                                },
-                            )
-                        }
+                        ControlButton(
+                            onClick = { onShowAspectRatioMenu(true) },
+                            imageVector = Icons.Default.AspectRatio,
+                            contentDescription = "Aspect Ratio: ${playerState.selectedAspectRatio.label}",
+                            tint = if (playerState.selectedAspectRatio != AspectRatioMode.FILL) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                Color.White
+                            },
+                        )
 
                         DropdownMenu(
                             expanded = showAspectRatioMenu,
@@ -463,34 +462,28 @@ private fun VideoControlsOverlay(
                         }
                     }
 
-                    IconButton(onClick = onSubtitlesClick) {
-                        Icon(
-                            imageVector = Icons.Default.ClosedCaption,
-                            contentDescription = "Subtitles",
-                            tint = Color.White,
-                        )
-                    }
+                    ControlButton(
+                        onClick = onSubtitlesClick,
+                        imageVector = Icons.Default.ClosedCaption,
+                        contentDescription = "Subtitles",
+                    )
 
                     CastButton(
                         isCasting = playerState.isCasting,
                         onClick = onCastClick,
                     )
 
-                    IconButton(onClick = onPictureInPictureClick) {
-                        Icon(
-                            imageVector = Icons.Default.PictureInPicture,
-                            contentDescription = "Picture in Picture",
-                            tint = Color.White,
-                        )
-                    }
+                    ControlButton(
+                        onClick = onPictureInPictureClick,
+                        imageVector = Icons.Default.PictureInPicture,
+                        contentDescription = "Picture in Picture",
+                    )
 
-                    IconButton(onClick = onOrientationToggle) {
-                        Icon(
-                            imageVector = Icons.Default.Fullscreen,
-                            contentDescription = "Toggle Orientation",
-                            tint = Color.White,
-                        )
-                    }
+                    ControlButton(
+                        onClick = onOrientationToggle,
+                        imageVector = Icons.Default.Fullscreen,
+                        contentDescription = "Toggle Orientation",
+                    )
                 }
             }
         }
@@ -503,14 +496,31 @@ private fun CastButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    ControlButton(
+        onClick = onClick,
+        imageVector = if (isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
+        contentDescription = if (isCasting) "Disconnect Cast" else "Cast to Device",
+        tint = if (isCasting) Color.Green else Color.White,
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun ControlButton(
+    onClick: () -> Unit,
+    imageVector: ImageVector,
+    contentDescription: String?,
+    tint: Color = Color.White,
+    modifier: Modifier = Modifier,
+) {
     IconButton(
         onClick = onClick,
         modifier = modifier.size(40.dp),
     ) {
         Icon(
-            imageVector = if (isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
-            contentDescription = if (isCasting) "Disconnect Cast" else "Cast to Device",
-            tint = if (isCasting) Color.Green else Color.White,
+            imageVector = imageVector,
+            contentDescription = contentDescription,
+            tint = tint,
         )
     }
 }
