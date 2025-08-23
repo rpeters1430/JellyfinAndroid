@@ -18,10 +18,12 @@ import com.rpeters.jellyfin.utils.measureSuspendTime
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import javax.inject.Inject
@@ -1002,11 +1004,15 @@ class MainAppViewModel @Inject constructor(
      */
     @UnstableApi
     fun sendCastPreview(item: BaseItemDto) {
-        // Initialize cast if not yet initialized (safe to call multiple times)
-        castManager.initialize()
-        val image = getImageUrl(item)
-        val backdrop = getBackdropUrl(item)
-        castManager.loadPreview(item, imageUrl = image, backdropUrl = backdrop)
+        viewModelScope.launch {
+            // Initialize cast on background thread if not yet initialized (safe to call multiple times)
+            withContext(Dispatchers.IO) {
+                castManager.initialize()
+            }
+            val image = getImageUrl(item)
+            val backdrop = getBackdropUrl(item)
+            castManager.loadPreview(item, imageUrl = image, backdropUrl = backdrop)
+        }
     }
 
     /**
