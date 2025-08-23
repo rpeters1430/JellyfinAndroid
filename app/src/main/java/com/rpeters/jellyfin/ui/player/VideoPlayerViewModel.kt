@@ -129,12 +129,27 @@ class VideoPlayerViewModel @Inject constructor(
     fun initializePlayer(itemId: String, itemName: String, streamUrl: String, startPosition: Long) {
         viewModelScope.launch {
             try {
+                // Load user's preferred aspect ratio
+                val preferredAspectRatio = try {
+                    val sharedPrefs = context.getSharedPreferences("video_player_prefs", android.content.Context.MODE_PRIVATE)
+                    val savedAspectRatio = sharedPrefs.getString("preferred_aspect_ratio", AspectRatioMode.FILL.name)
+                    AspectRatioMode.valueOf(savedAspectRatio ?: AspectRatioMode.FILL.name)
+                } catch (e: Exception) {
+                    Log.w("VideoPlayerViewModel", "Failed to load aspect ratio preference, using FILL", e)
+                    AspectRatioMode.FILL
+                }
+
                 _playerState.value = _playerState.value.copy(
                     itemId = itemId,
                     itemName = itemName,
                     isLoading = true,
                     error = null,
+                    selectedAspectRatio = preferredAspectRatio, // Apply user's preferred aspect ratio
                 )
+
+                if (BuildConfig.DEBUG) {
+                    Log.d("VideoPlayerViewModel", "Initializing player with aspect ratio: ${preferredAspectRatio.label}")
+                }
 
                 // Initialize track selector for quality selection
                 trackSelector = DefaultTrackSelector(context)
@@ -377,7 +392,16 @@ class VideoPlayerViewModel @Inject constructor(
     fun changeAspectRatio(aspectRatioMode: AspectRatioMode) {
         _playerState.value = _playerState.value.copy(selectedAspectRatio = aspectRatioMode)
         if (BuildConfig.DEBUG) {
-            Log.d("VideoPlayerViewModel", "Changed aspect ratio to: ${aspectRatioMode.label}")
+            Log.d("VideoPlayerViewModel", "User changed aspect ratio to: ${aspectRatioMode.label}")
+        }
+        // Save user preference for future videos
+        viewModelScope.launch {
+            try {
+                val sharedPrefs = context.getSharedPreferences("video_player_prefs", android.content.Context.MODE_PRIVATE)
+                sharedPrefs.edit().putString("preferred_aspect_ratio", aspectRatioMode.name).apply()
+            } catch (e: Exception) {
+                Log.w("VideoPlayerViewModel", "Failed to save aspect ratio preference", e)
+            }
         }
     }
 

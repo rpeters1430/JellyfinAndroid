@@ -3,9 +3,13 @@ package com.rpeters.jellyfin.data.cache
 import android.content.Context
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -62,107 +66,119 @@ class JellyfinCache @Inject constructor(
     }
 
     init {
-        // Clean up old cache entries on initialization
-        cleanupOldEntries()
-        updateCacheStats()
+        // Clean up old cache entries on initialization - moved to background thread
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                cleanupOldEntries()
+                updateCacheStats()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error during cache initialization", e)
+            }
+        }
     }
 
     /**
      * Caches a list of BaseItemDto objects with TTL.
+     * Performs I/O operations on background thread.
      */
     suspend fun cacheItems(
         key: String,
         items: List<BaseItemDto>,
         ttlMs: Long = MAX_CACHE_AGE_MS,
     ): Boolean {
-        return try {
-            val cacheData = CacheData(
-                items = items,
-                timestamp = System.currentTimeMillis(),
-                ttlMs = ttlMs,
-            )
+        return withContext(Dispatchers.IO) {
+            try {
+                val cacheData = CacheData(
+                    items = items,
+                    timestamp = System.currentTimeMillis(),
+                    ttlMs = ttlMs,
+                )
 
-            val cacheEntry = CacheEntry(
-                data = cacheData,
-                expiresAt = System.currentTimeMillis() + ttlMs,
-            )
+                val cacheEntry = CacheEntry(
+                    data = cacheData,
+                    expiresAt = System.currentTimeMillis() + ttlMs,
+                )
 
-            // Store in memory cache (synchronized for thread safety)
-            synchronized(memoryCache) {
-                memoryCache[key] = cacheEntry
+                // Store in memory cache (synchronized for thread safety)
+                synchronized(memoryCache) {
+                    memoryCache[key] = cacheEntry
+                }
+
+                // Store on disk
+                val file = File(cacheDir, "$key.json")
+                file.writeText(json.encodeToString(CacheData.serializer(), cacheData))
+
+                if (BuildConfig.DEBUG) {
+                    Log.d(TAG, "Cached ${items.size} items with key: $key")
+                }
+
+                updateCacheStats()
+                true
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to cache items for key: $key", e)
+                false
             }
-
-            // Store on disk
-            val file = File(cacheDir, "$key.json")
-            file.writeText(json.encodeToString(CacheData.serializer(), cacheData))
-
-            if (BuildConfig.DEBUG) {
-                Log.d(TAG, "Cached ${items.size} items with key: $key")
-            }
-
-            updateCacheStats()
-            true
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to cache items for key: $key", e)
-            false
         }
     }
 
     /**
      * Retrieves cached items if they exist and are still valid.
+     * Performs I/O operations on background thread.
      */
     suspend fun getCachedItems(key: String): List<BaseItemDto>? {
-        return try {
-            // Check memory cache first (synchronized for thread safety)
-            synchronized(memoryCache) {
-                memoryCache[key]?.let { entry ->
-                    if (entry.isValid()) {
-                        @Suppress("UNCHECKED_CAST")
-                        val cacheData = entry.data as? CacheData
-                        if (cacheData != null) {
-                            if (BuildConfig.DEBUG) {
-                                Log.d(TAG, "Memory cache hit for key: $key")
+        return withContext(Dispatchers.IO) {
+            try {
+                // Check memory cache first (synchronized for thread safety)
+                synchronized(memoryCache) {
+                    memoryCache[key]?.let { entry ->
+                        if (entry.isValid()) {
+                            @Suppress("UNCHECKED_CAST")
+                            val cacheData = entry.data as? CacheData
+                            if (cacheData != null) {
+                                if (BuildConfig.DEBUG) {
+                                    Log.d(TAG, "Memory cache hit for key: $key")
+                                }
+                                return@withContext cacheData.items
                             }
-                            return cacheData.items
+                        } else {
+                            // Remove expired entry
+                            memoryCache.remove(key)
                         }
+                    }
+                }
+
+                // Check disk cache
+                val file = File(cacheDir, "$key.json")
+                if (file.exists()) {
+                    val cacheData = json.decodeFromString<CacheData>(file.readText())
+                    val isValid = (System.currentTimeMillis() - cacheData.timestamp) < cacheData.ttlMs
+
+                    if (isValid) {
+                        // Add back to memory cache
+                        val cacheEntry = CacheEntry(
+                            data = cacheData,
+                            expiresAt = cacheData.timestamp + cacheData.ttlMs,
+                        )
+                        memoryCache[key] = cacheEntry
+
+                        if (BuildConfig.DEBUG) {
+                            Log.d(TAG, "Disk cache hit for key: $key")
+                        }
+                        return@withContext cacheData.items
                     } else {
-                        // Remove expired entry
-                        memoryCache.remove(key)
+                        // Delete expired file
+                        file.delete()
+                        if (BuildConfig.DEBUG) {
+                            Log.d(TAG, "Deleted expired cache file for key: $key")
+                        }
                     }
                 }
+
+                null
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to retrieve cached items for key: $key", e)
+                null
             }
-
-            // Check disk cache
-            val file = File(cacheDir, "$key.json")
-            if (file.exists()) {
-                val cacheData = json.decodeFromString<CacheData>(file.readText())
-                val isValid = (System.currentTimeMillis() - cacheData.timestamp) < cacheData.ttlMs
-
-                if (isValid) {
-                    // Add back to memory cache
-                    val cacheEntry = CacheEntry(
-                        data = cacheData,
-                        expiresAt = cacheData.timestamp + cacheData.ttlMs,
-                    )
-                    memoryCache[key] = cacheEntry
-
-                    if (BuildConfig.DEBUG) {
-                        Log.d(TAG, "Disk cache hit for key: $key")
-                    }
-                    return cacheData.items
-                } else {
-                    // Delete expired file
-                    file.delete()
-                    if (BuildConfig.DEBUG) {
-                        Log.d(TAG, "Deleted expired cache file for key: $key")
-                    }
-                }
-            }
-
-            null
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to retrieve cached items for key: $key", e)
-            null
         }
     }
 
@@ -243,54 +259,57 @@ class JellyfinCache @Inject constructor(
 
     /**
      * Cleans up expired cache entries.
+     * Performs I/O operations on background thread.
      */
-    private fun cleanupOldEntries() {
-        try {
-            val currentTime = System.currentTimeMillis()
+    private suspend fun cleanupOldEntries() {
+        withContext(Dispatchers.IO) {
+            try {
+                val currentTime = System.currentTimeMillis()
 
-            // Clean memory cache
-            val expiredKeys = memoryCache.entries
-                .filter { !it.value.isValid() }
-                .map { it.key }
+                // Clean memory cache
+                val expiredKeys = memoryCache.entries
+                    .filter { !it.value.isValid() }
+                    .map { it.key }
 
-            expiredKeys.forEach { key ->
-                memoryCache.remove(key)
-            }
+                expiredKeys.forEach { key ->
+                    memoryCache.remove(key)
+                }
 
-            // Clean disk cache
-            cacheDir.listFiles()?.forEach { file ->
-                if (file.isFile && file.name.endsWith(".json")) {
-                    try {
-                        val cacheData = json.decodeFromString<CacheData>(file.readText())
-                        val isExpired = (currentTime - cacheData.timestamp) >= cacheData.ttlMs
+                // Clean disk cache
+                cacheDir.listFiles()?.forEach { file ->
+                    if (file.isFile && file.name.endsWith(".json")) {
+                        try {
+                            val cacheData = json.decodeFromString<CacheData>(file.readText())
+                            val isExpired = (currentTime - cacheData.timestamp) >= cacheData.ttlMs
 
-                        if (isExpired) {
-                            file.delete()
-                            if (BuildConfig.DEBUG) {
-                                Log.d(TAG, "Deleted expired cache file: ${file.name}")
+                            if (isExpired) {
+                                file.delete()
+                                if (BuildConfig.DEBUG) {
+                                    Log.d(TAG, "Deleted expired cache file: ${file.name}")
+                                }
                             }
+                        } catch (e: Exception) {
+                            // Delete corrupted files
+                            file.delete()
+                            Log.w(TAG, "Deleted corrupted cache file: ${file.name}")
                         }
-                    } catch (e: Exception) {
-                        // Delete corrupted files
-                        file.delete()
-                        Log.w(TAG, "Deleted corrupted cache file: ${file.name}")
                     }
                 }
-            }
 
-            // Check if we need to free up space
-            val cacheSize = getCacheSizeBytes()
-            val maxCacheSizeBytes = MAX_CACHE_SIZE_MB * 1024 * 1024
+                // Check if we need to free up space
+                val cacheSize = getCacheSizeBytes()
+                val maxCacheSizeBytes = MAX_CACHE_SIZE_MB * 1024 * 1024
 
-            if (cacheSize > maxCacheSizeBytes) {
-                evictOldestEntries(maxCacheSizeBytes)
-            }
+                if (cacheSize > maxCacheSizeBytes) {
+                    evictOldestEntries(maxCacheSizeBytes)
+                }
 
-            if (BuildConfig.DEBUG) {
-                Log.d(TAG, "Cache cleanup completed. Removed ${expiredKeys.size} expired entries")
+                if (BuildConfig.DEBUG) {
+                    Log.d(TAG, "Cache cleanup completed. Removed ${expiredKeys.size} expired entries")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error during cache cleanup", e)
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error during cache cleanup", e)
         }
     }
 
