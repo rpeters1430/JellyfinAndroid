@@ -23,7 +23,11 @@ open class BaseJellyfinRepository @Inject constructor(
     private val clientFactory: JellyfinClientFactory,
     protected val cache: JellyfinCache,
 ) {
-    protected fun getClient(serverUrl: String, accessToken: String?): ApiClient =
+    /**
+     * Get Jellyfin API client on background thread to avoid StrictMode violations.
+     * Client creation involves static initialization that performs file I/O.
+     */
+    protected suspend fun getClient(serverUrl: String, accessToken: String?): ApiClient =
         clientFactory.getClient(serverUrl, accessToken)
 
     protected fun validateServer(): JellyfinServer =

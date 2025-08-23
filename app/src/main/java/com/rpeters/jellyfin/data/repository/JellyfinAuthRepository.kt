@@ -50,7 +50,10 @@ class JellyfinAuthRepository @Inject constructor(
         private const val TOKEN_VALIDITY_DURATION_MS = TOKEN_VALIDITY_DURATION_MINUTES * 60 * 1000L
     }
 
-    private fun getClient(serverUrl: String, accessToken: String? = null): ApiClient {
+    /**
+     * Get Jellyfin API client on background thread to avoid StrictMode violations.
+     */
+    private suspend fun getClient(serverUrl: String, accessToken: String? = null): ApiClient {
         return clientFactory.getClient(serverUrl, accessToken)
     }
 

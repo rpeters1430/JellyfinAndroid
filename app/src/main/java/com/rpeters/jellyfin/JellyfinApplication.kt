@@ -5,7 +5,13 @@ import android.os.StrictMode
 import com.rpeters.jellyfin.core.Logger
 import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
 import com.rpeters.jellyfin.utils.SecureLogger
+import com.rpeters.jellyfin.utils.NetworkOptimizer
+import com.rpeters.jellyfin.utils.PerformanceOptimizer
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltAndroidApp
@@ -13,6 +19,8 @@ class JellyfinApplication : Application() {
 
     @Inject
     lateinit var offlineDownloadManager: OfflineDownloadManager
+    
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     companion object {
         private const val TAG = "JellyfinApplication"
@@ -24,21 +32,8 @@ class JellyfinApplication : Application() {
         // Initialize Logger with application context for file logging
         Logger.appContext = this
 
-        // Enable StrictMode for debug builds to detect policy violations
-        if (BuildConfig.DEBUG) {
-            StrictMode.setThreadPolicy(
-                StrictMode.ThreadPolicy.Builder()
-                    .detectAll()
-                    .penaltyLog()
-                    .build(),
-            )
-            StrictMode.setVmPolicy(
-                StrictMode.VmPolicy.Builder()
-                    .detectAll()
-                    .penaltyLog()
-                    .build(),
-            )
-        }
+        // Configure performance optimizations first
+        initializePerformanceOptimizations()
 
         setupUncaughtExceptionHandler()
         SecureLogger.i(TAG, "Application started")
@@ -54,6 +49,41 @@ class JellyfinApplication : Application() {
         super.onLowMemory()
         SecureLogger.w(TAG, "Low memory warning - cleaning up caches")
         // Could trigger cache cleanup here if needed
+    }
+    
+    private fun initializePerformanceOptimizations() {
+        applicationScope.launch {
+            try {
+                // Initialize network optimizations for StrictMode compliance
+                NetworkOptimizer.initialize(this@JellyfinApplication)
+                
+                // Configure StrictMode with network optimizations
+                NetworkOptimizer.configureNetworkStrictMode()
+                
+                SecureLogger.i(TAG, "Performance optimizations initialized")
+            } catch (e: Exception) {
+                SecureLogger.e(TAG, "Failed to initialize performance optimizations", e)
+                
+                // Fallback to basic StrictMode if optimizations fail
+                if (BuildConfig.DEBUG) {
+                    StrictMode.setThreadPolicy(
+                        StrictMode.ThreadPolicy.Builder()
+                            .detectDiskReads()
+                            .detectDiskWrites() 
+                            .detectNetwork()
+                            .penaltyLog()
+                            .build(),
+                    )
+                    StrictMode.setVmPolicy(
+                        StrictMode.VmPolicy.Builder()
+                            .detectLeakedClosableObjects()
+                            .detectUntaggedSockets()
+                            .penaltyLog()
+                            .build(),
+                    )
+                }
+            }
+        }
     }
 
     private fun setupUncaughtExceptionHandler() {

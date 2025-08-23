@@ -10,6 +10,8 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.jellyfin.sdk.Jellyfin
@@ -33,12 +35,22 @@ object NetworkModule {
         return OkHttpClient.Builder().apply {
             // Add interceptor to tag network traffic for StrictMode compliance
             addNetworkInterceptor { chain ->
-                android.net.TrafficStats.setThreadStatsTag("jellyfin_api".hashCode())
+                val threadId = Thread.currentThread().hashCode()
+                android.net.TrafficStats.setThreadStatsTag(threadId)
                 try {
                     chain.proceed(chain.request())
                 } finally {
                     android.net.TrafficStats.clearThreadStatsTag()
                 }
+            }
+            
+            // Add connection pool to optimize connections
+            addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                    .addHeader("Connection", "keep-alive")
+                    .addHeader("User-Agent", "JellyfinAndroid/1.0.0")
+                    .build()
+                chain.proceed(request)
             }
 
             if (BuildConfig.DEBUG) {
@@ -49,10 +61,11 @@ object NetworkModule {
                 )
             }
         }
-            .connectionPool(okhttp3.ConnectionPool(5, 5, TimeUnit.MINUTES))
+            .connectionPool(okhttp3.ConnectionPool(10, 5, TimeUnit.MINUTES))
             .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(true)
             .build()
     }
 
@@ -83,7 +96,9 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideJellyfinCache(@ApplicationContext context: Context): JellyfinCache {
+    fun provideJellyfinCache(@ApplicationContext context: Context, okHttpClient: OkHttpClient): JellyfinCache {
+        // Initialize image loading with the same OkHttpClient for consistency
+        com.rpeters.jellyfin.utils.ImageLoadingOptimizer.initializeCoil(context, okHttpClient)
         return JellyfinCache(context)
     }
 }
@@ -112,12 +127,18 @@ class JellyfinClientFactory @Inject constructor(
         private const val MAX_AUTH_RETRIES = 1
     }
 
-    fun getClient(baseUrl: String, accessToken: String? = null): org.jellyfin.sdk.api.client.ApiClient {
+    /**
+     * Create Jellyfin API client on background thread to avoid StrictMode violations.
+     * The client creation involves file I/O operations during static initialization
+     * of the Ktor HTTP client, which must be done off the main thread.
+     */
+    suspend fun getClient(baseUrl: String, accessToken: String? = null): org.jellyfin.sdk.api.client.ApiClient = withContext(Dispatchers.IO) {
         val normalizedUrl = baseUrl.trimEnd('/') + "/"
 
         // Use synchronized block to prevent race conditions during client creation
         synchronized(clientLock) {
             if (currentToken != accessToken || currentBaseUrl != normalizedUrl || currentClient == null) {
+                // This is where the StrictMode violation was occurring - Ktor/ServiceLoader static init
                 currentClient = jellyfin.createApi(
                     baseUrl = normalizedUrl,
                     accessToken = accessToken,
@@ -126,7 +147,7 @@ class JellyfinClientFactory @Inject constructor(
                 currentToken = accessToken
             }
 
-            return currentClient ?: throw IllegalStateException("Failed to create Jellyfin API client for URL: $normalizedUrl")
+            return@synchronized currentClient ?: throw IllegalStateException("Failed to create Jellyfin API client for URL: $normalizedUrl")
         }
     }
 
@@ -158,6 +179,7 @@ class JellyfinClientFactory @Inject constructor(
         val currentServer = authRepository.getCurrentServer()
             ?: throw IllegalStateException("No authenticated server available")
 
+        // Client creation is now properly done on background thread
         val client = getClient(currentServer.url, currentServer.accessToken)
 
         return try {
