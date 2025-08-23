@@ -6,6 +6,7 @@ import androidx.core.net.toUri
 import androidx.media3.cast.CastPlayer
 import androidx.media3.cast.SessionAvailabilityListener
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import com.google.android.gms.cast.MediaInfo
@@ -16,9 +17,12 @@ import com.google.android.gms.cast.framework.SessionManagerListener
 import com.google.android.gms.common.images.WebImage
 import com.rpeters.jellyfin.BuildConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -130,34 +134,73 @@ class CastManager @Inject constructor(
     }
 
     fun initialize() {
-        try {
-            castContext = CastContext.getSharedInstance(context).apply {
-                sessionManager.addSessionManagerListener(sessionManagerListener, CastSession::class.java)
-            }
-
-            castContext?.let { context ->
-                castPlayer = CastPlayer(context).apply {
-                    setSessionAvailabilityListener(sessionAvailabilityListener)
+        // Move Cast initialization to background thread to avoid StrictMode disk read violations
+        // The Cast framework loads modules dynamically which involves file I/O operations
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                castContext = CastContext.getSharedInstance(context).apply {
+                    sessionManager.addSessionManagerListener(sessionManagerListener, CastSession::class.java)
                 }
-            }
 
-            updateCastState(
-                isAvailable = castContext?.sessionManager?.currentCastSession != null,
-                castPlayer = castPlayer,
-            )
+                castContext?.let { context ->
+                    castPlayer = CastPlayer(context).apply {
+                        setSessionAvailabilityListener(sessionAvailabilityListener)
+                    }
+                }
 
-            if (BuildConfig.DEBUG) {
-                Log.d("CastManager", "Cast manager initialized successfully")
+                updateCastState(
+                    isAvailable = castContext?.sessionManager?.currentCastSession != null,
+                    castPlayer = castPlayer,
+                )
+
+                if (BuildConfig.DEBUG) {
+                    Log.d("CastManager", "Cast manager initialized successfully")
+                }
+            } catch (e: Exception) {
+                Log.e("CastManager", "Failed to initialize Cast", e)
             }
-        } catch (e: Exception) {
-            Log.e("CastManager", "Failed to initialize Cast", e)
         }
     }
 
-    fun startCasting(mediaItem: MediaItem, item: BaseItemDto) {
+    /**
+     * Infer proper content type from URL for Cast receiver compatibility
+     */
+    private fun inferContentType(uri: String): String = when {
+        uri.endsWith(".m3u8", ignoreCase = true) -> "application/x-mpegURL"   // HLS
+        uri.endsWith(".mpd", ignoreCase = true) -> "application/dash+xml"    // DASH
+        else -> "video/mp4"                                                   // default
+    }
+
+    /**
+     * Convert SubtitleSpec to Cast MediaTrack
+     */
+    private fun SubtitleSpec.toCastTrack(id: Long): com.google.android.gms.cast.MediaTrack {
+        val builder = com.google.android.gms.cast.MediaTrack.Builder(
+            id, com.google.android.gms.cast.MediaTrack.TYPE_TEXT
+        )
+            .setContentId(this.url)
+            .setLanguage(this.language)
+            .setName(this.label ?: this.language?.uppercase() ?: "Subtitles")
+
+        // Map MIME type to Cast track subtype
+        val subtype = when (this.mimeType) {
+            androidx.media3.common.MimeTypes.TEXT_VTT -> com.google.android.gms.cast.MediaTrack.SUBTYPE_SUBTITLES
+            androidx.media3.common.MimeTypes.APPLICATION_SUBRIP -> com.google.android.gms.cast.MediaTrack.SUBTYPE_SUBTITLES
+            androidx.media3.common.MimeTypes.TEXT_SSA,
+            androidx.media3.common.MimeTypes.APPLICATION_TTML -> com.google.android.gms.cast.MediaTrack.SUBTYPE_CAPTIONS
+            else -> com.google.android.gms.cast.MediaTrack.SUBTYPE_UNKNOWN
+        }
+        builder.setSubtype(subtype)
+        return builder.build()
+    }
+
+    fun startCasting(mediaItem: MediaItem, item: BaseItemDto, sideLoadedSubs: List<SubtitleSpec> = emptyList()) {
         try {
             val castSession = castContext?.sessionManager?.currentCastSession
             if (castSession?.isConnected == true) {
+                val mediaUrl = mediaItem.localConfiguration?.uri.toString()
+                val contentType = inferContentType(mediaUrl)
+                
                 // Build Cast media metadata
                 val metadata = CastMediaMetadata(CastMediaMetadata.MEDIA_TYPE_MOVIE).apply {
                     putString(CastMediaMetadata.KEY_TITLE, item.name ?: "Unknown Title")
@@ -168,23 +211,40 @@ class CastManager @Inject constructor(
                     addImage(WebImage(imageUrl.toUri()))
                 }
 
-                // Build media info
-                val mediaInfo = MediaInfo.Builder(mediaItem.localConfiguration?.uri.toString())
+                // Build subtitle tracks for Cast
+                val tracks = sideLoadedSubs.mapIndexed { idx, sub -> 
+                    sub.toCastTrack(idx + 1L) 
+                }
+
+                // Build media info with proper content type and tracks
+                val mediaInfo = MediaInfo.Builder(mediaUrl)
                     .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
-                    .setContentType("video/mp4") // Default content type
+                    .setContentType(contentType)
                     .setMetadata(metadata)
+                    .setMediaTracks(tracks)
                     .build()
+
+                // Optional: Set default text track style
+                val textTrackStyle = com.google.android.gms.cast.TextTrackStyle().apply {
+                    foregroundColor = 0xFFFFFFFF.toInt()
+                    backgroundColor = 0x00000000
+                    edgeType = com.google.android.gms.cast.TextTrackStyle.EDGE_TYPE_OUTLINE
+                    edgeColor = 0xFF000000.toInt()
+                    fontScale = 1.0f
+                }
 
                 // Load media on Cast device
                 val request = MediaLoadRequestData.Builder()
                     .setMediaInfo(mediaInfo)
                     .setAutoplay(true)
+                    // Uncomment to enable default text styling:
+                    // .setTextTrackStyle(textTrackStyle)
                     .build()
 
                 castSession.remoteMediaClient?.load(request)
 
                 if (BuildConfig.DEBUG) {
-                    Log.d("CastManager", "Started casting: ${item.name}")
+                    Log.d("CastManager", "Started casting: ${item.name} (${contentType}) with ${tracks.size} subtitle tracks")
                 }
             } else {
                 Log.w("CastManager", "No active Cast session")

@@ -15,6 +15,7 @@ import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +24,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @UnstableApi
@@ -92,6 +94,7 @@ class VideoPlayerViewModel @Inject constructor(
     private var trackSelector: DefaultTrackSelector? = null
     private var currentMediaItem: MediaItem? = null
     private var currentJellyfinItem: org.jellyfin.sdk.model.api.BaseItemDto? = null
+    private var currentSubtitleSpecs: List<SubtitleSpec> = emptyList()
 
     var exoPlayer: ExoPlayer? = null
         private set
@@ -154,37 +157,71 @@ class VideoPlayerViewModel @Inject constructor(
                 // Initialize track selector for quality selection
                 trackSelector = DefaultTrackSelector(context)
 
-                // Create ExoPlayer
+                // Create ExoPlayer with properly tagged network client
                 // Check if offline content is available
                 val offlineMediaItem = offlinePlaybackManager.getOfflineMediaItem(itemId)
                 val isOfflinePlayback = offlineMediaItem != null && streamUrl.startsWith("file://")
 
-                // Create media item and store references
+                // Get external subtitles if available
+                val sideLoadedSubs = try {
+                    // TODO: Implement repository.getExternalSubtitlesFor(itemId) when server supports it
+                    emptyList<SubtitleSpec>()
+                } catch (e: Exception) {
+                    Log.w("VideoPlayerViewModel", "Failed to load external subtitles", e)
+                    emptyList<SubtitleSpec>()
+                }
+                
+                // Store for later use in casting
+                currentSubtitleSpecs = sideLoadedSubs
+
+                // Create media item with subtitle support and proper MIME type
                 currentMediaItem = if (isOfflinePlayback && offlineMediaItem != null) {
                     offlineMediaItem
                 } else {
-                    MediaItem.fromUri(streamUrl)
+                    val mimeTypeHint = MediaItemFactory.inferMimeType(streamUrl)
+                    MediaItemFactory.build(
+                        videoUrl = streamUrl,
+                        title = itemName,
+                        sideLoadedSubs = sideLoadedSubs,
+                        mimeTypeHint = mimeTypeHint
+                    )
                 }
 
                 // Ensure trackSelector and currentMediaItem are not null before creating ExoPlayer
                 val selector = trackSelector ?: throw IllegalStateException("Track selector not initialized")
                 val mediaItem = currentMediaItem ?: throw IllegalStateException("Media item not created")
 
+                // Create ExoPlayer with properly configured network data source
                 exoPlayer = ExoPlayer.Builder(context)
                     .setTrackSelector(selector)
+                    .setMediaSourceFactory(
+                        androidx.media3.exoplayer.source.DefaultMediaSourceFactory(context)
+                            .setDataSourceFactory(
+                                androidx.media3.datasource.DefaultHttpDataSource.Factory()
+                                    .setUserAgent("JellyfinAndroid/1.0.0")
+                                    .setConnectTimeoutMs(30_000)
+                                    .setReadTimeoutMs(60_000)
+                                    .setAllowCrossProtocolRedirects(true)
+                            )
+                    )
                     .build()
                     .apply {
                         addListener(playerListener)
                         setMediaItem(mediaItem)
                         seekTo(startPosition)
                         prepare()
+                        
+                        // Enable scrubbing mode for smoother seeks (Media3 1.8.0 feature)
+                        setScrubbingModeEnabled(true)
                     }
 
                 // Load Jellyfin item for Cast metadata
                 loadJellyfinItem(itemId)
 
-                // Initialize Cast support
-                castManager.initialize()
+                // Initialize Cast support on background thread to avoid StrictMode violations
+                launch(Dispatchers.IO) {
+                    castManager.initialize()
+                }
 
                 // Observe cast state updates (single collector lifecycle bound to player init)
                 launch {
@@ -255,7 +292,12 @@ class VideoPlayerViewModel @Inject constructor(
 
                 newStreamUrl?.let { url ->
                     exoPlayer?.apply {
-                        setMediaItem(MediaItem.fromUri(url))
+                        val mediaItem = MediaItemFactory.build(
+                            videoUrl = url,
+                            title = _playerState.value.itemName,
+                            mimeTypeHint = MediaItemFactory.inferMimeType(url)
+                        )
+                        setMediaItem(mediaItem)
                         seekTo(currentPosition)
                         prepare()
                     }
@@ -275,25 +317,32 @@ class VideoPlayerViewModel @Inject constructor(
     }
 
     fun showCastDialog() {
-        try {
-            val castContext = com.google.android.gms.cast.framework.CastContext.getSharedInstance(context)
-            val sessionManager = castContext.sessionManager
+        viewModelScope.launch {
+            try {
+                // Ensure Cast is initialized on background thread first
+                withContext(Dispatchers.IO) {
+                    val castContext = com.google.android.gms.cast.framework.CastContext.getSharedInstance(context)
+                    val sessionManager = castContext.sessionManager
 
-            if (sessionManager.currentCastSession?.isConnected == true) {
-                // If already connected, disconnect
-                sessionManager.endCurrentSession(true)
-                if (BuildConfig.DEBUG) {
-                    Log.d("VideoPlayerViewModel", "Disconnected from Cast device")
+                    if (sessionManager.currentCastSession?.isConnected == true) {
+                        // If already connected, disconnect
+                        sessionManager.endCurrentSession(true)
+                        if (BuildConfig.DEBUG) {
+                            Log.d("VideoPlayerViewModel", "Disconnected from Cast device")
+                        }
+                    } else {
+                        // Show cast device selection dialog
+                        withContext(Dispatchers.Main) {
+                            _playerState.value = _playerState.value.copy(showCastDialog = true)
+                            if (BuildConfig.DEBUG) {
+                                Log.d("VideoPlayerViewModel", "Cast dialog requested")
+                            }
+                        }
+                    }
                 }
-            } else {
-                // Show cast device selection dialog
-                _playerState.value = _playerState.value.copy(showCastDialog = true)
-                if (BuildConfig.DEBUG) {
-                    Log.d("VideoPlayerViewModel", "Cast dialog requested")
-                }
+            } catch (e: Exception) {
+                Log.e("VideoPlayerViewModel", "Failed to show cast dialog", e)
             }
-        } catch (e: Exception) {
-            Log.e("VideoPlayerViewModel", "Failed to show cast dialog", e)
         }
     }
 
@@ -408,9 +457,9 @@ class VideoPlayerViewModel @Inject constructor(
     fun startCasting() {
         currentMediaItem?.let { mediaItem ->
             currentJellyfinItem?.let { jellyfinItem ->
-                castManager.startCasting(mediaItem, jellyfinItem)
+                castManager.startCasting(mediaItem, jellyfinItem, currentSubtitleSpecs)
                 if (BuildConfig.DEBUG) {
-                    Log.d("VideoPlayerViewModel", "Started casting: ${jellyfinItem.name}")
+                    Log.d("VideoPlayerViewModel", "Started casting: ${jellyfinItem.name} with ${currentSubtitleSpecs.size} subtitle tracks")
                 }
             }
         }

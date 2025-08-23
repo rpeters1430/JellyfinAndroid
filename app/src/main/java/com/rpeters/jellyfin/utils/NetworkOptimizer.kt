@@ -47,35 +47,45 @@ object NetworkOptimizer {
         val imageLoader = ImageLoader.Builder(context)
             .memoryCache {
                 MemoryCache.Builder(context)
-                    .maxSizePercent(0.25) // Use 25% of available memory
+                    .maxSizePercent(0.20) // Reduce to 20% to avoid memory pressure
                     .build()
             }
             .diskCache {
                 DiskCache.Builder()
                     .directory(context.cacheDir.resolve("image_cache"))
-                    .maxSizePercent(0.02) // Use 2% of available disk space
+                    .maxSizePercent(0.015) // Reduce to 1.5% to prevent disk space issues
+                    .cleanupDispatcher(Dispatchers.IO) // Ensure cleanup happens on background thread
                     .build()
             }
             .okHttpClient {
                 OkHttpClient.Builder()
                     .addNetworkInterceptor { chain ->
-                        // Tag network traffic for Coil image loading
-                        TrafficStats.setThreadStatsTag(NETWORK_TAG.hashCode())
+                        // Use more specific tag for image loading
+                        TrafficStats.setThreadStatsTag("coil_images".hashCode())
                         try {
                             chain.proceed(chain.request())
                         } finally {
                             TrafficStats.clearThreadStatsTag()
                         }
                     }
-                    .connectionPool(okhttp3.ConnectionPool(5, 5, TimeUnit.MINUTES))
-                    .connectTimeout(15, TimeUnit.SECONDS)
-                    .readTimeout(30, TimeUnit.SECONDS)
-                    .writeTimeout(15, TimeUnit.SECONDS)
-                    .retryOnConnectionFailure(true)
+                    .addInterceptor { chain ->
+                        // Add connection keep-alive and user-agent for better caching
+                        val request = chain.request().newBuilder()
+                            .addHeader("Connection", "keep-alive")
+                            .addHeader("User-Agent", "JellyfinAndroid-Coil/1.0.0")
+                            .build()
+                        chain.proceed(request)
+                    }
+                    .connectionPool(okhttp3.ConnectionPool(3, 3, TimeUnit.MINUTES)) // Smaller pool for images
+                    .connectTimeout(10, TimeUnit.SECONDS) // Faster timeout for images
+                    .readTimeout(20, TimeUnit.SECONDS)
+                    .writeTimeout(10, TimeUnit.SECONDS)
+                    .retryOnConnectionFailure(false) // Don't retry image loads to avoid blocking
                     .build()
             }
-            .crossfade(true)
+            .crossfade(150) // Slightly faster crossfade
             .respectCacheHeaders(false) // Ignore server cache headers
+            .allowRgb565(true) // Use less memory for images
             .apply {
                 if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
                     logger(DebugLogger())
