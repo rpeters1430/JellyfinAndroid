@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AspectRatio
+import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.CastConnected
 import androidx.compose.material.icons.filled.Check
@@ -73,6 +74,7 @@ fun VideoPlayerScreen(
     onPictureInPictureClick: () -> Unit,
     onBackClick: () -> Unit,
     onOrientationToggle: () -> Unit,
+    onAudioTrackSelect: (TrackInfo) -> Unit,
     onSubtitleTrackSelect: (TrackInfo?) -> Unit,
     onSubtitleDialogDismiss: () -> Unit,
     onCastDeviceSelect: (String) -> Unit,
@@ -83,6 +85,7 @@ fun VideoPlayerScreen(
     var controlsVisible by remember { mutableStateOf(true) }
     var showQualityMenu by remember { mutableStateOf(false) }
     var showAspectRatioMenu by remember { mutableStateOf(false) }
+    var showAudioDialog by remember { mutableStateOf(false) }
 
     // Auto-hide controls after 5 seconds (increased from 3)
     LaunchedEffect(controlsVisible, playerState.isPlaying) {
@@ -173,6 +176,7 @@ fun VideoPlayerScreen(
                 onQualityChange = onQualityChange,
                 onAspectRatioChange = onAspectRatioChange,
                 onCastClick = onCastClick,
+                onAudioTracksClick = { showAudioDialog = true },
                 onSubtitlesClick = onSubtitlesClick,
                 onPictureInPictureClick = onPictureInPictureClick,
                 onBackClick = onBackClick,
@@ -214,6 +218,35 @@ fun VideoPlayerScreen(
                     }
                 }
             }
+        }
+
+        // Audio Track Selection Dialog
+        if (showAudioDialog) {
+            AlertDialog(
+                onDismissRequest = { showAudioDialog = false },
+                title = { Text("Select Audio Track") },
+                text = {
+                    Column {
+                        playerState.availableAudioTracks.forEach { track ->
+                            TextButton(
+                                onClick = {
+                                    onAudioTrackSelect(track)
+                                    showAudioDialog = false
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text(
+                                    text = track.displayName,
+                                    fontWeight = if (track.isSelected) FontWeight.Bold else FontWeight.Normal,
+                                )
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showAudioDialog = false }) { Text("Close") }
+                },
+            )
         }
 
         // Subtitle Selection Dialog
@@ -422,6 +455,16 @@ private fun VideoControlsOverlay(
                                 },
                             )
                         }
+                    }
+                }
+
+                if (playerState.availableAudioTracks.size > 1) {
+                    IconButton(onClick = onAudioTracksClick) {
+                        Icon(
+                            imageVector = Icons.Default.Audiotrack,
+                            contentDescription = "Audio Tracks",
+                            tint = Color.White,
+                        )
                     }
                 }
 
