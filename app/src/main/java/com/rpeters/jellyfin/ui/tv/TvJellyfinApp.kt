@@ -26,9 +26,18 @@ import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text as TvText
 
+/**
+ * Root composable for the Android TV experience.
+ *
+ * @param onLogout callback when the user logs out.
+ * @param useDynamicColor whether to apply dynamic colors when supported. Enabled by default.
+ */
 @Composable
-fun TvJellyfinApp(onLogout: () -> Unit = {}) {
-    JellyfinAndroidTheme(dynamicColor = true) {
+fun TvJellyfinApp(
+    onLogout: () -> Unit = {},
+    useDynamicColor: Boolean = true,
+) {
+    JellyfinAndroidTheme(dynamicColor = useDynamicColor) {
         val navController = rememberNavController()
         val connectionViewModel: ServerConnectionViewModel = hiltViewModel()
         val connectionState by connectionViewModel.connectionState.collectAsState()
