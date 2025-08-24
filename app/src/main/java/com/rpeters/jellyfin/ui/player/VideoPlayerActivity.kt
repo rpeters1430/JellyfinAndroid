@@ -78,7 +78,7 @@ class VideoPlayerActivity : ComponentActivity() {
 
             // Initialize player with error handling
             try {
-                playerViewModel.initializePlayer(itemId, itemName, streamUrl, startPosition)
+                playerViewModel.initializePlayer(itemId, itemName, startPosition)
             } catch (e: Exception) {
                 android.util.Log.e("VideoPlayerActivity", "Failed to initialize player", e)
                 finish()

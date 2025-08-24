@@ -173,19 +173,82 @@ class VideoPlayerViewModel @Inject constructor(
         }
     }
 
-    fun initializePlayer(itemId: String, itemName: String, streamUrl: String, startPosition: Long) {
+    fun initializePlayer(itemId: String, itemName: String, startPosition: Long) {
         viewModelScope.launch {
             try {
                 // Store current item details for error handling
                 currentItemId = itemId
                 currentItemName = itemName
 
-                // Add critical crash protection
                 if (BuildConfig.DEBUG) {
-                    Log.d("VideoPlayerViewModel", "=== STARTING PLAYER INITIALIZATION ===")
+                    Log.d("VideoPlayerViewModel", "=== STARTING JELLYFIN OFFICIAL FLOW ===")
                     Log.d("VideoPlayerViewModel", "Item: $itemName ($itemId)")
-                    Log.d("VideoPlayerViewModel", "Stream URL: ${streamUrl.take(100)}...")
                     Log.d("VideoPlayerViewModel", "Start position: ${startPosition}ms")
+                }
+
+                // Step 1: Get Jellyfin PlaybackInfo (official API flow)
+                val playbackInfo = try {
+                    repository.getPlaybackInfo(itemId)
+                } catch (e: Exception) {
+                    Log.e("VideoPlayerViewModel", "Failed to get playback info for item $itemId", e)
+                    _playerState.value = _playerState.value.copy(
+                        error = "Failed to get playback information: ${e.message}",
+                        isLoading = false
+                    )
+                    return@launch
+                }
+
+                if (BuildConfig.DEBUG) {
+                    Log.d("VideoPlayerViewModel", "PlaybackInfo received:")
+                    Log.d("VideoPlayerViewModel", "- PlaySessionId: ${playbackInfo.playSessionId}")
+                    Log.d("VideoPlayerViewModel", "- MediaSources count: ${playbackInfo.mediaSources?.size ?: 0}")
+                }
+
+                // Step 2: Choose best MediaSource for direct play
+                val mediaSource = playbackInfo.mediaSources?.firstOrNull { source ->
+                    source.supportsDirectPlay == true
+                } ?: playbackInfo.mediaSources?.firstOrNull()
+
+                if (mediaSource == null) {
+                    Log.e("VideoPlayerViewModel", "No suitable media source found")
+                    _playerState.value = _playerState.value.copy(
+                        error = "No playable media source available",
+                        isLoading = false
+                    )
+                    return@launch
+                }
+
+                if (BuildConfig.DEBUG) {
+                    Log.d("VideoPlayerViewModel", "Selected MediaSource:")
+                    Log.d("VideoPlayerViewModel", "- ID: ${mediaSource.id}")
+                    Log.d("VideoPlayerViewModel", "- Container: ${mediaSource.container}")
+                    Log.d("VideoPlayerViewModel", "- SupportsDirectPlay: ${mediaSource.supportsDirectPlay}")
+                    Log.d("VideoPlayerViewModel", "- Path: ${mediaSource.path?.take(50)}...")
+                }
+
+                // Step 3: Construct proper Jellyfin stream URL using official pattern
+                val server = repository.getCurrentServer()
+                if (server == null) {
+                    Log.e("VideoPlayerViewModel", "No current server available")
+                    _playerState.value = _playerState.value.copy(
+                        error = "Server connection not available",
+                        isLoading = false
+                    )
+                    return@launch
+                }
+
+                val streamUrl = "${server.url}/Videos/$itemId/stream?" +
+                        "static=true&" +
+                        "Container=${mediaSource.container}&" +
+                        "mediaSourceId=${mediaSource.id}&" +
+                        "playSessionId=${playbackInfo.playSessionId}"
+
+                if (BuildConfig.DEBUG) {
+                    Log.d("VideoPlayerViewModel", "Constructed official stream URL:")
+                    Log.d("VideoPlayerViewModel", "- Base: ${server.url}/Videos/$itemId/stream")
+                    Log.d("VideoPlayerViewModel", "- Container: ${mediaSource.container}")
+                    Log.d("VideoPlayerViewModel", "- MediaSource ID: ${mediaSource.id}")
+                    Log.d("VideoPlayerViewModel", "- PlaySession ID: ${playbackInfo.playSessionId}")
                 }
 
                 // Load user's preferred aspect ratio
@@ -216,7 +279,7 @@ class VideoPlayerViewModel @Inject constructor(
                 // Create ExoPlayer with properly tagged network client
                 // Check if offline content is available
                 val offlineMediaItem = offlinePlaybackManager.getOfflineMediaItem(itemId)
-                val isOfflinePlayback = offlineMediaItem != null && streamUrl.startsWith("file://")
+                val isOfflinePlayback = offlineMediaItem != null
 
                 // Get external subtitles if available
                 val sideLoadedSubs = try {
@@ -270,18 +333,32 @@ class VideoPlayerViewModel @Inject constructor(
 
                 // Add Jellyfin authentication headers if server is available
                 currentServer?.accessToken?.let { token ->
+                    // Use MediaBrowser authentication format (official Jellyfin API)
+                    val clientInfo = "JellyfinAndroid"
+                    val deviceInfo = "Android Device" // Could be enhanced with actual device model
+                    val deviceId = "jellyfin-android-${android.os.Build.MODEL?.replace(" ", "-")?.lowercase()}"
+                    val version = "1.0.0"
+                    
+                    val mediaBrowserAuth = "MediaBrowser Client=\"$clientInfo\", Device=\"$deviceInfo\", DeviceId=\"$deviceId\", Version=\"$version\", Token=\"$token\""
+                    
                     val headers = mapOf(
-                        "X-MediaBrowser-Token" to token,
+                        "Authorization" to mediaBrowserAuth,
                         "Accept" to "*/*",
                         "Accept-Encoding" to "identity",
-                        "Authorization" to "MediaBrowser Token=\"$token\"",
-                        "X-Emby-Authorization" to "MediaBrowser Token=\"$token\"",
                         "User-Agent" to "JellyfinAndroid/1.0.0",
+                        "X-Emby-Client" to clientInfo,
+                        "X-Emby-Device-Name" to deviceInfo,
+                        "X-Emby-Device-Id" to deviceId,
+                        "X-Emby-Client-Version" to version,
+                        "X-Emby-Token" to token
                     )
                     httpDataSourceFactory.setDefaultRequestProperties(headers)
 
                     if (BuildConfig.DEBUG) {
-                        Log.d("VideoPlayerViewModel", "Added authentication headers: ${headers.keys.joinToString(", ")}")
+                        Log.d("VideoPlayerViewModel", "Added MediaBrowser authentication:")
+                        Log.d("VideoPlayerViewModel", "- Authorization header: ${mediaBrowserAuth.take(80)}...")
+                        Log.d("VideoPlayerViewModel", "- Device ID: $deviceId")
+                        Log.d("VideoPlayerViewModel", "- Client: $clientInfo v$version")
                     }
                 }
 
@@ -781,7 +858,8 @@ class VideoPlayerViewModel @Inject constructor(
                     exoPlayer?.release()
 
                     // Try this fallback URL
-                    initializePlayer(itemId, itemName, fallbackUrl, 0)
+                    // Try fallback with official Jellyfin flow (will re-fetch PlaybackInfo)
+                    initializePlayer(itemId, itemName, 0)
 
                     // If we get here without error, the fallback worked
                     if (BuildConfig.DEBUG) {

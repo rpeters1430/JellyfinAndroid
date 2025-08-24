@@ -22,6 +22,7 @@ import kotlinx.coroutines.sync.withLock
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.libraryApi
+import org.jellyfin.sdk.api.client.extensions.mediaInfoApi
 import org.jellyfin.sdk.api.client.extensions.playStateApi
 import org.jellyfin.sdk.api.client.extensions.userApi
 import org.jellyfin.sdk.api.client.extensions.userLibraryApi
@@ -31,10 +32,13 @@ import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.ItemFilter
 import org.jellyfin.sdk.model.api.ItemSortBy
+import org.jellyfin.sdk.model.api.PlaybackInfoDto
+import org.jellyfin.sdk.model.api.PlaybackInfoResponse
 import org.jellyfin.sdk.model.api.PublicSystemInfo
 import org.jellyfin.sdk.model.api.SortOrder
 import retrofit2.HttpException
-import java.util.UUID
+import org.jellyfin.sdk.model.UUID
+import java.util.UUID as JavaUUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -1123,6 +1127,41 @@ class JellyfinRepository @Inject constructor(
 
     fun getDashStreamUrl(itemId: String): String? =
         streamRepository.getDashStreamUrl(itemId)
+
+    suspend fun getPlaybackInfo(itemId: String): PlaybackInfoResponse {
+        val server = authRepository.getCurrentServer()
+            ?: throw IllegalStateException("No authenticated server available")
+        val client = clientFactory.getClient(server.url)
+        
+        // Create playbook info DTO with direct play enabled
+        val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
+            ?: throw IllegalStateException("Invalid user UUID: ${server.userId}")
+        val itemUuid = runCatching { UUID.fromString(itemId) }.getOrNull() 
+            ?: throw IllegalArgumentException("Invalid item UUID: $itemId")
+        
+        val playbackInfoDto = PlaybackInfoDto(
+            userId = userUuid,
+            maxStreamingBitrate = 20_000_000, // 20Mbps
+            startTimeTicks = null,
+            audioStreamIndex = null,
+            subtitleStreamIndex = null,
+            maxAudioChannels = null,
+            mediaSourceId = null,
+            liveStreamId = null,
+            deviceProfile = null, // Let server use default device profile
+            enableDirectPlay = true,
+            enableDirectStream = true,
+            enableTranscoding = true,
+            allowVideoStreamCopy = true,
+            allowAudioStreamCopy = true,
+            autoOpenLiveStream = null
+        )
+        
+        return client.mediaInfoApi.getPostedPlaybackInfo(
+            itemId = itemUuid,
+            data = playbackInfoDto
+        ).content
+    }
 
     fun getCurrentServer(): JellyfinServer? = authRepository.getCurrentServer()
 

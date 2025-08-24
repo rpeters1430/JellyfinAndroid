@@ -25,7 +25,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -220,20 +219,6 @@ private fun ExpressiveHeroCard(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(top = 12.dp),
                 ) {
-                    Surface(
-                        onClick = onPlayClick,
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(48.dp),
-                    ) {
-                        IconButton(onClick = onPlayClick) {
-                            Icon(
-                                imageVector = Icons.Default.PlayArrow,
-                                contentDescription = "Play",
-                                tint = MaterialTheme.colorScheme.onPrimary,
-                            )
-                        }
-                    }
                 }
             }
         }
