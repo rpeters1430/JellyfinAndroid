@@ -28,7 +28,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.Button
@@ -267,7 +266,7 @@ private fun ExpressiveEpisodeRow(
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.PlayArrow,
+                                    imageVector = Icons.Default.Tv,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(32.dp),
@@ -297,23 +296,6 @@ private fun ExpressiveEpisodeRow(
                         .fillMaxWidth()
                         .padding(horizontal = 6.dp, vertical = 6.dp),
                 )
-
-                // Play button overlay
-                Surface(
-                    onClick = { onClick(episode) },
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
-                    modifier = Modifier
-                        .size(40.dp)
-                        .align(Alignment.Center),
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.PlayArrow,
-                        contentDescription = "Play Episode",
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.padding(8.dp),
-                    )
-                }
             }
 
             Column(

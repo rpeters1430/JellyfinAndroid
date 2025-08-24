@@ -20,7 +20,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 // import androidx.compose.material.ripple.rememberRipple // Deprecated
 import androidx.compose.material3.Card
@@ -251,23 +250,6 @@ private fun MediaCardContent(
                         tint = MaterialTheme.colorScheme.onSurface,
                     )
                 }
-            }
-
-            // Center play button
-            Surface(
-                onClick = onPlayClick,
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
-                modifier = Modifier
-                    .size(56.dp)
-                    .align(Alignment.Center),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Play",
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.padding(8.dp),
-                )
             }
         }
 
