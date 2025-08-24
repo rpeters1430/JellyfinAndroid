@@ -41,6 +41,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -83,6 +84,14 @@ fun VideoPlayerScreen(
     var showAspectRatioMenu by remember { mutableStateOf(false) }
     var showAudioDialog by remember { mutableStateOf(false) }
 
+    val rememberedPlayer = remember(exoPlayer) { exoPlayer }
+
+    DisposableEffect(rememberedPlayer) {
+        onDispose {
+            rememberedPlayer?.release()
+        }
+    }
+
     // Auto-hide controls after 5 seconds (increased from 3)
     LaunchedEffect(controlsVisible, playerState.isPlaying) {
         if (controlsVisible && playerState.isPlaying) {
@@ -119,6 +128,7 @@ fun VideoPlayerScreen(
                 }
             },
             update = { playerView ->
+                playerView.player = exoPlayer
                 playerView.resizeMode = playerState.selectedAspectRatio.resizeMode
             },
             modifier = Modifier.fillMaxSize(),
