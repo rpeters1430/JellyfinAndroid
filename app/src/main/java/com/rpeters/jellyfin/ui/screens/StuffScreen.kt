@@ -105,18 +105,23 @@ enum class StuffViewMode {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StuffScreen(
+    libraryId: String,
     modifier: Modifier = Modifier,
     viewModel: MainAppViewModel = hiltViewModel(),
 ) {
     val appState by viewModel.appState.collectAsState()
+    LaunchedEffect(libraryId) {
+        viewModel.loadHomeVideos(libraryId)
+    }
     var selectedFilter by remember { mutableStateOf(StuffFilter.ALL) }
     var sortOrder by remember { mutableStateOf(StuffSortOrder.getDefault()) }
     var viewMode by remember { mutableStateOf(StuffViewMode.GRID) }
     var showSortMenu by remember { mutableStateOf(false) }
 
-    // Filter stuff items from all items (everything that's not movies, TV shows, or music)
-    val stuffItems = remember(appState.allItems) {
-        appState.allItems.filter {
+    // Filter stuff items from the library-specific home videos
+    val stuffItems = remember(appState.homeVideosByLibrary, libraryId) {
+        val items = appState.homeVideosByLibrary[libraryId] ?: emptyList()
+        items.filter {
             it.type == BaseItemKind.BOOK ||
                 it.type == BaseItemKind.AUDIO_BOOK ||
                 it.type == BaseItemKind.VIDEO ||
