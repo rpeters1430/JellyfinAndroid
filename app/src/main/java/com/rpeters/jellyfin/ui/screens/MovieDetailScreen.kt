@@ -78,7 +78,7 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.MediaStreamType
 import java.util.Locale
 
-private val GenreBadgeMaxWidth = 100.dp
+private val GENRE_BADGE_MAX_WIDTH = 100.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
