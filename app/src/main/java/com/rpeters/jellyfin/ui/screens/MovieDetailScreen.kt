@@ -79,6 +79,8 @@ import org.jellyfin.sdk.model.api.MediaStreamType
 import java.util.Locale
 import kotlin.math.roundToInt
 
+private val GENRE_BADGE_MAX_WIDTH = 100.dp
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MovieDetailScreen(
