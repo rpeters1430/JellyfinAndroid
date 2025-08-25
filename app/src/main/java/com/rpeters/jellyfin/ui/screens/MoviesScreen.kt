@@ -30,8 +30,6 @@ import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.CircularProgressIndicator
-import com.rpeters.jellyfin.ui.components.EnhancedLoadingStates
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -541,7 +539,7 @@ private fun MoviesPaginationFooter(
             ) {
                 EnhancedLoadingIndicator(
                     color = MovieRed,
-                    size = 20.dp
+                    size = 20.dp,
                 )
                 Text(
                     text = "Loading more movies...",

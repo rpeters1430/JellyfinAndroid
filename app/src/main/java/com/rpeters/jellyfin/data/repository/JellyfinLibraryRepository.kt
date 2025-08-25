@@ -19,9 +19,9 @@ import javax.inject.Singleton
 @Singleton
 class JellyfinLibraryRepository @Inject constructor(
     private val authRepository: JellyfinAuthRepository,
-    private val retryManager: RetryManager
+    private val retryManager: RetryManager,
 ) {
-    
+
     /**
      * Get user libraries with enhanced error handling and retry mechanism
      */
@@ -32,26 +32,26 @@ class JellyfinLibraryRepository @Inject constructor(
                 emit(ApiResult.Error(ErrorType.UNAUTHORIZED, "Not authenticated"))
                 return@flow
             }
-            
+
             val result = retryManager.executeWithRetry("getUserLibraries") {
                 server.api.userLibraryApi.getUserViews(
                     userId = server.userId,
-                    includeExternalContent = true
+                    includeExternalContent = true,
                 )
             }
-            
+
             emit(ApiResult.Success(result.items))
         } catch (e: Exception) {
             emit(ApiResult.Error(ErrorType.UNKNOWN, e.message ?: "Unknown error"))
         }
     }
-    
+
     /**
      * Get recently added items for a library with configurable limit
      */
     suspend fun getRecentlyAdded(
         libraryId: String,
-        limit: Int = Constants.RECENTLY_ADDED_LIMIT
+        limit: Int = Constants.RECENTLY_ADDED_LIMIT,
     ): Flow<ApiResult<List<BaseItemDto>>> = flow {
         try {
             val server = authRepository.getCurrentServer()
@@ -59,7 +59,7 @@ class JellyfinLibraryRepository @Inject constructor(
                 emit(ApiResult.Error(ErrorType.UNAUTHORIZED, "Not authenticated"))
                 return@flow
             }
-            
+
             val result = retryManager.executeWithRetry("getRecentlyAdded") {
                 server.api.userLibraryApi.getLatestMedia(
                     userId = server.userId,
@@ -69,24 +69,24 @@ class JellyfinLibraryRepository @Inject constructor(
                         ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
                         ItemFields.BASIC_SYNOPSIS,
                         ItemFields.MEDIA_SOURCES,
-                        ItemFields.MEDIA_STREAMS
-                    )
+                        ItemFields.MEDIA_STREAMS,
+                    ),
                 )
             }
-            
+
             emit(ApiResult.Success(result))
         } catch (e: Exception) {
             emit(ApiResult.Error(ErrorType.UNKNOWN, e.message ?: "Unknown error"))
         }
     }
-    
+
     /**
      * Get recently added items by type with enhanced filtering
      */
     suspend fun getRecentlyAddedByType(
         libraryId: String,
         itemType: BaseItemKind,
-        limit: Int = Constants.RECENTLY_ADDED_BY_TYPE_LIMIT
+        limit: Int = Constants.RECENTLY_ADDED_BY_TYPE_LIMIT,
     ): Flow<ApiResult<List<BaseItemDto>>> = flow {
         try {
             val server = authRepository.getCurrentServer()
@@ -94,7 +94,7 @@ class JellyfinLibraryRepository @Inject constructor(
                 emit(ApiResult.Error(ErrorType.UNAUTHORIZED, "Not authenticated"))
                 return@flow
             }
-            
+
             val result = retryManager.executeWithRetry("getRecentlyAddedByType") {
                 server.api.userLibraryApi.getLatestMedia(
                     userId = server.userId,
@@ -105,17 +105,17 @@ class JellyfinLibraryRepository @Inject constructor(
                         ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
                         ItemFields.BASIC_SYNOPSIS,
                         ItemFields.MEDIA_SOURCES,
-                        ItemFields.MEDIA_STREAMS
-                    )
+                        ItemFields.MEDIA_STREAMS,
+                    ),
                 )
             }
-            
+
             emit(ApiResult.Success(result))
         } catch (e: Exception) {
             emit(ApiResult.Error(ErrorType.UNKNOWN, e.message ?: "Unknown error"))
         }
     }
-    
+
     /**
      * Get items by library type with advanced filtering and sorting
      */
@@ -126,7 +126,7 @@ class JellyfinLibraryRepository @Inject constructor(
         limit: Int = Constants.LARGE_PAGE_SIZE,
         sortBy: ItemSortBy = ItemSortBy.SORT_NAME,
         sortOrder: SortOrder = SortOrder.ASCENDING,
-        filters: List<ItemFilter> = emptyList()
+        filters: List<ItemFilter> = emptyList(),
     ): Flow<ApiResult<List<BaseItemDto>>> = flow {
         try {
             val server = authRepository.getCurrentServer()
@@ -134,7 +134,7 @@ class JellyfinLibraryRepository @Inject constructor(
                 emit(ApiResult.Error(ErrorType.UNAUTHORIZED, "Not authenticated"))
                 return@flow
             }
-            
+
             val result = retryManager.executeWithRetry("getItemsByType") {
                 server.api.userLibraryApi.getItems(
                     userId = server.userId,
@@ -150,23 +150,23 @@ class JellyfinLibraryRepository @Inject constructor(
                         ItemFields.BASIC_SYNOPSIS,
                         ItemFields.MEDIA_SOURCES,
                         ItemFields.MEDIA_STREAMS,
-                        ItemFields.USER_DATA
-                    )
+                        ItemFields.USER_DATA,
+                    ),
                 )
             }
-            
+
             emit(ApiResult.Success(result.items))
         } catch (e: Exception) {
             emit(ApiResult.Error(ErrorType.UNKNOWN, e.message ?: "Unknown error"))
         }
     }
-    
+
     /**
      * Get continue watching items for a library
      */
     suspend fun getContinueWatching(
         libraryId: String,
-        limit: Int = Constants.CONTINUE_WATCHING_LIMIT
+        limit: Int = Constants.CONTINUE_WATCHING_LIMIT,
     ): Flow<ApiResult<List<BaseItemDto>>> = flow {
         try {
             val server = authRepository.getCurrentServer()
@@ -174,7 +174,7 @@ class JellyfinLibraryRepository @Inject constructor(
                 emit(ApiResult.Error(ErrorType.UNAUTHORIZED, "Not authenticated"))
                 return@flow
             }
-            
+
             val result = retryManager.executeWithRetry("getContinueWatching") {
                 server.api.userLibraryApi.getResumeItems(
                     userId = server.userId,
@@ -185,23 +185,23 @@ class JellyfinLibraryRepository @Inject constructor(
                         ItemFields.BASIC_SYNOPSIS,
                         ItemFields.MEDIA_SOURCES,
                         ItemFields.MEDIA_STREAMS,
-                        ItemFields.USER_DATA
-                    )
+                        ItemFields.USER_DATA,
+                    ),
                 )
             }
-            
+
             emit(ApiResult.Success(result.items))
         } catch (e: Exception) {
             emit(ApiResult.Error(ErrorType.UNKNOWN, e.message ?: "Unknown error"))
         }
     }
-    
+
     /**
      * Get next up items for TV series
      */
     suspend fun getNextUp(
         libraryId: String,
-        limit: Int = Constants.CONTINUE_WATCHING_LIMIT
+        limit: Int = Constants.CONTINUE_WATCHING_LIMIT,
     ): Flow<ApiResult<List<BaseItemDto>>> = flow {
         try {
             val server = authRepository.getCurrentServer()
@@ -209,7 +209,7 @@ class JellyfinLibraryRepository @Inject constructor(
                 emit(ApiResult.Error(ErrorType.UNAUTHORIZED, "Not authenticated"))
                 return@flow
             }
-            
+
             val result = retryManager.executeWithRetry("getNextUp") {
                 server.api.userLibraryApi.getNextUp(
                     userId = server.userId,
@@ -220,24 +220,24 @@ class JellyfinLibraryRepository @Inject constructor(
                         ItemFields.BASIC_SYNOPSIS,
                         ItemFields.MEDIA_SOURCES,
                         ItemFields.MEDIA_STREAMS,
-                        ItemFields.USER_DATA
-                    )
+                        ItemFields.USER_DATA,
+                    ),
                 )
             }
-            
+
             emit(ApiResult.Success(result.items))
         } catch (e: Exception) {
             emit(ApiResult.Error(ErrorType.UNKNOWN, e.message ?: "Unknown error"))
         }
     }
-    
+
     /**
      * Get favorite items for a library
      */
     suspend fun getFavorites(
         libraryId: String,
         startIndex: Int = 0,
-        limit: Int = Constants.LARGE_PAGE_SIZE
+        limit: Int = Constants.LARGE_PAGE_SIZE,
     ): Flow<ApiResult<List<BaseItemDto>>> = flow {
         try {
             val server = authRepository.getCurrentServer()
@@ -245,7 +245,7 @@ class JellyfinLibraryRepository @Inject constructor(
                 emit(ApiResult.Error(ErrorType.UNAUTHORIZED, "Not authenticated"))
                 return@flow
             }
-            
+
             val result = retryManager.executeWithRetry("getFavorites") {
                 server.api.userLibraryApi.getItems(
                     userId = server.userId,
@@ -260,24 +260,24 @@ class JellyfinLibraryRepository @Inject constructor(
                         ItemFields.BASIC_SYNOPSIS,
                         ItemFields.MEDIA_SOURCES,
                         ItemFields.MEDIA_STREAMS,
-                        ItemFields.USER_DATA
-                    )
+                        ItemFields.USER_DATA,
+                    ),
                 )
             }
-            
+
             emit(ApiResult.Success(result.items))
         } catch (e: Exception) {
             emit(ApiResult.Error(ErrorType.UNKNOWN, e.message ?: "Unknown error"))
         }
     }
-    
+
     /**
      * Get unwatched items for a library
      */
     suspend fun getUnwatched(
         libraryId: String,
         startIndex: Int = 0,
-        limit: Int = Constants.LARGE_PAGE_SIZE
+        limit: Int = Constants.LARGE_PAGE_SIZE,
     ): Flow<ApiResult<List<BaseItemDto>>> = flow {
         try {
             val server = authRepository.getCurrentServer()
@@ -285,7 +285,7 @@ class JellyfinLibraryRepository @Inject constructor(
                 emit(ApiResult.Error(ErrorType.UNAUTHORIZED, "Not authenticated"))
                 return@flow
             }
-            
+
             val result = retryManager.executeWithRetry("getUnwatched") {
                 server.api.userLibraryApi.getItems(
                     userId = server.userId,
@@ -300,11 +300,11 @@ class JellyfinLibraryRepository @Inject constructor(
                         ItemFields.BASIC_SYNOPSIS,
                         ItemFields.MEDIA_SOURCES,
                         ItemFields.MEDIA_STREAMS,
-                        ItemFields.USER_DATA
-                    )
+                        ItemFields.USER_DATA,
+                    ),
                 )
             }
-            
+
             emit(ApiResult.Success(result.items))
         } catch (e: Exception) {
             emit(ApiResult.Error(ErrorType.UNKNOWN, e.message ?: "Unknown error"))
