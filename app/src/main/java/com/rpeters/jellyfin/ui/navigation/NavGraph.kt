@@ -44,7 +44,6 @@ import com.rpeters.jellyfin.ui.screens.QuickConnectScreen
 import com.rpeters.jellyfin.ui.screens.SearchScreen
 import com.rpeters.jellyfin.ui.screens.ServerConnectionScreen
 import com.rpeters.jellyfin.ui.screens.StuffScreen
-import org.jellyfin.sdk.model.api.BaseItemDto
 import com.rpeters.jellyfin.ui.screens.TVEpisodeDetailScreen
 import com.rpeters.jellyfin.ui.screens.TVEpisodesScreen
 import com.rpeters.jellyfin.ui.screens.TVSeasonScreen
@@ -56,6 +55,7 @@ import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MovieDetailViewModel
 import com.rpeters.jellyfin.ui.viewmodel.SeasonEpisodesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
+import org.jellyfin.sdk.model.api.BaseItemDto
 
 @androidx.media3.common.util.UnstableApi
 @Composable
