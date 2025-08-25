@@ -575,7 +575,7 @@ private fun VideoControlsOverlay(
                             onClick = { onShowAspectRatioMenu(true) },
                             imageVector = Icons.Default.AspectRatio,
                             contentDescription = "Aspect Ratio: ${playerState.selectedAspectRatio.label}",
-                            tint = if (playerState.selectedAspectRatio != AspectRatioMode.FILL) {
+                            tint = if (playerState.selectedAspectRatio != AspectRatioMode.FIT) {
                                 MaterialTheme.colorScheme.primary
                             } else {
                                 Color.White
