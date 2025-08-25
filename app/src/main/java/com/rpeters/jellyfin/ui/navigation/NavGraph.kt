@@ -214,42 +214,41 @@ fun JellyfinNavGraph(
         if (CollectionType.MOVIES in libraryTypes) {
             key(CollectionType.MOVIES) {
                 composable(Screen.Movies.route) {
-                val viewModel = hiltViewModel<MainAppViewModel>()
-                val lifecycleOwner = LocalLifecycleOwner.current
-                val appState by viewModel.appState.collectAsStateWithLifecycle()
+                    val viewModel = mainViewModel
+                    val appState by viewModel.appState.collectAsStateWithLifecycle()
 
-            // Local state for filtering and sorting
-            var selectedFilter by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieFilter.ALL) }
-            var selectedSort by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieSortOrder.NAME) }
-            var viewMode by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieViewMode.GRID) }
+                    // Local state for filtering and sorting
+                    var selectedFilter by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieFilter.ALL) }
+                    var selectedSort by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieSortOrder.NAME) }
+                    var viewMode by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieViewMode.GRID) }
 
-            // Load movies when first entering the screen
-            LaunchedEffect(Unit) {
-                if (appState.allMovies.isEmpty() && !appState.isLoadingMovies) {
-                    viewModel.loadAllMovies(reset = true)
-                }
-            }
-
-                MoviesScreen(
-                    movies = appState.allMovies,
-                    isLoading = appState.isLoadingMovies,
-                    isLoadingMore = appState.isLoadingMovies,
-                    hasMoreItems = appState.hasMoreMovies,
-                    selectedFilter = selectedFilter,
-                    onFilterChange = { selectedFilter = it },
-                    selectedSort = selectedSort,
-                    onSortChange = { selectedSort = it },
-                    viewMode = viewMode,
-                    onViewModeChange = { viewMode = it },
-                    onMovieClick = { movie ->
-                        movie.id?.let { movieId ->
-                            navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
+                    // Load movies when first entering the screen
+                    LaunchedEffect(Unit) {
+                        if (appState.allMovies.isEmpty() && !appState.isLoadingMovies) {
+                            viewModel.loadAllMovies(reset = true)
                         }
-                    },
-                    onRefresh = { viewModel.refreshMovies() },
-                    onLoadMore = { viewModel.loadMoreMovies() },
-                    getImageUrl = { movie -> viewModel.getImageUrl(movie) },
-                )
+                    }
+
+                    MoviesScreen(
+                        movies = appState.allMovies,
+                        isLoading = appState.isLoadingMovies,
+                        isLoadingMore = appState.isLoadingMovies,
+                        hasMoreItems = appState.hasMoreMovies,
+                        selectedFilter = selectedFilter,
+                        onFilterChange = { selectedFilter = it },
+                        selectedSort = selectedSort,
+                        onSortChange = { selectedSort = it },
+                        viewMode = viewMode,
+                        onViewModeChange = { viewMode = it },
+                        onMovieClick = { movie ->
+                            movie.id?.let { movieId ->
+                                navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
+                            }
+                        },
+                        onRefresh = { viewModel.refreshMovies() },
+                        onLoadMore = { viewModel.loadMoreMovies() },
+                        getImageUrl = { movie -> viewModel.getImageUrl(movie) },
+                    )
                 }
             }
         }
@@ -257,16 +256,15 @@ fun JellyfinNavGraph(
         if (CollectionType.TVSHOWS in libraryTypes) {
             key(CollectionType.TVSHOWS) {
                 composable(Screen.TVShows.route) {
-                val viewModel = hiltViewModel<MainAppViewModel>()
-                val lifecycleOwner = LocalLifecycleOwner.current
+                    val viewModel = mainViewModel
 
-                TVShowsScreen(
-                    onTVShowClick = { seriesId ->
-                        navController.navigate(Screen.TVSeasons.createRoute(seriesId))
-                    },
-                    onBackClick = { navController.popBackStack() },
-                    viewModel = viewModel,
-                )
+                    TVShowsScreen(
+                        onTVShowClick = { seriesId ->
+                            navController.navigate(Screen.TVSeasons.createRoute(seriesId))
+                        },
+                        onBackClick = { navController.popBackStack() },
+                        viewModel = viewModel,
+                    )
                 }
             }
         }
@@ -336,18 +334,17 @@ fun JellyfinNavGraph(
         if (CollectionType.MUSIC in libraryTypes) {
             key(CollectionType.MUSIC) {
                 composable(Screen.Music.route) {
-                val viewModel = hiltViewModel<MainAppViewModel>()
-                val lifecycleOwner = LocalLifecycleOwner.current
+                    val viewModel = mainViewModel
 
-                LaunchedEffect(Unit) {
-                    // Load music data when screen is first shown
-                    viewModel.loadMusic()
-                }
+                    LaunchedEffect(Unit) {
+                        // Load music data when screen is first shown
+                        viewModel.loadMusic()
+                    }
 
-                MusicScreen(
-                    onBackClick = { navController.popBackStack() },
-                    viewModel = viewModel,
-                )
+                    MusicScreen(
+                        onBackClick = { navController.popBackStack() },
+                        viewModel = viewModel,
+                    )
                 }
             }
         }
