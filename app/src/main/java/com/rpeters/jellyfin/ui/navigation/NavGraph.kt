@@ -44,6 +44,7 @@ import com.rpeters.jellyfin.ui.screens.QuickConnectScreen
 import com.rpeters.jellyfin.ui.screens.SearchScreen
 import com.rpeters.jellyfin.ui.screens.ServerConnectionScreen
 import com.rpeters.jellyfin.ui.screens.StuffScreen
+import org.jellyfin.sdk.model.api.BaseItemDto
 import com.rpeters.jellyfin.ui.screens.TVEpisodeDetailScreen
 import com.rpeters.jellyfin.ui.screens.TVEpisodesScreen
 import com.rpeters.jellyfin.ui.screens.TVSeasonScreen
@@ -191,20 +192,7 @@ fun JellyfinNavGraph(
                 onRefresh = { viewModel.loadInitialData() },
                 getImageUrl = { item -> viewModel.getImageUrl(item) },
                 onLibraryClick = { library ->
-                    // Navigate to appropriate screen based on library collection type
-                    when (library.collectionType?.toString()?.lowercase()) {
-                        "movies" -> navController.navigate(Screen.Movies.route)
-                        "tvshows" -> navController.navigate(Screen.TVShows.route)
-                        "music" -> navController.navigate(Screen.Music.route)
-                        "homevideos", "mixed", null -> {
-                            // For home videos, mixed content, or unknown types, use Stuff screen
-                            navController.navigate(Screen.Stuff.route)
-                        }
-                        else -> {
-                            // For any other types, use Stuff screen
-                            navController.navigate(Screen.Stuff.route)
-                        }
-                    }
+                    navController.navigate(libraryRouteFor(library))
                 },
                 onSettingsClick = { navController.navigate(Screen.Profile.route) },
             )
@@ -339,16 +327,19 @@ fun JellyfinNavGraph(
             )
         }
 
-        composable(Screen.Stuff.route) {
-            val viewModel = hiltViewModel<MainAppViewModel>()
-            val lifecycleOwner = LocalLifecycleOwner.current
-
-            LaunchedEffect(Unit) {
-                // Load stuff/mixed content data when screen is first shown
-                viewModel.loadStuff()
+        composable(
+            route = Screen.Stuff.route,
+            arguments = listOf(navArgument(Screen.LIBRARY_ID_ARG) { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val libraryId = backStackEntry.arguments?.getString(Screen.LIBRARY_ID_ARG)
+            if (libraryId.isNullOrBlank()) {
+                Log.e("NavGraph", "Stuff navigation cancelled: libraryId is null or blank")
+                return@composable
             }
+            val viewModel = hiltViewModel<MainAppViewModel>()
 
             StuffScreen(
+                libraryId = libraryId,
                 viewModel = viewModel,
             )
         }
@@ -673,5 +664,14 @@ fun JellyfinNavGraph(
                 }
             }
         }
+    }
+}
+
+private fun libraryRouteFor(library: BaseItemDto): String {
+    return when (library.collectionType?.toString()?.lowercase()) {
+        "movies" -> Screen.Movies.route
+        "tvshows" -> Screen.TVShows.route
+        "music" -> Screen.Music.route
+        else -> Screen.Stuff.createRoute(library.id.toString())
     }
 }
