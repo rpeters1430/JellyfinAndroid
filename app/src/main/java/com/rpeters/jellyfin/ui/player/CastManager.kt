@@ -170,7 +170,7 @@ class CastManager @Inject constructor(
         val router = MediaRouter.getInstance(context)
         val selector = castContext?.mergedSelector
         return router.routes
-            .filter { selector?.matchesControlFilters(it) == true }
+            .filter { route -> selector?.matchesControlFilters(route.controlFilters) == true }
             .map { it.name }
     }
 

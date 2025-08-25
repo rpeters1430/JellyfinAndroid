@@ -19,8 +19,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -370,25 +372,15 @@ private fun ExpressiveBottomControls(
                             ),
                         )
 
-                        val textMeasurer = rememberTextMeasurer()
                         if (isDragging) {
                             val previewText = formatTime(previewPosition)
-                            val textLayout = remember(previewText, MaterialTheme.typography.bodySmall) {
-                                textMeasurer.measure(
-                                    text = AnnotatedString(previewText),
-                                    style = MaterialTheme.typography.bodySmall,
-                                )
-                            }
-                            val textWidth = with(LocalDensity.current) {
-                                textLayout.size.width.toDp()
-                            }
-                            val xOffset = (maxWidth * sliderPosition) - (textWidth / 2)
+                            val xOffset = (maxWidth * sliderPosition) - (40.dp)
                             Text(
                                 text = previewText,
                                 color = Color.White,
                                 style = MaterialTheme.typography.bodySmall,
                                 modifier = Modifier.offset(
-                                    x = xOffset.coerceIn(0.dp, maxWidth - textWidth),
+                                    x = xOffset.coerceIn(0.dp, maxWidth - 80.dp),
                                     y = (-24).dp,
                                 ),
                             )

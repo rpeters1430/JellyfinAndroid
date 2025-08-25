@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -116,11 +117,13 @@ fun OptimizedImage(
             .networkCachePolicy(CachePolicy.ENABLED)
             .placeholder(ColorDrawable(backgroundColor))
             .error(ColorDrawable(backgroundColor))
-            .apply {
+            .transformations(
                 if (cornerRadius > 0.dp) {
-                    transformations(RoundedCornersTransformation(cornerRadius.value))
+                    listOf(RoundedCornersTransformation(cornerRadius.value))
+                } else {
+                    emptyList()
                 }
-            }
+            )
             .build()
     }
 

@@ -16,8 +16,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -39,14 +42,10 @@ fun StuffScreen(
     modifier: Modifier = Modifier,
     viewModel: MainAppViewModel = hiltViewModel(),
 ) {
-    val appState by viewModel.appState.collectAsSt
+    val appState by viewModel.appState.collectAsState()
     LaunchedEffect(libraryId) {
         viewModel.loadHomeVideos(libraryId)
     }
-    var selectedFilter by remember { mutableStateOf(StuffFilter.ALL) }
-    var sortOrder by remember { mutableStateOf(StuffSortOrder.getDefault()) }
-    var viewMode by remember { mutableStateOf(StuffViewMode.GRID) }
-    var showSortMenu by remember { mutableStateOf(false) }
 
     // Filter stuff items from the library-specific home videos
     val stuffItems = remember(appState.homeVideosByLibrary, libraryId) {
@@ -130,12 +129,11 @@ fun StuffScreen(
             onPlayClick = {},
             onQueueClick = {},
             onDownloadClick = {}, // No-op or implement download functionality if available
-            onRefreshClick = { viewModel.refreshLibraryItems() },
             onCastClick = {},
             onFavoriteClick = {},
             onShareClick = {},
-            onMoreClick = {},
-            primaryAction = ToolbarAction.REFRESH,
+            onMoreClick = { viewModel.loadInitialData() },
+            primaryAction = ToolbarAction.PLAY,
             modifier = Modifier.align(Alignment.BottomCenter),
         )
     }

@@ -193,7 +193,9 @@ fun JellyfinNavGraph(
                 onRefresh = { viewModel.loadInitialData() },
                 getImageUrl = { item -> viewModel.getImageUrl(item) },
                 onLibraryClick = { library ->
-                    navController.navigate(libraryRouteFor(library))
+                    libraryRouteFor(library)?.let { route ->
+                        navController.navigate(route)
+                    }
                 },
                 onSettingsClick = { navController.navigate(Screen.Profile.route) },
             )
