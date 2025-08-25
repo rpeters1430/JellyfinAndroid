@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import com.rpeters.jellyfin.ui.components.EnhancedLoadingStates
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -398,21 +399,10 @@ fun SearchResultsContent(
     ) {
         if (isSearching) {
             item {
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp))
-                        Text(
-                            text = "Searching...",
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    }
-                }
+                LoadingScreen(
+                    message = "Searching...",
+                    showShimmer = false
+                )
             }
         }
 
@@ -572,7 +562,7 @@ private fun ContinueWatchingCard(
                                 .height(240.dp),
                             contentAlignment = Alignment.Center,
                         ) {
-                            CircularProgressIndicator()
+                            EnhancedLoadingIndicator(size = 24.dp)
                         }
                     },
                     error = {
