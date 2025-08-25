@@ -5,6 +5,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,7 +15,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.Cast
@@ -26,6 +29,9 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PictureInPicture
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Brightness6
+import androidx.compose.material.icons.filled.FastForward
+import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -46,6 +52,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -83,8 +91,22 @@ fun VideoPlayerScreen(
     var showQualityMenu by remember { mutableStateOf(false) }
     var showAspectRatioMenu by remember { mutableStateOf(false) }
     var showAudioDialog by remember { mutableStateOf(false) }
+    
+    // Gesture feedback states
+    var showSeekFeedback by remember { mutableStateOf(false) }
+    var seekFeedbackText by remember { mutableStateOf("") }
+    var seekFeedbackIcon by remember { mutableStateOf(Icons.Default.FastForward) }
+    var lastTapTime by remember { mutableLongStateOf(0L) }
 
     val rememberedPlayer = remember(exoPlayer) { exoPlayer }
+
+    // Auto-hide seek feedback
+    LaunchedEffect(showSeekFeedback) {
+        if (showSeekFeedback) {
+            delay(1500)
+            showSeekFeedback = false
+        }
+    }
 
     // Auto-hide controls after 5 seconds (increased from 3)
     LaunchedEffect(controlsVisible, playerState.isPlaying) {
@@ -107,8 +129,61 @@ fun VideoPlayerScreen(
             .background(Color.Black)
             .pointerInput(Unit) {
                 detectTapGestures(
-                    onTap = { controlsVisible = !controlsVisible },
+                    onTap = { offset ->
+                        val currentTime = System.currentTimeMillis()
+                        val doubleTapThreshold = 300L // milliseconds
+                        val screenWidth = size.width.toFloat()
+                        
+                        if (currentTime - lastTapTime <= doubleTapThreshold) {
+                            // Double tap detected
+                            val isRightSide = offset.x > screenWidth / 2
+                            val seekAmount = if (isRightSide) 10000L else -10000L
+                            val newPosition = (playerState.currentPosition + seekAmount).coerceAtLeast(0L)
+                            
+                            onSeek(newPosition)
+                            
+                            // Show feedback
+                            showSeekFeedback = true
+                            seekFeedbackIcon = if (isRightSide) Icons.Default.FastForward else Icons.Default.FastRewind
+                            seekFeedbackText = if (isRightSide) "+10s" else "-10s"
+                            controlsVisible = false // Hide controls during seek
+                        } else {
+                            // Single tap - toggle controls
+                            controlsVisible = !controlsVisible
+                        }
+                        lastTapTime = currentTime
+                    },
                 )
+            }
+            .pointerInput(Unit) {
+                detectDragGestures { change, _ ->
+                    val startY = change.previousPosition.y
+                    val currentY = change.position.y
+                    val deltaY = startY - currentY
+                    val screenHeight = size.height.toFloat()
+                    val isLeftSide = change.position.x < size.width / 2
+                    
+                    // Only respond to significant vertical drags
+                    if (kotlin.math.abs(deltaY) > 5f) {
+                        if (isLeftSide) {
+                            // Left side - brightness control (visual feedback only)
+                            val brightnessChange = deltaY / (screenHeight * 0.3f)
+                            if (kotlin.math.abs(brightnessChange) > 0.1f) {
+                                showSeekFeedback = true
+                                seekFeedbackIcon = Icons.Default.Brightness6
+                                seekFeedbackText = "Brightness"
+                            }
+                        } else {
+                            // Right side - volume control (visual feedback only)
+                            val volumeChange = deltaY / (screenHeight * 0.3f)
+                            if (kotlin.math.abs(volumeChange) > 0.1f) {
+                                showSeekFeedback = true
+                                seekFeedbackIcon = Icons.AutoMirrored.Filled.VolumeUp
+                                seekFeedbackText = "Volume"
+                            }
+                        }
+                    }
+                }
             },
     ) {
         // Video Player View
@@ -169,6 +244,41 @@ fun VideoPlayerScreen(
                         color = MaterialTheme.colorScheme.onErrorContainer,
                         modifier = Modifier.padding(16.dp),
                         style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+        }
+
+        // Gesture Feedback Overlay
+        AnimatedVisibility(
+            visible = showSeekFeedback,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.Center),
+        ) {
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.Black.copy(alpha = 0.7f),
+                ),
+                shape = CircleShape,
+                modifier = Modifier.size(100.dp),
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Icon(
+                        imageVector = seekFeedbackIcon,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(36.dp),
+                    )
+                    Text(
+                        text = seekFeedbackText,
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.padding(top = 4.dp),
                     )
                 }
             }

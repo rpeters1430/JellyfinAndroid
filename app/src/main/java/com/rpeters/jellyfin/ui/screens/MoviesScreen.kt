@@ -98,6 +98,19 @@ fun MoviesScreen(
             MovieFilter.FAVORITES -> movie.userData?.isFavorite == true
             MovieFilter.UNWATCHED -> movie.userData?.played != true
             MovieFilter.WATCHED -> movie.userData?.played == true
+            MovieFilter.RECENT_RELEASES -> {
+                val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+                (movie.productionYear as? Int ?: 0) >= currentYear - 2
+            }
+            MovieFilter.HIGH_RATED -> (movie.communityRating as? Double ?: 0.0) >= 7.5
+            MovieFilter.ACTION -> movie.genres?.any { it.contains("Action", ignoreCase = true) } == true
+            MovieFilter.COMEDY -> movie.genres?.any { it.contains("Comedy", ignoreCase = true) } == true
+            MovieFilter.DRAMA -> movie.genres?.any { it.contains("Drama", ignoreCase = true) } == true
+            MovieFilter.SCI_FI -> movie.genres?.any { 
+                it.contains("Science Fiction", ignoreCase = true) || 
+                it.contains("Sci-Fi", ignoreCase = true) ||
+                it.contains("Fantasy", ignoreCase = true)
+            } == true
         }
     }.sortedWith { movie1, movie2 ->
         when (selectedSort) {
@@ -304,38 +317,70 @@ private fun MoviesContent(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
-        // Filter chips with enhanced styling
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-        ) {
-            items(MovieFilter.getAllFilters()) { filter ->
-                FilterChip(
-                    onClick = { onFilterChange(filter) },
-                    label = {
-                        Text(
-                            text = stringResource(id = filter.displayNameResId),
-                            fontWeight = if (selectedFilter == filter) FontWeight.SemiBold else FontWeight.Medium,
-                        )
-                    },
-                    selected = selectedFilter == filter,
-                    leadingIcon = if (filter == MovieFilter.FAVORITES) {
-                        {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
+        // Filter chips with enhanced styling and organization
+        Column {
+            // Basic Filters
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+            ) {
+                items(MovieFilter.getBasicFilters()) { filter ->
+                    FilterChip(
+                        onClick = { onFilterChange(filter) },
+                        label = {
+                            Text(
+                                text = stringResource(id = filter.displayNameResId),
+                                fontWeight = if (selectedFilter == filter) FontWeight.SemiBold else FontWeight.Medium,
                             )
-                        }
-                    } else {
-                        null
-                    },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    ),
-                )
+                        },
+                        selected = selectedFilter == filter,
+                        leadingIcon = if (filter == MovieFilter.FAVORITES) {
+                            {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                            }
+                        } else {
+                            null
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        ),
+                    )
+                }
+            }
+            
+            // Smart & Genre Filters
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+            ) {
+                items(MovieFilter.getSmartFilters() + MovieFilter.getGenreFilters()) { filter ->
+                    FilterChip(
+                        onClick = { onFilterChange(filter) },
+                        label = {
+                            Text(
+                                text = stringResource(id = filter.displayNameResId),
+                                fontWeight = if (selectedFilter == filter) FontWeight.SemiBold else FontWeight.Medium,
+                            )
+                        },
+                        selected = selectedFilter == filter,
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = when (filter) {
+                                in MovieFilter.getGenreFilters() -> MaterialTheme.colorScheme.tertiaryContainer
+                                else -> MaterialTheme.colorScheme.secondaryContainer
+                            },
+                            selectedLabelColor = when (filter) {
+                                in MovieFilter.getGenreFilters() -> MaterialTheme.colorScheme.onTertiaryContainer
+                                else -> MaterialTheme.colorScheme.onSecondaryContainer
+                            },
+                        ),
+                    )
+                }
             }
         }
 

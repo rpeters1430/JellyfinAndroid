@@ -10,10 +10,22 @@ enum class MovieFilter(val displayNameResId: Int) {
     FAVORITES(R.string.filter_favorites),
     UNWATCHED(R.string.filter_unwatched),
     WATCHED(R.string.filter_recent),
+    RECENT_RELEASES(R.string.filter_recent_releases),
+    HIGH_RATED(R.string.filter_high_rated),
+    ACTION(R.string.filter_action),
+    COMEDY(R.string.filter_comedy),
+    DRAMA(R.string.filter_drama),
+    SCI_FI(R.string.filter_sci_fi),
     ;
 
     companion object {
         fun getAllFilters() = entries
+        
+        fun getBasicFilters() = listOf(ALL, FAVORITES, UNWATCHED, WATCHED)
+        
+        fun getSmartFilters() = listOf(RECENT_RELEASES, HIGH_RATED)
+        
+        fun getGenreFilters() = listOf(ACTION, COMEDY, DRAMA, SCI_FI)
     }
 }
 
