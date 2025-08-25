@@ -23,18 +23,18 @@ fun BooksScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Books") },
+            TopAppBar(
+                title = { Text(stringResource(R.string.books)) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = null,
+                            contentDescription = stringResource(R.string.navigate_up),
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(),
             )
-        },
         modifier = modifier,
     ) { paddingValues ->
         Box(
