@@ -88,6 +88,11 @@
     <string name="filter_1990s">1990s</string>
     <string name="filter_high_rated">High Rated</string>
     <string name="filter_unwatched">Unwatched</string>
+    <string name="filter_recent_releases">Recent Releases</string>
+    <string name="filter_action">Action</string>
+    <string name="filter_comedy">Comedy</string>
+    <string name="filter_drama">Drama</string>
+    <string name="filter_sci_fi">Sci-Fi</string>
     
     <!-- Sort Orders -->
     <string name="sort_title_asc">Title A-Z</string>
