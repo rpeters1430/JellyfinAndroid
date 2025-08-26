@@ -797,7 +797,12 @@ class MainAppViewModel @Inject constructor(
                 return@launch
             }
 
-            when (val result = mediaRepository.getLibraryItems(parentId = libraryId)) {
+            when (val result = mediaRepository.getLibraryItems(
+                parentId = libraryId,
+                itemTypes = "Video", // Specify Video type for home videos to prevent HTTP 400 errors
+                startIndex = 0,
+                limit = 100
+            )) {
                 is ApiResult.Success -> {
                     val updated = _appState.value.homeVideosByLibrary.toMutableMap()
                     updated[libraryId] = result.data
@@ -1408,11 +1413,13 @@ class MainAppViewModel @Inject constructor(
                 org.jellyfin.sdk.model.api.CollectionType.HOMEVIDEOS -> "Video"
                 org.jellyfin.sdk.model.api.CollectionType.BOOKS -> "Book,AudioBook"
                 org.jellyfin.sdk.model.api.CollectionType.PHOTOS -> "Photo"
-                else -> null // Let server determine for mixed content libraries
+                // Provide safe fallback for unknown collection types to prevent HTTP 400 errors
+                else -> "Video,Audio,Photo,Book,AudioBook" // General mixed content types
             }
             
             if (BuildConfig.DEBUG) {
                 Log.d("MainAppViewModel", "loadOtherLibraryItems: Using itemTypes=$itemTypes for library type ${library?.collectionType}")
+                Log.d("MainAppViewModel", "loadOtherLibraryItems: Library name='${library?.name}', collectionType=${library?.collectionType}")
             }
             
             when (val result = mediaRepository.getLibraryItems(
