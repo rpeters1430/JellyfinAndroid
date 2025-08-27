@@ -90,9 +90,11 @@ class MainAppViewModel @Inject constructor(
         loadInitialData()
     }
 
-    private suspend fun ensureValidToken() = withContext(Dispatchers.IO) {
-        if (authRepository.isTokenExpired()) {
-            authRepository.reAuthenticate()
+    private suspend fun ensureValidToken() {
+        withContext(Dispatchers.IO) {
+            if (authRepository.isTokenExpired()) {
+                authRepository.reAuthenticate()
+            }
         }
     }
 
@@ -126,6 +128,9 @@ class MainAppViewModel @Inject constructor(
                         )
                         return@measureSuspendTime
                     }
+
+                    // Ensure token is valid before making network requests
+                    ensureValidToken()
 
                     val previousLibraries = _appState.value.libraries
 
@@ -308,9 +313,6 @@ class MainAppViewModel @Inject constructor(
                         BaseItemKind.AUDIO to "AUDIO",
                         BaseItemKind.VIDEO to "VIDEO",
                     )
-
-                    // Ensure token is valid before launching parallel requests
-                    ensureValidToken()
 
                     val contentTypeDeferreds = types.map { (itemType, typeKey) ->
                         async {
