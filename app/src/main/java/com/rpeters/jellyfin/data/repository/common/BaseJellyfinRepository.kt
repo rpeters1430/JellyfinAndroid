@@ -95,13 +95,13 @@ open class BaseJellyfinRepository @Inject constructor(
                         Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Token refresh successful, retrying operation")
                         // Clear client factory to ensure new token is used
                         clientFactory.invalidateClient()
-                        
+
                         // Verify token is actually valid before retrying
                         if (authRepository.isTokenExpired()) {
                             Logger.e(LogCategory.NETWORK, javaClass.simpleName, "Token refresh appeared successful but token is still expired")
                             throw Exception("Authentication failed: Token refresh verification failed")
                         }
-                        
+
                         // Retry the operation with refreshed token
                         operation()
                     } else {
