@@ -397,7 +397,7 @@ class JellyfinAuthRepository @Inject constructor(
         try {
             // ✅ FIX: Set authentication status to prevent concurrent calls
             _isAuthenticating.value = true
-            
+
             // Clear any cached clients before re-authenticating
             clientFactory.invalidateClient()
 

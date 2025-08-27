@@ -119,7 +119,7 @@ class MainAppViewModel @Inject constructor(
 
                 // Wait for authentication to complete
                 val authSuccess = authRepository.reAuthenticate()
-                
+
                 if (authSuccess) {
                     if (BuildConfig.DEBUG) {
                         Log.d("MainAppViewModel", "ensureValidTokenWithWait: Re-authentication successful")
