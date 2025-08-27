@@ -178,7 +178,8 @@ object ErrorHandler {
         val baseDelay = when (errorType) {
             ErrorType.NETWORK -> 1000L // 1 second for network errors
             ErrorType.SERVER_ERROR -> 2000L // 2 seconds for server errors
-            ErrorType.AUTHENTICATION -> 5000L // 5 seconds for auth errors
+            ErrorType.AUTHENTICATION -> 3000L // 3 seconds for auth errors
+            ErrorType.UNAUTHORIZED -> 3000L // 3 seconds for auth errors
             ErrorType.UNKNOWN -> 1500L // 1.5 seconds for unknown errors
             else -> 1000L
         }
