@@ -391,13 +391,13 @@ class JellyfinAuthRepository @Inject constructor(
             return@withLock true
         }
 
-        // ✅ FIX: Check if already authenticating to prevent concurrent attempts
-        if (_isAuthenticating.value) {
-            if (BuildConfig.DEBUG) {
-                Log.d("JellyfinAuthRepository", "reAuthenticate: Authentication already in progress, waiting...")
+            _isAuthenticating.asStateFlow().first { !it }
+            // After waiting, check if token is now valid
+            if (!isTokenExpired()) {
+                return@withLock true
+            } else {
+                return@withLock false
             }
-            // Wait for authentication to complete
-            return@withLock false
         }
 
         if (BuildConfig.DEBUG) {
