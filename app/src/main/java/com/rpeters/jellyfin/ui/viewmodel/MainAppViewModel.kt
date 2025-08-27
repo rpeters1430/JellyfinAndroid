@@ -230,7 +230,7 @@ class MainAppViewModel @Inject constructor(
 
                             when (type) {
                                 "movies" -> {
-                                    if (lib.id?.toString() !in loadedLibraryTypes) {
+                                    if (LibraryType.MOVIES.name !in loadedLibraryTypes) {
                                         loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = true)
                                     } else {
                                         updatedAllMovies = emptyList()
