@@ -346,8 +346,8 @@ class MainAppViewModel @Inject constructor(
                     Log.d("MainAppViewModel", "loadInitialData: Loading recently added items by types (parallel)")
                 }
 
-                // ✅ FIX: Add delay between authentication and API calls to prevent race conditions
-                kotlinx.coroutines.delay(100)
+                // ✅ FIX: Wait for authentication to complete before making API calls to prevent race conditions
+                authRepository.awaitAuthentication()
 
                 // Launch all API calls concurrently
                 val types = listOf(
