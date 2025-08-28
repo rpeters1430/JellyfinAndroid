@@ -226,6 +226,11 @@ class JellyfinClientFactory @Inject constructor(
         }
     }
 
+    suspend fun refreshClient(baseUrl: String, token: String?): ApiClient {
+        invalidateClient()
+        return getClient(baseUrl, token)
+    }
+
     fun invalidateClient() {
         synchronized(clientLock) {
             currentClient = null
