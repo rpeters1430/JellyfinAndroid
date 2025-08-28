@@ -395,7 +395,7 @@ class JellyfinAuthRepository @Inject constructor(
             _isAuthenticating.value = true
 
             // Clear any cached clients before re-authenticating
-            clientFactory.refreshClient(server.url, server.accessToken)
+            clientFactory.invalidateClient()
 
             // Get saved password for the current server and username
             // Use the stored original server URL for credential lookup, fallback to extracting from current URL
