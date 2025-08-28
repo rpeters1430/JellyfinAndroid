@@ -173,9 +173,8 @@ open class BaseJellyfinRepository @Inject constructor(
         maxAttempts: Int = 3,
         block: suspend () -> T,
     ): ApiResult<T> {
-        validateTokenAndRefreshIfNeeded()
-
         return RetryManager.withRetry(maxAttempts, operationName) { attempt ->
+            validateTokenAndRefreshIfNeeded()
             try {
                 ApiResult.Success(block())
             } catch (e: Exception) {
