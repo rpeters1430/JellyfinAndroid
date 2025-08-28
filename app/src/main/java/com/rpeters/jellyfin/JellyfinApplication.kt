@@ -6,6 +6,8 @@ import com.rpeters.jellyfin.core.Logger
 import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
 import com.rpeters.jellyfin.utils.NetworkOptimizer
 import com.rpeters.jellyfin.utils.SecureLogger
+import coil.ImageLoader
+import coil.ImageLoaderFactory
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -14,10 +16,13 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltAndroidApp
-class JellyfinApplication : Application() {
+class JellyfinApplication : Application(), ImageLoaderFactory {
 
     @Inject
     lateinit var offlineDownloadManager: OfflineDownloadManager
+
+    @Inject
+    lateinit var imageLoader: ImageLoader
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -103,4 +108,6 @@ class JellyfinApplication : Application() {
             SecureLogger.e(TAG, "Error during resource cleanup", e)
         }
     }
+
+    override fun newImageLoader(): ImageLoader = imageLoader
 }
