@@ -147,8 +147,10 @@ open class BaseJellyfinRepository @Inject constructor(
     protected suspend fun <T> execute(
         operationName: String,
         block: suspend () -> T,
-    ): ApiResult<T> =
-        try {
+    ): ApiResult<T> {
+        validateTokenAndRefreshIfNeeded()
+
+        return try {
             ApiResult.Success(block())
         } catch (e: Exception) {
             Logger.e(
@@ -160,6 +162,7 @@ open class BaseJellyfinRepository @Inject constructor(
             val error = RepositoryUtils.getErrorType(e)
             ApiResult.Error(e.message ?: "Unknown error", e, error)
         }
+    }
 
     /**
      * Executes a block with automatic retry logic and error handling.
@@ -170,6 +173,8 @@ open class BaseJellyfinRepository @Inject constructor(
         maxAttempts: Int = 3,
         block: suspend () -> T,
     ): ApiResult<T> {
+        validateTokenAndRefreshIfNeeded()
+
         return RetryManager.withRetry(maxAttempts, operationName) { attempt ->
             try {
                 ApiResult.Success(block())
@@ -196,6 +201,8 @@ open class BaseJellyfinRepository @Inject constructor(
         circuitBreakerKey: String = operationName,
         block: suspend () -> T,
     ): ApiResult<T> {
+        validateTokenAndRefreshIfNeeded()
+
         return RetryManager.withRetryAndCircuitBreaker(maxAttempts, operationName, circuitBreakerKey) { attempt ->
             try {
                 ApiResult.Success(block())
@@ -223,6 +230,8 @@ open class BaseJellyfinRepository @Inject constructor(
         cacheTtlMs: Long = 30 * 60 * 1000L, // 30 minutes default
         block: suspend () -> List<BaseItemDto>,
     ): ApiResult<List<BaseItemDto>> {
+        validateTokenAndRefreshIfNeeded()
+
         // Try cache first
         val cachedData = cache.getCachedItems(cacheKey)
         if (cachedData != null) {
@@ -248,6 +257,8 @@ open class BaseJellyfinRepository @Inject constructor(
         cacheTtlMs: Long = 30 * 60 * 1000L,
         block: suspend () -> List<BaseItemDto>,
     ): ApiResult<List<BaseItemDto>> {
+        validateTokenAndRefreshIfNeeded()
+
         // Invalidate existing cache
         cache.invalidateCache(cacheKey)
 
