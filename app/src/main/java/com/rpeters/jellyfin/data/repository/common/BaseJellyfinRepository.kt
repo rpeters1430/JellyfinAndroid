@@ -149,11 +149,11 @@ open class BaseJellyfinRepository @Inject constructor(
     protected suspend fun <T> execute(
         operationName: String,
         block: suspend () -> T,
-    ): ApiResult<T> {
-        validateTokenAndRefreshIfNeeded()
-
-        return try {
-            ApiResult.Success(block())
+    ): ApiResult<T> =
+        try {
+            // ensure proactive check + 401-aware retry
+            val result = executeWithTokenRefresh { block() }
+            ApiResult.Success(result)
         } catch (e: Exception) {
             Logger.e(
                 LogCategory.NETWORK,
@@ -164,7 +164,6 @@ open class BaseJellyfinRepository @Inject constructor(
             val error = RepositoryUtils.getErrorType(e)
             ApiResult.Error(e.message ?: "Unknown error", e, error)
         }
-    }
 
     /**
      * Executes a block with automatic retry logic and error handling.
