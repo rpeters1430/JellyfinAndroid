@@ -57,7 +57,11 @@ open class BaseJellyfinRepository @Inject constructor(
                     val refreshResult = authRepository.reAuthenticate()
                     if (refreshResult) {
                         Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Proactive token refresh successful")
-                        clientFactory.invalidateClient()
+                        val currentServer = authRepository.getCurrentServer()
+                        val newToken = currentServer?.accessToken
+                        if (currentServer != null) {
+                            clientFactory.refreshClient(currentServer.url, newToken)
+                        }
                     } else {
                         Logger.w(LogCategory.NETWORK, javaClass.simpleName, "Proactive token refresh failed")
                         // Don't throw here - let the subsequent API call handle the 401
