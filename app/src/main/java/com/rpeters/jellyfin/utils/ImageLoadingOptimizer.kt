@@ -37,7 +37,16 @@ object ImageLoadingOptimizer {
                             .cleanupDispatcher(Dispatchers.IO)
                             .build()
                     }
-                    .okHttpClient(okHttpClient)
+                    .okHttpClient(
+                        okHttpClient.newBuilder()
+                            .addInterceptor { chain ->
+                                val request = chain.request().newBuilder()
+                                    .header("Accept", "image/webp,image/avif,image/*,*/*;q=0.8")
+                                    .build()
+                                chain.proceed(request)
+                            }
+                            .build()
+                    )
                     .crossfade(100) // Fast crossfade
                     .respectCacheHeaders(true) // Honor server cache headers
                     .allowRgb565(true) // Use less memory per image
