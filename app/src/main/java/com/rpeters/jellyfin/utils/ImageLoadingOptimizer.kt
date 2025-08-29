@@ -45,7 +45,7 @@ object ImageLoadingOptimizer {
                                     .build()
                                 chain.proceed(request)
                             }
-                            .build()
+                            .build(),
                     )
                     .crossfade(100) // Fast crossfade
                     .respectCacheHeaders(true) // Honor server cache headers
