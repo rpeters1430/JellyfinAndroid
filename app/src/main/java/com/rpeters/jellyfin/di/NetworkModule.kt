@@ -98,7 +98,7 @@ object NetworkModule {
                 DiskCache.Builder()
                     .directory(File(context.cacheDir, "image_cache"))
                     .maxSizeBytes(120L * 1024 * 1024)
-                    .build()
+                    .build(),
             }
             .okHttpClient(
                 okHttpClient.newBuilder()
