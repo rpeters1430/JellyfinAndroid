@@ -125,11 +125,14 @@ class MainAppViewModel @Inject constructor(
                 }
 
                 if (BuildConfig.DEBUG) {
-                    Log.d("MainAppViewModel", "ensureValidTokenWithWait: Token expired, attempting re-authentication")
+                    Log.d(
+                        "MainAppViewModel",
+                        "ensureValidTokenWithWait: Token expired or invalid, forcing re-authentication"
+                    )
                 }
 
-                // Wait for authentication to complete
-                val authSuccess = authRepository.reAuthenticate()
+                // Force re-authentication to refresh token
+                val authSuccess = authRepository.forceReAuthenticate()
 
                 if (authSuccess) {
                     if (BuildConfig.DEBUG) {
