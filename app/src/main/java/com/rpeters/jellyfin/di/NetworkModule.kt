@@ -264,7 +264,9 @@ class JellyfinClientFactory @Inject constructor(
                 SecureLogger.w(TAG, "401 Unauthorized detected, attempting forced re-authentication")
 
                 // Force re-authentication to refresh token
-                val forceReAuthSuccess = authRepository.forceReAuthenticate()
+                // TODO: Implement forceReAuthenticate() in JellyfinAuthRepository
+                // val forceReAuthSuccess = authRepository.forceReAuthenticate()
+                val forceReAuthSuccess = false // Placeholder: always fail until implemented
 
                 if (forceReAuthSuccess) {
                     SecureLogger.auth(TAG, "Forced re-authentication successful, retrying operation", true)
