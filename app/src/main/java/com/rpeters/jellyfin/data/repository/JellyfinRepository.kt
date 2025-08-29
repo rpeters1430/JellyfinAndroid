@@ -349,7 +349,7 @@ class JellyfinRepository @Inject constructor(
         if (BuildConfig.DEBUG) {
             Log.d("JellyfinRepository", "reAuthenticate: Delegating to AuthRepository")
         }
-        
+
         // ✅ FIX: Delegate to AuthRepository to prevent duplicate authentication logic and race conditions
         return authRepository.reAuthenticate()
     }
