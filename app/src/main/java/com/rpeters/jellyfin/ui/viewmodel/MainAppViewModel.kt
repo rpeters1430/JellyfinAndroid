@@ -127,7 +127,7 @@ class MainAppViewModel @Inject constructor(
                 if (BuildConfig.DEBUG) {
                     Log.d(
                         "MainAppViewModel",
-                        "ensureValidTokenWithWait: Token expired or invalid, forcing re-authentication"
+                        "ensureValidTokenWithWait: Token expired or invalid, forcing re-authentication",
                     )
                 }
 
