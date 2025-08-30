@@ -5,8 +5,6 @@ import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import okhttp3.ConnectionPool
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -72,7 +70,7 @@ class OptimizedClientFactory @Inject constructor(
     private fun createTokenInterceptor(): Interceptor {
         return Interceptor { chain ->
             val authRepository = authRepositoryProvider.get()
-            
+
             // Check if authentication is in progress and wait if necessary
             if (authRepository.isAuthenticating.value) {
                 Log.d("TokenInterceptor", "Authentication in progress, waiting...")
@@ -80,24 +78,24 @@ class OptimizedClientFactory @Inject constructor(
                 var waitTime = 0L
                 val maxWaitTime = 10000L // 10 seconds
                 val pollInterval = 100L
-                
+
                 while (authRepository.isAuthenticating.value && waitTime < maxWaitTime) {
                     Thread.sleep(pollInterval)
                     waitTime += pollInterval
                 }
-                
+
                 if (waitTime >= maxWaitTime) {
                     Log.w("TokenInterceptor", "Timeout waiting for authentication to complete")
                 }
             }
-            
+
             val token = authRepository.token()
             val tokenTail = token?.takeLast(6) ?: "null"
             Log.d("TokenInterceptor", "Attaching token to request: ...$tokenTail")
-            
+
             val request = chain.request().newBuilder()
                 .apply {
-                    token?.let { 
+                    token?.let {
                         addHeader("X-Emby-Token", it)
                         addHeader("Authorization", "MediaBrowser Token=\"$it\"")
                     }
@@ -147,7 +145,7 @@ class OptimizedClientFactory @Inject constructor(
             Log.d(TAG, message)
         }
     }
-    
+
     /**
      * Get an optimized client for a server URL with proper token handling
      */
@@ -159,7 +157,7 @@ class OptimizedClientFactory @Inject constructor(
             }
         }
     }
-    
+
     /**
      * Invalidate client cache for a server
      */
@@ -170,7 +168,7 @@ class OptimizedClientFactory @Inject constructor(
             }
         }
     }
-    
+
     /**
      * Clear all cached clients
      */

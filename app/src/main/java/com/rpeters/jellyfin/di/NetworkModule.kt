@@ -194,7 +194,7 @@ class JellyfinClientFactory @Inject constructor(
         val client = optimizedClientFactory.getOptimizedClient(server.url)
         val tokenTail = server.accessToken?.takeLast(6) ?: "null"
         SecureLogger.d(TAG, "Using optimized client for server: ${server.url} with token ...$tokenTail")
-        
+
         return@withContext client
     }
 
@@ -208,7 +208,7 @@ class JellyfinClientFactory @Inject constructor(
         clients.remove(serverId)?.also {
             SecureLogger.d(TAG, "Invalidated legacy client for server: $serverId")
         }
-        
+
         // Use OptimizedClientFactory invalidation - need server URL
         try {
             val authRepository = authRepositoryProvider.get()
@@ -220,11 +220,11 @@ class JellyfinClientFactory @Inject constructor(
         } catch (e: Exception) {
             SecureLogger.w(TAG, "Could not invalidate optimized client: ${e.message}")
         }
-        
+
         // Also clear any cached connections that might have stale tokens
         clearStaleConnections()
     }
-    
+
     /**
      * Clear all clients and connections to force fresh token attachment
      */

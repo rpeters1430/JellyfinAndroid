@@ -39,7 +39,7 @@ class AuthTokenRefreshIntegrationTest {
             userId = "user1",
             username = "testuser",
             accessToken = "test_token",
-            loginTimestamp = System.currentTimeMillis()
+            loginTimestamp = System.currentTimeMillis(),
         )
 
         // Mock the auth repository

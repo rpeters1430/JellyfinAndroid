@@ -52,7 +52,7 @@ class AuthTokenRefreshTest {
             userId = "user1",
             username = "testuser",
             accessToken = "expired_token",
-            loginTimestamp = System.currentTimeMillis() - (60 * 60 * 1000) // 1 hour ago
+            loginTimestamp = System.currentTimeMillis() - (60 * 60 * 1000), // 1 hour ago
         )
 
         // Mock the auth repository to return our test server
@@ -108,10 +108,10 @@ class AuthTokenRefreshTest {
         // Then: Operation should succeed on retry with fresh token
         assertEquals("Should have made 2 attempts", 2, attemptCount)
         assertEquals("Should return success result", "success", finalResult)
-        
+
         // Verify that forceReAuthenticate was called
         coVerify(exactly = 1) { authRepository.forceReAuthenticate() }
-        
+
         // Verify that client was invalidated
         verify(exactly = 1) { mockClientFactory.invalidateClient() }
     }
@@ -127,7 +127,7 @@ class AuthTokenRefreshTest {
             userId = "user1",
             username = "testuser",
             accessToken = "expired_token",
-            loginTimestamp = System.currentTimeMillis() - (60 * 60 * 1000) // 1 hour ago
+            loginTimestamp = System.currentTimeMillis() - (60 * 60 * 1000), // 1 hour ago
         )
 
         // Mock the auth repository
@@ -195,7 +195,7 @@ class AuthTokenRefreshTest {
         // Then: All operations should succeed
         assertEquals("All operations should succeed", 5, results.size)
         assertTrue("All results should be success", results.all { it.startsWith("success_") })
-        
+
         // Verify that forceReAuthenticate was called only once (single-flight)
         coVerify(exactly = 1) { authRepository.forceReAuthenticate() }
     }
@@ -211,7 +211,7 @@ class AuthTokenRefreshTest {
             userId = "user1",
             username = "testuser",
             accessToken = "expired_token",
-            loginTimestamp = System.currentTimeMillis() - (60 * 60 * 1000) // 1 hour ago
+            loginTimestamp = System.currentTimeMillis() - (60 * 60 * 1000), // 1 hour ago
         )
 
         // Mock the auth repository
@@ -237,7 +237,7 @@ class AuthTokenRefreshTest {
         assertNotNull("Should throw exception", exceptionCaught)
         assertTrue("Should be authentication exception", exceptionCaught is Exception)
         assertEquals("Should have correct error message", "Authentication failed: Unable to refresh token", exceptionCaught?.message)
-        
+
         // Verify that forceReAuthenticate was called
         coVerify(exactly = 1) { authRepository.forceReAuthenticate() }
     }
@@ -253,7 +253,7 @@ class AuthTokenRefreshTest {
             userId = "user1",
             username = "testuser",
             accessToken = "old_token",
-            loginTimestamp = System.currentTimeMillis() - (60 * 60 * 1000) // 1 hour ago
+            loginTimestamp = System.currentTimeMillis() - (60 * 60 * 1000), // 1 hour ago
         )
 
         val newServer = oldServer.copy(accessToken = "new_token", loginTimestamp = System.currentTimeMillis())
@@ -294,7 +294,7 @@ class AuthTokenRefreshTest {
 
         // When: Multiple operations are executed after token refresh
         val results = mutableListOf<String>()
-        
+
         // First operation (triggers token refresh)
         try {
             val result = authRepository.executeWithTokenRefresh {
