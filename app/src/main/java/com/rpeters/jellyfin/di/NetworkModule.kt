@@ -6,6 +6,7 @@ import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import coil.util.DebugLogger
 import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.cache.JellyfinCache
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.network.CachePolicyInterceptor
@@ -154,7 +155,7 @@ object NetworkModule {
         jellyfin: Jellyfin,
         authRepositoryProvider: Provider<JellyfinAuthRepository>,
     ): JellyfinClientFactory {
-        // NOW actually using optimized factory for better performance and token handling
+        // Using optimized factory for better performance and token handling
         return JellyfinClientFactory(jellyfin, authRepositoryProvider, optimizedFactory)
     }
 
@@ -209,14 +210,10 @@ class JellyfinClientFactory @Inject constructor(
             SecureLogger.d(TAG, "Invalidated legacy client for server: $serverId")
         }
         
-        // Use OptimizedClientFactory invalidation - need server URL
+        // Use OptimizedClientFactory invalidation - clear all since we can't easily get server URL synchronously
         try {
-            val authRepository = authRepositoryProvider.get()
-            val server = authRepository.getCurrentServer()
-            if (server != null && server.id == serverId) {
-                optimizedClientFactory.invalidateClient(server.url)
-                SecureLogger.d(TAG, "Invalidated optimized client for server: ${server.url}")
-            }
+            optimizedClientFactory.clearAllClients()
+            SecureLogger.d(TAG, "Cleared all optimized clients for server invalidation: $serverId")
         } catch (e: Exception) {
             SecureLogger.w(TAG, "Could not invalidate optimized client: ${e.message}")
         }
