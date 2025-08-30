@@ -37,7 +37,7 @@ object NetworkOptimizer {
     private fun setupGlobalNetworkTagging() {
         // Create a thread-local tag for network operations
         val networkTag = NETWORK_TAG.hashCode()
-        
+
         // Store the original handler BEFORE setting the new one to avoid infinite recursion
         val originalHandler = Thread.getDefaultUncaughtExceptionHandler()
 
