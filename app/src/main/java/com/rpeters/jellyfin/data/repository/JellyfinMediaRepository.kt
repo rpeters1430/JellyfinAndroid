@@ -144,7 +144,7 @@ class JellyfinMediaRepository @Inject constructor(
                 if ((isHomeVideos || isPhotos) && e.status == 400) {
                     android.util.Log.w(
                         "JellyfinMediaRepository",
-                        "Known compatibility issue with ${collectionType} library (id=${validatedParams.parentId}), returning empty list",
+                        "Known compatibility issue with $collectionType library (id=${validatedParams.parentId}), returning empty list",
                     )
 
                     // Don't report this as a failure since it's a known limitation
@@ -315,22 +315,22 @@ class JellyfinMediaRepository @Inject constructor(
         }
     }
 
-    suspend fun getMovieDetails(movieId: String): ApiResult<BaseItemDto> = 
+    suspend fun getMovieDetails(movieId: String): ApiResult<BaseItemDto> =
         withServerClient("getMovieDetails") { server, client ->
             getItemDetailsById(movieId, "movie", server, client)
         }
 
-    suspend fun getSeriesDetails(seriesId: String): ApiResult<BaseItemDto> = 
+    suspend fun getSeriesDetails(seriesId: String): ApiResult<BaseItemDto> =
         withServerClient("getSeriesDetails") { server, client ->
             getItemDetailsById(seriesId, "series", server, client)
         }
 
-    suspend fun getEpisodeDetails(episodeId: String): ApiResult<BaseItemDto> = 
+    suspend fun getEpisodeDetails(episodeId: String): ApiResult<BaseItemDto> =
         withServerClient("getEpisodeDetails") { server, client ->
             getItemDetailsById(episodeId, "episode", server, client)
         }
 
-    suspend fun getSeasonsForSeries(seriesId: String): ApiResult<List<BaseItemDto>> = 
+    suspend fun getSeasonsForSeries(seriesId: String): ApiResult<List<BaseItemDto>> =
         // ✅ FIX: Use withServerClient helper to ensure fresh server/client on token refresh
         withServerClient("getSeasonsForSeries") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
@@ -351,7 +351,7 @@ class JellyfinMediaRepository @Inject constructor(
             response.content.items ?: emptyList()
         }
 
-    suspend fun getEpisodesForSeason(seasonId: String): ApiResult<List<BaseItemDto>> = 
+    suspend fun getEpisodesForSeason(seasonId: String): ApiResult<List<BaseItemDto>> =
         // ✅ FIX: Use withServerClient helper to ensure fresh server/client on token refresh
         withServerClient("getEpisodesForSeason") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
@@ -373,10 +373,10 @@ class JellyfinMediaRepository @Inject constructor(
         }
 
     private suspend fun getItemDetailsById(
-        itemId: String, 
-        itemTypeName: String, 
-        server: com.rpeters.jellyfin.data.JellyfinServer, 
-        client: org.jellyfin.sdk.api.client.ApiClient
+        itemId: String,
+        itemTypeName: String,
+        server: com.rpeters.jellyfin.data.JellyfinServer,
+        client: org.jellyfin.sdk.api.client.ApiClient,
     ): BaseItemDto {
         val userUuid = parseUuid(server.userId ?: "", "user")
         val itemUuid = parseUuid(itemId, itemTypeName)
