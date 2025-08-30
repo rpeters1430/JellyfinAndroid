@@ -9,7 +9,7 @@ interface TokenProvider {
      * Get the current authentication token.
      * @return Current token or null if not authenticated
      */
-    fun token(): String?
+    suspend fun token(): String?
     
     /**
      * Attach the current token to an HTTP request.
@@ -18,7 +18,7 @@ interface TokenProvider {
      * Note: This is a simplified interface. In a real implementation,
      * the token attachment would be handled by HTTP client interceptors.
      */
-    fun attachToken(headers: MutableMap<String, String>) {
+    suspend fun attachToken(headers: MutableMap<String, String>) {
         token()?.let { token ->
             headers["X-MediaBrowser-Token"] = token
         }

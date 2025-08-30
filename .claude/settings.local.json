@@ -1,13 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:gist.github.com)"
+      "WebFetch(domain:gist.github.com)",
+      "Bash(./gradlew build:*)",
+      "Bash(./gradlew compileDebugKotlin:*)",
+      "Bash(./gradlew:*)"
     ],
+    "deny": [],
+    "ask": [],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [
       "C:\\c\\Users\\James\\Documents\\GitHub"
-    ],
-    "deny": [],
-    "ask": []
+    ]
   }
 }

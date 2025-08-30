@@ -49,7 +49,7 @@ class JellyfinAuthRepository @Inject constructor(
     }
 
     // TokenProvider implementation
-    override fun token(): String? = _tokenState.value
+    override suspend fun token(): String? = _tokenState.value
 
     private fun saveNewToken(token: String?) {
         val tokenTail = token?.takeLast(6) ?: "null"

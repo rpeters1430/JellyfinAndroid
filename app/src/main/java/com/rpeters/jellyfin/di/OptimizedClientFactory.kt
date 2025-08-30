@@ -5,6 +5,7 @@ import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import okhttp3.ConnectionPool
@@ -91,15 +92,15 @@ class OptimizedClientFactory @Inject constructor(
                 }
             }
             
-            val token = authRepository.token()
+            val token = runBlocking { authRepository.token() }
             val tokenTail = token?.takeLast(6) ?: "null"
             Log.d("TokenInterceptor", "Attaching token to request: ...$tokenTail")
             
             val request = chain.request().newBuilder()
                 .apply {
                     token?.let { 
+                        // Use only X-Emby-Token header, not both - duplicate headers can confuse Jellyfin server
                         addHeader("X-Emby-Token", it)
-                        addHeader("Authorization", "MediaBrowser Token=\"$it\"")
                     }
                 }
                 .build()
