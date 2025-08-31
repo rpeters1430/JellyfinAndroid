@@ -209,6 +209,30 @@ fun HomeContent(
             }
         }
     }
+
+    // Cache heavy computations and derived lists to minimize recomposition
+    val continueWatchingItems by remember(appState.allItems) {
+        derivedStateOf { getContinueWatchingItems(appState) }
+    }
+    val recentMovies by remember(appState.recentlyAddedByTypes) {
+        derivedStateOf { appState.recentlyAddedByTypes["MOVIE"]?.take(8) ?: emptyList() }
+    }
+    val recentTVShows by remember(appState.recentlyAddedByTypes) {
+        derivedStateOf { appState.recentlyAddedByTypes["SERIES"]?.take(8) ?: emptyList() }
+    }
+    val featuredItems by remember(appState.recentlyAddedByTypes) {
+        derivedStateOf { (recentMovies + recentTVShows).take(10) }
+    }
+    val recentEpisodes by remember(appState.recentlyAddedByTypes) {
+        derivedStateOf { appState.recentlyAddedByTypes["EPISODE"]?.take(15) ?: emptyList() }
+    }
+    val recentMusic by remember(appState.recentlyAddedByTypes) {
+        derivedStateOf { appState.recentlyAddedByTypes["AUDIO"]?.take(15) ?: emptyList() }
+    }
+    val recentVideos by remember(appState.recentlyAddedByTypes) {
+        derivedStateOf { appState.recentlyAddedByTypes["VIDEO"]?.take(15) ?: emptyList() }
+    }
+
     Box(
         modifier = modifier,
     ) {
@@ -219,7 +243,6 @@ fun HomeContent(
             item { HomeHeader(currentServer) }
 
             // Continue Watching Section
-            val continueWatchingItems = getContinueWatchingItems(appState)
             if (continueWatchingItems.isNotEmpty()) {
                 item {
                     ContinueWatchingSection(
@@ -229,10 +252,6 @@ fun HomeContent(
                     )
                 }
             }
-
-            val recentMovies = appState.recentlyAddedByTypes["MOVIE"]?.take(8) ?: emptyList()
-            val recentTVShows = appState.recentlyAddedByTypes["SERIES"]?.take(8) ?: emptyList()
-            val featuredItems = (recentMovies + recentTVShows).take(10)
 
             if (featuredItems.isNotEmpty()) {
                 item {
@@ -279,7 +298,6 @@ fun HomeContent(
                 }
             }
 
-            val recentEpisodes = appState.recentlyAddedByTypes["EPISODE"]?.take(15) ?: emptyList()
             if (recentEpisodes.isNotEmpty()) {
                 item {
                     EnhancedContentCarousel(
@@ -293,7 +311,6 @@ fun HomeContent(
                 }
             }
 
-            val recentMusic = appState.recentlyAddedByTypes["AUDIO"]?.take(15) ?: emptyList()
             if (recentMusic.isNotEmpty()) {
                 item {
                     EnhancedContentCarousel(
@@ -307,7 +324,6 @@ fun HomeContent(
                 }
             }
 
-            val recentVideos = appState.recentlyAddedByTypes["VIDEO"]?.take(15) ?: emptyList()
             if (recentVideos.isNotEmpty()) {
                 item {
                     EnhancedContentCarousel(
