@@ -200,33 +200,29 @@ Automated workflows for:
 
 ## 🚧 Roadmap
 
-### **Phase 1: Core Functionality** ✅
-- [x] Server connection and authentication
-- [x] Media library browsing
-- [x] Material 3 UI implementation
-- [x] Recently added carousel
-- [x] Favorites management
+**📋 [View Complete Development Roadmap](ROADMAP.md)**
 
-### **Phase 2: Media Playback** 🔄
-- [x] Video playback with ExoPlayer
-- [ ] Audio playback support
-- [ ] Subtitle handling
-- [ ] Continue watching functionality
-- [ ] Playback state synchronization
+Our comprehensive development roadmap includes 7 major phases with detailed implementation plans:
 
-### **Phase 3: Advanced Features** 📋
-- [ ] Search functionality
-- [ ] Download for offline viewing
-- [ ] Chromecast support
-- [ ] Live TV integration
-- [ ] User profiles and settings
+### **Current Status** ✅
+- [x] Core functionality (authentication, library browsing, Material 3 UI)
+- [x] Enhanced playback system with intelligent Direct Play detection  
+- [x] Video playback with ExoPlayer and advanced capabilities
+- [x] Recently added carousel and favorites management
 
-### **Phase 4: Polish & Performance** 🎯
-- [ ] Background sync
-- [ ] Push notifications
-- [ ] Widget support
-- [ ] Performance optimizations
-- [ ] Accessibility improvements
+### **Next Priority: TV & Large Screen Optimization** 🔴 *HIGH PRIORITY*
+- [ ] **Phase 1.1**: Android TV Architecture Implementation
+- [ ] **Phase 1.2**: TV Playback Experience Enhancement
+
+### **Upcoming Phases** 📋
+- **Phase 2**: Complete Media Experience (Advanced Audio, Offline Content)
+- **Phase 3**: Discovery & Intelligence Features (AI Search, Personalization)  
+- **Phase 4**: Mobile Experience Polish (Foldables, Performance)
+- **Phase 5**: Connectivity & Sync Features (Multi-device, Cloud)
+- **Phase 6**: Gaming & Interactive Features *(Future/Optional)*
+- **Phase 7**: Developer Experience & Architecture *(Future/Optional)*
+
+**[📖 See detailed implementation plans, timelines, and checklists in ROADMAP.md](ROADMAP.md)**
 
 ## 🤝 Contributing
 
