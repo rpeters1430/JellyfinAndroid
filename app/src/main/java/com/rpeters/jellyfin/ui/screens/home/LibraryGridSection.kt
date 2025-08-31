@@ -5,11 +5,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Folder
@@ -52,12 +55,13 @@ fun LibraryGridSection(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         )
 
-        // Use a vertical arrangement for compact cards
-        Column(
-            modifier = Modifier.padding(horizontal = 16.dp),
+        // Use a lazy column for better performance with many libraries
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            libraries.forEach { library ->
+            items(libraries, key = { it.id ?: it.name }) { library ->
                 ExpressiveCompactCard(
                     title = library.name ?: "Unknown Library",
                     subtitle = library.type?.toString()?.replace("_", " ")?.lowercase()
