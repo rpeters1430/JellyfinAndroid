@@ -17,6 +17,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -124,20 +125,17 @@ class MainAppViewModel @Inject constructor(
             BaseItemKind.VIDEO,
         )
 
-        val deferredResults = contentTypes.map { contentType ->
+        contentTypes.map { contentType ->
             async {
-                contentType.name to mediaRepository.getRecentlyAddedByType(contentType, forceRefresh = forceRefresh)
+                mediaRepository.getRecentlyAddedByType(contentType, forceRefresh = forceRefresh).let { result ->
+                    if (result is ApiResult.Success && result.data.isNotEmpty()) {
+                        contentType.name to result.data
+                    } else {
+                        null
+                    }
+                }
             }
-        }
-
-        val results = mutableMapOf<String, List<BaseItemDto>>()
-        deferredResults.forEach { deferred ->
-            val (typeName, result) = deferred.await()
-            if (result is ApiResult.Success && result.data.isNotEmpty()) {
-                results[typeName] = result.data
-            }
-        }
-        results
+        }.awaitAll().filterNotNull().toMap()
     }
 
     fun loadInitialData(forceRefresh: Boolean = false) {
@@ -147,34 +145,42 @@ class MainAppViewModel @Inject constructor(
             _appState.value = _appState.value.copy(isLoading = true, errorMessage = null)
 
             try {
-                val librariesDeferred = async { mediaRepository.getUserLibraries(forceRefresh) }
-                val recentDeferred = async { mediaRepository.getRecentlyAdded(forceRefresh = forceRefresh) }
-                val recentByTypesDeferred = async { loadRecentlyAddedByTypes(forceRefresh) }
+                coroutineScope {
+                    val librariesDeferred = async { mediaRepository.getUserLibraries(forceRefresh = forceRefresh) }
+                    val recentDeferred = async { mediaRepository.getRecentlyAdded(forceRefresh = forceRefresh) }
+                    val recentByTypesDeferred = async { loadRecentlyAddedByTypes(forceRefresh = forceRefresh) }
 
-                when (val librariesResult = librariesDeferred.await()) {
-                    is ApiResult.Success -> {
-                        val libraries = librariesResult.data
-                        val recentlyAdded = when (val recentResult = recentDeferred.await()) {
-                            is ApiResult.Success -> recentResult.data
-                            else -> emptyList()
+                    awaitAll(librariesDeferred, recentDeferred, recentByTypesDeferred)
+
+                    val librariesResult = librariesDeferred.getCompleted()
+                    val recentResult = recentDeferred.getCompleted()
+                    val recentlyAddedByTypes = recentByTypesDeferred.getCompleted()
+
+                    when (librariesResult) {
+                        is ApiResult.Success -> {
+                            val libraries = librariesResult.data
+                            val recentlyAdded = if (recentResult is ApiResult.Success) {
+                                recentResult.data
+                            } else {
+                                emptyList()
+                            }
+
+                            _appState.value = _appState.value.copy(
+                                libraries = libraries,
+                                recentlyAdded = recentlyAdded,
+                                recentlyAddedByTypes = recentlyAddedByTypes,
+                                isLoading = false,
+                            )
                         }
-                        val recentlyAddedByTypes = recentByTypesDeferred.await()
-
-                        _appState.value = _appState.value.copy(
-                            libraries = libraries,
-                            recentlyAdded = recentlyAdded,
-                            recentlyAddedByTypes = recentlyAddedByTypes,
-                            isLoading = false,
-                        )
-                    }
-                    is ApiResult.Error -> {
-                        _appState.value = _appState.value.copy(
-                            isLoading = false,
-                            errorMessage = "Failed to load data: ${librariesResult.message}",
-                        )
-                    }
-                    is ApiResult.Loading -> {
-                        // Already handled
+                        is ApiResult.Error -> {
+                            _appState.value = _appState.value.copy(
+                                isLoading = false,
+                                errorMessage = "Failed to load libraries: ${librariesResult.message}",
+                            )
+                        }
+                        is ApiResult.Loading -> {
+                            // Already handled
+                        }
                     }
                 }
             } catch (e: Exception) {
