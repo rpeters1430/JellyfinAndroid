@@ -119,6 +119,24 @@ class JellyfinRepository @Inject constructor(
         }
     }
 
+    /**
+     * Execute a repository operation with a fresh ApiClient and current server context.
+     * Authentication refresh and 401-aware retry are centralized in JellyfinSessionManager.
+     */
+    private suspend fun <T> withServerClient(
+        operationName: String,
+        block: suspend (server: JellyfinServer, client: ApiClient) -> T,
+    ): ApiResult<T> =
+        try {
+            val result = sessionManager.executeWithAuth(operationName) { server, client ->
+                block(server, client)
+            }
+            ApiResult.Success(result)
+        } catch (e: Exception) {
+            val error = RepositoryUtils.getErrorType(e)
+            ApiResult.Error(e.message ?: "Unknown error", e, error)
+        }
+
     // ✅ PHASE 4: Simplified error handling using centralized utilities
     private fun <T> handleExceptionSafely(e: Exception, defaultMessage: String = getString(R.string.error_occurred)): ApiResult.Error<T> {
         // Let cancellation exceptions bubble up instead of converting to ApiResult.Error
@@ -184,24 +202,14 @@ class JellyfinRepository @Inject constructor(
             }
         }
 
-        return executeWithAuthRetry("getUserLibraries") {
-            // Use current server from auth repository for consistency
-            val server = authRepository.getCurrentServer()
-            if (server?.accessToken == null || server.userId == null) {
-                return@executeWithAuthRetry ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
-            }
-
-            val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
-            if (userUuid == null) {
-                return@executeWithAuthRetry ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
-            }
-
-            val client = getClient(server.url, server.accessToken)
+        return withServerClient("getUserLibraries") { server, client ->
+            val userUuid = runCatching { UUID.fromString(server.userId ?: "") }.getOrNull()
+                ?: throw IllegalStateException("Invalid user ID")
             val response = client.itemsApi.getItems(
                 userId = userUuid,
                 includeItemTypes = listOf(org.jellyfin.sdk.model.api.BaseItemKind.COLLECTION_FOLDER),
             )
-            ApiResult.Success(response.content.items ?: emptyList())
+            response.content.items ?: emptyList()
         }
     }
 

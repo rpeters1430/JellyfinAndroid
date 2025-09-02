@@ -1,7 +1,12 @@
 package com.rpeters.jellyfin.ui.tv
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -29,18 +34,29 @@ fun TvNavGraph(
     ) {
         composable(TvRoutes.ServerConnection) {
             val connectionViewModel: ServerConnectionViewModel = hiltViewModel()
-            TvServerConnectionScreen(
-                onConnect = { serverUrl, username, password ->
-                    connectionViewModel.connectToServer(serverUrl, username, password)
-                    // Navigate when connection state flips; simple optimistic nav for now
+            val lifecycleOwner = LocalLifecycleOwner.current
+            val connectionState by connectionViewModel.connectionState.collectAsStateWithLifecycle(
+                lifecycle = lifecycleOwner.lifecycle,
+                minActiveState = Lifecycle.State.STARTED,
+            )
+            
+            // Navigate to Home when successfully connected
+            LaunchedEffect(connectionState.isConnected) {
+                if (connectionState.isConnected) {
                     navController.navigate(TvRoutes.Home) {
                         popUpTo(TvRoutes.ServerConnection) { inclusive = true }
                     }
+                }
+            }
+            
+            TvServerConnectionScreen(
+                onConnect = { serverUrl, username, password ->
+                    connectionViewModel.connectToServer(serverUrl, username, password)
                 },
-                isConnecting = false,
-                errorMessage = null,
-                savedServerUrl = null,
-                savedUsername = null,
+                isConnecting = connectionState.isConnecting,
+                errorMessage = connectionState.errorMessage,
+                savedServerUrl = connectionState.savedServerUrl,
+                savedUsername = connectionState.savedUsername,
             )
         }
 
