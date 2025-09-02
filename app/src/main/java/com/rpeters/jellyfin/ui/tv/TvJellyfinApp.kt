@@ -21,9 +21,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
+import com.rpeters.jellyfin.ui.tv.tvKeyboardHandler
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text as TvText
 
@@ -61,11 +65,25 @@ fun TvServerConnectionScreen(
     var username by remember { mutableStateOf(savedUsername ?: "") }
     var password by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
+    
+    val focusManager = LocalFocusManager.current
+    val serverUrlFocusRequester = remember { FocusRequester() }
+    val usernameFocusRequester = remember { FocusRequester() }
+    val passwordFocusRequester = remember { FocusRequester() }
 
     // Update local state when saved values change
     LaunchedEffect(savedServerUrl, savedUsername) {
         serverUrl = savedServerUrl ?: ""
         username = savedUsername ?: ""
+    }
+    
+    // Auto-focus the appropriate field on start
+    LaunchedEffect(Unit) {
+        when {
+            serverUrl.isEmpty() -> serverUrlFocusRequester.requestFocus()
+            username.isEmpty() -> usernameFocusRequester.requestFocus()
+            else -> passwordFocusRequester.requestFocus()
+        }
     }
 
     val screenH = LocalConfiguration.current.screenHeightDp.dp
@@ -81,11 +99,19 @@ fun TvServerConnectionScreen(
         androidx.tv.material3.Card(
             onClick = { /* No-op, card is not clickable */ },
             modifier = Modifier
-                .fillMaxWidth(0.7f)
-                .heightIn(max = screenH - 96.dp)
+                .fillMaxWidth(0.8f) // Increase width slightly for better visibility
+                .heightIn(max = screenH - 120.dp) // Add more margin
                 .padding(0.dp),
             colors = androidx.tv.material3.CardDefaults.colors(
                 containerColor = TvMaterialTheme.colorScheme.surface,
+            ),
+            border = androidx.tv.material3.CardDefaults.border(
+                focusedBorder = androidx.tv.material3.Border(
+                    border = androidx.compose.foundation.BorderStroke(
+                        width = 2.dp,
+                        color = TvMaterialTheme.colorScheme.primary
+                    )
+                )
             ),
         ) {
             val scrollState = rememberScrollState()
@@ -119,8 +145,17 @@ fun TvServerConnectionScreen(
                     placeholder = { androidx.compose.material3.Text("https://jellyfin.example.com") },
                     singleLine = true,
                     maxLines = 1,
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Next),
-                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Uri,
+                        imeAction = androidx.compose.ui.text.input.ImeAction.Next
+                    ),
+                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(
+                        onNext = { usernameFocusRequester.requestFocus() }
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(serverUrlFocusRequester)
+                        .tvKeyboardHandler(focusManager = focusManager),
                     enabled = !isConnecting,
                 )
 
@@ -131,8 +166,17 @@ fun TvServerConnectionScreen(
                     label = { androidx.compose.material3.Text("Username") },
                     singleLine = true,
                     maxLines = 1,
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Next),
-                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Text,
+                        imeAction = androidx.compose.ui.text.input.ImeAction.Next
+                    ),
+                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(
+                        onNext = { passwordFocusRequester.requestFocus() }
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(usernameFocusRequester)
+                        .tvKeyboardHandler(focusManager = focusManager),
                     enabled = !isConnecting,
                 )
 
@@ -158,8 +202,22 @@ fun TvServerConnectionScreen(
                     },
                     singleLine = true,
                     maxLines = 1,
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Done),
-                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Password,
+                        imeAction = androidx.compose.ui.text.input.ImeAction.Done
+                    ),
+                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(
+                        onDone = {
+                            focusManager.clearFocus()
+                            if (serverUrl.isNotBlank() && username.isNotBlank() && password.isNotBlank()) {
+                                onConnect(serverUrl, username, password)
+                            }
+                        }
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(passwordFocusRequester)
+                        .tvKeyboardHandler(focusManager = focusManager),
                     enabled = !isConnecting,
                 )
 
@@ -185,12 +243,18 @@ fun TvServerConnectionScreen(
                 // Connect button
                 androidx.tv.material3.Button(
                     onClick = {
+                        focusManager.clearFocus()
                         if (serverUrl.isNotBlank() && username.isNotBlank() && password.isNotBlank()) {
                             onConnect(serverUrl, username, password)
                         }
                     },
                     enabled = serverUrl.isNotBlank() && username.isNotBlank() && password.isNotBlank() && !isConnecting,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .tvKeyboardHandler(
+                            focusManager = focusManager,
+                            onBack = { focusManager.clearFocus() }
+                        ),
                 ) {
                     if (isConnecting) {
                         androidx.compose.material3.CircularProgressIndicator(

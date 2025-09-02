@@ -30,9 +30,8 @@ fun TvLibrariesSection(
     libraries: List<BaseItemDto>,
     onLibrarySelect: (String) -> Unit,
     modifier: Modifier = Modifier,
+    isLoading: Boolean = false,
 ) {
-    if (libraries.isEmpty()) return
-
     TvText(
         text = "Your Libraries",
         style = TvMaterialTheme.typography.headlineLarge,

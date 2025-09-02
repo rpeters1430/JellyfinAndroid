@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -30,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.rpeters.jellyfin.ui.tv.TvFocusableCarousel
+import com.rpeters.jellyfin.ui.tv.rememberTvFocusManager
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
 import androidx.tv.material3.Card as TvCard
@@ -45,8 +48,22 @@ fun TvContentCarousel(
     onItemSelect: (BaseItemDto) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: MainAppViewModel = hiltViewModel(),
+    carouselId: String = title.replace(" ", "_").lowercase(),
+    isLoading: Boolean = false,
 ) {
-    if (items.isEmpty()) return
+    // Show skeleton if loading or no items
+    if (isLoading || items.isEmpty()) {
+        TvSkeletonCarousel(
+            title = if (isLoading) "Loading..." else title,
+            itemCount = if (isLoading) 6 else 0,
+            modifier = modifier
+        )
+        return
+    }
+
+    val focusManager = rememberTvFocusManager()
+    val lazyListState = rememberLazyListState()
+    var focusedIndex by remember { mutableIntStateOf(0) }
 
     Column(modifier = modifier) {
         TvText(
@@ -55,47 +72,38 @@ fun TvContentCarousel(
             modifier = Modifier.padding(start = 56.dp, top = 24.dp, bottom = 16.dp),
         )
 
-        val lazyListState = rememberLazyListState()
-        val focusRequester = remember { FocusRequester() }
-        var focusedItem by remember { mutableStateOf<BaseItemDto?>(null) }
-
-        LazyRow(
-            state = lazyListState,
-            contentPadding = PaddingValues(horizontal = 56.dp),
-            horizontalArrangement = Arrangement.spacedBy(24.dp),
-            modifier = Modifier
-                .focusRequester(focusRequester)
-                .focusable(),
-        ) {
-            items(items, key = { it.id?.toString() ?: "" }) { item ->
-                TvContentCard(
-                    item = item,
-                    onItemFocus = {
-                        focusedItem = item
-                        onItemFocus(item)
-                    },
-                    onItemSelect = { onItemSelect(item) },
-                    getImageUrl = viewModel::getImageUrl,
-                    getSeriesImageUrl = viewModel::getSeriesImageUrl,
-                )
-            }
-        }
-
-        // Auto-scroll to keep focused item visible
-        LaunchedEffect(focusedItem) {
-            focusedItem?.let { item ->
-                val index = items.indexOf(item)
-                if (index >= 0) {
-                    lazyListState.animateScrollToItem(index)
+        TvFocusableCarousel(
+            carouselId = carouselId,
+            focusManager = focusManager,
+            lazyListState = lazyListState,
+            itemCount = items.size,
+            onFocusChanged = { isFocused, index ->
+                focusedIndex = index
+                if (isFocused && index < items.size) {
+                    onItemFocus(items[index])
                 }
             }
-        }
-
-        // Request initial focus on first carousel when screen loads
-        LaunchedEffect(Unit) {
-            if (items.isNotEmpty()) {
-                focusRequester.requestFocus()
-                focusedItem = items.first()
+        ) { focusModifier ->
+            LazyRow(
+                state = lazyListState,
+                contentPadding = PaddingValues(horizontal = 56.dp),
+                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                modifier = focusModifier,
+            ) {
+                items(items, key = { it.id?.toString() ?: "" }) { item ->
+                    val itemIndex = items.indexOf(item)
+                    TvContentCard(
+                        item = item,
+                        onItemFocus = {
+                            focusedIndex = itemIndex
+                            onItemFocus(item)
+                        },
+                        onItemSelect = { onItemSelect(item) },
+                        getImageUrl = viewModel::getImageUrl,
+                        getSeriesImageUrl = viewModel::getSeriesImageUrl,
+                        isFocused = focusedIndex == itemIndex,
+                    )
+                }
             }
         }
     }
@@ -109,17 +117,13 @@ fun TvContentCard(
     getImageUrl: (BaseItemDto) -> String?,
     getSeriesImageUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier,
+    isFocused: Boolean = false,
 ) {
-    val focusRequester = remember { FocusRequester() }
-    var isFocused by remember { mutableStateOf(false) }
-
     Column(
         modifier = modifier
             .width(240.dp)
-            .focusRequester(focusRequester)
             .onFocusChanged { focusState ->
-                isFocused = focusState.isFocused
-                if (isFocused) {
+                if (focusState.isFocused) {
                     onItemFocus()
                 }
             },
