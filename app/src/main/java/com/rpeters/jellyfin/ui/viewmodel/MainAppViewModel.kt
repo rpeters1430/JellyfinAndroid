@@ -353,10 +353,12 @@ class MainAppViewModel @Inject constructor(
 
             _appState.value = _appState.value.copy(isLoading = true, errorMessage = null)
 
-            when (val result = mediaRepository.getLibraryItems(
-                parentId = libraryId,
-                itemTypes = libraryType.itemKinds.joinToString(",") { it.name }
-            )) {
+            when (
+                val result = mediaRepository.getLibraryItems(
+                    parentId = libraryId,
+                    itemTypes = libraryType.itemKinds.joinToString(",") { it.name },
+                )
+            ) {
                 is ApiResult.Success -> {
                     val updated = _appState.value.itemsByLibrary.toMutableMap()
                     updated[libraryId] = result.data
