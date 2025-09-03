@@ -2,36 +2,37 @@
 
 ## Project Structure & Module Organization
 - Single Gradle module: `:app` (Kotlin + Jetpack Compose).
-- Source code: `app/src/main/java/com/rpeters/jellyfin/...`
+- Source code: `app/src/main/java/com/rpeters/jellyfin/...`.
 - UI/resources: `app/src/main/res`; manifest: `app/src/main/AndroidManifest.xml`.
-- Unit tests (JVM): `app/src/test/java`; instrumentation tests: `app/src/androidTest/java`.
+- Unit tests (JVM): `app/src/test/java`; instrumentation: `app/src/androidTest/java`.
 - Build config: `settings.gradle.kts`, `build.gradle.kts`, `app/build.gradle.kts`; versions in `gradle/libs.versions.toml`.
 
 ## Build, Test, and Development Commands
-- Build debug APK: `./gradlew assembleDebug` — produces `app/build/outputs/apk/debug`.
-- Install on device: `./gradlew installDebug` — deploys the debug APK.
-- JVM unit tests: `./gradlew testDebugUnitTest` — runs JUnit tests on the JVM.
-- Instrumentation tests: `./gradlew connectedAndroidTest` — requires emulator/device; uses `HiltTestRunner`.
-- Lint: `./gradlew lintDebug` — Android Lint report under `app/build/reports/lint`.
-- Coverage: `./gradlew jacocoTestReport` — HTML/XML under `app/build/reports`.
+- Build debug APK: `./gradlew assembleDebug` → outputs `app/build/outputs/apk/debug`.
+- Install on device: `./gradlew installDebug`.
+- JVM unit tests: `./gradlew testDebugUnitTest`.
+- Instrumentation tests: `./gradlew connectedAndroidTest` (emulator/device; `HiltTestRunner`).
+- Lint: `./gradlew lintDebug` → report: `app/build/reports/lint`.
+- Coverage: `./gradlew jacocoTestReport` → HTML/XML under `app/build/reports`.
 
 ## Coding Style & Naming Conventions
 - Kotlin style, 4‑space indent, ~120‑char lines.
 - Names: Classes `PascalCase`; functions/vars `camelCase`; constants `UPPER_SNAKE_CASE`.
 - Packages under `com.rpeters.jellyfin`.
-- UI: Compose + Material 3; unidirectional data flow, MVVM; DI via Hilt.
+- UI: Compose + Material 3; unidirectional data flow (MVVM); DI via Hilt.
 
 ## Testing Guidelines
 - Frameworks: JUnit4, MockK, Turbine, AndroidX Test; Hilt testing configured.
-- Focus on ViewModel/Repository logic; mock network/I/O boundaries.
-- Test names: prefer descriptive functions (e.g., `loadMovieDetails_updates_state_on_success`).
-- Run: unit — `testDebugUnitTest`; instrumentation — `connectedAndroidTest`.
-- Coverage: `jacocoTestReport`; generated/DI classes are already filtered.
+- Focus tests on ViewModel/Repository logic; mock network/I/O boundaries.
+- Name tests descriptively (e.g., `loadMovieDetails_updates_state_on_success`).
+- Run unit tests with `testDebugUnitTest`; instrumentation with `connectedAndroidTest`.
+- Coverage via `jacocoTestReport`; generated/DI classes already filtered.
 
 ## Commit & Pull Request Guidelines
-- Commits: Conventional Commits (e.g., `feat:`, `fix:`, `docs:`); keep changes small and focused.
+- Commits use Conventional Commits (e.g., `feat:`, `fix:`, `docs:`). Keep changes small and focused.
 - Branches: `feature/...`, `bugfix/...`, `hotfix/...`, `docs/...`.
-- PRs: clear description, linked issues, screenshots/GIFs for UI changes, and list affected areas/coverage. Ensure `testDebugUnitTest` and `lintDebug` pass.
+- PRs: clear description, linked issues, and screenshots/GIFs for UI changes. List affected areas and note test/coverage impact.
+- Ensure `./gradlew testDebugUnitTest` and `./gradlew lintDebug` pass before requesting review.
 
 ## Security & Configuration Tips
 - Do not commit secrets/keystores; prefer Android Keystore/Encrypted storage.

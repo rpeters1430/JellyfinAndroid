@@ -25,6 +25,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.CollectionType
 import java.util.UUID
 import javax.inject.Inject
 
@@ -353,10 +354,44 @@ class MainAppViewModel @Inject constructor(
 
             _appState.value = _appState.value.copy(isLoading = true, errorMessage = null)
 
+            // Map BaseItemKind to Jellyfin API item type names
+            fun mapKindsToApiNames(kinds: List<BaseItemKind>): String =
+                kinds.mapNotNull { kind ->
+                    when (kind) {
+                        BaseItemKind.MOVIE -> "Movie"
+                        BaseItemKind.SERIES -> "Series"
+                        BaseItemKind.EPISODE -> "Episode"
+                        BaseItemKind.AUDIO -> "Audio"
+                        BaseItemKind.MUSIC_ALBUM -> "MusicAlbum"
+                        BaseItemKind.MUSIC_ARTIST -> "MusicArtist"
+                        BaseItemKind.BOOK -> "Book"
+                        BaseItemKind.AUDIO_BOOK -> "AudioBook"
+                        BaseItemKind.VIDEO -> "Video"
+                        BaseItemKind.PHOTO -> "Photo"
+                        else -> null
+                    }
+                }.joinToString(",")
+
+            // Derive collectionType string for validator compatibility
+            val collectionTypeStr = when (library.collectionType) {
+                CollectionType.MOVIES -> "movies"
+                CollectionType.TVSHOWS -> "tvshows"
+                CollectionType.MUSIC -> "music"
+                CollectionType.HOMEVIDEOS -> "homevideos"
+                CollectionType.PHOTOS -> "photos"
+                CollectionType.BOOKS -> "books"
+                else -> null
+            }
+
+            val itemTypesArg: String? =
+                if (library.collectionType == CollectionType.HOMEVIDEOS) null
+                else mapKindsToApiNames(libraryType.itemKinds)
+
             when (
                 val result = mediaRepository.getLibraryItems(
                     parentId = libraryId,
-                    itemTypes = libraryType.itemKinds.joinToString(",") { it.name },
+                    itemTypes = itemTypesArg,
+                    collectionType = collectionTypeStr,
                 )
             ) {
                 is ApiResult.Success -> {
@@ -390,7 +425,20 @@ class MainAppViewModel @Inject constructor(
             }
         }
         if (library != null) {
+            if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
+                android.util.Log.d(
+                    "MainAppViewModel",
+                    "loadLibraryTypeData: triggering load for ${libraryType.name} (library=${library.name})",
+                )
+            }
             loadLibraryTypeData(library, libraryType, forceRefresh)
+        } else {
+            if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
+                android.util.Log.w(
+                    "MainAppViewModel",
+                    "loadLibraryTypeData: no matching library found for ${libraryType.name}; librariesLoaded=${_appState.value.libraries.size}",
+                )
+            }
         }
     }
 
@@ -652,7 +700,7 @@ class MainAppViewModel @Inject constructor(
     }
 
     fun loadHomeVideos(libraryId: String) {
-        val library = BaseItemDto(id = UUID.fromString(libraryId))
+        val library = BaseItemDto(id = UUID.fromString(libraryId), type = BaseItemKind.VIDEO)
         loadLibraryTypeData(library, LibraryType.STUFF)
     }
 

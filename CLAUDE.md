@@ -217,7 +217,7 @@ Dependencies are managed using Gradle version catalogs in `gradle/libs.versions.
 
 ### Build Configuration
 - **Kotlin**: 2.2.10 with Compose compiler plugin
-- **Gradle**: 8.12.2 (AGP) with Kotlin DSL
+- **Gradle**: 8.13.0 (AGP) with Kotlin DSL
 - **Java**: Target/Source compatibility Version 17
 - **Android SDK**: Compile 36, Target 35, Min 26 (Android 8.0+) for broader device compatibility
 - **Package**: `com.rpeters.jellyfin` (actual package structure)

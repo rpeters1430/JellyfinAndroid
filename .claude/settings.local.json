@@ -7,7 +7,8 @@
       "Bash(./gradlew:*)",
       "Bash(find:*)",
       "Bash(sed:*)",
-      "Bash(.gradlew assembleDebug)"
+      "Bash(.gradlew assembleDebug)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": [],

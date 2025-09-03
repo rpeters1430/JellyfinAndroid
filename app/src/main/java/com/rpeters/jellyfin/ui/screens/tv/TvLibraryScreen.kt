@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
+import com.rpeters.jellyfin.ui.screens.LibraryType
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text as TvText
 
@@ -24,18 +25,41 @@ fun TvLibraryScreen(
     val appState by viewModel.appState.collectAsState()
     val library = appState.libraries.firstOrNull { it.id?.toString() == libraryId }
 
-    // Choose items based on library type
+    // Choose items based on library type - use itemsByLibrary for library-specific data
     val items = when (library?.collectionType) {
-        org.jellyfin.sdk.model.api.CollectionType.MOVIES -> appState.allMovies
-        org.jellyfin.sdk.model.api.CollectionType.TVSHOWS -> appState.allTVShows
-        org.jellyfin.sdk.model.api.CollectionType.HOMEVIDEOS -> appState.itemsByLibrary[libraryId] ?: emptyList()
-        else -> emptyList()
+        org.jellyfin.sdk.model.api.CollectionType.MOVIES -> 
+            appState.itemsByLibrary[libraryId] ?: appState.allMovies
+        org.jellyfin.sdk.model.api.CollectionType.TVSHOWS -> 
+            appState.itemsByLibrary[libraryId] ?: appState.allTVShows
+        org.jellyfin.sdk.model.api.CollectionType.MUSIC -> 
+            appState.itemsByLibrary[libraryId] ?: emptyList()
+        org.jellyfin.sdk.model.api.CollectionType.HOMEVIDEOS -> 
+            appState.itemsByLibrary[libraryId] ?: emptyList()
+        else -> 
+            appState.itemsByLibrary[libraryId] ?: emptyList()
     }
 
-    // Trigger on-demand loading for Home Videos
+    // Trigger on-demand loading based on library type
     androidx.compose.runtime.LaunchedEffect(libraryId, library?.collectionType) {
-        if (library != null && library.collectionType == org.jellyfin.sdk.model.api.CollectionType.HOMEVIDEOS) {
-            viewModel.loadHomeVideos(library.id.toString())
+        library?.let { lib ->
+            when (lib.collectionType) {
+                org.jellyfin.sdk.model.api.CollectionType.MOVIES -> {
+                    viewModel.loadLibraryTypeData(lib, LibraryType.MOVIES)
+                }
+                org.jellyfin.sdk.model.api.CollectionType.TVSHOWS -> {
+                    viewModel.loadLibraryTypeData(lib, LibraryType.TV_SHOWS)
+                }
+                org.jellyfin.sdk.model.api.CollectionType.MUSIC -> {
+                    viewModel.loadLibraryTypeData(lib, LibraryType.MUSIC)
+                }
+                org.jellyfin.sdk.model.api.CollectionType.HOMEVIDEOS -> {
+                    viewModel.loadHomeVideos(lib.id.toString())
+                }
+                else -> {
+                    // For other types, try loading as home videos
+                    viewModel.loadHomeVideos(lib.id.toString())
+                }
+            }
         }
     }
 
@@ -51,11 +75,31 @@ fun TvLibraryScreen(
             color = TvMaterialTheme.colorScheme.onSurface,
         )
 
-        if (items.isEmpty()) {
-            TvText(
-                text = "No items to display",
-                style = TvMaterialTheme.typography.bodyLarge,
-                color = TvMaterialTheme.colorScheme.onSurfaceVariant,
+        if (appState.isLoading) {
+            com.rpeters.jellyfin.ui.components.tv.TvSkeletonCarousel(
+                title = "Loading...",
+                itemCount = 6,
+            )
+        } else if (items.isEmpty()) {
+            com.rpeters.jellyfin.ui.components.tv.TvEmptyState(
+                title = "No Items Found",
+                message = "This library appears to be empty or still loading.",
+                onAction = {
+                    // Retry loading
+                    library?.let { lib ->
+                        when (lib.collectionType) {
+                            org.jellyfin.sdk.model.api.CollectionType.MOVIES -> 
+                                viewModel.loadLibraryTypeData(lib, LibraryType.MOVIES, forceRefresh = true)
+                            org.jellyfin.sdk.model.api.CollectionType.TVSHOWS -> 
+                                viewModel.loadLibraryTypeData(lib, LibraryType.TV_SHOWS, forceRefresh = true)
+                            org.jellyfin.sdk.model.api.CollectionType.MUSIC -> 
+                                viewModel.loadLibraryTypeData(lib, LibraryType.MUSIC, forceRefresh = true)
+                            else -> 
+                                viewModel.loadHomeVideos(lib.id.toString())
+                        }
+                    }
+                },
+                actionText = "Retry",
             )
         } else {
             com.rpeters.jellyfin.ui.components.tv.TvContentCarousel(

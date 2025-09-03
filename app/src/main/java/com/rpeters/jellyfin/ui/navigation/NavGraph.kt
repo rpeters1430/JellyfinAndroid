@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,6 +35,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.ui.screens.AlbumDetailScreen
+import com.rpeters.jellyfin.ui.screens.ArtistDetailScreen
 import com.rpeters.jellyfin.ui.screens.BooksScreen
 import com.rpeters.jellyfin.ui.screens.FavoritesScreen
 import com.rpeters.jellyfin.ui.screens.HomeScreen
@@ -65,6 +67,7 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.CollectionType
 import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @androidx.media3.common.util.UnstableApi
 @Composable
 fun JellyfinNavGraph(
@@ -295,8 +298,10 @@ fun JellyfinNavGraph(
             var selectedSort by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieSortOrder.NAME) }
             var viewMode by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieViewMode.GRID) }
 
-            LaunchedEffect(Unit) {
-                viewModel.loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = false)
+            LaunchedEffect(appState.libraries) {
+                if (appState.libraries.isNotEmpty()) {
+                    viewModel.loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = false)
+                }
             }
 
             MoviesScreen(
@@ -321,9 +326,9 @@ fun JellyfinNavGraph(
             )
         }
 
-        // TV Shows Screen - Always available
+        // TV Shows Screen - Use shared MainAppViewModel instance
         composable(Screen.TVShows.route) {
-            val viewModel = hiltViewModel<MainAppViewModel>()
+            val viewModel = mainViewModel
 
             TVShowsScreen(
                 onTVShowClick = { seriesId ->
@@ -412,13 +417,9 @@ fun JellyfinNavGraph(
                             org.jellyfin.sdk.model.api.BaseItemKind.MUSIC_ALBUM -> {
                                 navController.navigate(Screen.AlbumDetail.createRoute(id.toString()))
                             }
-                            org.jellyfin.sdk.model.api.BaseItemKind.AUDIO -> {
-                                // For individual songs, play directly or navigate to detailed view
-                                navController.navigate(Screen.ItemDetail.createRoute(id.toString()))
-                            }
                             org.jellyfin.sdk.model.api.BaseItemKind.MUSIC_ARTIST -> {
-                                // For artists, show artist detail (could be ItemDetail or create ArtistDetail)
-                                navController.navigate(Screen.ItemDetail.createRoute(id.toString()))
+                                // Navigate to artist albums list
+                                navController.navigate(Screen.ArtistDetail.createRoute(id.toString()))
                             }
                             else -> {
                                 navController.navigate(Screen.ItemDetail.createRoute(id.toString()))
@@ -452,6 +453,25 @@ fun JellyfinNavGraph(
             AlbumDetailScreen(
                 albumId = albumId,
                 onBackClick = { navController.popBackStack() },
+                mainViewModel = mainViewModel,
+            )
+        }
+
+        composable(
+            route = Screen.ArtistDetail.route,
+            arguments = listOf(
+                navArgument(Screen.ARTIST_ID_ARG) { type = NavType.StringType },
+            ),
+        ) { backStackEntry ->
+            val artistId = backStackEntry.arguments?.getString(Screen.ARTIST_ID_ARG) ?: return@composable
+            val artistName: String? = null
+            ArtistDetailScreen(
+                artistId = artistId,
+                artistName = artistName,
+                onBackClick = { navController.popBackStack() },
+                onAlbumClick = { album ->
+                    album.id?.let { navController.navigate(Screen.AlbumDetail.createRoute(it.toString())) }
+                },
                 mainViewModel = mainViewModel,
             )
         }

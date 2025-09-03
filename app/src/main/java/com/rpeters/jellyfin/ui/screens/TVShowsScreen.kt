@@ -134,15 +134,17 @@ fun TVShowsScreen(
     var viewMode by remember { mutableStateOf(TVShowViewMode.GRID) }
     var showSortMenu by remember { mutableStateOf(false) }
 
-    // Load TV shows when screen is first displayed
-    LaunchedEffect(Unit) {
-        // Use the new on-demand loading system to prevent double loading
-        viewModel.loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh = false)
+    // Trigger load when libraries are available (prevents early no-op)
+    LaunchedEffect(appState.libraries) {
+        if (appState.libraries.isNotEmpty()) {
+            viewModel.loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh = false)
+        }
     }
 
-    // Get all TV shows from the dedicated allTVShows field
-    val tvShowItems = remember(appState.allTVShows) {
-        appState.allTVShows
+    // Get items provided by the unified library loader (Series only)
+    val tvShowItems = remember(appState.itemsByLibrary, appState.libraries) {
+        viewModel.getLibraryTypeData(LibraryType.TV_SHOWS)
+            .filter { it.type == org.jellyfin.sdk.model.api.BaseItemKind.SERIES }
     }
 
     // Apply filtering and sorting with proper keys to prevent unnecessary recomputation

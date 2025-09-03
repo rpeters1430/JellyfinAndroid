@@ -114,21 +114,23 @@ fun MusicScreen(
     modifier: Modifier = Modifier,
 ) {
     val appState by viewModel.appState.collectAsState()
-    var selectedFilter by remember { mutableStateOf(MusicFilter.ALL) }
-    var sortOrder by remember { mutableStateOf(MusicSortOrder.getDefault()) }
+    var selectedFilter by remember { mutableStateOf(MusicFilter.ARTISTS) }
+    var sortOrder by remember { mutableStateOf(MusicSortOrder.ARTIST_ASC) }
     var viewMode by remember { mutableStateOf(MusicViewMode.GRID) }
     var showSortMenu by remember { mutableStateOf(false) }
 
-    // Get music items from the proper library data
-    val musicItems = remember(appState.allItems, appState.recentlyAddedByTypes) {
-        val libraryMusic = appState.allItems.filter {
-            it.type in listOf(BaseItemKind.MUSIC_ALBUM, BaseItemKind.MUSIC_ARTIST, BaseItemKind.AUDIO)
+    // Trigger load when libraries are available
+    LaunchedEffect(appState.libraries) {
+        if (appState.libraries.isNotEmpty()) {
+            viewModel.loadLibraryTypeData(LibraryType.MUSIC, forceRefresh = false)
         }
-        val recentMusic = appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name] ?: emptyList()
+    }
 
-        // Combine library music with recent music, removing duplicates
-        val combined = (libraryMusic + recentMusic).distinctBy { it.id }
-        combined
+    // Get music items via unified loader and enrich with recent audio
+    val musicItems = remember(appState.itemsByLibrary, appState.recentlyAddedByTypes, appState.libraries) {
+        val libraryMusic = viewModel.getLibraryTypeData(LibraryType.MUSIC)
+        val recentMusic = appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name] ?: emptyList()
+        (libraryMusic + recentMusic).distinctBy { it.id }
     }
 
     // Apply filtering and sorting
