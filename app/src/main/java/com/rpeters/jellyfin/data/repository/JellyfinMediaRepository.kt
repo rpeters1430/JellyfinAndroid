@@ -117,11 +117,35 @@ class JellyfinMediaRepository @Inject constructor(
             )
 
             try {
+                // Choose sensible defaults per collection for sorting and fields
+                val coll = validatedParams.collectionType?.lowercase()
+                val sortBy = when (coll) {
+                    "movies" -> listOf(ItemSortBy.PREMIERE_DATE, ItemSortBy.SORT_NAME)
+                    "tvshows" -> listOf(ItemSortBy.SORT_NAME)
+                    "music" -> listOf(ItemSortBy.SORT_NAME)
+                    else -> emptyList()
+                }
+                val sortOrder = when (coll) {
+                    "movies" -> listOf(SortOrder.DESCENDING)
+                    else -> listOf(SortOrder.ASCENDING)
+                }
+                val fields = listOf(
+                    org.jellyfin.sdk.model.api.ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+                    org.jellyfin.sdk.model.api.ItemFields.OVERVIEW,
+                    org.jellyfin.sdk.model.api.ItemFields.GENRES,
+                    org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
+                    org.jellyfin.sdk.model.api.ItemFields.STUDIOS,
+                    org.jellyfin.sdk.model.api.ItemFields.TAGS,
+                )
+
                 val response = client.itemsApi.getItems(
                     userId = userUuid,
                     parentId = parent,
                     recursive = true,
                     includeItemTypes = itemKinds,
+                    sortBy = sortBy,
+                    sortOrder = sortOrder,
+                    fields = fields,
                     startIndex = validatedParams.startIndex,
                     limit = validatedParams.limit,
                 )
@@ -347,6 +371,25 @@ class JellyfinMediaRepository @Inject constructor(
     suspend fun getItemDetails(itemId: String): ApiResult<BaseItemDto> =
         withServerClient("getItemDetails") { server, client ->
             getItemDetailsById(itemId, "item", server, client)
+        }
+
+    suspend fun getAlbumsForArtist(artistId: String): ApiResult<List<BaseItemDto>> =
+        withServerClient("getAlbumsForArtist") { server, client ->
+            val userUuid = parseUuid(server.userId ?: "", "user")
+            val artistUuid = parseUuid(artistId, "artist")
+            val response = client.itemsApi.getItems(
+                userId = userUuid,
+                parentId = artistUuid,
+                includeItemTypes = listOf(BaseItemKind.MUSIC_ALBUM),
+                sortBy = listOf(ItemSortBy.SORT_NAME),
+                sortOrder = listOf(SortOrder.ASCENDING),
+                fields = listOf(
+                    org.jellyfin.sdk.model.api.ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+                    org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
+                    org.jellyfin.sdk.model.api.ItemFields.OVERVIEW,
+                ),
+            )
+            response.content.items ?: emptyList()
         }
 
     suspend fun getSeasonsForSeries(seriesId: String): ApiResult<List<BaseItemDto>> =
