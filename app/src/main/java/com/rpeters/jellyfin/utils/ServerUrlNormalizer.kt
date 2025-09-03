@@ -16,9 +16,10 @@ fun normalizeServerUrl(input: String): String {
         val uri = URI(url)
         val scheme = (uri.scheme ?: "https").lowercase()
         val host = uri.host?.lowercase() ?: return input
+        val port = if (uri.port != -1) ":${uri.port}" else ""
         val path = uri.rawPath?.trimEnd('/') ?: ""
         buildString {
-            append(scheme).append("://").append(host)
+            append(scheme).append("://").append(host).append(port)
             if (path.isNotEmpty()) append(path)
         }
     } catch (_: URISyntaxException) {
