@@ -1,8 +1,14 @@
 package com.rpeters.jellyfin.ui.screens
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
@@ -26,7 +32,7 @@ fun PhotoDetailScreen(
     modifier: Modifier = Modifier,
 ) {
     var isFavorite by remember { mutableStateOf(item.userData?.isFavorite == true) }
-    val isFavorite = item.userData?.isFavorite == true
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -39,7 +45,37 @@ fun PhotoDetailScreen(
                         )
                     }
                 },
-                actions = {
+            )
+        },
+        modifier = modifier,
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentPadding = PaddingValues(vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+        ) {
+            item {
+                val imageUrl = getImageUrl(item)
+                if (imageUrl != null) {
+                    SubcomposeAsyncImage(
+                        model = imageUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(240.dp),
+                    )
+                }
+            }
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
                     IconButton(onClick = {
                         isFavorite = !isFavorite
                         onFavoriteClick(item)
@@ -55,20 +91,7 @@ fun PhotoDetailScreen(
                             contentDescription = "Share",
                         )
                     }
-                },
-            )
-        },
-        modifier = modifier,
-    ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            val imageUrl = getImageUrl(item)
-            if (imageUrl != null) {
-                SubcomposeAsyncImage(
-                    model = imageUrl,
-                    contentDescription = null,
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.fillMaxSize(),
-                )
+                }
             }
         }
     }
