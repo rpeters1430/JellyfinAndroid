@@ -102,7 +102,7 @@ fun HomeVideoDetailScreen(
                             Text(it.toString(), style = MaterialTheme.typography.bodyMedium)
                         }
                         item.runTimeTicks?.let { ticks ->
-                            val minutes = (ticks / 10_000_000L) / 60
+                            val minutes = ticks / LibraryScreenDefaults.TicksToMinutesDivisor
                             Text("$minutes min", style = MaterialTheme.typography.bodyMedium)
                         }
                     }
