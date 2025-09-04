@@ -39,8 +39,8 @@ import com.rpeters.jellyfin.ui.screens.ArtistDetailScreen
 import com.rpeters.jellyfin.ui.screens.BooksScreen
 import com.rpeters.jellyfin.ui.screens.FavoritesScreen
 import com.rpeters.jellyfin.ui.screens.HomeScreen
-import com.rpeters.jellyfin.ui.screens.HomeVideosScreen
 import com.rpeters.jellyfin.ui.screens.HomeVideoDetailScreen
+import com.rpeters.jellyfin.ui.screens.HomeVideosScreen
 import com.rpeters.jellyfin.ui.screens.ItemDetailScreen
 import com.rpeters.jellyfin.ui.screens.LibraryScreen
 import com.rpeters.jellyfin.ui.screens.LibraryType
