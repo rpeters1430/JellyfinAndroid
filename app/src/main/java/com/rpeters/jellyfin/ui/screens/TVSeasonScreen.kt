@@ -392,7 +392,7 @@ private fun SeriesDetailsHeader(
         Box {
             // Background Image with enhanced loading
             SubcomposeAsyncImage(
-                model = getBackdropUrl(series) ?: getImageUrl(series),
+                model = getBackdropUrl(series).takeIf { !it.isNullOrBlank() } ?: getImageUrl(series),
                 contentDescription = series.name,
                 loading = {
                     ExpressiveLoadingCard(
