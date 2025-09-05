@@ -240,7 +240,7 @@ fun JellyfinNavGraph(
                         } ?: run {
                             Log.w(
                                 "NavGraph",
-                                "No route found for library: ${library.name} (${library.collectionType})"
+                                "No route found for library: ${library.name} (${library.collectionType})",
                             )
                         }
                     } catch (e: Exception) {
@@ -282,7 +282,7 @@ fun JellyfinNavGraph(
                         } ?: run {
                             Log.w(
                                 "NavGraph",
-                                "No route found for library: ${library.name} (${library.collectionType})"
+                                "No route found for library: ${library.name} (${library.collectionType})",
                             )
                         }
                     } catch (e: Exception) {
@@ -312,7 +312,7 @@ fun JellyfinNavGraph(
                 Log.d("NavGraph-Movies", "  Is loading: ${appState.isLoading}")
                 Log.d(
                     "NavGraph-Movies",
-                    "  Current movies data: ${viewModel.getLibraryTypeData(LibraryType.MOVIES).size} items"
+                    "  Current movies data: ${viewModel.getLibraryTypeData(LibraryType.MOVIES).size} items",
                 )
 
                 // Ensure libraries are loaded first
@@ -320,12 +320,12 @@ fun JellyfinNavGraph(
                     Log.d("NavGraph-Movies", "  📥 Loading initial data...")
                     viewModel.loadInitialData()
                 } else if (appState.libraries.isNotEmpty() && viewModel.getLibraryTypeData(
-                        LibraryType.MOVIES
+                        LibraryType.MOVIES,
                     ).isEmpty()
                 ) {
                     Log.d(
                         "NavGraph-Movies",
-                        "🔄 Libraries loaded (${appState.libraries.size}) - Loading MOVIES data..."
+                        "🔄 Libraries loaded (${appState.libraries.size}) - Loading MOVIES data...",
                     )
                     val availableLibraries =
                         appState.libraries.map { "${it.name}(${it.collectionType})" }
@@ -353,7 +353,7 @@ fun JellyfinNavGraph(
                 onRefresh = {
                     viewModel.loadLibraryTypeData(
                         LibraryType.MOVIES,
-                        forceRefresh = true
+                        forceRefresh = true,
                     )
                 },
                 onLoadMore = { viewModel.loadMoreMovies() },
@@ -376,7 +376,7 @@ fun JellyfinNavGraph(
                 Log.d("NavGraph-TVShows", "  Is loading: ${appState.isLoading}")
                 Log.d(
                     "NavGraph-TVShows",
-                    "  Current TV shows data: ${viewModel.getLibraryTypeData(LibraryType.TV_SHOWS).size} items"
+                    "  Current TV shows data: ${viewModel.getLibraryTypeData(LibraryType.TV_SHOWS).size} items",
                 )
 
                 // Ensure libraries are loaded first
@@ -384,12 +384,12 @@ fun JellyfinNavGraph(
                     Log.d("NavGraph-TVShows", "  📥 Loading initial data...")
                     viewModel.loadInitialData()
                 } else if (appState.libraries.isNotEmpty() && viewModel.getLibraryTypeData(
-                        LibraryType.TV_SHOWS
+                        LibraryType.TV_SHOWS,
                     ).isEmpty()
                 ) {
                     Log.d(
                         "NavGraph-TVShows",
-                        "🔄 Libraries loaded (${appState.libraries.size}) - Loading TV_SHOWS data..."
+                        "🔄 Libraries loaded (${appState.libraries.size}) - Loading TV_SHOWS data...",
                     )
                     val availableLibraries =
                         appState.libraries.map { "${it.name}(${it.collectionType})" }
@@ -484,7 +484,7 @@ fun JellyfinNavGraph(
                 Log.d("NavGraph-Music", "  Is loading: ${appState.isLoading}")
                 Log.d(
                     "NavGraph-Music",
-                    "  Current music data: ${viewModel.getLibraryTypeData(LibraryType.MUSIC).size} items"
+                    "  Current music data: ${viewModel.getLibraryTypeData(LibraryType.MUSIC).size} items",
                 )
 
                 // Ensure libraries are loaded first
@@ -492,12 +492,12 @@ fun JellyfinNavGraph(
                     Log.d("NavGraph-Music", "  📥 Loading initial data...")
                     viewModel.loadInitialData()
                 } else if (appState.libraries.isNotEmpty() && viewModel.getLibraryTypeData(
-                        LibraryType.MUSIC
+                        LibraryType.MUSIC,
                     ).isEmpty()
                 ) {
                     Log.d(
                         "NavGraph-Music",
-                        "🔄 Libraries loaded (${appState.libraries.size}) - Loading MUSIC data..."
+                        "🔄 Libraries loaded (${appState.libraries.size}) - Loading MUSIC data...",
                     )
                     val availableLibraries =
                         appState.libraries.map { "${it.name}(${it.collectionType})" }
@@ -846,8 +846,8 @@ fun JellyfinNavGraph(
             if (resolvedMovie != null) {
                 val relatedItems = appState.allItems.filter { item ->
                     item.id?.toString() != movieId &&
-                            item.type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE &&
-                            resolvedMovie.genres?.any { genre -> item.genres?.contains(genre) == true } == true
+                        item.type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE &&
+                        resolvedMovie.genres?.any { genre -> item.genres?.contains(genre) == true } == true
                 }.take(10)
 
                 LaunchedEffect(resolvedMovie.id) {
@@ -865,7 +865,7 @@ fun JellyfinNavGraph(
                             MediaPlayerUtils.playMedia(
                                 context = navController.context,
                                 streamUrl = streamUrl,
-                                item = movieItem
+                                item = movieItem,
                             )
                             if (BuildConfig.DEBUG) {
                                 Log.d("NavGraph", "Playing movie: ${movieItem.name}")
@@ -873,7 +873,7 @@ fun JellyfinNavGraph(
                         } else {
                             Log.e(
                                 "NavGraph",
-                                "No stream URL available for movie: ${movieItem.name}"
+                                "No stream URL available for movie: ${movieItem.name}",
                             )
                         }
                     },
@@ -905,7 +905,7 @@ fun JellyfinNavGraph(
             if (episodeId.isNullOrBlank()) {
                 Log.e(
                     "NavGraph",
-                    "TVEpisodeDetail navigation cancelled: episodeId is null or blank"
+                    "TVEpisodeDetail navigation cancelled: episodeId is null or blank",
                 )
                 return@composable
             }
@@ -924,11 +924,11 @@ fun JellyfinNavGraph(
                 val itemIdString = item.id?.toString()
                 itemIdString == episodeId || itemIdString?.equals(
                     episodeId,
-                    ignoreCase = true
+                    ignoreCase = true,
                 ) == true
             } ?: appState.allItems.find { item ->
                 item.type == org.jellyfin.sdk.model.api.BaseItemKind.EPISODE &&
-                        item.id?.toString()?.equals(episodeId, ignoreCase = true) == true
+                    item.id?.toString()?.equals(episodeId, ignoreCase = true) == true
             }
 
             when {
@@ -936,7 +936,7 @@ fun JellyfinNavGraph(
                     if (BuildConfig.DEBUG) {
                         Log.d(
                             "NavGraph",
-                            "TVEpisodeDetail: Found episode ${episode.name} (${episode.id}) in app state"
+                            "TVEpisodeDetail: Found episode ${episode.name} (${episode.id}) in app state",
                         )
                     }
 
@@ -961,7 +961,7 @@ fun JellyfinNavGraph(
                                     MediaPlayerUtils.playMedia(
                                         context = navController.context,
                                         streamUrl = streamUrl,
-                                        item = episodeItem
+                                        item = episodeItem,
                                     )
                                     if (BuildConfig.DEBUG) {
                                         Log.d("NavGraph", "Playing episode: ${episodeItem.name}")
@@ -969,7 +969,7 @@ fun JellyfinNavGraph(
                                 } else {
                                     Log.e(
                                         "NavGraph",
-                                        "No stream URL available for episode: ${episodeItem.name}"
+                                        "No stream URL available for episode: ${episodeItem.name}",
                                     )
                                 }
                             } catch (e: Exception) {
@@ -992,19 +992,19 @@ fun JellyfinNavGraph(
                                         if (BuildConfig.DEBUG) {
                                             Log.d(
                                                 "NavGraph",
-                                                "Started download for episode: ${episodeItem.name} (ID: $downloadId)"
+                                                "Started download for episode: ${episodeItem.name} (ID: $downloadId)",
                                             )
                                         }
                                     } else {
                                         Log.e(
                                             "NavGraph",
-                                            "Failed to start download for episode: ${episodeItem.name}"
+                                            "Failed to start download for episode: ${episodeItem.name}",
                                         )
                                     }
                                 } else {
                                     Log.e(
                                         "NavGraph",
-                                        "No download URL available for episode: ${episodeItem.name}"
+                                        "No download URL available for episode: ${episodeItem.name}",
                                     )
                                 }
                             } catch (e: Exception) {
@@ -1047,7 +1047,7 @@ fun JellyfinNavGraph(
                     if (BuildConfig.DEBUG) {
                         Log.d(
                             "NavGraph",
-                            "TVEpisodeDetail: App state is loading, showing loading indicator"
+                            "TVEpisodeDetail: App state is loading, showing loading indicator",
                         )
                     }
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -1058,7 +1058,7 @@ fun JellyfinNavGraph(
                 !appState.errorMessage.isNullOrBlank() -> {
                     Log.e(
                         "NavGraph",
-                        "TVEpisodeDetail: Error loading episode: ${appState.errorMessage}"
+                        "TVEpisodeDetail: Error loading episode: ${appState.errorMessage}",
                     )
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(
@@ -1094,7 +1094,7 @@ fun JellyfinNavGraph(
                     LaunchedEffect(episodeId) {
                         Log.d(
                             "NavGraph",
-                            "TVEpisodeDetail: Episode $episodeId not found in app state with ${appState.allItems.size} items, attempting to load it"
+                            "TVEpisodeDetail: Episode $episodeId not found in app state with ${appState.allItems.size} items, attempting to load it",
                         )
                         viewModel.loadEpisodeDetails(episodeId)
                     }
