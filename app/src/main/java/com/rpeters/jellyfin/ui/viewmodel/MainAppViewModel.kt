@@ -152,7 +152,7 @@ class MainAppViewModel @Inject constructor(
             if (currentState.isLoading && !forceRefresh) {
                 android.util.Log.d(
                     "MainAppViewModel-Initial",
-                    "⏭️ Skipping loadInitialData - already loading"
+                    "⏭️ Skipping loadInitialData - already loading",
                 )
                 return@launch
             }
@@ -160,11 +160,11 @@ class MainAppViewModel @Inject constructor(
             // ✅ DEBUG: Log initial data loading start
             android.util.Log.d(
                 "MainAppViewModel-Initial",
-                "🚀 Starting loadInitialData (forceRefresh=$forceRefresh)"
+                "🚀 Starting loadInitialData (forceRefresh=$forceRefresh)",
             )
             android.util.Log.d(
                 "MainAppViewModel-Initial",
-                "  Current libraries count: ${currentState.libraries.size}"
+                "  Current libraries count: ${currentState.libraries.size}",
             )
 
             _appState.value = _appState.value.copy(
@@ -191,11 +191,11 @@ class MainAppViewModel @Inject constructor(
                     android.util.Log.d("MainAppViewModel-Initial", "📦 API calls completed:")
                     android.util.Log.d(
                         "MainAppViewModel-Initial",
-                        "  Libraries result: ${if (librariesResult is ApiResult.Success) "Success (${librariesResult.data.size})" else librariesResult::class.simpleName}"
+                        "  Libraries result: ${if (librariesResult is ApiResult.Success) "Success (${librariesResult.data.size})" else librariesResult::class.simpleName}",
                     )
                     android.util.Log.d(
                         "MainAppViewModel-Initial",
-                        "  Recent result: ${if (recentResult is ApiResult.Success) "Success (${recentResult.data.size})" else recentResult::class.simpleName}"
+                        "  Recent result: ${if (recentResult is ApiResult.Success) "Success (${recentResult.data.size})" else recentResult::class.simpleName}",
                     )
 
                     when (librariesResult) {
@@ -211,7 +211,7 @@ class MainAppViewModel @Inject constructor(
                             libraries.forEach { lib ->
                                 android.util.Log.d(
                                     "MainAppViewModel-Initial",
-                                    "  Library: ${lib.name} (${lib.collectionType}) id=${lib.id}"
+                                    "  Library: ${lib.name} (${lib.collectionType}) id=${lib.id}",
                                 )
                             }
 
@@ -224,7 +224,7 @@ class MainAppViewModel @Inject constructor(
 
                             android.util.Log.d(
                                 "MainAppViewModel-Initial",
-                                "🎯 loadInitialData completed - Libraries now: ${libraries.size}"
+                                "🎯 loadInitialData completed - Libraries now: ${libraries.size}",
                             )
                         }
 
@@ -311,8 +311,10 @@ class MainAppViewModel @Inject constructor(
     fun toggleFavorite(item: BaseItemDto) {
         viewModelScope.launch {
             val currentFavoriteState = item.userData?.isFavorite ?: false
-            when (val result =
-                userRepository.toggleFavorite(item.id.toString(), !currentFavoriteState)) {
+            when (
+                val result =
+                    userRepository.toggleFavorite(item.id.toString(), !currentFavoriteState)
+            ) {
                 is ApiResult.Success -> {
                     loadInitialData() // Refresh data
                 }
@@ -415,7 +417,7 @@ class MainAppViewModel @Inject constructor(
     fun loadLibraryTypeData(
         library: BaseItemDto,
         libraryType: LibraryType,
-        forceRefresh: Boolean = false
+        forceRefresh: Boolean = false,
     ) {
         viewModelScope.launch {
             if (!ensureValidToken()) return@launch
@@ -426,7 +428,7 @@ class MainAppViewModel @Inject constructor(
             android.util.Log.d("MainAppViewModel-Load", "🔄 Starting loadLibraryTypeData:")
             android.util.Log.d(
                 "MainAppViewModel-Load",
-                "  Library: ${library.name} (${library.collectionType})"
+                "  Library: ${library.name} (${library.collectionType})",
             )
             android.util.Log.d("MainAppViewModel-Load", "  LibraryType: ${libraryType.name}")
             android.util.Log.d("MainAppViewModel-Load", "  LibraryId: $libraryId")
@@ -497,12 +499,12 @@ class MainAppViewModel @Inject constructor(
                 is ApiResult.Success -> {
                     android.util.Log.d(
                         "MainAppViewModel-Load",
-                        "✅ API Success: ${result.data.size} items loaded"
+                        "✅ API Success: ${result.data.size} items loaded",
                     )
                     result.data.take(3).forEach { item ->
                         android.util.Log.d(
                             "MainAppViewModel-Load",
-                            "    Sample item: ${item.name} (${item.type})"
+                            "    Sample item: ${item.name} (${item.type})",
                         )
                     }
                     val updated = _appState.value.itemsByLibrary.toMutableMap()
@@ -523,7 +525,7 @@ class MainAppViewModel @Inject constructor(
                     )
                     android.util.Log.d(
                         "MainAppViewModel-Load",
-                        "✅ State updated - itemsByLibrary now has ${updated.size} libraries"
+                        "✅ State updated - itemsByLibrary now has ${updated.size} libraries",
                     )
                 }
 
@@ -855,7 +857,7 @@ class MainAppViewModel @Inject constructor(
 
                     android.util.Log.d(
                         "MainAppViewModel",
-                        "✅ Episode loaded: ${episode.name} (${episode.id})"
+                        "✅ Episode loaded: ${episode.name} (${episode.id})",
                     )
                 }
 
@@ -866,7 +868,7 @@ class MainAppViewModel @Inject constructor(
                     )
                     android.util.Log.e(
                         "MainAppViewModel",
-                        "❌ Failed to load episode $episodeId: ${result.message}"
+                        "❌ Failed to load episode $episodeId: ${result.message}",
                     )
                 }
 
