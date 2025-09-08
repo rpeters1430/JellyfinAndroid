@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin
 
+import android.content.res.Configuration
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -39,5 +40,10 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         MainThreadMonitor.stopMonitoring()
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        DeviceTypeUtils.invalidateCache()
     }
 }

@@ -11,30 +11,45 @@ object DeviceTypeUtils {
         TABLET,
     }
 
+    private var cachedDeviceType: DeviceType? = null
+
+    /**
+     * Determine the current device type. The result is cached so subsequent calls return the
+     * previously computed value. Call [invalidateCache] if configuration changes at runtime.
+     */
     fun getDeviceType(context: Context): DeviceType {
-        // Check if running on Android TV
-        val uiMode = context.resources.configuration.uiMode
-        if (uiMode and Configuration.UI_MODE_TYPE_MASK == Configuration.UI_MODE_TYPE_TELEVISION) {
-            return DeviceType.TV
+        cachedDeviceType?.let { return it }
+
+        val deviceType = when {
+            // Check if running on Android TV
+            context.resources.configuration.uiMode and Configuration.UI_MODE_TYPE_MASK ==
+                Configuration.UI_MODE_TYPE_TELEVISION -> DeviceType.TV
+
+            // Check if touchscreen is available (TVs typically don't have touchscreens)
+            !context.packageManager.hasSystemFeature("android.hardware.touchscreen") &&
+                context.packageManager.hasSystemFeature("android.software.leanback") -> DeviceType.TV
+
+            // Check screen size for tablet detection
+            isTablet(context) -> DeviceType.TABLET
+
+            else -> DeviceType.MOBILE
         }
 
-        // Check if touchscreen is available (TVs typically don't have touchscreens)
-        val hasTouchscreen = context.packageManager.hasSystemFeature("android.hardware.touchscreen")
-        val hasLeanback = context.packageManager.hasSystemFeature("android.software.leanback")
+        cachedDeviceType = deviceType
+        return deviceType
+    }
 
-        if (!hasTouchscreen && hasLeanback) {
-            return DeviceType.TV
-        }
+    /**
+     * Clears the cached device type. Use when configuration changes may affect the device type.
+     */
+    fun invalidateCache() {
+        cachedDeviceType = null
+    }
 
-        // Check screen size for tablet detection
+    private fun isTablet(context: Context): Boolean {
         val screenSize = context.resources.configuration.screenLayout and Configuration.SCREENLAYOUT_SIZE_MASK
-        if (screenSize == Configuration.SCREENLAYOUT_SIZE_LARGE ||
+        return screenSize == Configuration.SCREENLAYOUT_SIZE_LARGE ||
             screenSize == Configuration.SCREENLAYOUT_SIZE_XLARGE
-        ) {
-            return DeviceType.TABLET
-        }
-
-        return DeviceType.MOBILE
     }
 
     fun isTvDevice(context: Context): Boolean {
