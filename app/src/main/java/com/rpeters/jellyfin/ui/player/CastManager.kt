@@ -27,9 +27,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.ImageType
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
-import java.util.Locale
 import com.google.android.gms.cast.MediaMetadata as CastMediaMetadata
 
 @UnstableApi
