@@ -17,15 +17,15 @@ import kotlinx.coroutines.sync.withLock
 import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
-import org.jellyfin.sdk.api.client.extensions.systemApi
 import org.jellyfin.sdk.api.client.extensions.quickConnectApi
+import org.jellyfin.sdk.api.client.extensions.systemApi
 import org.jellyfin.sdk.api.client.extensions.userApi
 import org.jellyfin.sdk.model.api.AuthenticateUserByName
 import org.jellyfin.sdk.model.api.AuthenticationResult
 import org.jellyfin.sdk.model.api.PublicSystemInfo
-import org.jellyfin.sdk.model.api.QuickConnectResult as SdkQuickConnectResult
 import javax.inject.Inject
 import javax.inject.Singleton
+import org.jellyfin.sdk.model.api.QuickConnectResult as SdkQuickConnectResult
 
 @Singleton
 class JellyfinAuthRepository @Inject constructor(
