@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.data.repository
 
+import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.repository.common.ErrorType
@@ -9,6 +10,9 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.test.runTest
 import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
@@ -28,6 +32,7 @@ import java.time.LocalDateTime
 import java.util.UUID
 import org.jellyfin.sdk.model.api.QuickConnectResult as SdkQuickConnectResult
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class JellyfinAuthRepositoryTest {
 
     private lateinit var repository: JellyfinAuthRepository
