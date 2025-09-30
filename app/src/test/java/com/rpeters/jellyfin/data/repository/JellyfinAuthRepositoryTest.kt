@@ -1,92 +1,190 @@
 package com.rpeters.jellyfin.data.repository
 
 import com.rpeters.jellyfin.data.SecureCredentialManager
-import io.mockk.*
+import com.rpeters.jellyfin.data.repository.common.ApiResult
+import com.rpeters.jellyfin.data.repository.common.ErrorType
+import io.mockk.MockKAnnotations
+import io.mockk.coEvery
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
 import org.jellyfin.sdk.Jellyfin
-import org.junit.Assert.*
+import org.jellyfin.sdk.api.client.ApiClient
+import org.jellyfin.sdk.api.client.Response
+import org.jellyfin.sdk.api.client.exception.InvalidStatusException
+import org.jellyfin.sdk.api.operations.QuickConnectApi
+import org.jellyfin.sdk.api.operations.UserApi
+import org.jellyfin.sdk.model.api.AuthenticationResult
+import org.jellyfin.sdk.model.api.QuickConnectResult as SdkQuickConnectResult
+import org.jellyfin.sdk.model.api.UserDto
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.time.LocalDateTime
+import java.util.UUID
 
 class JellyfinAuthRepositoryTest {
 
-    private lateinit var authRepository: JellyfinAuthRepository
-    private lateinit var mockCredentialManager: SecureCredentialManager
-    private lateinit var mockJellyfin: Jellyfin
+    private lateinit var repository: JellyfinAuthRepository
+    private lateinit var credentialManager: SecureCredentialManager
+    private lateinit var jellyfin: Jellyfin
+    private lateinit var apiClient: ApiClient
+    private lateinit var quickConnectApi: QuickConnectApi
+    private lateinit var userApi: UserApi
 
     @Before
-    fun setup() {
-        // Create mocks
-        mockCredentialManager = mockk(relaxed = true)
-        mockJellyfin = mockk(relaxed = true)
+    fun setUp() {
+        MockKAnnotations.init(this, relaxUnitFun = true)
 
-        // Initialize repository
-        authRepository = JellyfinAuthRepository(mockJellyfin, mockCredentialManager)
+        credentialManager = mockk(relaxed = true)
+        jellyfin = mockk(relaxed = true)
+        apiClient = mockk(relaxed = true)
+        quickConnectApi = mockk(relaxed = true)
+        userApi = mockk(relaxed = true)
+
+        mockkStatic("org.jellyfin.sdk.api.client.extensions.ApiClientExtensionsKt")
+
+        every { jellyfin.createApi(any(), any()) } returns apiClient
+        every { apiClient.quickConnectApi } returns quickConnectApi
+        every { apiClient.userApi } returns userApi
+
+        repository = JellyfinAuthRepository(jellyfin, credentialManager)
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
     }
 
     @Test
-    fun `JellyfinAuthRepository can be instantiated`() {
-        // Test that the repository can be created with mocked dependencies
-        assertNotNull("AuthRepository should be created", authRepository)
+    fun `initiateQuickConnect returns success`() = runTest {
+        val sdkResult = buildQuickConnectResult(authenticated = false)
+        coEvery { quickConnectApi.initiateQuickConnect() } returns sdkResponse(sdkResult)
+
+        val result = repository.initiateQuickConnect(SERVER_URL)
+
+        assertTrue(result is ApiResult.Success)
+        val data = (result as ApiResult.Success).data
+        assertEquals(sdkResult.code, data.code)
+        assertEquals(sdkResult.secret, data.secret)
     }
 
     @Test
-    fun `repository has expected dependencies`() {
-        // Test that the repository is properly constructed with its dependencies
-        assertNotNull("Repository should have credential manager", mockCredentialManager)
-        assertNotNull("Repository should have Jellyfin instance", mockJellyfin)
+    fun `getQuickConnectState returns pending when not yet approved`() = runTest {
+        coEvery { quickConnectApi.getQuickConnectState(any()) } returns sdkResponse(
+            buildQuickConnectResult(authenticated = false),
+        )
+
+        val result = repository.getQuickConnectState(SERVER_URL, SECRET)
+
+        assertTrue(result is ApiResult.Success)
+        assertEquals("Pending", (result as ApiResult.Success).data.state)
     }
 
     @Test
-    fun `currentServer flow is accessible`() {
-        // Test that the currentServer StateFlow is accessible
-        val currentServer = authRepository.currentServer
-        assertNotNull("CurrentServer flow should be accessible", currentServer)
+    fun `getQuickConnectState returns approved when authenticated`() = runTest {
+        coEvery { quickConnectApi.getQuickConnectState(any()) } returns sdkResponse(
+            buildQuickConnectResult(authenticated = true),
+        )
+
+        val result = repository.getQuickConnectState(SERVER_URL, SECRET)
+
+        assertTrue(result is ApiResult.Success)
+        assertEquals("Approved", (result as ApiResult.Success).data.state)
     }
 
     @Test
-    fun `isConnected flow is accessible`() {
-        // Test that the isConnected StateFlow is accessible
-        val isConnected = authRepository.isConnected
-        assertNotNull("IsConnected flow should be accessible", isConnected)
+    fun `getQuickConnectState maps denied status`() = runTest {
+        coEvery { quickConnectApi.getQuickConnectState(any()) } throws InvalidStatusException(401)
+
+        val result = repository.getQuickConnectState(SERVER_URL, SECRET)
+
+        assertTrue(result is ApiResult.Success)
+        assertEquals("Denied", (result as ApiResult.Success).data.state)
     }
 
     @Test
-    fun `logout method is accessible`() = runTest {
-        // Test that logout method exists and can be called
-        try {
-            authRepository.logout()
-        } catch (e: Exception) {
-            fail("Logout should not throw exceptions: ${e.message}")
-        }
+    fun `getQuickConnectState maps expired status`() = runTest {
+        coEvery { quickConnectApi.getQuickConnectState(any()) } throws InvalidStatusException(404)
+
+        val result = repository.getQuickConnectState(SERVER_URL, SECRET)
+
+        assertTrue(result is ApiResult.Success)
+        assertEquals("Expired", (result as ApiResult.Success).data.state)
     }
 
     @Test
-    fun `authenticateUser method exists and handles parameters`() = runTest {
-        // Test that authenticateUser method exists and can handle basic inputs
-        try {
-            val result = authRepository.authenticateUser(
-                "https://demo.jellyfin.org",
-                "testuser",
-                "testpass",
-            )
-            // The result might be an error due to mocking, but the method should exist
-            assertNotNull("AuthenticateUser should return a result", result)
-        } catch (e: Exception) {
-            // Expected with mocked dependencies
-            assertTrue("Exception should be meaningful", e.message?.isNotEmpty() == true)
-        }
+    fun `authenticateWithQuickConnect seeds server state`() = runTest {
+        val authResult = buildAuthResult(accessToken = "token-123", username = "QuickConnectUser")
+        coEvery { userApi.authenticateWithQuickConnect(any<String>()) } returns sdkResponse(authResult)
+
+        val result = repository.authenticateWithQuickConnect(SERVER_URL, SECRET)
+
+        assertTrue(result is ApiResult.Success)
+        assertEquals(authResult, (result as ApiResult.Success).data)
+        assertEquals("token-123", repository.token())
+        val currentServer = repository.currentServer.value
+        assertNotNull(currentServer)
+        assertEquals(SERVER_URL, currentServer?.url)
+        assertEquals("QuickConnectUser", currentServer?.username)
     }
 
     @Test
-    fun `authentication methods exist and handle parameters`() = runTest {
-        // Test that authentication methods exist and can handle basic parameters
-        try {
-            // Test that authenticate method exists - we'll just verify it doesn't crash on creation
-            authRepository.logout() // This method should exist and be callable
-        } catch (e: Exception) {
-            // If there are exceptions, they should be meaningful
-            assertTrue("Exception should be meaningful", e.message?.isNotEmpty() == true)
-        }
+    fun `authenticateWithQuickConnect propagates unauthorized error`() = runTest {
+        coEvery { userApi.authenticateWithQuickConnect(any<String>()) } throws InvalidStatusException(401)
+
+        val result = repository.authenticateWithQuickConnect(SERVER_URL, SECRET)
+
+        assertTrue(result is ApiResult.Error)
+        assertEquals(ErrorType.UNAUTHORIZED, (result as ApiResult.Error).errorType)
+    }
+
+    private fun buildQuickConnectResult(authenticated: Boolean): SdkQuickConnectResult {
+        return SdkQuickConnectResult(
+            authenticated = authenticated,
+            secret = SECRET,
+            code = "123-ABC",
+            deviceId = "device-id",
+            deviceName = "device",
+            appName = "app",
+            appVersion = "1.0",
+            dateAdded = LocalDateTime.now(),
+        )
+    }
+
+    private fun buildAuthResult(accessToken: String, username: String): AuthenticationResult {
+        val user = UserDto(
+            name = username,
+            serverId = "server-id",
+            serverName = "server",
+            id = UUID.randomUUID(),
+            primaryImageTag = null,
+            hasPassword = true,
+            hasConfiguredPassword = true,
+            hasConfiguredEasyPassword = false,
+            enableAutoLogin = null,
+            lastLoginDate = null,
+            lastActivityDate = null,
+            configuration = null,
+            policy = null,
+            primaryImageAspectRatio = null,
+        )
+        return AuthenticationResult(
+            user = user,
+            accessToken = accessToken,
+            serverId = "server-id",
+        )
+    }
+
+    private fun <T> sdkResponse(content: T): Response<T> = Response(content, 200, emptyMap())
+
+    companion object {
+        private const val SERVER_URL = "https://demo.jellyfin.org"
+        private const val SECRET = "secret-value"
     }
 }
