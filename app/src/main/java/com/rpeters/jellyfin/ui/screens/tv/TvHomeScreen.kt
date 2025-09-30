@@ -20,8 +20,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.rpeters.jellyfin.ui.adaptive.rememberWindowLayoutInfo
 import com.rpeters.jellyfin.ui.adaptive.rememberAdaptiveLayoutConfig
+import com.rpeters.jellyfin.ui.adaptive.rememberWindowLayoutInfo
 import com.rpeters.jellyfin.ui.components.tv.TvEmptyState
 import com.rpeters.jellyfin.ui.components.tv.TvErrorBanner
 import com.rpeters.jellyfin.ui.components.tv.TvFullScreenLoading

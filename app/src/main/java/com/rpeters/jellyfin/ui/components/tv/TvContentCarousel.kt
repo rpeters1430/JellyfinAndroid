@@ -32,8 +32,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.rpeters.jellyfin.ui.adaptive.AdaptiveLayoutConfig
-import com.rpeters.jellyfin.ui.tv.TvFocusableCarousel
 import com.rpeters.jellyfin.ui.tv.TvFocusManager
+import com.rpeters.jellyfin.ui.tv.TvFocusableCarousel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
 import androidx.tv.material3.Card as TvCard
@@ -138,13 +138,13 @@ fun TvContentCard(
             },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            TvCard(
-                onClick = { onItemSelect() },
-                modifier = Modifier.size(posterWidth, posterHeight),
-                colors = TvCardDefaults.colors(
-                    containerColor = TvMaterialTheme.colorScheme.surfaceVariant,
-                ),
+    ) {
+        TvCard(
+            onClick = { onItemSelect() },
+            modifier = Modifier.size(posterWidth, posterHeight),
+            colors = TvCardDefaults.colors(
+                containerColor = TvMaterialTheme.colorScheme.surfaceVariant,
+            ),
             glow = TvCardDefaults.glow(
                 focusedGlow = androidx.tv.material3.Glow(
                     elevationColor = if (isFocused) TvMaterialTheme.colorScheme.primary else TvMaterialTheme.colorScheme.surface,
