@@ -17,7 +17,6 @@ import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.api.operations.QuickConnectApi
 import org.jellyfin.sdk.api.operations.UserApi
 import org.jellyfin.sdk.model.api.AuthenticationResult
-import org.jellyfin.sdk.model.api.QuickConnectResult as SdkQuickConnectResult
 import org.jellyfin.sdk.model.api.UserDto
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -27,6 +26,7 @@ import org.junit.Before
 import org.junit.Test
 import java.time.LocalDateTime
 import java.util.UUID
+import org.jellyfin.sdk.model.api.QuickConnectResult as SdkQuickConnectResult
 
 class JellyfinAuthRepositoryTest {
 
