@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.data.repository
 
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.model.QuickConnectResult
@@ -31,6 +32,7 @@ import org.jellyfin.sdk.model.api.QuickConnectResult as SdkQuickConnectResult
 class JellyfinAuthRepository @Inject constructor(
     private val jellyfin: Jellyfin,
     private val secureCredentialManager: SecureCredentialManager,
+    private val timeProvider: () -> Long = System::currentTimeMillis,
 ) : TokenProvider {
     private val authMutex = Mutex()
 
@@ -182,9 +184,15 @@ class JellyfinAuthRepository @Inject constructor(
     fun isTokenExpired(): Boolean {
         val server = _currentServer.value ?: return true
         val loginTimestamp = server.loginTimestamp ?: return true
-        val currentTime = System.currentTimeMillis()
+        val currentTime = timeProvider()
 
         return (currentTime - loginTimestamp) > TOKEN_VALIDITY_DURATION_MS
+    }
+
+    @VisibleForTesting
+    fun seedCurrentServer(server: JellyfinServer?) {
+        _currentServer.value = server
+        _isConnected.value = server?.isConnected == true
     }
 
     suspend fun logout() {
