@@ -947,7 +947,6 @@ class JellyfinRepository @Inject constructor(
         }
     }
 
-
     suspend fun deleteItem(itemId: String): ApiResult<Boolean> {
         val server = authRepository.getCurrentServer()
         if (server?.accessToken == null || server.userId == null) {

@@ -11,8 +11,6 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
-import com.rpeters.jellyfin.ui.player.PlaybackProgress
-import com.rpeters.jellyfin.ui.player.PlaybackProgressManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
