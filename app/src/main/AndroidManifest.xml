@@ -6,12 +6,6 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     
-    <!-- Storage permissions for downloads -->
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" 
-        android:maxSdkVersion="28" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" 
-        android:maxSdkVersion="32" />
-    
     <!-- For Android 13+ (API 33+) - granular media permissions -->
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
@@ -20,9 +14,6 @@
     
     <!-- Video player permissions -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    
-    <!-- Picture-in-Picture support -->
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     
     <!-- Offline download permissions -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
