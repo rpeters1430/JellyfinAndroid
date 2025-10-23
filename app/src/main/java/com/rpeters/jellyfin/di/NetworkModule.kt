@@ -13,6 +13,7 @@ import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import com.rpeters.jellyfin.network.CachePolicyInterceptor
 import com.rpeters.jellyfin.network.ConnectivityChecker
+import com.rpeters.jellyfin.network.DeviceIdentityProvider
 import com.rpeters.jellyfin.network.JellyfinAuthInterceptor
 import com.rpeters.jellyfin.utils.withStrictModeTagger
 import dagger.Module
@@ -75,8 +76,9 @@ object NetworkModule {
     @Singleton
     fun provideJellyfinAuthInterceptor(
         authRepositoryProvider: Provider<JellyfinAuthRepository>,
+        deviceIdentityProvider: DeviceIdentityProvider,
     ): JellyfinAuthInterceptor {
-        return JellyfinAuthInterceptor(authRepositoryProvider)
+        return JellyfinAuthInterceptor(authRepositoryProvider, deviceIdentityProvider)
     }
 
     @Provides

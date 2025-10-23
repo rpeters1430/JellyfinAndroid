@@ -3,7 +3,6 @@ package com.rpeters.jellyfin.ui.utils
 import android.Manifest
 import android.app.DownloadManager
 import android.content.ContentUris
-import android.content.ContentValues
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -14,9 +13,11 @@ import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.data.storage.MediaStoreSaver
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import java.io.File
+import java.io.IOException
 
 /**
  * Utility class for handling media downloads from Jellyfin server.
@@ -392,10 +393,7 @@ object MediaDownloadManager {
                 } ?: true
             }
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> {
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.READ_EXTERNAL_STORAGE,
-                ) == PackageManager.PERMISSION_GRANTED
+                true
             }
             else -> {
                 ContextCompat.checkSelfPermission(
@@ -411,10 +409,7 @@ object MediaDownloadManager {
 
     private fun hasLegacyStoragePermission(context: Context): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU || ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.READ_EXTERNAL_STORAGE,
-            ) == PackageManager.PERMISSION_GRANTED
+            true
         } else {
             ContextCompat.checkSelfPermission(
                 context,
@@ -520,12 +515,18 @@ object MediaDownloadManager {
     ): Uri? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return null
 
-        val values = ContentValues().apply {
-            put(MediaStore.Downloads.DISPLAY_NAME, fileName)
-            put(MediaStore.Downloads.MIME_TYPE, mimeType)
-            put(MediaStore.Downloads.RELATIVE_PATH, buildRelativePath(subPath))
+        val relativePath = buildRelativePath(subPath)
+        return try {
+            MediaStoreSaver.prepareDownload(
+                context = context,
+                fileName = fileName,
+                relativePath = relativePath,
+                mimeType = mimeType,
+            )
+        } catch (ioe: IOException) {
+            Log.w(TAG, "Unable to create MediaStore destination for $fileName", ioe)
+            null
         }
-        return context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
     }
 
     private fun buildRelativePath(subPath: String): String {
