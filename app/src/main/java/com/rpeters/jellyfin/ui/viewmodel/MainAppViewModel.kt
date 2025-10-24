@@ -497,18 +497,36 @@ class MainAppViewModel @Inject constructor(
                 )
             ) {
                 is ApiResult.Success -> {
+                    var items = result.data
+                    if (items.isEmpty() && libraryType == LibraryType.TV_SHOWS) {
+                        android.util.Log.d(
+                            "MainAppViewModel-Load",
+                            "TV shows empty with filter; retrying without itemTypes",
+                        )
+                        when (
+                            val fallback = mediaRepository.getLibraryItems(
+                                parentId = libraryId,
+                                itemTypes = null,
+                                collectionType = collectionTypeStr,
+                            )
+                        ) {
+                            is ApiResult.Success -> items = fallback.data.filter { it.type == BaseItemKind.SERIES }
+                            is ApiResult.Error -> Unit
+                            is ApiResult.Loading -> Unit
+                        }
+                    }
                     android.util.Log.d(
                         "MainAppViewModel-Load",
                         "✅ API Success: ${result.data.size} items loaded",
                     )
-                    result.data.take(3).forEach { item ->
+                    items.take(3).forEach { item ->
                         android.util.Log.d(
                             "MainAppViewModel-Load",
                             "    Sample item: ${item.name} (${item.type})",
                         )
                     }
                     val updated = _appState.value.itemsByLibrary.toMutableMap()
-                    updated[libraryId] = result.data
+                    updated[libraryId] = items
                     _appState.value = _appState.value.copy(
                         itemsByLibrary = updated,
                         isLoading = false,
