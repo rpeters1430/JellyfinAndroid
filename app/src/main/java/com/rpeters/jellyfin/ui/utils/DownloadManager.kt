@@ -353,8 +353,17 @@ object MediaDownloadManager {
         ) >= 0
     }
 
-    internal fun getDownloadBaseDir(context: Context): File {
-        return context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: context.filesDir
+    internal fun getDownloadBaseDir(
+        context: Context,
+        sdkInt: Int = Build.VERSION.SDK_INT,
+    ): File {
+        val externalFilesDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+
+        return if (sdkInt >= Build.VERSION_CODES.Q) {
+            externalFilesDir ?: context.filesDir
+        } else {
+            externalFilesDir ?: context.filesDir
+        }
     }
 
     private fun ensureMediaPermission(context: Context, item: BaseItemDto) {
