@@ -17,6 +17,7 @@ import javax.inject.Singleton
 @Singleton
 class JellyfinAuthInterceptor @Inject constructor(
     private val authRepositoryProvider: Provider<JellyfinAuthRepository>,
+    private val deviceIdentityProvider: DeviceIdentityProvider,
 ) : Interceptor, Authenticator {
 
     override fun intercept(chain: Interceptor.Chain): Response {
@@ -85,11 +86,32 @@ class JellyfinAuthInterceptor @Inject constructor(
             .header(HEADER_ACCEPT_ENCODING, "gzip, deflate")
             .header(HEADER_USER_AGENT, USER_AGENT)
 
+        builder.header(HEADER_AUTHORIZATION, buildAuthorizationHeader(token))
+
         if (!token.isNullOrBlank() && !isAuthenticationRequest(request)) {
             builder.header(HEADER_TOKEN, token)
         }
 
         return builder.build()
+    }
+
+    private fun buildAuthorizationHeader(token: String?): String {
+        return buildString {
+            append("MediaBrowser Client=\"")
+            append(deviceIdentityProvider.clientName())
+            append("\", Device=\"")
+            append(deviceIdentityProvider.deviceName())
+            append("\", DeviceId=\"")
+            append(deviceIdentityProvider.deviceId())
+            append("\", Version=\"")
+            append(deviceIdentityProvider.clientVersion())
+            append("\"")
+            if (!token.isNullOrBlank()) {
+                append(", Token=\"")
+                append(token)
+                append("\"")
+            }
+        }
     }
 
     private fun shouldRetry(response: Response): Boolean {
@@ -144,6 +166,7 @@ class JellyfinAuthInterceptor @Inject constructor(
     companion object {
         private const val TAG = "JellyfinAuthInterceptor"
         private const val HEADER_TOKEN = "X-Emby-Token"
+        private const val HEADER_AUTHORIZATION = "X-Emby-Authorization"
         private const val HEADER_CONNECTION = "Connection"
         private const val HEADER_ACCEPT_ENCODING = "Accept-Encoding"
         private const val HEADER_USER_AGENT = "User-Agent"
