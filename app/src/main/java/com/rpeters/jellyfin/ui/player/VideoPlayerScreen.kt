@@ -103,6 +103,44 @@ fun VideoPlayerScreen(
     supportsPip: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val isTvDevice = remember { com.rpeters.jellyfin.utils.DeviceTypeUtils.isTvDevice(context) }
+
+    // Use TV-optimized player for TV devices
+    if (isTvDevice) {
+        val pipState = com.rpeters.jellyfin.ui.player.tv.rememberPictureInPictureState(
+            supportsPip = supportsPip
+        ) {
+            onPictureInPictureClick()
+        }
+
+        com.rpeters.jellyfin.ui.player.tv.TvVideoPlayerScreen(
+            state = playerState,
+            exoPlayer = exoPlayer,
+            pipState = pipState,
+            onBack = {
+                // Handle back navigation - finish activity
+                (context as? android.app.Activity)?.finish()
+            },
+            onPlayPause = onPlayPause,
+            onSeekForward = {
+                val newPosition = (playerState.currentPosition + 30_000)
+                    .coerceAtMost(playerState.duration)
+                onSeek(newPosition)
+            },
+            onSeekBackward = {
+                val newPosition = (playerState.currentPosition - 30_000).coerceAtLeast(0L)
+                onSeek(newPosition)
+            },
+            onSeekTo = onSeek,
+            onShowAudio = onAudioTrackSelect,
+            onShowSubtitles = onSubtitleTrackSelect,
+            modifier = modifier,
+        )
+        return
+    }
+
+    // Mobile/Tablet player UI below
     var controlsVisible by remember { mutableStateOf(true) }
     var showQualityMenu by remember { mutableStateOf(false) }
     var showAspectRatioMenu by remember { mutableStateOf(false) }
