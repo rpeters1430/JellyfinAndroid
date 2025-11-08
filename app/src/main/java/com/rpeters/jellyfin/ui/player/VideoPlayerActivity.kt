@@ -153,9 +153,17 @@ class VideoPlayerActivity : ComponentActivity() {
             )
         ) {
             val aspectRatio = Rational(16, 9)
-            val params = PictureInPictureParams.Builder()
-                .setAspectRatio(aspectRatio)
-                .build()
+            val params = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                PictureInPictureParams.Builder()
+                    .setAspectRatio(aspectRatio)
+                    .setAutoEnterEnabled(true) // Auto-enter PiP when user presses home
+                    .setSeamlessResizeEnabled(true) // Smooth transitions for Android 12+
+                    .build()
+            } else {
+                PictureInPictureParams.Builder()
+                    .setAspectRatio(aspectRatio)
+                    .build()
+            }
             enterPictureInPictureMode(params)
         }
     }
