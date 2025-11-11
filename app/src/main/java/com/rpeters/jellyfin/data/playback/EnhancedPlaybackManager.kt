@@ -258,7 +258,7 @@ class EnhancedPlaybackManager @Inject constructor(
     private fun getNetworkQuality(): NetworkQuality {
         // Use safe cast to prevent ClassCastException if service is unavailable
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
-            ?: return NetworkQuality.UNKNOWN
+            ?: return NetworkQuality.LOW
         val activeNetwork = connectivityManager.activeNetwork
         val networkCapabilities = connectivityManager.getNetworkCapabilities(activeNetwork)
 

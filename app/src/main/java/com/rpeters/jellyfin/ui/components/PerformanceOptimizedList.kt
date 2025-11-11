@@ -62,12 +62,10 @@ fun PerformanceOptimizedLazyColumn(
     // Performance monitoring
     LaunchedEffect(optimizedItems.size) {
         if (optimizedItems.size != items.size) {
-            PerformanceMonitor.measureExecutionTime("ItemLimiting") {
-                android.util.Log.d(
-                    "PerformanceOptimizedList",
-                    "Limited ${items.size} items to ${optimizedItems.size} for performance",
-                )
-            }
+            android.util.Log.d(
+                "PerformanceOptimizedList",
+                "Limited ${items.size} items to ${optimizedItems.size} for performance",
+            )
         }
     }
 
