@@ -28,6 +28,7 @@ fun JellyfinApp(
     onLogout: () -> Unit = {},
     useDynamicColor: Boolean = true,
     initialDestination: String? = null,
+    onShortcutConsumed: () -> Unit = {},
 ) {
     JellyfinAndroidTheme(dynamicColor = useDynamicColor) {
         val navController = rememberNavController()
@@ -49,6 +50,7 @@ fun JellyfinApp(
                     // Restore state when re-selecting a previously selected item
                     restoreState = true
                 }
+                onShortcutConsumed()
             }
         }
 

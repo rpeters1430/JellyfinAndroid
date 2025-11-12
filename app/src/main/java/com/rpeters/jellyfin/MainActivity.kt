@@ -1,10 +1,14 @@
 package com.rpeters.jellyfin
 
 import android.os.Bundle
+import android.content.Intent
 import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.fragment.app.FragmentActivity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.rpeters.jellyfin.ui.JellyfinApp
 import com.rpeters.jellyfin.ui.tv.TvJellyfinApp
 import com.rpeters.jellyfin.utils.DeviceTypeUtils
@@ -14,6 +18,8 @@ import dagger.hilt.android.AndroidEntryPoint
 @androidx.media3.common.util.UnstableApi
 @AndroidEntryPoint
 class MainActivity : FragmentActivity() {
+
+    private var shortcutDestination by mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,15 +35,19 @@ class MainActivity : FragmentActivity() {
         Log.i("MainActivity", "isTvDevice=${deviceType == DeviceTypeUtils.DeviceType.TV}")
 
         // Handle app shortcuts by extracting the destination extra from the intent
-        val shortcutDestination = intent?.getStringExtra("destination")
+        shortcutDestination = intent?.getStringExtra("destination")
         if (shortcutDestination != null) {
             Log.d("MainActivity", "Shortcut destination: $shortcutDestination")
         }
 
         setContent {
+            val destination = shortcutDestination
             when (deviceType) {
                 DeviceTypeUtils.DeviceType.TV -> TvJellyfinApp()
-                else -> JellyfinApp(initialDestination = shortcutDestination)
+                else -> JellyfinApp(
+                    initialDestination = destination,
+                    onShortcutConsumed = { shortcutDestination = null },
+                )
             }
         }
     }
@@ -45,5 +55,14 @@ class MainActivity : FragmentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         MainThreadMonitor.stopMonitoring()
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        shortcutDestination = intent?.getStringExtra("destination")
+        if (shortcutDestination != null) {
+            Log.d("MainActivity", "New shortcut destination: $shortcutDestination")
+        }
     }
 }
