@@ -43,6 +43,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -58,6 +59,7 @@ import com.rpeters.jellyfin.ui.components.WatchProgressBar
 import com.rpeters.jellyfin.ui.image.ImageSize
 import com.rpeters.jellyfin.ui.image.OptimizedImage
 import com.rpeters.jellyfin.ui.screens.home.LibraryGridSection
+import com.rpeters.jellyfin.ui.shortcuts.DynamicShortcutManager
 import com.rpeters.jellyfin.ui.viewmodel.MainAppState
 import com.rpeters.jellyfin.utils.PerformanceTracker
 import com.rpeters.jellyfin.utils.getItemKey
@@ -250,6 +252,7 @@ fun HomeContent(
             getContinueWatchingItems(appState),
         )
     }
+    val context = LocalContext.current
     val recentMovies = remember(appState.recentlyAddedByTypes) {
         appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name]?.take(8) ?: emptyList()
     }
@@ -265,6 +268,10 @@ fun HomeContent(
     }
     val recentMusic = remember(appState.recentlyAddedByTypes) {
         appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name]?.take(15) ?: emptyList()
+    }
+
+    LaunchedEffect(continueWatchingItems) {
+        DynamicShortcutManager.updateContinueWatchingShortcuts(context, continueWatchingItems)
     }
 
     PullToRefreshBox(
