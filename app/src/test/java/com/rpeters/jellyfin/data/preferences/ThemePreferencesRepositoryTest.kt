@@ -40,7 +40,7 @@ class ThemePreferencesRepositoryTest {
         val testFile = tmpFolder.newFile("test_theme_preferences.preferences_pb")
         testDataStore = PreferenceDataStoreFactory.create(
             scope = testScope,
-            produceFile = { testFile }
+            produceFile = { testFile },
         )
 
         repository = ThemePreferencesRepository(testDataStore)
@@ -312,5 +312,4 @@ class ThemePreferencesRepositoryTest {
         assertEquals(ThemeMode.AMOLED_BLACK, preferences.themeMode)
         assertEquals(AccentColor.JELLYFIN_BLUE, preferences.accentColor)
     }
-
 }
