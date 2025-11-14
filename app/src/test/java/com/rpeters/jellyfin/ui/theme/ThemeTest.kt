@@ -7,8 +7,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import com.rpeters.jellyfin.data.preferences.AccentColor
 import com.rpeters.jellyfin.data.preferences.ContrastLevel
-import com.rpeters.jellyfin.data.preferences.ThemeMode
-import com.rpeters.jellyfin.data.preferences.ThemePreferences
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -76,7 +74,7 @@ class ThemeTest {
         val adjustedScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.MEDIUM,
-            isDark = true
+            isDark = true,
         )
 
         // Then - Primary should be brighter
@@ -93,7 +91,7 @@ class ThemeTest {
         val adjustedScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.MEDIUM,
-            isDark = false
+            isDark = false,
         )
 
         // Then - Primary should be darker
@@ -110,7 +108,7 @@ class ThemeTest {
         val adjustedScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.MEDIUM,
-            isDark = true
+            isDark = true,
         )
 
         // Then - onPrimary should be darker (opposite of primary which is brighter)
@@ -127,7 +125,7 @@ class ThemeTest {
         val adjustedScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.MEDIUM,
-            isDark = false
+            isDark = false,
         )
 
         // Then - onPrimary should be brighter (opposite of primary which is darker)
@@ -147,12 +145,12 @@ class ThemeTest {
         val mediumScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.MEDIUM,
-            isDark = true
+            isDark = true,
         )
         val highScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.HIGH,
-            isDark = true
+            isDark = true,
         )
 
         // Then - High contrast should have more adjustment
@@ -168,12 +166,12 @@ class ThemeTest {
         val mediumScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.MEDIUM,
-            isDark = false
+            isDark = false,
         )
         val highScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.HIGH,
-            isDark = false
+            isDark = false,
         )
 
         // Then - High contrast should have more adjustment
@@ -191,7 +189,7 @@ class ThemeTest {
         val adjustedScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.HIGH,
-            isDark = true
+            isDark = true,
         )
 
         // Then - Surface and background should be adjusted
@@ -209,7 +207,7 @@ class ThemeTest {
         val adjustedScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.HIGH,
-            isDark = true
+            isDark = true,
         )
 
         // Then - Outline should be adjusted
@@ -232,7 +230,7 @@ class ThemeTest {
         val adjustedScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.HIGH,
-            isDark = true
+            isDark = true,
         )
 
         // Then - Container colors should be adjusted
@@ -250,7 +248,7 @@ class ThemeTest {
         val adjustedScheme = applyContrastLevelReflection(
             baseScheme,
             ContrastLevel.HIGH,
-            isDark = true
+            isDark = true,
         )
 
         // Then - On-container colors should be adjusted
@@ -270,7 +268,7 @@ class ThemeTest {
         val adjustedScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.STANDARD,
-            isDark = true
+            isDark = true,
         )
 
         // Then - Should be identical
@@ -357,7 +355,7 @@ class ThemeTest {
         val adjustedScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.HIGH,
-            isDark = true
+            isDark = true,
         )
         val adjustedRatio = calculateContrastRatio(adjustedScheme.primary, adjustedScheme.onPrimary)
 
@@ -375,7 +373,7 @@ class ThemeTest {
         val adjustedScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.MEDIUM,
-            isDark = false
+            isDark = false,
         )
 
         // For medium, surface might not change, but we test the concept
@@ -383,7 +381,7 @@ class ThemeTest {
         val highScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.HIGH,
-            isDark = false
+            isDark = false,
         )
         val highRatio = calculateContrastRatio(highScheme.surface, highScheme.onSurface)
 
