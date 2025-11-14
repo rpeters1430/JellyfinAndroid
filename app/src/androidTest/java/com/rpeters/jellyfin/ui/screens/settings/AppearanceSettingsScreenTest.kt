@@ -3,16 +3,11 @@ package com.rpeters.jellyfin.ui.screens.settings
 import android.os.Build
 import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsNotDisplayed
-import androidx.compose.ui.test.assertIsOff
-import androidx.compose.ui.test.assertIsOn
-import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.rpeters.jellyfin.data.preferences.AccentColor
 import com.rpeters.jellyfin.data.preferences.ContrastLevel
 import com.rpeters.jellyfin.data.preferences.ThemeMode
 import com.rpeters.jellyfin.data.preferences.ThemePreferences
@@ -25,10 +20,10 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.junit.Assume.assumeTrue
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
@@ -78,7 +73,7 @@ class AppearanceSettingsScreenTest {
             JellyfinAndroidTheme {
                 AppearanceSettingsScreen(
                     onNavigateBack = { navigateBackCalled = true },
-                    viewModel = mockViewModel
+                    viewModel = mockViewModel,
                 )
             }
         }
@@ -98,7 +93,7 @@ class AppearanceSettingsScreenTest {
             JellyfinAndroidTheme {
                 AppearanceSettingsScreen(
                     onNavigateBack = { navigateBackCalled = true },
-                    viewModel = mockViewModel
+                    viewModel = mockViewModel,
                 )
             }
         }
@@ -117,7 +112,7 @@ class AppearanceSettingsScreenTest {
             JellyfinAndroidTheme {
                 AppearanceSettingsScreen(
                     onNavigateBack = { navigateBackCalled = true },
-                    viewModel = mockViewModel
+                    viewModel = mockViewModel,
                 )
             }
         }
@@ -136,7 +131,7 @@ class AppearanceSettingsScreenTest {
             JellyfinAndroidTheme {
                 AppearanceSettingsScreen(
                     onNavigateBack = { navigateBackCalled = true },
-                    viewModel = mockViewModel
+                    viewModel = mockViewModel,
                 )
             }
         }
@@ -157,7 +152,7 @@ class AppearanceSettingsScreenTest {
             JellyfinAndroidTheme {
                 AppearanceSettingsScreen(
                     onNavigateBack = { navigateBackCalled = true },
-                    viewModel = mockViewModel
+                    viewModel = mockViewModel,
                 )
             }
         }
@@ -182,7 +177,7 @@ class AppearanceSettingsScreenTest {
             JellyfinAndroidTheme {
                 AppearanceSettingsScreen(
                     onNavigateBack = { navigateBackCalled = true },
-                    viewModel = mockViewModel
+                    viewModel = mockViewModel,
                 )
             }
         }
@@ -200,7 +195,7 @@ class AppearanceSettingsScreenTest {
             JellyfinAndroidTheme {
                 AppearanceSettingsScreen(
                     onNavigateBack = { navigateBackCalled = true },
-                    viewModel = mockViewModel
+                    viewModel = mockViewModel,
                 )
             }
         }
@@ -218,7 +213,7 @@ class AppearanceSettingsScreenTest {
             JellyfinAndroidTheme {
                 AppearanceSettingsScreen(
                     onNavigateBack = { navigateBackCalled = true },
-                    viewModel = mockViewModel
+                    viewModel = mockViewModel,
                 )
             }
         }
@@ -236,7 +231,7 @@ class AppearanceSettingsScreenTest {
             JellyfinAndroidTheme {
                 AppearanceSettingsScreen(
                     onNavigateBack = { navigateBackCalled = true },
-                    viewModel = mockViewModel
+                    viewModel = mockViewModel,
                 )
             }
         }
@@ -261,7 +256,7 @@ class AppearanceSettingsScreenTest {
             JellyfinAndroidTheme {
                 AppearanceSettingsScreen(
                     onNavigateBack = { navigateBackCalled = true },
-                    viewModel = mockViewModel
+                    viewModel = mockViewModel,
                 )
             }
         }
@@ -279,7 +274,7 @@ class AppearanceSettingsScreenTest {
             JellyfinAndroidTheme {
                 AppearanceSettingsScreen(
                     onNavigateBack = { navigateBackCalled = true },
-                    viewModel = mockViewModel
+                    viewModel = mockViewModel,
                 )
             }
         }
@@ -297,7 +292,7 @@ class AppearanceSettingsScreenTest {
             JellyfinAndroidTheme {
                 AppearanceSettingsScreen(
                     onNavigateBack = { navigateBackCalled = true },
-                    viewModel = mockViewModel
+                    viewModel = mockViewModel,
                 )
             }
         }
@@ -323,7 +318,7 @@ class AppearanceSettingsScreenTest {
             JellyfinAndroidTheme {
                 AppearanceSettingsScreen(
                     onNavigateBack = { navigateBackCalled = true },
-                    viewModel = mockViewModel
+                    viewModel = mockViewModel,
                 )
             }
         }
@@ -350,7 +345,7 @@ class AppearanceSettingsScreenTest {
             JellyfinAndroidTheme {
                 AppearanceSettingsScreen(
                     onNavigateBack = { navigateBackCalled = true },
-                    viewModel = mockViewModel
+                    viewModel = mockViewModel,
                 )
             }
         }
@@ -369,7 +364,7 @@ class AppearanceSettingsScreenTest {
             JellyfinAndroidTheme {
                 AppearanceSettingsScreen(
                     onNavigateBack = { navigateBackCalled = true },
-                    viewModel = mockViewModel
+                    viewModel = mockViewModel,
                 )
             }
         }
@@ -392,7 +387,7 @@ class AppearanceSettingsScreenTest {
             JellyfinAndroidTheme {
                 AppearanceSettingsScreen(
                     onNavigateBack = { navigateBackCalled = true },
-                    viewModel = mockViewModel
+                    viewModel = mockViewModel,
                 )
             }
         }
@@ -409,7 +404,7 @@ class AppearanceSettingsScreenTest {
             JellyfinAndroidTheme {
                 AppearanceSettingsScreen(
                     onNavigateBack = { navigateBackCalled = true },
-                    viewModel = mockViewModel
+                    viewModel = mockViewModel,
                 )
             }
         }
@@ -434,7 +429,7 @@ class AppearanceSettingsScreenTest {
             JellyfinAndroidTheme {
                 AppearanceSettingsScreen(
                     onNavigateBack = { navigateBackCalled = true },
-                    viewModel = mockViewModel
+                    viewModel = mockViewModel,
                 )
             }
         }
@@ -454,7 +449,7 @@ class AppearanceSettingsScreenTest {
             JellyfinAndroidTheme {
                 AppearanceSettingsScreen(
                     onNavigateBack = { navigateBackCalled = true },
-                    viewModel = mockViewModel
+                    viewModel = mockViewModel,
                 )
             }
         }
@@ -474,7 +469,7 @@ class AppearanceSettingsScreenTest {
             JellyfinAndroidTheme {
                 AppearanceSettingsScreen(
                     onNavigateBack = { navigateBackCalled = true },
-                    viewModel = mockViewModel
+                    viewModel = mockViewModel,
                 )
             }
         }

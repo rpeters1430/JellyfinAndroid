@@ -79,7 +79,7 @@ class ThemePreferencesViewModelTest {
         // Given
         val updatedPreferences = ThemePreferences.DEFAULT.copy(
             themeMode = ThemeMode.DARK,
-            accentColor = AccentColor.MATERIAL_BLUE
+            accentColor = AccentColor.MATERIAL_BLUE,
         )
 
         // When
@@ -350,7 +350,7 @@ class ThemePreferencesViewModelTest {
         val updatedPreferences = initialPreferences.copy(
             themeMode = ThemeMode.DARK,
             accentColor = AccentColor.MATERIAL_RED,
-            contrastLevel = ContrastLevel.HIGH
+            contrastLevel = ContrastLevel.HIGH,
         )
 
         // When/Then
