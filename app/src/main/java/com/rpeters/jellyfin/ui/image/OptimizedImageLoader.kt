@@ -17,7 +17,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import coil.Coil
 import coil.ImageLoader
 import coil.compose.SubcomposeAsyncImage
 import coil.disk.DiskCache
