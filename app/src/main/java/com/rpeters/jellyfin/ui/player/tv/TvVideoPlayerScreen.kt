@@ -59,7 +59,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
@@ -317,10 +317,12 @@ fun TvVideoPlayerScreen(
                                 },
                         )
                         LinearProgressIndicator(
-                            progress = if (state.duration > 0) {
-                                (state.bufferedPosition / state.duration.toFloat()).coerceIn(0f, 1f)
-                            } else {
-                                0f
+                            progress = {
+                                if (state.duration > 0) {
+                                    (state.bufferedPosition / state.duration.toFloat()).coerceIn(0f, 1f)
+                                } else {
+                                    0f
+                                }
                             },
                             modifier = Modifier.fillMaxWidth(),
                             color = MaterialTheme.colorScheme.primary,

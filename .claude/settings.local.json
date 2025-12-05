@@ -20,7 +20,8 @@
       "Bash(git log:*)",
       "Bash(git push:*)",
       "Bash(java -version:*)",
-      "WebFetch(domain:gist.githubusercontent.com)"
+      "WebFetch(domain:gist.githubusercontent.com)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": [],

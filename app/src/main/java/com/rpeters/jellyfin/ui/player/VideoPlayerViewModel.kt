@@ -254,6 +254,24 @@ class VideoPlayerViewModel @Inject constructor(
     suspend fun initializePlayer(itemId: String, itemName: String, startPosition: Long) {
         Log.d("VideoPlayer", "Initializing player for: $itemName")
 
+        // If player already exists for the same item, just seek to position instead of recreating
+        if (exoPlayer != null && currentItemId == itemId) {
+            Log.d("VideoPlayer", "Player already exists for this item, seeking to position")
+            if (startPosition > 0) {
+                withContext(Dispatchers.Main) {
+                    exoPlayer?.seekTo(startPosition)
+                    exoPlayer?.play()
+                }
+            }
+            return
+        }
+
+        // Release existing player if switching to a different item
+        if (exoPlayer != null && currentItemId != itemId) {
+            Log.d("VideoPlayer", "Releasing existing player before initializing new item")
+            releasePlayer()
+        }
+
         playbackProgressManager.stopTracking()
         currentItemId = itemId
         currentItemName = itemName

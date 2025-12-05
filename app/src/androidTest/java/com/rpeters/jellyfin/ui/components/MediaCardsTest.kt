@@ -9,6 +9,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.test.StandardTestDispatcher
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.junit.Rule
@@ -19,12 +20,16 @@ import java.util.UUID
 /**
  * Comprehensive UI tests for MediaCard components.
  * Tests rendering, interactions, and accessibility features.
+ *
+ * Updated for Compose December 2025: Using StandardTestDispatcher for future compatibility.
  */
 @RunWith(AndroidJUnit4::class)
 class MediaCardsTest {
 
     @get:Rule
-    val composeTestRule = createComposeRule()
+    val composeTestRule = createComposeRule(
+        effectContext = StandardTestDispatcher()
+    )
 
     private fun createTestMovie(): BaseItemDto {
         return mockk<BaseItemDto>(relaxed = true) {

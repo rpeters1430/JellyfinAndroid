@@ -18,15 +18,18 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.ImageLoader
+import coil3.asImage
 import coil3.compose.SubcomposeAsyncImage
 import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
+import coil3.request.transformations
 import coil3.size.Size
 import coil3.transform.RoundedCornersTransformation
 import com.rpeters.jellyfin.ui.ShimmerBox
 import okhttp3.OkHttpClient
+import okio.Path.Companion.toOkioPath
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import java.io.File
@@ -79,18 +82,24 @@ fun createOptimizedImageLoader(
 ): ImageLoader {
     return ImageLoader.Builder(context)
         .memoryCache {
-            MemoryCache.Builder(context)
-                .maxSizePercent(config.memoryPercent)
+            MemoryCache.Builder()
+                .maxSizePercent(context, config.memoryPercent)
                 .build()
         }
         .diskCache {
             DiskCache.Builder()
-                .directory(File(context.cacheDir, "image_cache"))
+                .directory(context.cacheDir.resolve("image_cache").toOkioPath())
                 .maxSizeBytes(config.diskCacheSizeMB * 1024 * 1024)
                 .build()
         }
-        .okHttpClient(okHttpClient)
-        .respectCacheHeaders(true)
+        .components {
+            add(
+                coil3.network.okhttp.OkHttpNetworkFetcherFactory(
+                    callFactory = { okHttpClient }
+                )
+            )
+        }
+        // Coil 3.x: respectCacheHeaders removed from builder
         .build()
 }
 
@@ -113,23 +122,20 @@ fun OptimizedImage(
     val context = LocalContext.current
     val backgroundColor = MaterialTheme.colorScheme.surfaceVariant.toArgb()
 
-    val imageRequest = remember(imageUrl, size, quality) {
-        ImageRequest.Builder(context)
+    val imageRequest: ImageRequest = remember(imageUrl, size, quality) {
+        val builder = ImageRequest.Builder(context)
             .data(imageUrl)
             .size(Size(size.width, size.height))
             .memoryCachePolicy(CachePolicy.ENABLED)
             .diskCachePolicy(CachePolicy.ENABLED)
             .networkCachePolicy(CachePolicy.ENABLED)
-            .placeholder(ColorDrawable(backgroundColor))
-            .error(ColorDrawable(backgroundColor))
-            .transformations(
-                if (cornerRadius > 0.dp) {
-                    listOf(RoundedCornersTransformation(cornerRadius.value))
-                } else {
-                    emptyList()
-                },
-            )
-            .build()
+
+        // Coil 3.x: Apply rounded corners transformation if needed
+        if (cornerRadius > 0.dp) {
+            builder.transformations(RoundedCornersTransformation(cornerRadius.value))
+        }
+
+        builder.build()
     }
 
     SubcomposeAsyncImage(

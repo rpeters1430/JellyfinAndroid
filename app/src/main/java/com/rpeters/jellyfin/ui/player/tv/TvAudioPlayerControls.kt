@@ -16,7 +16,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Pause
@@ -26,6 +25,7 @@ import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -133,7 +133,7 @@ fun TvAudioPlayerControls(
 
             // Progress bar
             LinearProgressIndicator(
-                progress = if (duration > 0) currentPosition.toFloat() / duration.toFloat() else 0f,
+                progress = { if (duration > 0) currentPosition.toFloat() / duration.toFloat() else 0f },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)
@@ -212,7 +212,7 @@ fun TvAudioPlayerControls(
         ) {
             // Back button
             TvAudioControlButton(
-                icon = Icons.Default.ArrowBack,
+                icon = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Back",
                 onClick = onBack,
                 focusRequester = backFocusRequester,
