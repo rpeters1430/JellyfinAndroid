@@ -573,22 +573,7 @@ class MainAppViewModel @Inject constructor(
     }
 
     fun loadLibraryTypeData(libraryType: LibraryType, forceRefresh: Boolean = false) {
-        val currentLibraries = _appState.value.libraries
-        if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
-            android.util.Log.d(
-                "MainAppViewModel",
-                "loadLibraryTypeData: called for ${libraryType.name}, current libraries: ${currentLibraries.map { "${it.name}(${it.collectionType})" }}",
-            )
-        }
-
-        val library = currentLibraries.firstOrNull { lib ->
-            when (libraryType) {
-                LibraryType.MOVIES -> lib.collectionType == CollectionType.MOVIES
-                LibraryType.TV_SHOWS -> lib.collectionType == CollectionType.TVSHOWS
-                LibraryType.MUSIC -> lib.collectionType == CollectionType.MUSIC
-                LibraryType.STUFF -> true
-            }
-        }
+        val library = findLibraryForType(libraryType)
         if (library != null) {
             if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
                 android.util.Log.d(
@@ -601,7 +586,7 @@ class MainAppViewModel @Inject constructor(
             if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
                 android.util.Log.w(
                     "MainAppViewModel",
-                    "loadLibraryTypeData: no matching library found for ${libraryType.name}; librariesLoaded=${currentLibraries.size}; available libraries: ${currentLibraries.map { "${it.name}(${it.collectionType})" }}",
+                    "loadLibraryTypeData: no matching library found for ${libraryType.name}; librariesLoaded=${_appState.value.libraries.size}; available libraries: ${_appState.value.libraries.map { "${it.name}(${it.collectionType})" }}",
                 )
             }
         }
@@ -613,16 +598,56 @@ class MainAppViewModel @Inject constructor(
     }
 
     fun getLibraryTypeData(libraryType: LibraryType): List<BaseItemDto> {
-        val library = _appState.value.libraries.firstOrNull { lib ->
-            when (libraryType) {
-                LibraryType.MOVIES -> lib.collectionType == CollectionType.MOVIES
-                LibraryType.TV_SHOWS -> lib.collectionType == CollectionType.TVSHOWS
-                LibraryType.MUSIC -> lib.collectionType == CollectionType.MUSIC
-                LibraryType.STUFF -> true
-            }
-        } ?: return emptyList()
+        val library = findLibraryForType(libraryType) ?: return emptyList()
         return getLibraryTypeData(library)
     }
+
+    private fun findLibraryForType(libraryType: LibraryType): BaseItemDto? {
+        val libraries = _appState.value.libraries
+        val targetCollection = when (libraryType) {
+            LibraryType.MOVIES -> "movies"
+            LibraryType.TV_SHOWS -> "tvshows"
+            LibraryType.MUSIC -> "music"
+            LibraryType.STUFF -> null
+        }
+
+        // Try a strict match first (handles enum equality issues when deserialized differently)
+        val strictMatch = targetCollection?.let { target ->
+            libraries.firstOrNull { it.normalizedCollectionType() == target }
+        }
+        if (strictMatch != null) return strictMatch
+
+        // For Stuff, grab the first non-core library or fall back to the first entry
+        if (libraryType == LibraryType.STUFF) {
+            return libraries.firstOrNull {
+                it.normalizedCollectionType() !in setOf("movies", "tvshows", "music")
+            } ?: libraries.firstOrNull()
+        }
+
+        // Fallback: Some servers omit collectionType for libraries, so attempt a targeted name match
+        val nameMatch = targetCollection?.let { target ->
+            val targetSingular = target.removeSuffix("s")
+            libraries.firstOrNull { library ->
+                library.name?.replace(" ", "")?.lowercase()?.let { normalizedName ->
+                    normalizedName == target ||
+                        normalizedName == targetSingular ||
+                        normalizedName.startsWith(target) ||
+                        normalizedName.startsWith(targetSingular)
+                } == true
+            }?.also { matched ->
+                if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
+                    android.util.Log.d(
+                        "MainAppViewModel",
+                        "findLibraryForType: using name-based fallback for ${libraryType.name}; matched=${matched.name}",
+                    )
+                }
+            }
+        }
+        return nameMatch
+    }
+
+    private fun BaseItemDto.normalizedCollectionType(): String? =
+        collectionType?.toString()?.lowercase()?.replace(" ", "")
 
     fun clearError() {
         _appState.value = _appState.value.copy(errorMessage = null)
