@@ -67,7 +67,8 @@ import androidx.tv.material3.Text as TvText
  * TV-optimized video player controls with D-pad navigation and focus management
  * Designed for 10-foot viewing distance with large, readable text and proper focus indicators
  */
-@OptIn(ExperimentalTvMaterial3Api::class, UnstableApi::class)
+@UnstableApi
+@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun TvVideoPlayerControls(
     playerState: VideoPlayerState,
@@ -204,7 +205,8 @@ private fun TvCenterControls(
     }
 }
 
-@OptIn(ExperimentalTvMaterial3Api::class, ExperimentalComposeUiApi::class, UnstableApi::class)
+@UnstableApi
+@OptIn(ExperimentalTvMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
 private fun TvBottomControls(
     playerState: VideoPlayerState,
@@ -343,7 +345,8 @@ private fun TvBottomControls(
     }
 }
 
-@OptIn(ExperimentalTvMaterial3Api::class, UnstableApi::class)
+@UnstableApi
+@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 private fun TvProgressSection(
     playerState: VideoPlayerState,
@@ -508,7 +511,8 @@ private fun TvPlayPauseButton(
 /**
  * TV-optimized settings dialog with D-pad navigation
  */
-@OptIn(ExperimentalTvMaterial3Api::class, UnstableApi::class)
+@UnstableApi
+@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun TvPlayerSettingsDialog(
     playerState: VideoPlayerState,

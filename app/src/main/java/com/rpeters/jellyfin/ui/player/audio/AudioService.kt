@@ -28,7 +28,7 @@ class AudioService : androidx.media3.session.MediaSessionService() {
 
         val audioAttributes = AudioAttributes.Builder()
             .setUsage(androidx.media3.common.C.USAGE_MEDIA)
-            .setContentType(androidx.media3.common.C.CONTENT_TYPE_MUSIC)
+            .setContentType(androidx.media3.common.C.AUDIO_CONTENT_TYPE_MUSIC)
             .build()
 
         player = ExoPlayer.Builder(this)

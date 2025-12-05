@@ -225,23 +225,23 @@ The app uses an advanced playback decision engine that automatically determines 
 Dependencies are managed using Gradle version catalogs in `gradle/libs.versions.toml`. Key dependencies include:
 
 ### Core Android
-- Jetpack Compose BOM (2025.11.00)
-- Material 3 (1.5.0-alpha08) with adaptive navigation suite and expressive components
+- Jetpack Compose BOM (2025.12.00)
+- Material 3 (1.5.0-alpha10) with adaptive navigation suite and expressive components
 - AndroidX core libraries and lifecycle components
-- Media3 (1.9.0-alpha01) for video playback with ExoPlayer and Jellyfin FFmpeg decoder
-- Coil (2.7.0) for image loading
+- Media3 (1.9.0-rc01) for video playback with ExoPlayer and Jellyfin FFmpeg decoder
+- Coil (3.3.0) for image loading
 - Paging 3 (3.4.0-alpha04) for paginated content loading
 
 ### Jellyfin Integration
-- Jellyfin SDK (1.8.2) for API communication
+- Jellyfin SDK (1.8.4) for API communication
 - Retrofit (3.0.0) with Kotlinx Serialization
-- OkHttp (5.3.0) with logging interceptor
+- OkHttp (5.3.2) with logging interceptor
 - SLF4J Android (1.7.36) for SDK logging
 
 ### Architecture
 - Hilt (2.57.2) for dependency injection
 - Kotlin Coroutines (1.10.2) for async operations
-- DataStore Preferences (1.2.0-rc01) for settings storage
+- DataStore Preferences (1.3.0-alpha02) for settings storage
 - AndroidX Security (1.1.0) for encrypted credential storage
 - AndroidX Biometric (1.4.0-alpha04) for biometric authentication
 - AndroidX TV Material (1.1.0-alpha01) for Android TV support
@@ -250,7 +250,7 @@ Dependencies are managed using Gradle version catalogs in `gradle/libs.versions.
 
 ### Build Configuration
 - **Kotlin**: 2.2.21 with Compose compiler plugin
-- **Gradle**: 8.13.0 (AGP) with Kotlin DSL
+- **Gradle**: 8.13.1 (AGP) with Kotlin DSL
 - **Java**: Target/Source compatibility Version 17
 - **Android SDK**: Compile 36, Target 35, Min 26 (Android 8.0+) for broader device compatibility
 - **Package**: `com.rpeters.jellyfin` (actual package structure)
@@ -292,7 +292,7 @@ Follow Conventional Commits specification:
 - Application constants centralized in `Constants.kt`
 - API retry limits, timeout configurations, and pagination constants
 - Image size constraints and streaming quality defaults
-- Token expiration handling with proactive refresh (50-minute validity)
+- Token expiration handling with proactive refresh (45-minute validity before 60-minute server expiry)
 - Performance monitoring and optimization configurations
 - Accessibility support configurations in `AccessibilityExtensions.kt`
 

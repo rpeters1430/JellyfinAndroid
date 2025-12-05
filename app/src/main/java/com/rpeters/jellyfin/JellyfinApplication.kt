@@ -3,7 +3,7 @@ package com.rpeters.jellyfin
 import android.app.Application
 import android.os.StrictMode
 import coil3.ImageLoader
-import coil3.ImageLoaderFactory
+import coil3.SingletonImageLoader
 import com.rpeters.jellyfin.core.Logger
 import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
 import com.rpeters.jellyfin.ui.surface.ModernSurfaceCoordinator
@@ -17,7 +17,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltAndroidApp
-class JellyfinApplication : Application(), ImageLoaderFactory {
+class JellyfinApplication : Application(), SingletonImageLoader.Factory {
 
     @Inject
     lateinit var offlineDownloadManager: OfflineDownloadManager
@@ -115,5 +115,5 @@ class JellyfinApplication : Application(), ImageLoaderFactory {
         }
     }
 
-    override fun newImageLoader(): ImageLoader = imageLoader
+    override fun newImageLoader(context: android.content.Context): ImageLoader = imageLoader
 }

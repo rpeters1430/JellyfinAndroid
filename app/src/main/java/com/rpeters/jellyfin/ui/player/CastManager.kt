@@ -141,6 +141,7 @@ class CastManager @Inject constructor(
         }
     }
 
+    @Suppress("DEPRECATION")
     fun initialize() {
         // Cancel any existing initialization job to prevent duplicate listeners
         initializationJob?.cancel()
@@ -389,6 +390,7 @@ class CastManager @Inject constructor(
         return castPlayer
     }
 
+    @Suppress("DEPRECATION")
     fun release() {
         try {
             // Cancel initialization job to prevent scope leak

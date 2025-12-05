@@ -55,7 +55,8 @@ import androidx.tv.material3.Text as TvText
  * - Skip intro/credits buttons
  * - TV Picture-in-Picture support
  */
-@OptIn(UnstableApi::class, ExperimentalComposeUiApi::class)
+@UnstableApi
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun TvVideoPlayerScreen(
     playerState: VideoPlayerState,

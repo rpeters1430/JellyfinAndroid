@@ -15,10 +15,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -26,10 +24,9 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedSecureTextField
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -48,8 +45,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -76,11 +71,17 @@ fun ServerConnectionScreen(
 ) {
     var serverUrl by remember { mutableStateOf(savedServerUrl) }
     var username by remember { mutableStateOf(savedUsername) }
-    var password by remember { mutableStateOf("") }
-    var showPassword by remember { mutableStateOf(false) }
+    val passwordState = rememberTextFieldState()
 
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
+    val submitIfValid: () -> Unit = {
+        keyboardController?.hide()
+        val passwordText = passwordState.text.toString()
+        if (serverUrl.isNotBlank() && username.isNotBlank() && passwordText.isNotBlank()) {
+            onConnect(serverUrl, username, passwordText)
+        }
+    }
 
     // Update local state when saved values change
     LaunchedEffect(savedServerUrl, savedUsername) {
@@ -214,32 +215,17 @@ fun ServerConnectionScreen(
         )
 
         // Password input
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
+        OutlinedSecureTextField(
+            state = passwordState,
             label = { Text(stringResource(id = R.string.password_label)) },
-            visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Password,
                 imeAction = ImeAction.Done,
             ),
-            keyboardActions = KeyboardActions(
-                onDone = {
-                    keyboardController?.hide()
-                    if (serverUrl.isNotBlank() && username.isNotBlank() && password.isNotBlank()) {
-                        onConnect(serverUrl, username, password)
-                    }
-                },
-            ),
-            trailingIcon = {
-                IconButton(onClick = { showPassword = !showPassword }) {
-                    Icon(
-                        imageVector = if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                        contentDescription = if (showPassword) stringResource(id = R.string.hide_password) else stringResource(id = R.string.show_password),
-                    )
-                }
+            onKeyboardAction = { performDefaultAction ->
+                submitIfValid()
+                performDefaultAction()
             },
-            singleLine = true,
             modifier = Modifier
                 .fillMaxWidth(),
             enabled = !connectionState.isConnecting,
@@ -305,10 +291,13 @@ fun ServerConnectionScreen(
         // Connect button
         Button(
             onClick = {
-                keyboardController?.hide()
-                onConnect(serverUrl, username, password)
+                submitIfValid()
             },
-            enabled = serverUrl.isNotBlank() && username.isNotBlank() && password.isNotBlank() && !connectionState.isConnecting,
+            enabled =
+                serverUrl.isNotBlank() &&
+                    username.isNotBlank() &&
+                    passwordState.text.isNotBlank() &&
+                    !connectionState.isConnecting,
             modifier = Modifier.fillMaxWidth(),
         ) {
             if (connectionState.isConnecting) {

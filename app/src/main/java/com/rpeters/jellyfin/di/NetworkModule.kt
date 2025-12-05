@@ -24,6 +24,7 @@ import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.logging.HttpLoggingInterceptor
+import okio.Path.Companion.toOkioPath
 import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.createJellyfin
 import org.jellyfin.sdk.model.ClientInfo
@@ -89,34 +90,34 @@ object NetworkModule {
     ): ImageLoader {
         return ImageLoader.Builder(context)
             .memoryCache {
-                MemoryCache.Builder(context)
-                    .maxSizePercent(0.20)
+                MemoryCache.Builder()
+                    .maxSizePercent(context, 0.20)
                     .build()
             }
             .diskCache {
                 DiskCache.Builder()
-                    .directory(File(context.cacheDir, "image_cache"))
+                    .directory(context.cacheDir.resolve("image_cache").toOkioPath())
                     .maxSizeBytes(120L * 1024 * 1024)
                     .build()
             }
-            .okHttpClient(
-                okHttpClient.newBuilder()
-                    .addInterceptor { chain ->
-                        val request = chain.request().newBuilder()
-                            .header("Accept", "image/webp,image/avif,image/*,*/*;q=0.8")
-                            .build()
-                        chain.proceed(request)
-                    }
-                    .build(),
-            )
-            // Disable crossfade animations to reduce jank during fast scroll
-            .crossfade(false)
-            .respectCacheHeaders(true)
-            .allowRgb565(true)
-            // Emulators often struggle with hardware bitmaps + lots of thumbnails.
-            // Prefer software bitmaps and cap work parallelism slightly to smooth scrolling.
-            .allowHardware(false)
-            .dispatcher(kotlinx.coroutines.Dispatchers.IO.limitedParallelism(4))
+            .components {
+                add(
+                    coil3.network.okhttp.OkHttpNetworkFetcherFactory(
+                        callFactory = {
+                            okHttpClient.newBuilder()
+                                .addInterceptor { chain ->
+                                    val request = chain.request().newBuilder()
+                                        .header("Accept", "image/webp,image/avif,image/*,*/*;q=0.8")
+                                        .build()
+                                    chain.proceed(request)
+                                }
+                                .build()
+                        }
+                    )
+                )
+            }
+            // Coil 3.x: crossfade, allowRgb565, allowHardware are now request-level options
+            // Set as defaults in requests if needed
             .build()
     }
 

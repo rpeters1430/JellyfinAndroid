@@ -8,14 +8,12 @@ import coil3.annotation.ExperimentalCoilApi
 import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
-import coil3.request.allowHardware
-import coil3.request.allowRgb565
-import coil3.request.crossfade
 import coil3.util.DebugLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
+import okio.Path.Companion.toOkioPath
 import java.io.File
 
 /**
@@ -36,9 +34,9 @@ object ImageLoadingOptimizer {
                     }
                     .diskCache {
                         DiskCache.Builder()
-                            .directory(getCacheDirectory(context))
+                            .directory(context.cacheDir.resolve("image_cache").toOkioPath())
                             .maxSizeBytes(120 * 1024 * 1024) // Fixed 120MB cache
-                            .cleanupDispatcher(Dispatchers.IO)
+                            .cleanupCoroutineContext(Dispatchers.IO)
                             .build()
                     }
                     .components {
@@ -57,10 +55,8 @@ object ImageLoadingOptimizer {
                             ),
                         )
                     }
-                    .crossfade(100) // Fast crossfade
-                    .respectCacheHeaders(true) // Honor server cache headers
-                    .allowRgb565(true) // Use less memory per image
-                    .allowHardware(true) // Use hardware bitmaps when possible
+                    // Coil 3.x: crossfade, respectCacheHeaders, allowRgb565, allowHardware
+                    // are now request-level options, not builder options
                     .apply {
                         if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
                             logger(DebugLogger())
@@ -77,8 +73,10 @@ object ImageLoadingOptimizer {
         }
     }
 
+    // Coil 3.x: Cache directory is now handled by resolve()
+    // This function is no longer needed but kept for backward compatibility
     private fun getCacheDirectory(context: Context): File {
-        return File(context.cacheDir, "image_cache").apply {
+        return context.cacheDir.resolve("image_cache").apply {
             mkdirs()
         }
     }

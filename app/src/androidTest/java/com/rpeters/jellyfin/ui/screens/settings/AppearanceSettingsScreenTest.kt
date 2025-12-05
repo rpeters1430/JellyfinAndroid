@@ -19,6 +19,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.StandardTestDispatcher
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Before
@@ -30,12 +31,16 @@ import org.robolectric.annotation.Config
 /**
  * Comprehensive UI tests for AppearanceSettingsScreen.
  * Tests rendering, user interactions, accessibility, and state management.
+ *
+ * Updated for Compose December 2025: Using StandardTestDispatcher for future compatibility.
  */
 @RunWith(AndroidJUnit4::class)
 class AppearanceSettingsScreenTest {
 
     @get:Rule
-    val composeTestRule = createComposeRule()
+    val composeTestRule = createComposeRule(
+        effectContext = StandardTestDispatcher()
+    )
 
     private lateinit var mockViewModel: ThemePreferencesViewModel
     private lateinit var preferencesFlow: MutableStateFlow<ThemePreferences>
