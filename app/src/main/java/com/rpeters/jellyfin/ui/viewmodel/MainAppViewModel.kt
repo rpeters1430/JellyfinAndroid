@@ -603,9 +603,6 @@ class MainAppViewModel @Inject constructor(
     }
 
     private fun findLibraryForType(libraryType: LibraryType): BaseItemDto? {
-        fun BaseItemDto.normalizedCollectionType(): String? =
-            collectionType?.toString()?.lowercase()?.replace(" ", "")
-
         val libraries = _appState.value.libraries
         val targetCollection = when (libraryType) {
             LibraryType.MOVIES -> "movies"
@@ -627,14 +624,30 @@ class MainAppViewModel @Inject constructor(
             } ?: libraries.firstOrNull()
         }
 
-        // As a fallback, match on library name to handle servers that omit collectionType
+        // Fallback: Some servers omit collectionType for libraries, so attempt a targeted name match
         val nameMatch = targetCollection?.let { target ->
+            val targetSingular = target.removeSuffix("s")
             libraries.firstOrNull { library ->
-                library.name?.replace(" ", "")?.lowercase()?.contains(target.removeSuffix("s")) == true
+                library.name?.replace(" ", "")?.lowercase()?.let { normalizedName ->
+                    normalizedName == target ||
+                        normalizedName == targetSingular ||
+                        normalizedName.startsWith(target) ||
+                        normalizedName.startsWith(targetSingular)
+                } == true
+            }?.also { matched ->
+                if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
+                    android.util.Log.d(
+                        "MainAppViewModel",
+                        "findLibraryForType: using name-based fallback for ${libraryType.name}; matched=${matched.name}",
+                    )
+                }
             }
         }
         return nameMatch
     }
+
+    private fun BaseItemDto.normalizedCollectionType(): String? =
+        collectionType?.toString()?.lowercase()?.replace(" ", "")
 
     fun clearError() {
         _appState.value = _appState.value.copy(errorMessage = null)
