@@ -2,17 +2,13 @@
 
 package com.rpeters.jellyfin.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -71,7 +67,7 @@ fun LibraryTypeScreen(
     val appState by viewModel.appState.collectAsState()
     var viewMode by remember { mutableStateOf(ViewMode.GRID) }
     var selectedFilter by remember { mutableStateOf(FilterType.getDefault()) }
-    var hasRequestedData by remember { mutableStateOf(false) }
+    var hasRequestedData by remember(libraryType) { mutableStateOf(false) }
 
     // ✅ FIX: Use library-specific data from itemsByLibrary map
     // The remember() must depend on itemsByLibrary since getLibraryTypeData() reads from that map
@@ -162,38 +158,31 @@ fun LibraryTypeScreen(
                     LibraryTypeLoadingPlaceholder(libraryType = libraryType)
                 }
                 displayItems.isNotEmpty() -> {
-                    AnimatedVisibility(
-                        visible = true,
-                        enter = fadeIn() + slideInVertically(),
-                        exit = fadeOut() + slideOutVertically(),
-                        modifier = Modifier.fillMaxSize(),
-                    ) {
-                        when (viewMode) {
-                            ViewMode.GRID -> GridContent(
-                                items = displayItems,
-                                libraryType = libraryType,
-                                getImageUrl = { viewModel.getImageUrl(it) },
-                                onTVShowClick = onTVShowClick,
-                                isLoadingMore = appState.isLoadingMore,
-                                hasMoreItems = appState.hasMoreItems,
-                                onLoadMore = { viewModel.loadMoreItems() },
-                            )
-                            ViewMode.LIST -> ListContent(
-                                items = displayItems,
-                                libraryType = libraryType,
-                                getImageUrl = { viewModel.getImageUrl(it) },
-                                onTVShowClick = onTVShowClick,
-                                isLoadingMore = appState.isLoadingMore,
-                                hasMoreItems = appState.hasMoreItems,
-                                onLoadMore = { viewModel.loadMoreItems() },
-                            )
-                            ViewMode.CAROUSEL -> CarouselContent(
-                                items = displayItems,
-                                libraryType = libraryType,
-                                getImageUrl = { viewModel.getImageUrl(it) },
-                                onTVShowClick = onTVShowClick,
-                            )
-                        }
+                    when (viewMode) {
+                        ViewMode.GRID -> GridContent(
+                            items = displayItems,
+                            libraryType = libraryType,
+                            getImageUrl = { viewModel.getImageUrl(it) },
+                            onTVShowClick = onTVShowClick,
+                            isLoadingMore = appState.isLoadingMore,
+                            hasMoreItems = appState.hasMoreItems,
+                            onLoadMore = { viewModel.loadMoreItems() },
+                        )
+                        ViewMode.LIST -> ListContent(
+                            items = displayItems,
+                            libraryType = libraryType,
+                            getImageUrl = { viewModel.getImageUrl(it) },
+                            onTVShowClick = onTVShowClick,
+                            isLoadingMore = appState.isLoadingMore,
+                            hasMoreItems = appState.hasMoreItems,
+                            onLoadMore = { viewModel.loadMoreItems() },
+                        )
+                        ViewMode.CAROUSEL -> CarouselContent(
+                            items = displayItems,
+                            libraryType = libraryType,
+                            getImageUrl = { viewModel.getImageUrl(it) },
+                            onTVShowClick = onTVShowClick,
+                        )
                     }
                 }
                 displayItems.isEmpty() && !appState.isLoading && appState.errorMessage == null -> {
@@ -236,19 +225,15 @@ private fun LibraryTypeLoadingPlaceholder(libraryType: LibraryType) {
         horizontalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ItemSpacing),
         modifier = Modifier.fillMaxSize(),
     ) {
-        items(9) {
+        items(LibraryScreenDefaults.LibraryTypePlaceholderCount) {
             Card(
                 modifier = Modifier
-                    .height(180.dp)
+                    .height(LibraryScreenDefaults.LibraryTypePlaceholderHeight)
                     .placeholder(true, highlight = PlaceholderHighlight.shimmer()),
-                colors = CardDefaults.cardColors(containerColor = libraryType.color.copy(alpha = 0.08f)),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(LibraryScreenDefaults.CompactCardPadding),
-                ) {}
-            }
+                colors = CardDefaults.cardColors(
+                    containerColor = libraryType.color.copy(alpha = LibraryScreenDefaults.PlaceholderContainerAlpha),
+                ),
+            ) {}
         }
     }
 }
