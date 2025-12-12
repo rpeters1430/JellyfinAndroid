@@ -5,7 +5,7 @@ pluginManagement {
         id("org.jetbrains.kotlin.plugin.serialization") version "2.2.21"
         id("com.google.devtools.ksp") version "2.3.3" // ← Fixed version
         id("com.google.dagger.hilt.android") version "2.57.2"
-        id("com.android.application") version "8.13.1"
+        id("com.android.application") version "8.13.2"
     }
 
     repositories {
