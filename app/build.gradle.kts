@@ -59,6 +59,10 @@ android {
         compose = true
         buildConfig = true
     }
+
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 dependencies {
@@ -151,6 +155,7 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.androidx.arch.core.testing)
     testImplementation(libs.androidx.test.core)
+    testImplementation(libs.robolectric)
 
     // Hilt testing
     testImplementation("com.google.dagger:hilt-android-testing:${libs.versions.hilt.get()}")

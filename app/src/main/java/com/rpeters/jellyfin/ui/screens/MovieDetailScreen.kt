@@ -419,8 +419,8 @@ private fun ExpressiveMovieHero(
                     Brush.radialGradient(
                         colors = listOf(
                             Color.Transparent,
-                            Color.Black.copy(alpha = 0.2f),
-                            Color.Black.copy(alpha = 0.6f),
+                            MaterialTheme.colorScheme.scrim.copy(alpha = 0.2f),
+                            MaterialTheme.colorScheme.scrim.copy(alpha = 0.6f),
                         ),
                         radius = 800f,
                     ),

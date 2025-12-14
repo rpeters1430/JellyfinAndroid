@@ -23,7 +23,10 @@
       "WebFetch(domain:gist.githubusercontent.com)",
       "WebSearch",
       "Bash(gh pr list:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(./gradlew.bat compileDebugKotlin:*)",
+      "Bash(git fetch:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": [],

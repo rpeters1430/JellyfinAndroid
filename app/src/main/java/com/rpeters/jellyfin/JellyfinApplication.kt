@@ -13,6 +13,7 @@ import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -131,6 +132,9 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
 
     private fun cleanupResources() {
         try {
+            // Cancel application scope to prevent leaks
+            applicationScope.cancel()
+
             if (::offlineDownloadManager.isInitialized) {
                 offlineDownloadManager.cleanup()
             }

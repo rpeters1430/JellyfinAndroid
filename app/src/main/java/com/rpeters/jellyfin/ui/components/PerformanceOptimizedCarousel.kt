@@ -164,7 +164,7 @@ private fun OptimizedCarouselCard(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth(),
-                color = Color.Black.copy(alpha = 0.7f),
+                color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.7f),
                 shape = RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp),
             ) {
                 Column(

@@ -15,6 +15,8 @@ import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.Response
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
+import org.jellyfin.sdk.api.client.extensions.quickConnectApi
+import org.jellyfin.sdk.api.client.extensions.userApi
 import org.jellyfin.sdk.api.operations.QuickConnectApi
 import org.jellyfin.sdk.api.operations.UserApi
 import org.jellyfin.sdk.model.api.AuthenticationResult
@@ -25,11 +27,16 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.time.LocalDateTime
 import java.util.UUID
 import org.jellyfin.sdk.model.api.QuickConnectResult as SdkQuickConnectResult
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33])
 class JellyfinAuthRepositoryTest {
 
     private lateinit var repository: JellyfinAuthRepository
@@ -50,6 +57,10 @@ class JellyfinAuthRepositoryTest {
         userApi = mockk(relaxed = true)
 
         mockkStatic("org.jellyfin.sdk.api.client.extensions.ApiClientExtensionsKt")
+        mockkStatic(android.util.Log::class)
+        every { android.util.Log.d(any<String>(), any<String>()) } returns 0
+        every { android.util.Log.w(any<String>(), any<String>()) } returns 0
+        every { android.util.Log.e(any<String>(), any<String>(), any()) } returns 0
 
         every { jellyfin.createApi(any(), any()) } returns apiClient
         every { apiClient.quickConnectApi } returns quickConnectApi
@@ -123,7 +134,7 @@ class JellyfinAuthRepositoryTest {
     @Test
     fun `authenticateWithQuickConnect seeds server state`() = runTest {
         val authResult = buildAuthResult(accessToken = "token-123", username = "QuickConnectUser")
-        coEvery { userApi.authenticateWithQuickConnect(any<String>()) } returns sdkResponse(authResult)
+        coEvery { userApi.authenticateWithQuickConnect(any<org.jellyfin.sdk.model.api.QuickConnectDto>()) } returns sdkResponse(authResult)
 
         val result = repository.authenticateWithQuickConnect(SERVER_URL, SECRET)
 
@@ -138,7 +149,7 @@ class JellyfinAuthRepositoryTest {
 
     @Test
     fun `authenticateWithQuickConnect propagates unauthorized error`() = runTest {
-        coEvery { userApi.authenticateWithQuickConnect(any<String>()) } throws InvalidStatusException(401)
+        coEvery { userApi.authenticateWithQuickConnect(any<org.jellyfin.sdk.model.api.QuickConnectDto>()) } throws InvalidStatusException(401)
 
         val result = repository.authenticateWithQuickConnect(SERVER_URL, SECRET)
 

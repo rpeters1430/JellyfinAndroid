@@ -161,6 +161,9 @@ The app uses an advanced playback decision engine that automatically determines 
 - **Reusable Components**: `MediaCards.kt`, `LibraryItemCard.kt` for consistent UI
 - **Loading States**: Skeleton screens and progress indicators
 - **Error Handling**: Consistent error display with retry mechanisms
+- **Stable Keys**: Always provide stable keys for LazyList items to prevent recomposition issues
+  - Use `items(list, key = { it.id ?: it.name.hashCode() }) { ... }`
+  - Never use index-based keys or omit keys entirely in lazy lists
 
 ### Material 3 Implementation
 - **Dynamic Colors**: System-aware theming with Jellyfin brand colors
@@ -208,6 +211,14 @@ The app uses an advanced playback decision engine that automatically determines 
 - Use `ImageLoadingOptimizer` for efficient image loading with Coil
 - Cache frequently accessed data using `OptimizedCacheManager`
 
+### Compose Best Practices
+- **Always use stable keys in LazyLists**: Use `items(list, key = { it.id ?: it.name.hashCode() })` to prevent recomposition issues
+- **Avoid capturing unstable state in lambdas**: Ensure lambda parameters are stable or use `remember` appropriately
+- **Use derivedStateOf for computed state**: When state depends on other state values
+- **Implement proper focus handling**: For TV and accessibility support, use `Modifier.focusable()` appropriately
+- **Optimize image loading**: Use `OptimizedImage` with appropriate `ImageSize` and `ImageQuality` enums
+- **Handle accessibility**: Use semantic properties like `mediaCardSemantics()` for screen reader support
+
 ### Testing Strategy
 - Unit tests for repository and business logic using JUnit 4 and MockK
 - Mock external dependencies (network, storage) with MockK framework
@@ -215,7 +226,7 @@ The app uses an advanced playback decision engine that automatically determines 
 - Instrumentation tests for UI components using Espresso
 - Architecture Core Testing for LiveData and coroutines
 - Test files organized by feature in corresponding test directories
-- Use Turbine for testing StateFlow emissions
+- Use Turbine (1.2.1) for testing StateFlow emissions
 - MockWebServer for network layer testing
 - Hilt testing with `@HiltAndroidTest` annotation
 - Test instrumentation arguments: `clearPackageData=true`, `useTestStorageService=true`
@@ -227,16 +238,17 @@ Dependencies are managed using Gradle version catalogs in `gradle/libs.versions.
 ### Core Android
 - Jetpack Compose BOM (2025.12.00)
 - Material 3 (1.5.0-alpha10) with adaptive navigation suite and expressive components
-- AndroidX core libraries and lifecycle components
+- Material 3 Expressive Components (1.5.0-alpha02)
+- AndroidX core libraries (1.17.0) and lifecycle components (2.10.0)
 - Media3 (1.9.0-rc01) for video playback with ExoPlayer and Jellyfin FFmpeg decoder
-- Coil (3.3.0) for image loading
+- Coil (3.3.0) for image loading with OkHttp network integration
 - Paging 3 (3.4.0-alpha04) for paginated content loading
 
 ### Jellyfin Integration
 - Jellyfin SDK (1.8.4) for API communication
-- Retrofit (3.0.0) with Kotlinx Serialization
+- Retrofit (3.0.0) with Kotlinx Serialization (1.9.0)
 - OkHttp (5.3.2) with logging interceptor
-- SLF4J Android (1.7.36) for SDK logging
+- SLF4J Android (1.7.36) for SDK logging (plus slf4j-nop 2.0.17 to silence warnings)
 
 ### Architecture
 - Hilt (2.57.2) for dependency injection
@@ -245,17 +257,32 @@ Dependencies are managed using Gradle version catalogs in `gradle/libs.versions.
 - AndroidX Security (1.1.0) for encrypted credential storage
 - AndroidX Biometric (1.4.0-alpha04) for biometric authentication
 - AndroidX TV Material (1.1.0-alpha01) for Android TV support
+- AndroidX Navigation Compose (2.9.6) for navigation
+- AndroidX Window (1.6.0-alpha01) for window size class support
+
+### Testing & Debug Tools
+- JUnit 4 (4.13.2) for unit tests
+- MockK (1.14.7) for mocking in unit tests
+- Turbine (1.2.1) for testing StateFlow emissions
+- MockWebServer (5.3.2) for network layer testing
+- AndroidX Test Core (1.7.0) and JUnit (1.3.0) for instrumentation tests
+- Espresso Core (3.7.0) for UI testing
+- AndroidX Arch Core Testing (2.2.0) for testing LiveData and coroutines
+- Hilt Android Testing for dependency injection in tests
+- LeakCanary (2.14) for memory leak detection in debug builds
 
 ## Development Notes
 
 ### Build Configuration
 - **Kotlin**: 2.2.21 with Compose compiler plugin
 - **Gradle**: 8.13.1 (AGP) with Kotlin DSL
-- **Java**: Target/Source compatibility Version 17
+- **KSP**: 2.3.3 for annotation processing (used by Hilt)
+- **Java**: Target/Source compatibility Version 17 with core library desugaring (2.1.5)
 - **Android SDK**: Compile 36, Target 35, Min 26 (Android 8.0+) for broader device compatibility
 - **Package**: `com.rpeters.jellyfin` (actual package structure)
 - **Test Runner**: `HiltTestRunner` for instrumentation tests
 - **Application ID**: `com.rpeters.jellyfin`
+- **Desugaring**: Enabled for Java 17 API support on older Android versions
 
 ### Code Style
 - Follow Kotlin coding conventions from CONTRIBUTING.md

@@ -7,9 +7,12 @@ import android.net.NetworkCapabilities
 import com.rpeters.jellyfin.data.DeviceCapabilities
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
+import io.mockk.coEvery
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -25,9 +28,14 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.util.UUID
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33])
 class EnhancedPlaybackManagerTest {
 
     private lateinit var manager: EnhancedPlaybackManager
@@ -53,6 +61,11 @@ class EnhancedPlaybackManagerTest {
         every { context.getSystemService(Context.CONNECTIVITY_SERVICE) } returns connectivityManager
         every { connectivityManager.activeNetwork } returns network
         every { connectivityManager.getNetworkCapabilities(network) } returns networkCapabilities
+        mockkStatic(android.util.Log::class)
+        every { android.util.Log.v(any<String>(), any<String>()) } returns 0
+        every { android.util.Log.d(any<String>(), any<String>()) } returns 0
+        every { android.util.Log.w(any<String>(), any<String>()) } returns 0
+        every { android.util.Log.e(any<String>(), any<String>(), any()) } returns 0
 
         manager = EnhancedPlaybackManager(
             context = context,
@@ -73,16 +86,7 @@ class EnhancedPlaybackManagerTest {
             network,
             networkCapabilities,
         )
-    }
-
-    @Test
-    fun `getOptimalPlaybackUrl returns error when item ID is null`() = runTest {
-        val item = buildBaseItem(id = null)
-
-        val result = manager.getOptimalPlaybackUrl(item)
-
-        assertTrue(result is PlaybackResult.Error)
-        assertEquals("Item ID is null", (result as PlaybackResult.Error).message)
+        unmockkAll()
     }
 
     @Test
@@ -108,7 +112,7 @@ class EnhancedPlaybackManagerTest {
         every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) } returns false
 
         // Mock repository responses
-        every { repository.getPlaybackInfo(itemId.toString()) } returns playbackInfo
+        coEvery { repository.getPlaybackInfo(itemId.toString()) } returns playbackInfo
         every { streamRepository.getDirectStreamUrl(itemId.toString(), "mp4") } returns "https://server/video.mp4"
 
         val result = manager.getOptimalPlaybackUrl(item)
@@ -144,8 +148,18 @@ class EnhancedPlaybackManagerTest {
         every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) } returns false
 
         // Mock repository responses
-        every { repository.getPlaybackInfo(itemId.toString()) } returns playbackInfo
-        every { streamRepository.getTranscodingUrl(any(), any(), any(), any(), any()) } returns "https://server/transcode"
+        coEvery { repository.getPlaybackInfo(itemId.toString()) } returns playbackInfo
+        every {
+            streamRepository.getTranscodedStreamUrl(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+            )
+        } returns "https://server/transcode"
 
         val result = manager.getOptimalPlaybackUrl(item)
 
@@ -178,8 +192,18 @@ class EnhancedPlaybackManagerTest {
         every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) } returns false
 
         // Mock repository responses
-        every { repository.getPlaybackInfo(itemId.toString()) } returns playbackInfo
-        every { streamRepository.getTranscodingUrl(any(), any(), any(), any(), any()) } returns "https://server/transcode"
+        coEvery { repository.getPlaybackInfo(itemId.toString()) } returns playbackInfo
+        every {
+            streamRepository.getTranscodedStreamUrl(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+            )
+        } returns "https://server/transcode"
 
         val result = manager.getOptimalPlaybackUrl(item)
 
@@ -209,7 +233,7 @@ class EnhancedPlaybackManagerTest {
         every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) } returns true
 
         // Mock repository responses
-        every { repository.getPlaybackInfo(itemId.toString()) } returns playbackInfo
+        coEvery { repository.getPlaybackInfo(itemId.toString()) } returns playbackInfo
         every { streamRepository.getDirectStreamUrl(itemId.toString(), "mkv") } returns "https://server/video.mkv"
 
         val result = manager.getOptimalPlaybackUrl(item)
@@ -240,8 +264,18 @@ class EnhancedPlaybackManagerTest {
         every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) } returns false
 
         // Mock repository responses
-        every { repository.getPlaybackInfo(itemId.toString()) } returns playbackInfo
-        every { streamRepository.getTranscodingUrl(any(), any(), any(), any(), any()) } returns "https://server/transcode"
+        coEvery { repository.getPlaybackInfo(itemId.toString()) } returns playbackInfo
+        every {
+            streamRepository.getTranscodedStreamUrl(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+            )
+        } returns "https://server/transcode"
 
         val result = manager.getOptimalPlaybackUrl(item)
 
@@ -253,8 +287,8 @@ class EnhancedPlaybackManagerTest {
         val itemId = UUID.randomUUID()
         val item = buildBaseItem(id = itemId)
 
-        // Mock repository to return null playback info
-        every { repository.getPlaybackInfo(itemId.toString()) } returns null
+        // Mock repository to throw so playback info retrieval fails
+        coEvery { repository.getPlaybackInfo(itemId.toString()) } throws RuntimeException("No playback info")
 
         val result = manager.getOptimalPlaybackUrl(item)
 
@@ -268,7 +302,7 @@ class EnhancedPlaybackManagerTest {
         val item = buildBaseItem(id = itemId)
 
         // Mock repository to throw exception
-        every { repository.getPlaybackInfo(itemId.toString()) } throws RuntimeException("Network failure")
+        coEvery { repository.getPlaybackInfo(itemId.toString()) } throws RuntimeException("Network failure")
 
         val result = manager.getOptimalPlaybackUrl(item)
 
@@ -297,8 +331,18 @@ class EnhancedPlaybackManagerTest {
         every { context.getSystemService(Context.CONNECTIVITY_SERVICE) } returns null
 
         // Mock repository responses
-        every { repository.getPlaybackInfo(itemId.toString()) } returns playbackInfo
-        every { streamRepository.getTranscodingUrl(any(), any(), any(), any(), any()) } returns "https://server/transcode"
+        coEvery { repository.getPlaybackInfo(itemId.toString()) } returns playbackInfo
+        every {
+            streamRepository.getTranscodedStreamUrl(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+            )
+        } returns "https://server/transcode"
 
         val result = manager.getOptimalPlaybackUrl(item)
 
@@ -329,7 +373,7 @@ class EnhancedPlaybackManagerTest {
         every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) } returns true
 
         // Mock repository responses
-        every { repository.getPlaybackInfo(itemId.toString()) } returns playbackInfo
+        coEvery { repository.getPlaybackInfo(itemId.toString()) } returns playbackInfo
         every { streamRepository.getDirectStreamUrl(itemId.toString(), "mkv") } returns "https://server/video.mkv"
 
         manager.getOptimalPlaybackUrl(item)
@@ -343,7 +387,7 @@ class EnhancedPlaybackManagerTest {
     // Helper functions
 
     private fun buildBaseItem(
-        id: UUID? = UUID.randomUUID(),
+        id: UUID = UUID.randomUUID(),
         name: String = "Test Video",
         type: BaseItemKind = BaseItemKind.MOVIE,
     ): BaseItemDto = BaseItemDto(
@@ -359,28 +403,27 @@ class EnhancedPlaybackManagerTest {
         bitrate: Int,
         width: Int = 1920,
         height: Int = 1080,
-    ): MediaSourceInfo = MediaSourceInfo(
-        id = "source-1",
-        container = container,
-        bitrate = bitrate,
-        mediaStreams = listOf(
-            MediaStream(
-                type = MediaStreamType.VIDEO,
-                codec = videoCodec,
-                width = width,
-                height = height,
-                bitRate = bitrate,
-            ),
-            MediaStream(
-                type = MediaStreamType.AUDIO,
-                codec = audioCodec,
-                bitRate = 128000,
-            ),
-        ),
-    )
+    ): MediaSourceInfo = mockk<MediaSourceInfo>(relaxed = true).also { mediaSource ->
+        every { mediaSource.container } returns container
+        every { mediaSource.bitrate } returns bitrate
+        every { mediaSource.mediaStreams } returns listOf(
+            mockk<MediaStream>(relaxed = true).also { stream ->
+                every { stream.type } returns MediaStreamType.VIDEO
+                every { stream.codec } returns videoCodec
+                every { stream.width } returns width
+                every { stream.height } returns height
+                every { stream.bitRate } returns bitrate
+            },
+            mockk<MediaStream>(relaxed = true).also { stream ->
+                every { stream.type } returns MediaStreamType.AUDIO
+                every { stream.codec } returns audioCodec
+                every { stream.bitRate } returns 128000
+            },
+        )
+    }
 
     private fun buildPlaybackInfo(mediaSources: List<MediaSourceInfo>): PlaybackInfoResponse =
-        PlaybackInfoResponse(
-            mediaSources = mediaSources,
-        )
+        mockk<PlaybackInfoResponse>(relaxed = true).also { info ->
+            every { info.mediaSources } returns mediaSources
+        }
 }

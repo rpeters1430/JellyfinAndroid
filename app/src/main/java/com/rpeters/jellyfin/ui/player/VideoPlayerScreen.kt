@@ -319,7 +319,7 @@ fun VideoPlayerScreen(
         ) {
             Card(
                 colors = CardDefaults.cardColors(
-                    containerColor = Color.Black.copy(alpha = 0.7f),
+                    containerColor = MaterialTheme.colorScheme.scrim.copy(alpha = 0.7f),
                 ),
                 shape = CircleShape,
                 modifier = Modifier.size(100.dp),
@@ -363,7 +363,7 @@ fun VideoPlayerScreen(
                     .align(Alignment.TopEnd)
                     .padding(16.dp),
             ) {
-                Surface(color = Color.Black.copy(alpha = 0.6f), shape = CircleShape) {
+                Surface(color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.6f), shape = CircleShape) {
                     Text(
                         text = "Skip Intro",
                         color = Color.White,
@@ -383,7 +383,7 @@ fun VideoPlayerScreen(
                     .align(Alignment.TopEnd)
                     .padding(top = 64.dp, end = 16.dp),
             ) {
-                Surface(color = Color.Black.copy(alpha = 0.6f), shape = CircleShape) {
+                Surface(color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.6f), shape = CircleShape) {
                     Text(
                         text = "Skip Credits",
                         color = Color.White,
@@ -627,10 +627,10 @@ private fun VideoControlsOverlay(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color.Black.copy(alpha = 0.7f),
+                        MaterialTheme.colorScheme.scrim.copy(alpha = 0.7f),
                         Color.Transparent,
                         Color.Transparent,
-                        Color.Black.copy(alpha = 0.8f),
+                        MaterialTheme.colorScheme.scrim.copy(alpha = 0.8f),
                     ),
                     startY = 0f,
                     endY = Float.POSITIVE_INFINITY,

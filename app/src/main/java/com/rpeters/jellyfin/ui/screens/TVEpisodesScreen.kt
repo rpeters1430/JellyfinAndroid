@@ -223,14 +223,14 @@ fun TVEpisodesScreen(
     }
 
     // Show media actions sheet when item is long-pressed
-    if (showManageSheet && selectedItem != null) {
-        val item = selectedItem!!
-        val itemName = item.name ?: stringResource(id = R.string.unknown)
-        val deleteSuccessMessage = stringResource(id = R.string.library_actions_delete_success, itemName)
-        val deleteFailureTemplate = stringResource(id = R.string.library_actions_delete_failure, itemName, "%s")
-        val refreshRequestedMessage = stringResource(id = R.string.library_actions_refresh_requested)
+    selectedItem?.let { item ->
+        if (showManageSheet) {
+            val itemName = item.name ?: stringResource(id = R.string.unknown)
+            val deleteSuccessMessage = stringResource(id = R.string.library_actions_delete_success, itemName)
+            val deleteFailureTemplate = stringResource(id = R.string.library_actions_delete_failure, itemName, "%s")
+            val refreshRequestedMessage = stringResource(id = R.string.library_actions_refresh_requested)
 
-        MediaItemActionsSheet(
+            MediaItemActionsSheet(
             item = item,
             sheetState = sheetState,
             onDismiss = {
@@ -272,6 +272,7 @@ fun TVEpisodesScreen(
             },
             managementEnabled = managementEnabled,
         )
+        }
     }
 }
 

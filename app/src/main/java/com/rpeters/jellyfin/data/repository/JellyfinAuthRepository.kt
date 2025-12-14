@@ -13,6 +13,7 @@ import com.rpeters.jellyfin.utils.normalizeServerUrl
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.jellyfin.sdk.Jellyfin
@@ -60,7 +61,7 @@ class JellyfinAuthRepository @Inject constructor(
     private fun saveNewToken(token: String?) {
         val tokenTail = token?.takeLast(6) ?: "null"
         Log.d(TAG, "Saving new token: ...$tokenTail")
-        _tokenState.value = token
+        _tokenState.update { token }
         // Server state is also updated in authenticateUser method
     }
 
@@ -91,7 +92,7 @@ class JellyfinAuthRepository @Inject constructor(
         username: String,
         password: String,
     ): ApiResult<AuthenticationResult> {
-        _isAuthenticating.value = true
+        _isAuthenticating.update { true }
         try {
             Log.d(TAG, "authenticateUser: Attempting authentication for user '$username'")
             val normalizedServerUrl = normalizeServerUrl(serverUrl)
@@ -121,7 +122,7 @@ class JellyfinAuthRepository @Inject constructor(
             val errorType = RepositoryUtils.getErrorType(e)
             return ApiResult.Error("Authentication failed: ${e.message}", e, errorType)
         } finally {
-            _isAuthenticating.value = false
+            _isAuthenticating.update { false }
         }
     }
 
@@ -191,8 +192,8 @@ class JellyfinAuthRepository @Inject constructor(
 
     @VisibleForTesting
     fun seedCurrentServer(server: JellyfinServer?) {
-        _currentServer.value = server
-        _isConnected.value = server?.isConnected == true
+        _currentServer.update { server }
+        _isConnected.update { server?.isConnected == true }
     }
 
     suspend fun logout() {
@@ -209,8 +210,8 @@ class JellyfinAuthRepository @Inject constructor(
 
             // Clear token state
             saveNewToken(null)
-            _currentServer.value = null
-            _isConnected.value = false
+            _currentServer.update { null }
+            _isConnected.update { false }
             Log.d(TAG, "logout: User logged out successfully")
         }
     }
@@ -242,8 +243,8 @@ class JellyfinAuthRepository @Inject constructor(
             normalizedUrl = normalizedServerUrl,
         )
 
-        _currentServer.value = server
-        _isConnected.value = true
+        _currentServer.update { server }
+        _isConnected.update { true }
         saveNewToken(authResult.accessToken)
 
         if (!password.isNullOrEmpty() && !resolvedUsername.isNullOrEmpty()) {
@@ -300,7 +301,7 @@ class JellyfinAuthRepository @Inject constructor(
         secret: String,
     ): ApiResult<AuthenticationResult> {
         return authMutex.withLock {
-            _isAuthenticating.value = true
+            _isAuthenticating.update { true }
             try {
                 val client = createApiClient(serverUrl)
                 val response = client.userApi.authenticateWithQuickConnect(
@@ -319,7 +320,7 @@ class JellyfinAuthRepository @Inject constructor(
                 val errorType = RepositoryUtils.getErrorType(e)
                 ApiResult.Error("Authentication failed: ${e.message}", e, errorType)
             } finally {
-                _isAuthenticating.value = false
+                _isAuthenticating.update { false }
             }
         }
     }

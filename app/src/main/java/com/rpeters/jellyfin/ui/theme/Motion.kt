@@ -3,6 +3,8 @@ package com.rpeters.jellyfin.ui.theme
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 
 /**
  * Material 3 Expressive Motion tokens for consistent animations across the app
@@ -70,6 +72,22 @@ object MotionTokens {
     val expressiveExit = tween<Float>(
         durationMillis = DurationMedium1,
         easing = ExpressiveEasing,
+    )
+
+    // Typed variants for non-Float animations (e.g., Dp offsets, color fades)
+    val emphasizedEnterDp = tween<Dp>(
+        durationMillis = DurationMedium2,
+        easing = EmphasizedEasing,
+    )
+
+    val expressiveEnterColor = tween<Color>(
+        durationMillis = DurationMedium3,
+        easing = ExpressiveEasing,
+    )
+
+    val standardExitInt = tween<Int>(
+        durationMillis = DurationShort2,
+        easing = StandardEasing,
     )
 
     // Media-specific motion patterns

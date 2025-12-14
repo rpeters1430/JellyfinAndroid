@@ -1,3 +1,5 @@
+@file:OptInAppExperimentalApis
+
 package com.rpeters.jellyfin.ui.player
 
 import androidx.compose.animation.AnimatedVisibility
@@ -32,6 +34,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -59,6 +62,7 @@ import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Icon
 import com.rpeters.jellyfin.ui.tv.tvKeyboardHandler
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import kotlinx.coroutines.delay
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text as TvText
@@ -68,7 +72,6 @@ import androidx.tv.material3.Text as TvText
  * Designed for 10-foot viewing distance with large, readable text and proper focus indicators
  */
 @UnstableApi
-@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun TvVideoPlayerControls(
     playerState: VideoPlayerState,
@@ -116,10 +119,10 @@ fun TvVideoPlayerControls(
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
-                            Color.Black.copy(alpha = 0.7f),
+                            MaterialTheme.colorScheme.scrim.copy(alpha = 0.7f),
                             Color.Transparent,
                             Color.Transparent,
-                            Color.Black.copy(alpha = 0.9f),
+                            MaterialTheme.colorScheme.scrim.copy(alpha = 0.9f),
                         ),
                     ),
                 )
@@ -165,7 +168,6 @@ fun TvVideoPlayerControls(
     }
 }
 
-@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 private fun TvTopBar(
     itemName: String,
@@ -188,7 +190,6 @@ private fun TvTopBar(
     }
 }
 
-@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 private fun TvCenterControls(
     isPlaying: Boolean,
@@ -206,7 +207,6 @@ private fun TvCenterControls(
 }
 
 @UnstableApi
-@OptIn(ExperimentalTvMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
 private fun TvBottomControls(
     playerState: VideoPlayerState,
@@ -346,7 +346,6 @@ private fun TvBottomControls(
 }
 
 @UnstableApi
-@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 private fun TvProgressSection(
     playerState: VideoPlayerState,
@@ -409,7 +408,6 @@ private fun TvProgressSection(
     }
 }
 
-@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 private fun TvControlButton(
     icon: ImageVector,
@@ -459,7 +457,6 @@ private fun TvControlButton(
     }
 }
 
-@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 private fun TvPlayPauseButton(
     isPlaying: Boolean,
@@ -512,7 +509,6 @@ private fun TvPlayPauseButton(
  * TV-optimized settings dialog with D-pad navigation
  */
 @UnstableApi
-@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun TvPlayerSettingsDialog(
     playerState: VideoPlayerState,
@@ -534,7 +530,7 @@ fun TvPlayerSettingsDialog(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.85f))
+            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.85f))
             .tvKeyboardHandler(onBack = onDismiss),
         contentAlignment = Alignment.Center,
     ) {
@@ -636,7 +632,6 @@ fun TvPlayerSettingsDialog(
     }
 }
 
-@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 private fun TvSettingsSection(
     title: String,
