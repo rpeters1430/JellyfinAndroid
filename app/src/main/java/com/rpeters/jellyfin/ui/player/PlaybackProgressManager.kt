@@ -84,13 +84,15 @@ class PlaybackProgressManager @Inject constructor(
         val percentageWatched = (positionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
         val isWatched = percentageWatched >= WATCHED_THRESHOLD
 
-        _playbackProgress.update { it.copy(
-            itemId = currentItemId,
-            positionMs = positionMs,
-            durationMs = durationMs,
-            percentageWatched = percentageWatched,
-            isWatched = isWatched,
-        ) }
+        _playbackProgress.update {
+            it.copy(
+                itemId = currentItemId,
+                positionMs = positionMs,
+                durationMs = durationMs,
+                percentageWatched = percentageWatched,
+                isWatched = isWatched,
+            )
+        }
 
         if (!hasReportedStart) {
             hasReportedStart = true
@@ -251,9 +253,11 @@ class PlaybackProgressManager @Inject constructor(
                 )
             ) {
                 is ApiResult.Success -> {
-                    _playbackProgress.update { it.copy(
-                        lastSyncTime = System.currentTimeMillis(),
-                    ) }
+                    _playbackProgress.update {
+                        it.copy(
+                            lastSyncTime = System.currentTimeMillis(),
+                        )
+                    }
                     if (BuildConfig.DEBUG) {
                         Log.d(
                             "PlaybackProgressManager",
@@ -340,13 +344,15 @@ class PlaybackProgressManager @Inject constructor(
                     val resumeMs = data.playbackPositionTicks / 10_000L
                     val percentage = ((data.playedPercentage ?: 0.0) / 100.0).toFloat()
                     lastReportedPosition = resumeMs
-                    _playbackProgress.update { it.copy(
-                        itemId = itemId,
-                        positionMs = resumeMs,
-                        percentageWatched = percentage.coerceIn(0f, 1f),
-                        isWatched = data.played,
-                        lastSyncTime = System.currentTimeMillis(),
-                    ) }
+                    _playbackProgress.update {
+                        it.copy(
+                            itemId = itemId,
+                            positionMs = resumeMs,
+                            percentageWatched = percentage.coerceIn(0f, 1f),
+                            isWatched = data.played,
+                            lastSyncTime = System.currentTimeMillis(),
+                        )
+                    }
                     resumeMs
                 }
                 is ApiResult.Error -> {

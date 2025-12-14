@@ -40,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.ShimmerBox
 import com.rpeters.jellyfin.ui.accessibility.mediaCardSemantics
 import com.rpeters.jellyfin.ui.image.ImageQuality
@@ -49,7 +50,6 @@ import com.rpeters.jellyfin.ui.theme.RatingBronze
 import com.rpeters.jellyfin.ui.theme.RatingGold
 import com.rpeters.jellyfin.ui.theme.RatingSilver
 import com.rpeters.jellyfin.ui.theme.getContentTypeColor
-import com.rpeters.jellyfin.OptInAppExperimentalApis
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 

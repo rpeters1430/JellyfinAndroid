@@ -1,6 +1,5 @@
 package com.rpeters.jellyfin.ui.navigation
 
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext

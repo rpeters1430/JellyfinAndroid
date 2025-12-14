@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.viewmodel
 
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.UnstableApi
@@ -16,7 +17,6 @@ import com.rpeters.jellyfin.ui.screens.LibraryType
 import com.rpeters.jellyfin.utils.SecureLogger
 import com.rpeters.jellyfin.utils.isWatched
 import dagger.hilt.android.lifecycle.HiltViewModel
-import androidx.annotation.VisibleForTesting
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -651,7 +651,7 @@ class MainAppViewModel @Inject constructor(
                     updatedPagination[libraryId] = LibraryPaginationState(
                         loadedCount = items.size,
                         hasMore = hasMore,
-                        isLoadingMore = false
+                        isLoadingMore = false,
                     )
 
                     _appState.value = _appState.value.copy(
@@ -1011,15 +1011,17 @@ class MainAppViewModel @Inject constructor(
             updatedPagination[libraryId] = paginationState?.copy(isLoadingMore = true) ?: LibraryPaginationState(isLoadingMore = true)
             _appState.value = _appState.value.copy(
                 libraryPaginationState = updatedPagination,
-                isLoadingMore = true
+                isLoadingMore = true,
             )
 
             // Load next batch
-            when (val result = mediaRepository.getLibraryItems(
-                parentId = libraryId,
-                startIndex = startIndex,
-                limit = 100
-            )) {
+            when (
+                val result = mediaRepository.getLibraryItems(
+                    parentId = libraryId,
+                    startIndex = startIndex,
+                    limit = 100,
+                )
+            ) {
                 is ApiResult.Success -> {
                     val newItems = result.data
                     val hasMore = newItems.size >= 100
@@ -1033,14 +1035,14 @@ class MainAppViewModel @Inject constructor(
                     finalPagination[libraryId] = LibraryPaginationState(
                         loadedCount = currentItems.size + newItems.size,
                         hasMore = hasMore,
-                        isLoadingMore = false
+                        isLoadingMore = false,
                     )
 
                     _appState.value = _appState.value.copy(
                         itemsByLibrary = updated,
                         libraryPaginationState = finalPagination,
                         isLoadingMore = false,
-                        hasMoreItems = hasMore
+                        hasMoreItems = hasMore,
                     )
                 }
                 is ApiResult.Error -> {
@@ -1050,7 +1052,7 @@ class MainAppViewModel @Inject constructor(
                     _appState.value = _appState.value.copy(
                         libraryPaginationState = finalPagination,
                         isLoadingMore = false,
-                        errorMessage = "Failed to load more items: ${result.message}"
+                        errorMessage = "Failed to load more items: ${result.message}",
                     )
                 }
                 is ApiResult.Loading -> {}

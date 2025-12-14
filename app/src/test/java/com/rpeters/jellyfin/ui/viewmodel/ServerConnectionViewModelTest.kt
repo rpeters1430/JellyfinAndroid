@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.ui.viewmodel
 
 import android.content.Context
+import androidx.datastore.preferences.core.edit
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewModelScope
 import androidx.test.core.app.ApplicationProvider
@@ -11,7 +12,6 @@ import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.BIOMETRIC_AUTH_ENABLED
 import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.REMEMBER_LOGIN
 import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.SERVER_URL
 import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.USERNAME
-import com.rpeters.jellyfin.ui.viewmodel.dataStore
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -30,7 +30,6 @@ import org.jellyfin.sdk.model.api.PublicSystemInfo
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import androidx.datastore.preferences.core.edit
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ServerConnectionViewModelTest {

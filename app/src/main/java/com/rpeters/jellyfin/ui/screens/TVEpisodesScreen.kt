@@ -231,47 +231,47 @@ fun TVEpisodesScreen(
             val refreshRequestedMessage = stringResource(id = R.string.library_actions_refresh_requested)
 
             MediaItemActionsSheet(
-            item = item,
-            sheetState = sheetState,
-            onDismiss = {
-                showManageSheet = false
-                selectedItem = null
-            },
-            onPlay = {
-                // TODO: Implement play functionality
-                coroutineScope.launch {
-                    snackbarHostState.showSnackbar("Play functionality coming soon")
-                }
-            },
-            onDelete = { _, _ ->
-                mainAppViewModel.deleteItem(item) { success, message ->
+                item = item,
+                sheetState = sheetState,
+                onDismiss = {
+                    showManageSheet = false
+                    selectedItem = null
+                },
+                onPlay = {
+                    // TODO: Implement play functionality
                     coroutineScope.launch {
-                        val text = if (success) {
-                            deleteSuccessMessage
-                        } else {
-                            String.format(deleteFailureTemplate, message ?: "")
-                        }
-                        snackbarHostState.showSnackbar(text)
+                        snackbarHostState.showSnackbar("Play functionality coming soon")
                     }
-                }
-            },
-            onRefreshMetadata = { _, _ ->
-                mainAppViewModel.refreshItemMetadata(item) { success, message ->
-                    coroutineScope.launch {
-                        val text = if (success) {
-                            refreshRequestedMessage
-                        } else {
-                            "Failed to refresh metadata: ${message ?: "Unknown error"}"
+                },
+                onDelete = { _, _ ->
+                    mainAppViewModel.deleteItem(item) { success, message ->
+                        coroutineScope.launch {
+                            val text = if (success) {
+                                deleteSuccessMessage
+                            } else {
+                                String.format(deleteFailureTemplate, message ?: "")
+                            }
+                            snackbarHostState.showSnackbar(text)
                         }
-                        snackbarHostState.showSnackbar(text)
                     }
-                }
-            },
-            onToggleWatched = {
-                mainAppViewModel.toggleWatchedStatus(item)
-            },
-            managementEnabled = managementEnabled,
-        )
+                },
+                onRefreshMetadata = { _, _ ->
+                    mainAppViewModel.refreshItemMetadata(item) { success, message ->
+                        coroutineScope.launch {
+                            val text = if (success) {
+                                refreshRequestedMessage
+                            } else {
+                                "Failed to refresh metadata: ${message ?: "Unknown error"}"
+                            }
+                            snackbarHostState.showSnackbar(text)
+                        }
+                    }
+                },
+                onToggleWatched = {
+                    mainAppViewModel.toggleWatchedStatus(item)
+                },
+                managementEnabled = managementEnabled,
+            )
         }
     }
 }
