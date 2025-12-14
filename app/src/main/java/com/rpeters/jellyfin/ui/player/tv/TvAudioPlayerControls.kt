@@ -1,3 +1,5 @@
+@file:OptInAppExperimentalApis
+
 package com.rpeters.jellyfin.ui.player.tv
 
 import androidx.compose.foundation.background
@@ -51,16 +53,15 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Icon
 import androidx.tv.material3.Text
 import com.rpeters.jellyfin.ui.tv.requestInitialFocus
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 
 /**
  * TV-optimized audio player controls with D-pad navigation
  * All controls are accessible via D-pad and have clear focus indicators
  */
-@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun TvAudioPlayerControls(
     isPlaying: Boolean,
@@ -265,7 +266,6 @@ fun TvAudioPlayerControls(
 /**
  * Reusable TV audio control button with focus support
  */
-@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 private fun TvAudioControlButton(
     icon: ImageVector,

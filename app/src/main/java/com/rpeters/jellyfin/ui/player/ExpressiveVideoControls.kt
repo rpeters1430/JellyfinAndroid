@@ -93,10 +93,10 @@ fun ExpressiveVideoControls(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.Black.copy(alpha = 0.7f),
+                                MaterialTheme.colorScheme.scrim.copy(alpha = 0.7f),
                                 Color.Transparent,
                                 Color.Transparent,
-                                Color.Black.copy(alpha = 0.8f),
+                                MaterialTheme.colorScheme.scrim.copy(alpha = 0.8f),
                             ),
                             startY = 0f,
                             endY = Float.POSITIVE_INFINITY,

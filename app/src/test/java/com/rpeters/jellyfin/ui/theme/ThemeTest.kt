@@ -245,7 +245,7 @@ class ThemeTest {
         val originalOnPrimaryContainer = baseScheme.onPrimaryContainer
 
         // When
-        val adjustedScheme = applyContrastLevelReflection(
+        val adjustedScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.HIGH,
             isDark = true,

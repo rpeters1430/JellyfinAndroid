@@ -13,6 +13,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -62,7 +63,7 @@ class PlaybackProgressManager @Inject constructor(
         this.hasReportedStart = false
         this.lastReportedPosition = 0L
 
-        _playbackProgress.value = PlaybackProgress(itemId = itemId)
+        _playbackProgress.update { PlaybackProgress(itemId = itemId) }
 
         // Load existing progress from server
         scope.launch {
@@ -83,13 +84,13 @@ class PlaybackProgressManager @Inject constructor(
         val percentageWatched = (positionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
         val isWatched = percentageWatched >= WATCHED_THRESHOLD
 
-        _playbackProgress.value = _playbackProgress.value.copy(
+        _playbackProgress.update { it.copy(
             itemId = currentItemId,
             positionMs = positionMs,
             durationMs = durationMs,
             percentageWatched = percentageWatched,
             isWatched = isWatched,
-        )
+        ) }
 
         if (!hasReportedStart) {
             hasReportedStart = true
@@ -119,7 +120,7 @@ class PlaybackProgressManager @Inject constructor(
         try {
             when (val result = userRepository.markAsWatched(currentItemId)) {
                 is ApiResult.Success -> {
-                    _playbackProgress.value = _playbackProgress.value.copy(isWatched = true)
+                    _playbackProgress.update { it.copy(isWatched = true) }
                     if (BuildConfig.DEBUG) {
                         Log.d("PlaybackProgressManager", "Marked item as watched: $currentItemId")
                     }
@@ -143,7 +144,7 @@ class PlaybackProgressManager @Inject constructor(
         try {
             when (val result = userRepository.markAsUnwatched(currentItemId)) {
                 is ApiResult.Success -> {
-                    _playbackProgress.value = _playbackProgress.value.copy(isWatched = false)
+                    _playbackProgress.update { it.copy(isWatched = false) }
                     if (BuildConfig.DEBUG) {
                         Log.d("PlaybackProgressManager", "Marked item as unwatched: $currentItemId")
                     }
@@ -174,7 +175,7 @@ class PlaybackProgressManager @Inject constructor(
         lastReportedPosition = 0L
         sessionId = ""
         hasReportedStart = false
-        _playbackProgress.value = PlaybackProgress()
+        _playbackProgress.update { PlaybackProgress() }
         if (BuildConfig.DEBUG) {
             Log.d("PlaybackProgressManager", "Stopped tracking")
         }
@@ -208,7 +209,7 @@ class PlaybackProgressManager @Inject constructor(
             lastReportedPosition = 0L
             sessionId = ""
             hasReportedStart = false
-            _playbackProgress.value = PlaybackProgress()
+            _playbackProgress.update { PlaybackProgress() }
         }
     }
 
@@ -250,9 +251,9 @@ class PlaybackProgressManager @Inject constructor(
                 )
             ) {
                 is ApiResult.Success -> {
-                    _playbackProgress.value = _playbackProgress.value.copy(
+                    _playbackProgress.update { it.copy(
                         lastSyncTime = System.currentTimeMillis(),
-                    )
+                    ) }
                     if (BuildConfig.DEBUG) {
                         Log.d(
                             "PlaybackProgressManager",
@@ -339,13 +340,13 @@ class PlaybackProgressManager @Inject constructor(
                     val resumeMs = data.playbackPositionTicks / 10_000L
                     val percentage = ((data.playedPercentage ?: 0.0) / 100.0).toFloat()
                     lastReportedPosition = resumeMs
-                    _playbackProgress.value = _playbackProgress.value.copy(
+                    _playbackProgress.update { it.copy(
                         itemId = itemId,
                         positionMs = resumeMs,
                         percentageWatched = percentage.coerceIn(0f, 1f),
                         isWatched = data.played,
                         lastSyncTime = System.currentTimeMillis(),
-                    )
+                    ) }
                     resumeMs
                 }
                 is ApiResult.Error -> {

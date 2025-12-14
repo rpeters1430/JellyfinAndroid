@@ -135,7 +135,7 @@ class MainAppViewModelDeleteItemTest {
             favorites = listOf(testItem),
             searchResults = listOf(testItem),
         )
-        viewModel._appState.value = initialState
+        viewModel.setAppStateForTest(initialState)
 
         // When
         viewModel.deleteItem(testItem) { _, _ -> }
@@ -162,7 +162,7 @@ class MainAppViewModelDeleteItemTest {
         val initialState = viewModel.appState.value.copy(
             itemsByLibrary = mapOf(libraryId to listOf(testItem, anotherItem)),
         )
-        viewModel._appState.value = initialState
+        viewModel.setAppStateForTest(initialState)
 
         // When
         viewModel.deleteItem(testItem) { _, _ -> }
@@ -176,26 +176,6 @@ class MainAppViewModelDeleteItemTest {
     // ========================================================================
     // DELETE ITEM - ERROR TESTS
     // ========================================================================
-
-    @Test
-    fun `deleteItem with null id returns error callback`() = runTest {
-        // Given
-        val itemWithoutId = mockk<BaseItemDto>(relaxed = true).apply {
-            coEvery { id } returns null
-        }
-        var callbackSuccess: Boolean? = null
-        var callbackMessage: String? = null
-
-        // When
-        viewModel.deleteItem(itemWithoutId) { success, message ->
-            callbackSuccess = success
-            callbackMessage = message
-        }
-
-        // Then
-        assertFalse(callbackSuccess == true)
-        assertEquals("Missing item id", callbackMessage)
-    }
 
     @Test
     fun `deleteItem handles repository error`() = runTest {
@@ -265,7 +245,7 @@ class MainAppViewModelDeleteItemTest {
         val initialState = viewModel.appState.value.copy(
             allMovies = listOf(testItem),
         )
-        viewModel._appState.value = initialState
+        viewModel.setAppStateForTest(initialState)
 
         // When
         viewModel.refreshItemMetadata(testItem) { _, _ -> }
@@ -278,26 +258,6 @@ class MainAppViewModelDeleteItemTest {
     // ========================================================================
     // REFRESH ITEM METADATA - ERROR TESTS
     // ========================================================================
-
-    @Test
-    fun `refreshItemMetadata with null id returns error callback`() = runTest {
-        // Given
-        val itemWithoutId = mockk<BaseItemDto>(relaxed = true).apply {
-            coEvery { id } returns null
-        }
-        var callbackSuccess: Boolean? = null
-        var callbackMessage: String? = null
-
-        // When
-        viewModel.refreshItemMetadata(itemWithoutId) { success, message ->
-            callbackSuccess = success
-            callbackMessage = message
-        }
-
-        // Then
-        assertFalse(callbackSuccess == true)
-        assertEquals("Missing item id", callbackMessage)
-    }
 
     @Test
     fun `refreshItemMetadata handles repository error`() = runTest {

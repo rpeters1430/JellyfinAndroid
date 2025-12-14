@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import kotlin.system.measureTimeMillis
 
 /**
@@ -112,7 +113,9 @@ object PerformanceMonitor {
         System.gc()
 
         // Small delay to allow GC to complete
-        Thread.sleep(100)
+        runBlocking {
+            delay(100)
+        }
 
         val afterMemory = getMemoryInfo()
         val freedMB = beforeMemory.usedMemoryMB - afterMemory.usedMemoryMB

@@ -1,3 +1,5 @@
+@file:OptInAppExperimentalApis
+
 package com.rpeters.jellyfin.ui.components
 
 import androidx.compose.animation.animateContentSize
@@ -30,9 +32,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,20 +41,25 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
+import com.rpeters.jellyfin.ui.image.ImageSize
+import com.rpeters.jellyfin.ui.image.OptimizedImage
 import com.rpeters.jellyfin.ui.theme.MotionTokens
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 
 /**
  * Material 3 Expressive Carousel for hero content
  * Perfect for featuring movies, shows, and other media
  */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ExpressiveHeroCarousel(
     items: List<CarouselItem>,
     onItemClick: (CarouselItem) -> Unit,
     onPlayClick: (CarouselItem) -> Unit,
+    heroHeight: Dp = 280.dp,
+    horizontalPadding: Dp = 16.dp,
+    pageSpacing: Dp = 8.dp,
     modifier: Modifier = Modifier,
 ) {
     val pagerState = rememberPagerState(pageCount = { items.size })
@@ -67,9 +71,9 @@ fun ExpressiveHeroCarousel(
         Box {
             HorizontalPager(
                 state = pagerState,
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                pageSpacing = 8.dp,
-                modifier = Modifier.height(280.dp),
+                contentPadding = PaddingValues(horizontal = horizontalPadding),
+                pageSpacing = pageSpacing,
+                modifier = Modifier.height(heroHeight),
                 // Add key to prevent incorrect recomposition and state reuse
                 key = { page -> items[page].id },
             ) { page ->
@@ -140,7 +144,7 @@ private fun ExpressiveHeroCard(
     isActive: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val scale by animateFloatAsState(
+    val scale = animateFloatAsState(
         targetValue = if (isActive) 1.0f else 0.95f,
         animationSpec = MotionTokens.carouselScroll,
         label = "hero_card_scale",
@@ -149,7 +153,7 @@ private fun ExpressiveHeroCard(
     Card(
         modifier = modifier
             .fillMaxSize()
-            .scale(scale)
+            .scale(scale.value)
             .animateContentSize(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
@@ -165,10 +169,12 @@ private fun ExpressiveHeroCard(
                 .clickable { onItemClick() },
         ) {
             // Background Image
-            AsyncImage(
-                model = item.imageUrl,
+            OptimizedImage(
+                imageUrl = item.imageUrl,
                 contentDescription = item.title,
                 contentScale = ContentScale.Crop,
+                size = ImageSize.BANNER,
+                cornerRadius = 16.dp,
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(RoundedCornerShape(16.dp)),
@@ -182,7 +188,7 @@ private fun ExpressiveHeroCard(
                         Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                Color.Black.copy(alpha = 0.7f),
+                                MaterialTheme.colorScheme.scrim.copy(alpha = 0.7f),
                             ),
                             startY = 200f,
                         ),
@@ -213,12 +219,6 @@ private fun ExpressiveHeroCard(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = 4.dp),
                     )
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(top = 12.dp),
-                ) {
                 }
             }
         }
@@ -252,10 +252,12 @@ private fun ExpressiveMediaCard(
                     .fillMaxWidth()
                     .weight(1f), // Use weight instead of fixed height
             ) {
-                AsyncImage(
-                    model = item.imageUrl,
+                OptimizedImage(
+                    imageUrl = item.imageUrl,
                     contentDescription = item.title,
                     contentScale = ContentScale.Crop,
+                    size = ImageSize.POSTER,
+                    cornerRadius = 12.dp,
                     modifier = Modifier
                         .fillMaxSize()
                         .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
@@ -292,15 +294,12 @@ private fun ExpressiveMediaCard(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ExpressiveCarouselIndicators(
     pagerState: PagerState,
     modifier: Modifier = Modifier,
 ) {
-    val currentPage by remember {
-        derivedStateOf { pagerState.currentPage }
-    }
+    val currentPage = pagerState.currentPage
 
     Row(
         modifier = modifier,

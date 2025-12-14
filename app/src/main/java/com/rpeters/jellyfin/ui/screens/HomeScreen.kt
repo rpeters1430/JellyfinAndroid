@@ -44,6 +44,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -52,9 +53,11 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -167,14 +170,14 @@ fun HomeScreen(
     }
 
     // Show media actions sheet when item is long-pressed
-    if (showManageSheet && selectedItem != null) {
-        val item = selectedItem!!
-        val itemName = item.name ?: stringResource(id = R.string.unknown)
-        val deleteSuccessMessage = stringResource(id = R.string.library_actions_delete_success, itemName)
-        val deleteFailureTemplate = stringResource(id = R.string.library_actions_delete_failure, itemName, "%s")
-        val refreshRequestedMessage = stringResource(id = R.string.library_actions_refresh_requested)
+    selectedItem?.let { item ->
+        if (showManageSheet) {
+            val itemName = item.name ?: stringResource(id = R.string.unknown)
+            val deleteSuccessMessage = stringResource(id = R.string.library_actions_delete_success, itemName)
+            val deleteFailureTemplate = stringResource(id = R.string.library_actions_delete_failure, itemName, "%s")
+            val refreshRequestedMessage = stringResource(id = R.string.library_actions_refresh_requested)
 
-        MediaItemActionsSheet(
+            MediaItemActionsSheet(
             item = item,
             sheetState = sheetState,
             onDismiss = {
@@ -216,6 +219,7 @@ fun HomeScreen(
             },
             managementEnabled = managementEnabled,
         )
+        }
     }
 }
 
@@ -324,6 +328,8 @@ fun HomeContent(
     onLibraryClick: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    val layoutConfig = rememberHomeLayoutConfig()
+
     // ✅ DEBUG: Log received state for UI troubleshooting
     LaunchedEffect(appState.libraries.size, appState.recentlyAddedByTypes.size) {
         if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
@@ -340,27 +346,51 @@ fun HomeContent(
         }
     }
     // Precompute derived data to minimize recompositions during scroll
-    val continueWatchingItems by remember(appState.allItems) {
-        mutableStateOf(
-            getContinueWatchingItems(appState),
-        )
+    val continueWatchingItems by remember(
+        appState.allItems,
+        layoutConfig.continueWatchingLimit,
+    ) {
+        derivedStateOf {
+            getContinueWatchingItems(appState, layoutConfig.continueWatchingLimit)
+        }
     }
     val surfaceCoordinatorViewModel: SurfaceCoordinatorViewModel = hiltViewModel()
-    val recentMovies = remember(appState.recentlyAddedByTypes) {
-        appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name]?.take(8) ?: emptyList()
+    val recentMovies by remember(appState.recentlyAddedByTypes, layoutConfig.rowItemLimit) {
+        derivedStateOf {
+            appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name]
+                ?.take(layoutConfig.rowItemLimit) ?: emptyList()
+        }
     }
-    val recentTVShows = remember(appState.recentlyAddedByTypes) {
-        appState.recentlyAddedByTypes[BaseItemKind.SERIES.name]?.take(8) ?: emptyList()
+    val recentTVShows by remember(appState.recentlyAddedByTypes, layoutConfig.rowItemLimit) {
+        derivedStateOf {
+            appState.recentlyAddedByTypes[BaseItemKind.SERIES.name]
+                ?.take(layoutConfig.rowItemLimit) ?: emptyList()
+        }
     }
     val featuredItems by remember(
         recentMovies,
         recentTVShows,
-    ) { mutableStateOf((recentMovies + recentTVShows).take(10)) }
-    val recentEpisodes = remember(appState.recentlyAddedByTypes) {
-        appState.recentlyAddedByTypes[BaseItemKind.EPISODE.name]?.take(15) ?: emptyList()
+        layoutConfig.featuredItemsLimit,
+    ) {
+        derivedStateOf { (recentMovies + recentTVShows).take(layoutConfig.featuredItemsLimit) }
     }
-    val recentMusic = remember(appState.recentlyAddedByTypes) {
-        appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name]?.take(15) ?: emptyList()
+    val recentEpisodes by remember(appState.recentlyAddedByTypes, layoutConfig.rowItemLimit) {
+        derivedStateOf {
+            appState.recentlyAddedByTypes[BaseItemKind.EPISODE.name]
+                ?.take(layoutConfig.rowItemLimit) ?: emptyList()
+        }
+    }
+    val recentMusic by remember(appState.recentlyAddedByTypes, layoutConfig.rowItemLimit) {
+        derivedStateOf {
+            appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name]
+                ?.take(layoutConfig.rowItemLimit) ?: emptyList()
+        }
+    }
+    val recentVideos by remember(appState.recentlyAddedByTypes, layoutConfig.rowItemLimit) {
+        derivedStateOf {
+            appState.recentlyAddedByTypes[BaseItemKind.VIDEO.name]
+                ?.take(layoutConfig.rowItemLimit) ?: emptyList()
+        }
     }
 
     LaunchedEffect(surfaceCoordinatorViewModel) {
@@ -385,7 +415,7 @@ fun HomeContent(
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(24.dp),
+            verticalArrangement = Arrangement.spacedBy(layoutConfig.sectionSpacing),
         ) {
             item(key = "home_header", contentType = "header") { HomeHeader(currentServer) }
 
@@ -397,6 +427,7 @@ fun HomeContent(
                         getImageUrl = getImageUrl,
                         onItemClick = onItemClick,
                         onItemLongPress = onItemLongPress,
+                        cardWidth = layoutConfig.continueWatchingCardWidth,
                     )
                 }
             }
@@ -423,6 +454,9 @@ fun HomeContent(
                             featuredItems.firstOrNull { it.id?.toString() == selected.id }
                                 ?.let(onItemClick)
                         },
+                        heroHeight = layoutConfig.heroHeight,
+                        horizontalPadding = layoutConfig.heroHorizontalPadding,
+                        pageSpacing = layoutConfig.heroPageSpacing,
                     )
                 }
             }
@@ -457,10 +491,11 @@ fun HomeContent(
                 item(key = "recent_movies", contentType = "poster_row") {
                     PosterRowSection(
                         title = "Recently Added Movies",
-                        items = recentMovies.take(15),
+                        items = recentMovies.take(layoutConfig.rowItemLimit),
                         getImageUrl = getImageUrl,
                         onItemClick = onItemClick,
                         onItemLongPress = onItemLongPress,
+                        cardWidth = layoutConfig.posterCardWidth,
                     )
                 }
             }
@@ -469,10 +504,11 @@ fun HomeContent(
                 item(key = "recent_tvshows", contentType = "poster_row") {
                     PosterRowSection(
                         title = "Recently Added TV Shows",
-                        items = recentTVShows.take(15),
+                        items = recentTVShows.take(layoutConfig.rowItemLimit),
                         getImageUrl = getImageUrl,
                         onItemClick = onItemClick,
                         onItemLongPress = onItemLongPress,
+                        cardWidth = layoutConfig.posterCardWidth,
                     )
                 }
             }
@@ -481,10 +517,11 @@ fun HomeContent(
                 item(key = "recent_episodes", contentType = "poster_row") {
                     PosterRowSection(
                         title = "Recently Added TV Episodes",
-                        items = recentEpisodes.take(15),
+                        items = recentEpisodes.take(layoutConfig.rowItemLimit),
                         getImageUrl = { item -> getSeriesImageUrl(item) ?: getImageUrl(item) },
                         onItemClick = onItemClick,
                         onItemLongPress = onItemLongPress,
+                        cardWidth = layoutConfig.posterCardWidth,
                     )
                 }
             }
@@ -493,16 +530,15 @@ fun HomeContent(
                 item(key = "recent_music", contentType = "music_row") {
                     SquareRowSection(
                         title = "Recently Added Music",
-                        items = recentMusic.take(15),
+                        items = recentMusic.take(layoutConfig.rowItemLimit),
                         getImageUrl = getImageUrl,
                         onItemClick = onItemClick,
                         onItemLongPress = onItemLongPress,
+                        cardWidth = layoutConfig.mediaCardWidth,
                     )
                 }
             }
 
-            val recentVideos =
-                appState.recentlyAddedByTypes[BaseItemKind.VIDEO.name]?.take(15) ?: emptyList()
             if (recentVideos.isNotEmpty()) {
                 item(key = "recent_home_videos", contentType = "media_row") {
                     MediaRowSection(
@@ -511,9 +547,61 @@ fun HomeContent(
                         getImageUrl = { item -> getBackdropUrl(item) ?: getImageUrl(item) },
                         onItemClick = onItemClick,
                         onItemLongPress = onItemLongPress,
+                        cardWidth = layoutConfig.mediaCardWidth,
                     )
                 }
             }
+        }
+    }
+}
+
+private data class HomeLayoutConfig(
+    val sectionSpacing: Dp,
+    val heroHeight: Dp,
+    val heroHorizontalPadding: Dp,
+    val heroPageSpacing: Dp,
+    val featuredItemsLimit: Int,
+    val rowItemLimit: Int,
+    val continueWatchingLimit: Int,
+    val continueWatchingCardWidth: Dp,
+    val posterCardWidth: Dp,
+    val mediaCardWidth: Dp,
+)
+
+@Composable
+private fun rememberHomeLayoutConfig(): HomeLayoutConfig {
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp
+    val isCompactWidth = screenWidth < 600
+    val isUltraCompact = screenWidth < 380
+
+    return remember(screenWidth) {
+        if (isCompactWidth) {
+            HomeLayoutConfig(
+                sectionSpacing = 16.dp,
+                heroHeight = 240.dp,
+                heroHorizontalPadding = 12.dp,
+                heroPageSpacing = 6.dp,
+                featuredItemsLimit = 6,
+                rowItemLimit = 12,
+                continueWatchingLimit = 6,
+                continueWatchingCardWidth = if (isUltraCompact) 138.dp else 150.dp,
+                posterCardWidth = if (isUltraCompact) 132.dp else 144.dp,
+                mediaCardWidth = 240.dp,
+            )
+        } else {
+            HomeLayoutConfig(
+                sectionSpacing = 24.dp,
+                heroHeight = 280.dp,
+                heroHorizontalPadding = 16.dp,
+                heroPageSpacing = 8.dp,
+                featuredItemsLimit = 10,
+                rowItemLimit = 15,
+                continueWatchingLimit = 8,
+                continueWatchingCardWidth = 160.dp,
+                posterCardWidth = 150.dp,
+                mediaCardWidth = 280.dp,
+            )
         }
     }
 }
@@ -697,12 +785,12 @@ fun SearchResultsContent(
 }
 
 // Helper function to get continue watching items
-private fun getContinueWatchingItems(appState: MainAppState): List<BaseItemDto> {
+private fun getContinueWatchingItems(appState: MainAppState, maxItems: Int = 8): List<BaseItemDto> {
     return appState.allItems.filter { item ->
         val percentage = item.userData?.playedPercentage ?: 0.0
         percentage > 0.0 && percentage < 100.0 &&
             (item.type == BaseItemKind.MOVIE || item.type == BaseItemKind.EPISODE)
-    }.sortedByDescending { it.userData?.lastPlayedDate }.take(8)
+    }.sortedByDescending { it.userData?.lastPlayedDate }.take(maxItems)
 }
 
 @Composable
@@ -711,6 +799,7 @@ private fun ContinueWatchingSection(
     getImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit,
     onItemLongPress: (BaseItemDto) -> Unit = {},
+    cardWidth: Dp = 160.dp,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -747,6 +836,7 @@ private fun ContinueWatchingSection(
                     getImageUrl = getImageUrl,
                     onItemClick = onItemClick,
                     onItemLongPress = onItemLongPress,
+                    cardWidth = cardWidth,
                 )
             }
         }
@@ -760,12 +850,13 @@ private fun ContinueWatchingCard(
     getImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit,
     onItemLongPress: (BaseItemDto) -> Unit = {},
+    cardWidth: Dp = 160.dp,
     modifier: Modifier = Modifier,
 ) {
     val watchedPercentage = item.userData?.playedPercentage ?: 0.0
 
     ElevatedCard(
-        modifier = modifier.width(160.dp),
+        modifier = modifier.width(cardWidth),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp),
     ) {
         Column(
@@ -840,6 +931,7 @@ private fun PosterRowSection(
     getImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit,
     onItemLongPress: (BaseItemDto) -> Unit = {},
+    cardWidth: Dp = 150.dp,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -866,6 +958,7 @@ private fun PosterRowSection(
                     getImageUrl = getImageUrl,
                     onClick = onItemClick,
                     onLongPress = onItemLongPress,
+                    cardWidth = cardWidth,
                     showTitle = true,
                     showMetadata = true,
                 )
@@ -881,6 +974,7 @@ private fun SquareRowSection(
     getImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit,
     onItemLongPress: (BaseItemDto) -> Unit = {},
+    cardWidth: Dp = 280.dp,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -907,6 +1001,7 @@ private fun SquareRowSection(
                     getImageUrl = getImageUrl,
                     onClick = onItemClick,
                     onLongPress = onItemLongPress,
+                    cardWidth = cardWidth,
                 )
             }
         }
@@ -920,6 +1015,7 @@ private fun MediaRowSection(
     getImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit,
     onItemLongPress: (BaseItemDto) -> Unit = {},
+    cardWidth: Dp = 280.dp,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -946,6 +1042,7 @@ private fun MediaRowSection(
                     getImageUrl = getImageUrl,
                     onClick = onItemClick,
                     onLongPress = onItemLongPress,
+                    cardWidth = cardWidth,
                 )
             }
         }

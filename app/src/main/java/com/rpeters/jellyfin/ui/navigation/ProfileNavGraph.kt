@@ -1,0 +1,89 @@
+package com.rpeters.jellyfin.ui.navigation
+
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.composable
+import com.rpeters.jellyfin.ui.screens.FavoritesScreen
+import com.rpeters.jellyfin.ui.screens.ProfileScreen
+import com.rpeters.jellyfin.ui.screens.SearchScreen
+import com.rpeters.jellyfin.ui.screens.SettingsScreen
+import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
+
+/**
+ * Profile, search, favorites, and settings routes.
+ */
+fun androidx.navigation.NavGraphBuilder.profileNavGraph(
+    navController: NavHostController,
+    onLogout: () -> Unit,
+) {
+    composable(Screen.Search.route) {
+        val viewModel = androidx.hilt.navigation.compose.hiltViewModel<MainAppViewModel>()
+        val lifecycleOwner = LocalLifecycleOwner.current
+        val appState by viewModel.appState.collectAsStateWithLifecycle(
+            lifecycle = lifecycleOwner.lifecycle,
+            minActiveState = Lifecycle.State.STARTED,
+        )
+
+        SearchScreen(
+            appState = appState,
+            onSearch = { query -> viewModel.search(query) },
+            onClearSearch = { viewModel.clearSearch() },
+            getImageUrl = { item -> viewModel.getImageUrl(item) },
+            onBackClick = { navController.popBackStack() },
+        )
+    }
+
+    composable(Screen.Favorites.route) {
+        val viewModel = androidx.hilt.navigation.compose.hiltViewModel<MainAppViewModel>()
+        val lifecycleOwner = LocalLifecycleOwner.current
+        val appState by viewModel.appState.collectAsStateWithLifecycle(
+            lifecycle = lifecycleOwner.lifecycle,
+            minActiveState = Lifecycle.State.STARTED,
+        )
+
+        LaunchedEffect(Unit) {
+            viewModel.loadFavorites()
+        }
+
+        FavoritesScreen(
+            favorites = appState.favorites,
+            isLoading = appState.isLoading,
+            errorMessage = appState.errorMessage,
+            onRefresh = { viewModel.loadFavorites() },
+            getImageUrl = { item -> viewModel.getImageUrl(item) },
+            onBackClick = { navController.popBackStack() },
+        )
+    }
+
+    composable(Screen.Profile.route) {
+        val viewModel = androidx.hilt.navigation.compose.hiltViewModel<MainAppViewModel>()
+        val lifecycleOwner = LocalLifecycleOwner.current
+        val currentServer by viewModel.currentServer.collectAsStateWithLifecycle(
+            lifecycle = lifecycleOwner.lifecycle,
+            initialValue = null,
+        )
+
+        ProfileScreen(
+            currentServer = currentServer,
+            onLogout = {
+                viewModel.logout()
+                onLogout()
+                navController.navigate(Screen.ServerConnection.route) {
+                    popUpTo(0) { inclusive = true }
+                }
+            },
+            onSettingsClick = { navController.navigate(Screen.Settings.route) },
+            onBackClick = { navController.popBackStack() },
+        )
+    }
+
+    composable(Screen.Settings.route) {
+        SettingsScreen(
+            onBackClick = { navController.popBackStack() },
+        )
+    }
+}

@@ -63,7 +63,7 @@ data class VideoPlayerState(
     val itemName: String = "",
     val aspectRatio: Float = 16f / 9f,
     val selectedAspectRatio: AspectRatioMode = AspectRatioMode.FIT,
-    val availableAspectRatios: List<AspectRatioMode> = AspectRatioMode.values().toList(),
+    val availableAspectRatios: List<AspectRatioMode> = AspectRatioMode.entries.toList(),
     val isControlsVisible: Boolean = true,
     val showSubtitleDialog: Boolean = false,
     val showCastDialog: Boolean = false,

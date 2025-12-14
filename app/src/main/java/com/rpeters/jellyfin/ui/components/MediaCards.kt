@@ -1,7 +1,8 @@
+@file:OptInAppExperimentalApis
+
 package com.rpeters.jellyfin.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
@@ -37,6 +38,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.ui.ShimmerBox
 import com.rpeters.jellyfin.ui.accessibility.mediaCardSemantics
@@ -47,10 +49,10 @@ import com.rpeters.jellyfin.ui.theme.RatingBronze
 import com.rpeters.jellyfin.ui.theme.RatingGold
 import com.rpeters.jellyfin.ui.theme.RatingSilver
 import com.rpeters.jellyfin.ui.theme.getContentTypeColor
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MediaCard(
     item: BaseItemDto,
@@ -59,14 +61,16 @@ fun MediaCard(
     onLongPress: ((BaseItemDto) -> Unit)? = null,
     modifier: Modifier = Modifier,
     enhancedPlaybackUtils: com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils? = null,
+    cardWidth: Dp = 280.dp,
+    cardAspectRatio: Float = 16f / 9f,
 ) {
     val contentTypeColor = getContentTypeColor(item.type?.toString())
     val coroutineScope = rememberCoroutineScope()
 
     Card(
         modifier = modifier
-            .width(280.dp)
-            .aspectRatio(16f / 9f)
+            .width(cardWidth)
+            .aspectRatio(cardAspectRatio)
             .mediaCardSemantics(item) { onClick(item) }
             .combinedClickable(
                 onClick = { onClick(item) },
@@ -203,7 +207,7 @@ fun MediaCard(
                         Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                Color.Black.copy(alpha = 0.7f),
+                                MaterialTheme.colorScheme.scrim.copy(alpha = 0.7f),
                             ),
                             startY = 0f,
                             endY = Float.POSITIVE_INFINITY,
@@ -288,7 +292,6 @@ fun MediaCard(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PosterMediaCard(
     item: BaseItemDto,
@@ -299,13 +302,14 @@ fun PosterMediaCard(
     enhancedPlaybackUtils: com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils? = null,
     showTitle: Boolean = true,
     showMetadata: Boolean = true,
+    cardWidth: Dp = 150.dp,
 ) {
     val contentTypeColor = getContentTypeColor(item.type?.toString())
     val coroutineScope = rememberCoroutineScope()
 
     Card(
         modifier = modifier
-            .width(150.dp)
+            .width(cardWidth)
             .mediaCardSemantics(item) { onClick(item) }
             .combinedClickable(
                 onClick = { onClick(item) },
@@ -506,7 +510,6 @@ fun PosterMediaCard(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RecentlyAddedCard(
     item: BaseItemDto,

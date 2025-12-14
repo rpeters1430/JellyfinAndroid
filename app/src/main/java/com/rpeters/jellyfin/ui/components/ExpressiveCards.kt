@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +33,7 @@ import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -107,11 +109,11 @@ fun ExpressiveMediaCard(
             }
         }
         ExpressiveCardType.FILLED -> {
-            // Use ElevatedCard as FilledCard is not available yet
-            ElevatedCard(
+            // Filled-style card with stronger container color for emphasis
+            Card(
                 modifier = cardModifier,
-                colors = CardDefaults.elevatedCardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                 ),
                 shape = RoundedCornerShape(16.dp),
             ) {
@@ -170,11 +172,18 @@ private fun MediaCardContent(
     onMoreClick: () -> Unit,
     onPressedChange: (Boolean) -> Unit,
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    LaunchedEffect(isPressed) {
+        onPressedChange(isPressed)
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .clickable(
-                interactionSource = remember { MutableInteractionSource() },
+                interactionSource = interactionSource,
                 indication = null,
                 onClickLabel = "Open $title",
             ) {

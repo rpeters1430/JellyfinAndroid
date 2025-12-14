@@ -11,6 +11,7 @@ import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.BIOMETRIC_AUTH_ENABLED
 import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.REMEMBER_LOGIN
 import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.SERVER_URL
 import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.USERNAME
+import com.rpeters.jellyfin.ui.viewmodel.dataStore
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -21,12 +22,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import org.jellyfin.sdk.model.api.AuthenticationResult
 import org.jellyfin.sdk.model.api.PublicSystemInfo
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import androidx.datastore.preferences.core.edit
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ServerConnectionViewModelTest {

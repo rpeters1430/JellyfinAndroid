@@ -319,10 +319,10 @@ private fun ExpressiveEpisodeHero(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.Black.copy(alpha = 0.2f),
-                                Color.Black.copy(alpha = 0.5f),
-                                Color.Black.copy(alpha = 0.8f),
-                                Color.Black.copy(alpha = 0.95f),
+                                MaterialTheme.colorScheme.scrim.copy(alpha = 0.2f),
+                                MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f),
+                                MaterialTheme.colorScheme.scrim.copy(alpha = 0.8f),
+                                MaterialTheme.colorScheme.scrim.copy(alpha = 0.95f),
                             ),
                             startY = 0f,
                             endY = Float.POSITIVE_INFINITY,

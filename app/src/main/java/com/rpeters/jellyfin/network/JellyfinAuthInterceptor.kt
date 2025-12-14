@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.network
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import okhttp3.Authenticator
 import okhttp3.Interceptor
@@ -151,10 +152,8 @@ class JellyfinAuthInterceptor @Inject constructor(
             return
         }
 
-        try {
-            Thread.sleep(delayMillis)
-        } catch (interrupted: InterruptedException) {
-            Thread.currentThread().interrupt()
+        runBlocking {
+            delay(delayMillis)
         }
     }
 

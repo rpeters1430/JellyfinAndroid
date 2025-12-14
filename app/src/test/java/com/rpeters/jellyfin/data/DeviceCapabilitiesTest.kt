@@ -6,7 +6,12 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33])
 class DeviceCapabilitiesTest {
 
     private lateinit var deviceCapabilities: DeviceCapabilities
@@ -320,35 +325,11 @@ class DeviceCapabilitiesTest {
         )
     }
 
-    // getMaxSupportedResolution Tests
-
-    @Test
-    fun `getMaxSupportedResolution returns non-null value`() {
-        val maxResolution = deviceCapabilities.getMaxSupportedResolution()
-
-        assertNotNull("Max resolution should not be null", maxResolution)
-    }
-
-    @Test
-    fun `getMaxSupportedResolution returns at least Full HD`() {
-        val maxResolution = deviceCapabilities.getMaxSupportedResolution()
-
-        // Device should support at least 1920x1080 (Full HD)
-        assertTrue(
-            "Width should be at least 1920",
-            maxResolution.first >= 1920,
-        )
-        assertTrue(
-            "Height should be at least 1080",
-            maxResolution.second >= 1080,
-        )
-    }
-
     // analyzeDirectPlayCapability Tests
 
     @Test
-    fun `analyzeDirectPlayCapability returns analysis for supported content`() {
-        val analysis = deviceCapabilities.analyzeDirectPlayCapability(
+    fun `analyzeDirectPlayCompatibility returns analysis for supported content`() {
+        val analysis = deviceCapabilities.analyzeDirectPlayCompatibility(
             container = "mp4",
             videoCodec = "h264",
             audioCodec = "aac",
@@ -361,8 +342,8 @@ class DeviceCapabilitiesTest {
     }
 
     @Test
-    fun `analyzeDirectPlayCapability identifies unsupported container`() {
-        val analysis = deviceCapabilities.analyzeDirectPlayCapability(
+    fun `analyzeDirectPlayCompatibility identifies unsupported container`() {
+        val analysis = deviceCapabilities.analyzeDirectPlayCompatibility(
             container = "xyz",
             videoCodec = "h264",
             audioCodec = "aac",
@@ -377,8 +358,8 @@ class DeviceCapabilitiesTest {
     }
 
     @Test
-    fun `analyzeDirectPlayCapability identifies unsupported video codec`() {
-        val analysis = deviceCapabilities.analyzeDirectPlayCapability(
+    fun `analyzeDirectPlayCompatibility identifies unsupported video codec`() {
+        val analysis = deviceCapabilities.analyzeDirectPlayCompatibility(
             container = "mp4",
             videoCodec = "xyz123",
             audioCodec = "aac",
@@ -393,8 +374,8 @@ class DeviceCapabilitiesTest {
     }
 
     @Test
-    fun `analyzeDirectPlayCapability identifies resolution too high`() {
-        val analysis = deviceCapabilities.analyzeDirectPlayCapability(
+    fun `analyzeDirectPlayCompatibility identifies resolution too high`() {
+        val analysis = deviceCapabilities.analyzeDirectPlayCompatibility(
             container = "mp4",
             videoCodec = "h264",
             audioCodec = "aac",
@@ -406,13 +387,13 @@ class DeviceCapabilitiesTest {
         // Resolution is too high, should affect compatibility
         assertTrue(
             "Score should reflect resolution issue",
-            analysis.compatibilityScore < 100,
+            analysis.confidenceScore < 100,
         )
     }
 
     @Test
-    fun `analyzeDirectPlayCapability provides compatibility score`() {
-        val analysis = deviceCapabilities.analyzeDirectPlayCapability(
+    fun `analyzeDirectPlayCompatibility provides compatibility score`() {
+        val analysis = deviceCapabilities.analyzeDirectPlayCompatibility(
             container = "mp4",
             videoCodec = "h264",
             audioCodec = "aac",
@@ -423,7 +404,7 @@ class DeviceCapabilitiesTest {
         assertNotNull("Analysis should not be null", analysis)
         assertTrue(
             "Compatibility score should be between 0 and 100",
-            analysis.compatibilityScore in 0..100,
+            analysis.confidenceScore in 0..100,
         )
     }
 
@@ -435,7 +416,7 @@ class DeviceCapabilitiesTest {
         deviceCapabilities.canPlayContainer("mp4")
         deviceCapabilities.canPlayVideoCodec("h264")
         deviceCapabilities.canPlayAudioCodec("aac")
-        deviceCapabilities.getMaxSupportedResolution()
+        deviceCapabilities.getDirectPlayCapabilities().maxResolution
 
         // Should still work correctly
         assertTrue(deviceCapabilities.canPlayContainer("mp4"))

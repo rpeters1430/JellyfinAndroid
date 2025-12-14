@@ -13,6 +13,7 @@ import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.update
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
@@ -296,11 +297,11 @@ class OfflineDownloadManager @Inject constructor(
             context.offlineDownloadsDataStore.data.collect { preferences ->
                 val downloadsJson = preferences[stringPreferencesKey(DOWNLOADS_KEY)] ?: "[]"
                 val downloads = json.decodeFromString<List<OfflineDownload>>(downloadsJson)
-                _downloads.value = downloads
+                _downloads.update { downloads }
             }
         } catch (e: Exception) {
             Log.e("OfflineDownloadManager", "Failed to load downloads", e)
-            _downloads.value = emptyList()
+            _downloads.update { emptyList() }
         }
     }
 
@@ -316,42 +317,46 @@ class OfflineDownloadManager @Inject constructor(
     }
 
     private suspend fun addDownload(download: OfflineDownload) {
-        _downloads.value = _downloads.value + download
+        _downloads.update { it + download }
         saveDownloads()
     }
 
     private suspend fun removeDownload(downloadId: String) {
-        _downloads.value = _downloads.value.filter { it.id != downloadId }
+        _downloads.update { currentDownloads -> currentDownloads.filter { it.id != downloadId } }
         saveDownloads()
     }
 
     private suspend fun updateDownloadStatus(downloadId: String, status: DownloadStatus) {
-        _downloads.value = _downloads.value.map { download ->
-            if (download.id == downloadId) {
-                download.copy(
-                    status = status,
-                    downloadCompleteTime = if (status == DownloadStatus.COMPLETED) System.currentTimeMillis() else null,
-                )
-            } else {
-                download
+        _downloads.update { currentDownloads ->
+            currentDownloads.map { download ->
+                if (download.id == downloadId) {
+                    download.copy(
+                        status = status,
+                        downloadCompleteTime = if (status == DownloadStatus.COMPLETED) System.currentTimeMillis() else null,
+                    )
+                } else {
+                    download
+                }
             }
         }
         saveDownloads()
     }
 
     private suspend fun updateDownloadBytes(downloadId: String, downloadedBytes: Long) {
-        _downloads.value = _downloads.value.map { download ->
-            if (download.id == downloadId) {
-                download.copy(downloadedBytes = downloadedBytes)
-            } else {
-                download
+        _downloads.update { currentDownloads ->
+            currentDownloads.map { download ->
+                if (download.id == downloadId) {
+                    download.copy(downloadedBytes = downloadedBytes)
+                } else {
+                    download
+                }
             }
         }
         saveDownloads()
     }
 
     private fun updateDownloadProgress(progress: DownloadProgress) {
-        _downloadProgress.value = _downloadProgress.value + (progress.downloadId to progress)
+        _downloadProgress.update { it + (progress.downloadId to progress) }
     }
 
     /**
@@ -368,7 +373,7 @@ class OfflineDownloadManager @Inject constructor(
         downloadJobs.clear()
 
         // Clear progress state
-        _downloadProgress.value = emptyMap()
+        _downloadProgress.update { emptyMap() }
 
         // Cancel the supervisor job and scope
         supervisorJob.cancel("OfflineDownloadManager cleanup")
@@ -386,14 +391,16 @@ class OfflineDownloadManager @Inject constructor(
         }
 
         // Remove from progress tracking
-        _downloadProgress.value = _downloadProgress.value - downloadId
+        _downloadProgress.update { it - downloadId }
 
         // Update download status to cancelled
-        _downloads.value = _downloads.value.map { download ->
-            if (download.id == downloadId) {
-                download.copy(status = DownloadStatus.CANCELLED)
-            } else {
-                download
+        _downloads.update { currentDownloads ->
+            currentDownloads.map { download ->
+                if (download.id == downloadId) {
+                    download.copy(status = DownloadStatus.CANCELLED)
+                } else {
+                    download
+                }
             }
         }
 

@@ -7,8 +7,8 @@ import io.mockk.mockk
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertSame
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 
 class DevicePerformanceProfileTest {
 

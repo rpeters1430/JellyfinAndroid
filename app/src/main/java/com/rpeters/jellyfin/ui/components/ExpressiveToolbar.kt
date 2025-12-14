@@ -287,7 +287,7 @@ fun ExpressiveVideoToolbar(
                     Brush.verticalGradient(
                         colors = listOf(
                             Color.Transparent,
-                            Color.Black.copy(alpha = 0.8f),
+                            MaterialTheme.colorScheme.scrim.copy(alpha = 0.8f),
                         ),
                         startY = 0f,
                         endY = 200f,
@@ -304,7 +304,7 @@ fun ExpressiveVideoToolbar(
                         shape = RoundedCornerShape(28.dp),
                     ),
                 shape = RoundedCornerShape(28.dp),
-                color = Color.Black.copy(alpha = 0.6f),
+                color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.6f),
             ) {
                 Row(
                     modifier = Modifier
