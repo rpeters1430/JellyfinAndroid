@@ -13,10 +13,10 @@ import androidx.navigation.navArgument
 import com.rpeters.jellyfin.ui.screens.BooksScreen
 import com.rpeters.jellyfin.ui.screens.HomeVideosScreen
 import com.rpeters.jellyfin.ui.screens.LibraryType
+import com.rpeters.jellyfin.ui.screens.LibraryTypeScreen
 import com.rpeters.jellyfin.ui.screens.MusicScreen
 import com.rpeters.jellyfin.ui.screens.TVEpisodesScreen
 import com.rpeters.jellyfin.ui.screens.TVSeasonScreen
-import com.rpeters.jellyfin.ui.screens.LibraryTypeScreen
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.ui.viewmodel.SeasonEpisodesViewModel
 import com.rpeters.jellyfin.utils.SecureLogger
