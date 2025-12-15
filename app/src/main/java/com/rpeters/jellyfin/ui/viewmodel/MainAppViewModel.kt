@@ -1127,15 +1127,25 @@ class MainAppViewModel @Inject constructor(
     }
 
     fun loadMoreHomeVideos(homeVideoLibraries: List<BaseItemDto>) {
-        homeVideoLibraries.forEach { library ->
-            val libraryId = library.id?.toString() ?: return@forEach
+        val libraryToLoad = homeVideoLibraries.firstOrNull { library ->
+            val libraryId = library.id?.toString()
+            if (libraryId == null) {
+                SecureLogger.w(
+                    "MainAppViewModel",
+                    "Skipping home video library with null ID: ${library.name ?: "Unknown"}",
+                )
+                return@firstOrNull false
+            }
+
             val paginationState = _appState.value.libraryPaginationState[libraryId]
-            val hasMore = paginationState?.hasMore ?: true
+            val hasMore = paginationState?.hasMore ?: false
             val isLoadingMore = paginationState?.isLoadingMore == true
 
-            if (hasMore && !isLoadingMore) {
-                loadMoreLibraryItems(libraryId)
-            }
+            hasMore && !isLoadingMore
+        }
+
+        libraryToLoad?.id?.toString()?.let { libraryId ->
+            loadMoreLibraryItems(libraryId)
         }
     }
 
