@@ -69,6 +69,7 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 @Composable
 fun LibraryTypeScreen(
     libraryType: LibraryType,
+    onItemClick: (BaseItemDto) -> Unit = {},
     onTVShowClick: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier,
     viewModel: MainAppViewModel = hiltViewModel(),
@@ -194,6 +195,7 @@ fun LibraryTypeScreen(
                             items = displayItems,
                             libraryType = libraryType,
                             getImageUrl = { viewModel.getImageUrl(it) },
+                            onItemClick = onItemClick,
                             onTVShowClick = onTVShowClick,
                             onItemLongPress = handleItemLongPress,
                             isLoadingMore = appState.isLoadingMore,
@@ -204,6 +206,7 @@ fun LibraryTypeScreen(
                             items = displayItems,
                             libraryType = libraryType,
                             getImageUrl = { viewModel.getImageUrl(it) },
+                            onItemClick = onItemClick,
                             onTVShowClick = onTVShowClick,
                             onItemLongPress = handleItemLongPress,
                             isLoadingMore = appState.isLoadingMore,
@@ -214,6 +217,7 @@ fun LibraryTypeScreen(
                             items = displayItems,
                             libraryType = libraryType,
                             getImageUrl = { viewModel.getImageUrl(it) },
+                            onItemClick = onItemClick,
                             onTVShowClick = onTVShowClick,
                             onItemLongPress = handleItemLongPress,
                         )
@@ -258,47 +262,47 @@ fun LibraryTypeScreen(
             val refreshRequestedMessage = stringResource(id = R.string.library_actions_refresh_requested)
 
             MediaItemActionsSheet(
-            item = item,
-            sheetState = sheetState,
-            onDismiss = {
-                showManageSheet = false
-                selectedItem = null
-            },
-            onPlay = {
-                // TODO: Implement play functionality
-                coroutineScope.launch {
-                    snackbarHostState.showSnackbar("Play functionality coming soon")
-                }
-            },
-            onDelete = { _, _ ->
-                viewModel.deleteItem(item) { success, message ->
+                item = item,
+                sheetState = sheetState,
+                onDismiss = {
+                    showManageSheet = false
+                    selectedItem = null
+                },
+                onPlay = {
+                    // TODO: Implement play functionality
                     coroutineScope.launch {
-                        val text = if (success) {
-                            deleteSuccessMessage
-                        } else {
-                            String.format(deleteFailureTemplate, message ?: "")
-                        }
-                        snackbarHostState.showSnackbar(text)
+                        snackbarHostState.showSnackbar("Play functionality coming soon")
                     }
-                }
-            },
-            onRefreshMetadata = { _, _ ->
-                viewModel.refreshItemMetadata(item) { success, message ->
-                    coroutineScope.launch {
-                        val text = if (success) {
-                            refreshRequestedMessage
-                        } else {
-                            "Failed to refresh metadata: ${message ?: "Unknown error"}"
+                },
+                onDelete = { _, _ ->
+                    viewModel.deleteItem(item) { success, message ->
+                        coroutineScope.launch {
+                            val text = if (success) {
+                                deleteSuccessMessage
+                            } else {
+                                String.format(deleteFailureTemplate, message ?: "")
+                            }
+                            snackbarHostState.showSnackbar(text)
                         }
-                        snackbarHostState.showSnackbar(text)
                     }
-                }
-            },
-            onToggleWatched = {
-                viewModel.toggleWatchedStatus(item)
-            },
-            managementEnabled = managementEnabled,
-        )
+                },
+                onRefreshMetadata = { _, _ ->
+                    viewModel.refreshItemMetadata(item) { success, message ->
+                        coroutineScope.launch {
+                            val text = if (success) {
+                                refreshRequestedMessage
+                            } else {
+                                "Failed to refresh metadata: ${message ?: "Unknown error"}"
+                            }
+                            snackbarHostState.showSnackbar(text)
+                        }
+                    }
+                },
+                onToggleWatched = {
+                    viewModel.toggleWatchedStatus(item)
+                },
+                managementEnabled = managementEnabled,
+            )
         }
     }
 }
@@ -330,6 +334,7 @@ private fun GridContent(
     items: List<BaseItemDto>,
     libraryType: LibraryType,
     getImageUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit,
     onTVShowClick: ((String) -> Unit)?,
     onItemLongPress: (BaseItemDto) -> Unit,
     isLoadingMore: Boolean,
@@ -351,6 +356,7 @@ private fun GridContent(
                 item = item,
                 libraryType = libraryType,
                 getImageUrl = getImageUrl,
+                onItemClick = onItemClick,
                 onTVShowClick = onTVShowClick,
                 onItemLongPress = onItemLongPress,
                 isCompact = true,
@@ -369,6 +375,7 @@ private fun ListContent(
     items: List<BaseItemDto>,
     libraryType: LibraryType,
     getImageUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit,
     onTVShowClick: ((String) -> Unit)?,
     onItemLongPress: (BaseItemDto) -> Unit,
     isLoadingMore: Boolean,
@@ -388,6 +395,7 @@ private fun ListContent(
                 item = item,
                 libraryType = libraryType,
                 getImageUrl = getImageUrl,
+                onItemClick = onItemClick,
                 onTVShowClick = onTVShowClick,
                 onItemLongPress = onItemLongPress,
                 isCompact = false,
@@ -406,6 +414,7 @@ private fun CarouselContent(
     items: List<BaseItemDto>,
     libraryType: LibraryType,
     getImageUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit,
     onTVShowClick: ((String) -> Unit)?,
     onItemLongPress: (BaseItemDto) -> Unit,
 ) {
@@ -424,6 +433,7 @@ private fun CarouselContent(
                 carouselState = carouselState,
                 libraryType = libraryType,
                 getImageUrl = getImageUrl,
+                onItemClick = onItemClick,
                 onTVShowClick = onTVShowClick,
                 onItemLongPress = onItemLongPress,
             )
