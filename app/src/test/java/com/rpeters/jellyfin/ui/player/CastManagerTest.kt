@@ -1,7 +1,6 @@
 package com.rpeters.jellyfin.ui.player
 
 import android.content.Context
-import androidx.media3.cast.CastPlayer
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
 import com.google.android.gms.cast.MediaStatus
@@ -31,7 +30,6 @@ import org.jellyfin.sdk.model.api.ImageType
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -74,7 +72,7 @@ class CastManagerTest {
             castContext,
             sessionManager,
             castSession,
-            remoteMediaClient
+            remoteMediaClient,
         )
         unmockkStatic(CastContext::class)
         Dispatchers.resetMain()
@@ -462,7 +460,7 @@ class CastManagerTest {
     ): BaseItemDto {
         val imageTags = mapOf(
             ImageType.PRIMARY to "primary-tag",
-            ImageType.BACKDROP to "backdrop-tag"
+            ImageType.BACKDROP to "backdrop-tag",
         )
 
         return BaseItemDto(
