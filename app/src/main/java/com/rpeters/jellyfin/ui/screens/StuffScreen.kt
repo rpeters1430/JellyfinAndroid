@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -236,10 +236,12 @@ fun StuffGrid(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         modifier = modifier,
     ) {
-        items(
+        itemsIndexed(
             items = stuffItems,
-            key = { stuffItem -> stuffItem.id ?: stuffItem.name ?: stuffItem.sortName ?: stuffItem.hashCode() },
-        ) { stuffItem ->
+            key = { index, stuffItem ->
+                "${stuffItem.id ?: stuffItem.name ?: stuffItem.sortName ?: "item"}-$index"
+            },
+        ) { _, stuffItem ->
             ExpressiveMediaCard(
                 title = stuffItem.name ?: "",
                 subtitle = stuffItem.type?.toString() ?: "",
