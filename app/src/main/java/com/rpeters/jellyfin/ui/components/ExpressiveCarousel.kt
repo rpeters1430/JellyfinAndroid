@@ -4,7 +4,6 @@ package com.rpeters.jellyfin.ui.components
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -43,10 +42,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.image.ImageSize
 import com.rpeters.jellyfin.ui.image.OptimizedImage
 import com.rpeters.jellyfin.ui.theme.MotionTokens
-import com.rpeters.jellyfin.OptInAppExperimentalApis
 
 /**
  * Material 3 Expressive Carousel for hero content
@@ -299,14 +298,12 @@ private fun ExpressiveCarouselIndicators(
     pagerState: PagerState,
     modifier: Modifier = Modifier,
 ) {
-    val currentPage = pagerState.currentPage
-
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         repeat(pagerState.pageCount) { index ->
-            val isActive = index == currentPage
+            val isActive = index == pagerState.currentPage
             Surface(
                 modifier = Modifier.size(
                     width = if (isActive) 24.dp else 8.dp,
