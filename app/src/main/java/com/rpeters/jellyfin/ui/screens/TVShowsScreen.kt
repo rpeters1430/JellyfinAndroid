@@ -35,7 +35,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -87,6 +86,7 @@ import com.rpeters.jellyfin.utils.getRatingAsDouble
 import com.rpeters.jellyfin.utils.hasHighRating
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 
 enum class TVShowFilter(val displayNameResId: Int) {
     ALL(R.string.filter_all_shows),
@@ -132,7 +132,7 @@ enum class TVShowViewMode {
     CAROUSEL,
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptInAppExperimentalApis
 @Composable
 fun TVShowsScreen(
     onTVShowClick: (String) -> Unit = {},

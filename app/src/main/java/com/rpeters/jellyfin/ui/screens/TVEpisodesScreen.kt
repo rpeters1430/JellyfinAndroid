@@ -9,7 +9,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -80,6 +79,7 @@ import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.ui.viewmodel.SeasonEpisodesViewModel
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 
 @Composable
 fun TVEpisodesScreen(
@@ -300,7 +300,7 @@ private fun EpisodeList(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptInAppExperimentalApis
 @Composable
 private fun ExpressiveEpisodeRow(
     episode: BaseItemDto,

@@ -23,7 +23,6 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Tonality
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -55,12 +54,13 @@ import com.rpeters.jellyfin.ui.theme.getContrastLevelName
 import com.rpeters.jellyfin.ui.theme.getThemeModeDescription
 import com.rpeters.jellyfin.ui.theme.getThemeModeName
 import com.rpeters.jellyfin.ui.viewmodel.ThemePreferencesViewModel
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 
 /**
  * Settings screen for theme customization.
  * Provides controls for all Material You dynamic theming features.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptInAppExperimentalApis
 @Composable
 fun AppearanceSettingsScreen(
     onNavigateBack: () -> Unit,

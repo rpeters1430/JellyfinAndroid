@@ -18,8 +18,9 @@ import com.rpeters.jellyfin.ui.tv.rememberTvFocusManager
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text as TvText
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 
-@OptIn(androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi::class)
+@OptInAppExperimentalApis
 @Composable
 fun TvLibraryScreen(
     libraryId: String?,
