@@ -24,11 +24,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import coil3.compose.SubcomposeAsyncImage
 import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.ShimmerBox
 import com.rpeters.jellyfin.ui.components.MaterialText
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -137,9 +139,10 @@ fun LibraryItemCard(
                 }
 
                 Column(modifier = Modifier.padding(LibraryScreenDefaults.CompactCardPadding)) {
-                    MaterialText(
-                        text = item.name ?: "Unknown",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    Text(
+                        text = item.name ?: stringResource(id = R.string.unknown),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         autoSize = true,
@@ -212,9 +215,10 @@ fun LibraryItemCard(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ListItemFavoriteIconPadding),
                 ) {
-                    MaterialText(
-                        text = item.name ?: "Unknown",
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    Text(
+                        text = item.name ?: stringResource(id = R.string.unknown),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         autoSize = true,
