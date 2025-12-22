@@ -1,21 +1,24 @@
-package com.rpeters.jellyfin.ui.utils
+package com.rpeters.jellyfin.core.util
 
 import android.os.Build
-import android.util.Log
+import android.os.Debug
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
+import kotlin.coroutines.coroutineContext
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.system.measureTimeMillis
 
 /**
  * Phase 4: Performance Monitoring System
@@ -32,6 +35,7 @@ class PerformanceMonitor @Inject constructor() {
         private const val MAX_PERFORMANCE_SAMPLES = 100
         private const val MAX_OPERATION_SAMPLES = 50 // Limit operation timing samples
         private const val MONITORING_ENABLED_ONLY_IN_DEBUG = true // Only run in debug builds
+        private const val BYTES_IN_MEGABYTE = 1024 * 1024
 
         /**
          * Memory information data class
@@ -42,6 +46,13 @@ class PerformanceMonitor @Inject constructor() {
             val freeMemoryMB: Long,
             val maxMemoryMB: Long,
             val usagePercentage: Float,
+        )
+
+        data class PerformanceMetrics(
+            val memory: MemoryInfo,
+            val renderTimeMs: Long,
+            val frameDrops: Int,
+            val timestamp: Long = System.currentTimeMillis(),
         )
 
         /**
@@ -55,10 +66,10 @@ class PerformanceMonitor @Inject constructor() {
             val freeMemory = runtime.freeMemory()
             val usedMemory = totalMemory - freeMemory
 
-            val usedMemoryMB = usedMemory / (1024 * 1024)
-            val totalMemoryMB = totalMemory / (1024 * 1024)
-            val freeMemoryMB = freeMemory / (1024 * 1024)
-            val maxMemoryMB = maxMemory / (1024 * 1024)
+            val usedMemoryMB = usedMemory / BYTES_IN_MEGABYTE
+            val totalMemoryMB = totalMemory / BYTES_IN_MEGABYTE
+            val freeMemoryMB = freeMemory / BYTES_IN_MEGABYTE
+            val maxMemoryMB = maxMemory / BYTES_IN_MEGABYTE
             val usagePercentage = (usedMemory.toFloat() / maxMemory.toFloat()) * 100f
 
             return MemoryInfo(
@@ -77,7 +88,7 @@ class PerformanceMonitor @Inject constructor() {
         fun logMemoryUsage(message: String = "Memory Usage") {
             val memoryInfo = getMemoryInfo()
             if (BuildConfig.DEBUG) {
-                Log.d(
+                SecureLogger.v(
                     TAG,
                     "$message - Used: ${memoryInfo.usedMemoryMB}MB (${String.format("%.1f", memoryInfo.usagePercentage)}%), " +
                         "Free: ${memoryInfo.freeMemoryMB}MB, Max: ${memoryInfo.maxMemoryMB}MB",
@@ -94,7 +105,7 @@ class PerformanceMonitor @Inject constructor() {
             val isHighUsage = memoryInfo.usagePercentage > 80f
 
             if (isHighUsage && BuildConfig.DEBUG) {
-                Log.w(TAG, "High memory usage detected: ${String.format("%.1f", memoryInfo.usagePercentage)}%")
+                SecureLogger.w(TAG, "High memory usage detected: ${String.format("%.1f", memoryInfo.usagePercentage)}%")
             }
 
             return isHighUsage
@@ -108,7 +119,7 @@ class PerformanceMonitor @Inject constructor() {
         suspend fun forceGarbageCollection(reason: String) {
             val beforeMemory = getMemoryInfo()
             if (BuildConfig.DEBUG) {
-                Log.d(TAG, "GC Request ($reason) - Before: ${beforeMemory.usedMemoryMB}MB")
+                SecureLogger.v(TAG, "GC Request ($reason) - Before: ${beforeMemory.usedMemoryMB}MB")
             }
 
             System.gc()
@@ -119,8 +130,49 @@ class PerformanceMonitor @Inject constructor() {
             val afterMemory = getMemoryInfo()
             val freedMB = beforeMemory.usedMemoryMB - afterMemory.usedMemoryMB
             if (BuildConfig.DEBUG) {
-                Log.d(TAG, "GC Request ($reason) - After: ${afterMemory.usedMemoryMB}MB (Freed: ${freedMB}MB)")
+                SecureLogger.v(TAG, "GC Request ($reason) - After: ${afterMemory.usedMemoryMB}MB (Freed: ${freedMB}MB)")
             }
+        }
+
+        /**
+         * Measure execution time of a block of code.
+         */
+        @JvmStatic
+        inline fun <T> measureExecutionTime(tag: String, block: () -> T): T {
+            val start = System.nanoTime()
+            val result = block()
+            val executionTime = (System.nanoTime() - start) / 1_000_000
+            if (BuildConfig.DEBUG) {
+                SecureLogger.v(TAG, "$tag executed in ${executionTime}ms")
+            }
+            return result
+        }
+
+        /**
+         * Get native heap information (API 23+).
+         */
+        @JvmStatic
+        fun getNativeHeapInfo(): String? {
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val nativeHeapSize = Debug.getNativeHeapSize() / BYTES_IN_MEGABYTE
+                val nativeHeapAllocated = Debug.getNativeHeapAllocatedSize() / BYTES_IN_MEGABYTE
+                val nativeHeapFree = Debug.getNativeHeapFreeSize() / BYTES_IN_MEGABYTE
+                "Native Heap - Size: ${nativeHeapSize}MB, Allocated: ${nativeHeapAllocated}MB, Free: ${nativeHeapFree}MB"
+            } else {
+                null
+            }
+        }
+
+        /**
+         * Performance metrics collection helper.
+         */
+        @JvmStatic
+        fun collectPerformanceMetrics(renderTimeMs: Long = 0, frameDrops: Int = 0): PerformanceMetrics {
+            return PerformanceMetrics(
+                memory = getMemoryInfo(),
+                renderTimeMs = renderTimeMs,
+                frameDrops = frameDrops,
+            )
         }
     }
 
@@ -144,6 +196,7 @@ class PerformanceMonitor @Inject constructor() {
     // Performance history
     private val performanceSamples = mutableListOf<PerformanceSample>()
     private val operationTimes = mutableMapOf<String, MutableList<Long>>()
+    private val operationTimesLock = Any()
 
     init {
         determineDeviceTier()
@@ -184,7 +237,7 @@ class PerformanceMonitor @Inject constructor() {
         recordOperationTime(operationName, executionTime)
 
         if (BuildConfig.DEBUG) {
-            Log.d(TAG, "Operation '$operationName' took ${executionTime}ms")
+            SecureLogger.d(TAG, "Operation '$operationName' took ${executionTime}ms")
         }
 
         return result
@@ -193,20 +246,22 @@ class PerformanceMonitor @Inject constructor() {
     /**
      * Record operation execution time
      */
-    private fun recordOperationTime(operationName: String, timeMs: Long) {
-        val times = operationTimes.getOrPut(operationName) { mutableListOf() }
-        times.add(timeMs)
+    fun recordOperationTime(operationName: String, timeMs: Long) {
+        synchronized(operationTimesLock) {
+            val times = operationTimes.getOrPut(operationName) { mutableListOf() }
+            times.add(timeMs)
 
-        // Keep only recent samples to prevent memory leaks
-        if (times.size > MAX_OPERATION_SAMPLES) {
-            times.removeAt(0)
-        }
+            // Keep only recent samples to prevent memory leaks
+            if (times.size > MAX_OPERATION_SAMPLES) {
+                times.removeAt(0)
+            }
 
-        // Clean up operation times map if it gets too large
-        if (operationTimes.size > 20) {
-            // Remove least recently used operations
-            val sortedByUsage = operationTimes.toList().sortedBy { it.second.size }
-            operationTimes.remove(sortedByUsage.first().first)
+            // Clean up operation times map if it gets too large
+            if (operationTimes.size > 20) {
+                // Remove least recently used operations
+                val sortedByUsage = operationTimes.entries.sortedBy { it.value.size }
+                sortedByUsage.firstOrNull()?.key?.let { operationTimes.remove(it) }
+            }
         }
     }
 
@@ -214,7 +269,9 @@ class PerformanceMonitor @Inject constructor() {
      * Get average operation time
      */
     fun getAverageOperationTime(operationName: String): Long {
-        val times = operationTimes[operationName] ?: return 0L
+        val times = synchronized(operationTimesLock) {
+            operationTimes[operationName]?.toList()
+        } ?: return 0L
         return if (times.isNotEmpty()) times.average().toLong() else 0L
     }
 
@@ -223,7 +280,7 @@ class PerformanceMonitor @Inject constructor() {
      */
     suspend fun startMonitoring() {
         if (!MONITORING_ENABLED_ONLY_IN_DEBUG || BuildConfig.DEBUG) {
-            while (true) {
+            while (coroutineContext.isActive) {
                 updatePerformanceMetrics()
                 delay(SAMPLE_INTERVAL_MS)
             }
@@ -254,7 +311,10 @@ class PerformanceMonitor @Inject constructor() {
         addPerformanceSample(sample)
 
         if (BuildConfig.DEBUG) {
-            Log.d(TAG, "Performance update - Memory: ${usedMemory / 1024 / 1024}MB, Score: ${_performanceScore.value}")
+            SecureLogger.d(
+                TAG,
+                "Performance update - Memory: ${usedMemory / BYTES_IN_MEGABYTE}MB, Score: ${_performanceScore.value}",
+            )
         }
     }
 
@@ -301,7 +361,7 @@ class PerformanceMonitor @Inject constructor() {
      */
     private fun determineDeviceTier() {
         val runtime = Runtime.getRuntime()
-        val maxMemory = runtime.maxMemory() / 1024 / 1024 // MB
+        val maxMemory = runtime.maxMemory() / BYTES_IN_MEGABYTE // MB
 
         val tier = when {
             maxMemory > 6144 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N -> DeviceTier.HIGH_END
@@ -312,7 +372,7 @@ class PerformanceMonitor @Inject constructor() {
         _deviceTier.value = tier
 
         if (BuildConfig.DEBUG) {
-            Log.d(TAG, "Device tier determined: $tier (${maxMemory}MB RAM)")
+            SecureLogger.d(TAG, "Device tier determined: $tier (${maxMemory}MB RAM)")
         }
     }
 
@@ -393,7 +453,7 @@ class PerformanceMonitor @Inject constructor() {
         return mapOf(
             "currentScore" to _performanceScore.value,
             "deviceTier" to _deviceTier.value.name,
-            "memoryUsageMB" to _memoryUsage.value / 1024 / 1024,
+            "memoryUsageMB" to _memoryUsage.value / BYTES_IN_MEGABYTE,
             "frameRate" to _frameRate.value,
             "networkLatency" to _networkLatency.value,
             "totalSamples" to performanceSamples.size,
@@ -403,7 +463,7 @@ class PerformanceMonitor @Inject constructor() {
 }
 
 /**
- * Composable for monitoring UI performance
+ * Composable for monitoring UI performance via a shared monitor instance.
  */
 @Composable
 fun PerformanceTracker(
@@ -431,11 +491,73 @@ fun PerformanceTracker(
 }
 
 /**
- * Extension function for PerformanceMonitor
+ * Composable for monitoring performance during composition.
  */
-private fun PerformanceMonitor.recordOperationTime(operationName: String, timeMs: Long) {
-    // This would be implemented in the PerformanceMonitor class
-    if (BuildConfig.DEBUG) {
-        Log.d("PerformanceMonitor", "UI operation '$operationName' took ${timeMs}ms")
+@Composable
+fun PerformanceMetricsTracker(
+    enabled: Boolean = true,
+    intervalMs: Long = 10000, // 10 seconds
+    onMetricsCollected: (PerformanceMonitor.PerformanceMetrics) -> Unit = {},
+) {
+    var lastCollectionTime by remember { mutableLongStateOf(0L) }
+
+    LaunchedEffect(enabled) {
+        if (!enabled) return@LaunchedEffect
+
+        while (true) {
+            delay(intervalMs)
+
+            val currentTime = System.currentTimeMillis()
+            val renderTime = currentTime - lastCollectionTime
+            lastCollectionTime = currentTime
+
+            val metrics = PerformanceMonitor.collectPerformanceMetrics(renderTime)
+            onMetricsCollected(metrics)
+
+            // Log metrics only if verbose logging is enabled
+            if (BuildConfig.DEBUG) {
+                SecureLogger.v(
+                    "PerformanceMetricsTracker",
+                    "Memory: ${metrics.memory.usedMemoryMB}MB (${String.format("%.1f", metrics.memory.usagePercentage)}%), " +
+                        "Render: ${metrics.renderTimeMs}ms",
+                )
+            }
+
+            // Auto-GC if memory usage is very high
+            if (metrics.memory.usagePercentage > 90f) {
+                PerformanceMonitor.forceGarbageCollection("High memory pressure")
+            }
+        }
     }
+}
+
+/**
+ * Wrapper for performance-sensitive operations.
+ */
+@Composable
+fun <T> performanceOptimized(
+    key: Any?,
+    enabled: Boolean = true,
+    computation: @Composable () -> T,
+): T {
+    return if (enabled) {
+        remember(key) {
+            computation
+        }.invoke()
+    } else {
+        computation()
+    }
+}
+
+/**
+ * Extension function for measuring block execution time.
+ */
+suspend inline fun <T> measureSuspendTime(tag: String, crossinline block: suspend () -> T): T {
+    val start = System.nanoTime()
+    val result = block()
+    val executionTime = (System.nanoTime() - start) / 1_000_000
+    if (BuildConfig.DEBUG) {
+        SecureLogger.v("PerformanceMonitor", "$tag executed in ${executionTime}ms")
+    }
+    return result
 }
