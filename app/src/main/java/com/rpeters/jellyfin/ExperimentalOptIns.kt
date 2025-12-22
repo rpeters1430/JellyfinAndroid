@@ -4,6 +4,7 @@ package com.rpeters.jellyfin
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.runtime.ExperimentalComposeApi
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.unit.ExperimentalUnitApi
@@ -29,6 +30,7 @@ import kotlinx.coroutines.FlowPreview
     ExperimentalComposeUiApi::class,
     ExperimentalComposeApi::class,
     ExperimentalUnitApi::class,
+    ExperimentalMaterial3WindowSizeClassApi::class,
     ExperimentalTvMaterial3Api::class,
     ExperimentalCoilApi::class,
     ExperimentalCoroutinesApi::class,

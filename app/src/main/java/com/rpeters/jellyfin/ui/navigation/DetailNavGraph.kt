@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
@@ -38,11 +37,12 @@ import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MovieDetailViewModel
 import com.rpeters.jellyfin.ui.viewmodel.TVEpisodeDetailViewModel
 import com.rpeters.jellyfin.utils.SecureLogger
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 
 /**
  * Detail and playback-adjacent destinations.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptInAppExperimentalApis
 fun androidx.navigation.NavGraphBuilder.detailNavGraph(
     navController: NavHostController,
 ) {

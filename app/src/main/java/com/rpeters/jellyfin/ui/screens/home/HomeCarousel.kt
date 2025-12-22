@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -39,8 +38,9 @@ import com.rpeters.jellyfin.ui.image.ImageQuality
 import com.rpeters.jellyfin.ui.image.ImageSize
 import com.rpeters.jellyfin.ui.image.OptimizedImage
 import org.jellyfin.sdk.model.api.BaseItemDto
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptInAppExperimentalApis
 @Composable
 fun HomeCarousel(
     movies: List<BaseItemDto>,
@@ -144,7 +144,7 @@ private fun CarouselMovieCard(
  * Enhanced Material 3 Expressive Carousel for all content types
  * Supports Movies, TV Shows, Episodes, Music, and more
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptInAppExperimentalApis
 @Composable
 fun EnhancedContentCarousel(
     items: List<BaseItemDto>,

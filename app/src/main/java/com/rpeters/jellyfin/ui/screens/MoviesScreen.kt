@@ -33,7 +33,6 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -72,8 +71,9 @@ import com.rpeters.jellyfin.ui.theme.MovieRed
 import com.rpeters.jellyfin.ui.theme.MusicGreen
 import com.rpeters.jellyfin.utils.getItemKey
 import org.jellyfin.sdk.model.api.BaseItemDto
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptInAppExperimentalApis
 @Composable
 fun MoviesScreen(
     movies: List<BaseItemDto>,
