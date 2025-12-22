@@ -17,8 +17,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.carousel.HorizontalCenteredHeroCarousel
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
-import androidx.compose.material3.carousel.HorizontalUncontainedCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -57,14 +57,14 @@ fun HomeCarousel(
             modifier = Modifier.padding(horizontal = Dimens.Spacing16, vertical = Dimens.Spacing8),
         )
         val carouselState = rememberCarouselState { movies.size }
-        HorizontalUncontainedCarousel(
+        HorizontalCenteredHeroCarousel(
             state = carouselState,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(240.dp),
-            itemWidth = 280.dp,
-            itemSpacing = Dimens.Spacing12,
-            contentPadding = PaddingValues(horizontal = Dimens.Spacing16),
+                .height(260.dp),
+            maxItemWidth = 320.dp,
+            itemSpacing = 16.dp,
+            contentPadding = PaddingValues(horizontal = 16.dp),
         ) { index ->
             val movie = movies[index]
             CarouselMovieCard(
