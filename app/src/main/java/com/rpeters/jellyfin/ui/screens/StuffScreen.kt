@@ -187,6 +187,8 @@ fun StuffScreen(
                     getImageUrl = { item -> viewModel.getImageUrl(item) },
                     itemKey = { item -> viewModel.libraryItemKey(item) },
                     onItemClick = onItemClick,
+                    onFavoriteClick = { viewModel.toggleFavorite(it) },
+                    onShareClick = { ShareUtils.shareMedia(context, it) },
                     isLoadingMore = paginationState?.isLoadingMore ?: false,
                     hasMoreItems = paginationState?.hasMore ?: false,
                     onLoadMore = { viewModel.loadMoreLibraryItems(libraryId) },
@@ -216,6 +218,8 @@ fun StuffGrid(
     getImageUrl: (BaseItemDto) -> String?,
     itemKey: (BaseItemDto) -> String,
     onItemClick: (String) -> Unit,
+    onFavoriteClick: (BaseItemDto) -> Unit,
+    onShareClick: (BaseItemDto) -> Unit,
     isLoadingMore: Boolean,
     hasMoreItems: Boolean,
     onLoadMore: () -> Unit,
@@ -267,10 +271,10 @@ fun StuffGrid(
                     }
                 },
                 onFavoriteClick = {
-                    viewModel.toggleFavorite(stuffItem)
+                    onFavoriteClick(stuffItem)
                 },
                 onMoreClick = {
-                    ShareUtils.shareMedia(context, stuffItem)
+                    onShareClick(stuffItem)
                 },
             )
         }
@@ -307,6 +311,8 @@ fun StuffGridPreview() {
         getImageUrl = { null },
         itemKey = { item -> item.id?.toString() ?: "preview-${item.hashCode()}" },
         onItemClick = {},
+        onFavoriteClick = {},
+        onShareClick = {},
         isLoadingMore = false,
         hasMoreItems = false,
         onLoadMore = {},

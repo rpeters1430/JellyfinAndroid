@@ -1,6 +1,5 @@
 package com.rpeters.jellyfin.ui.screens
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,6 +14,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -22,6 +23,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
@@ -33,6 +36,7 @@ import com.rpeters.jellyfin.ui.utils.MediaPlayerUtils
 import com.rpeters.jellyfin.ui.utils.ShareUtils
 import com.rpeters.jellyfin.ui.viewmodel.AlbumDetailViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
+import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 @OptInAppExperimentalApis
@@ -45,12 +49,26 @@ fun AlbumDetailScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
+    val handlePlay: (BaseItemDto) -> Unit = { track ->
+        val streamUrl = mainViewModel.getStreamUrl(track)
+        if (streamUrl != null) {
+            MediaPlayerUtils.playMedia(context, streamUrl, track)
+        } else {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("Unable to start playback")
+            }
+        }
+    }
 
     LaunchedEffect(albumId) {
         viewModel.load(albumId)
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -96,22 +114,8 @@ fun AlbumDetailScreen(
                         imageUrl = mainViewModel.getImageUrl(track) ?: "",
                         rating = null,
                         isFavorite = track.userData?.isFavorite == true,
-                        onCardClick = {
-                            val streamUrl = mainViewModel.getStreamUrl(track)
-                            if (streamUrl != null) {
-                                MediaPlayerUtils.playMedia(context, streamUrl, track)
-                            } else {
-                                Toast.makeText(context, "Unable to start playback", Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        onPlayClick = {
-                            val streamUrl = mainViewModel.getStreamUrl(track)
-                            if (streamUrl != null) {
-                                MediaPlayerUtils.playMedia(context, streamUrl, track)
-                            } else {
-                                Toast.makeText(context, "Unable to start playback", Toast.LENGTH_SHORT).show()
-                            }
-                        },
+                        onCardClick = { handlePlay(track) },
+                        onPlayClick = { handlePlay(track) },
                         onFavoriteClick = {
                             mainViewModel.toggleFavorite(track)
                         },
