@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -35,6 +36,7 @@ import com.rpeters.jellyfin.ui.components.ExpressiveFloatingToolbar
 import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
 import com.rpeters.jellyfin.ui.components.ToolbarAction
+import com.rpeters.jellyfin.ui.utils.ShareUtils
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.utils.SecureLogger
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -54,6 +56,7 @@ fun StuffScreen(
         SecureLogger.d("StuffScreen", "StuffScreen started: libraryId=$libraryId, collectionType=$collectionType")
     }
     val appState by viewModel.appState.collectAsState()
+    val context = LocalContext.current
 
     if (BuildConfig.DEBUG) {
         SecureLogger.d("StuffScreen", "App state libraries count: ${appState.libraries.size}")
@@ -184,6 +187,8 @@ fun StuffScreen(
                     getImageUrl = { item -> viewModel.getImageUrl(item) },
                     itemKey = { item -> viewModel.libraryItemKey(item) },
                     onItemClick = onItemClick,
+                    onFavoriteClick = { viewModel.toggleFavorite(it) },
+                    onShareClick = { ShareUtils.shareMedia(context, it) },
                     isLoadingMore = paginationState?.isLoadingMore ?: false,
                     hasMoreItems = paginationState?.hasMore ?: false,
                     onLoadMore = { viewModel.loadMoreLibraryItems(libraryId) },
@@ -213,6 +218,8 @@ fun StuffGrid(
     getImageUrl: (BaseItemDto) -> String?,
     itemKey: (BaseItemDto) -> String,
     onItemClick: (String) -> Unit,
+    onFavoriteClick: (BaseItemDto) -> Unit,
+    onShareClick: (BaseItemDto) -> Unit,
     isLoadingMore: Boolean,
     hasMoreItems: Boolean,
     onLoadMore: () -> Unit,
@@ -264,10 +271,10 @@ fun StuffGrid(
                     }
                 },
                 onFavoriteClick = {
-                    // TODO: Implement favorite toggle
+                    onFavoriteClick(stuffItem)
                 },
                 onMoreClick = {
-                    // TODO: Show context menu with download, share options
+                    onShareClick(stuffItem)
                 },
             )
         }
@@ -304,6 +311,8 @@ fun StuffGridPreview() {
         getImageUrl = { null },
         itemKey = { item -> item.id?.toString() ?: "preview-${item.hashCode()}" },
         onItemClick = {},
+        onFavoriteClick = {},
+        onShareClick = {},
         isLoadingMore = false,
         hasMoreItems = false,
         onLoadMore = {},
