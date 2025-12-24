@@ -14,7 +14,7 @@ android {
     defaultConfig {
         testInstrumentationRunnerArguments += mapOf(
             "clearPackageData" to "true",
-            "useTestStorageService" to "true",
+            "useTestStorageService" to "true"
         )
         applicationId = "com.rpeters.jellyfin"
         minSdk = 26 // Android 8.0+ (was 31) - Broader device compatibility
@@ -150,6 +150,7 @@ dependencies {
     // Hilt for dependency injection
     implementation(libs.dagger.hilt.android)
     ksp(libs.dagger.hilt.compiler)
+    ksp(libs.kotlinx.metadata.jvm) // Fix for Hilt metadata version error
     implementation(libs.androidx.hilt.navigation.compose)
 
     // Android TV Compose
@@ -168,22 +169,23 @@ dependencies {
     testImplementation(libs.robolectric)
 
     // Hilt testing
-    testImplementation("com.google.dagger:hilt-android-testing:${libs.versions.hilt.get()}")
+    testImplementation(libs.dagger.hilt.android.testing)
     kspTest("com.google.dagger:hilt-compiler:${libs.versions.hilt.get()}")
+    kspTest(libs.kotlinx.metadata.jvm)
 
     // Turbine for testing StateFlow
-    testImplementation("app.cash.turbine:turbine:1.2.1")
+    testImplementation(libs.turbine)
 
     // MockWebServer for network testing
-    testImplementation("com.squareup.okhttp3:mockwebserver:${libs.versions.okhttp.get()}")
+    testImplementation(libs.mockwebserver)
 
     // Instrumentation Testing
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.navigation.testing)
     androidTestImplementation(libs.androidx.test.core)
-    androidTestImplementation("androidx.test:rules:1.7.0")
-    androidTestImplementation("androidx.test.services:test-services:1.6.0")
+    androidTestImplementation(libs.androidx.rules)
+    androidTestImplementation(libs.androidx.test.services)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
     androidTestImplementation(libs.mockk)
@@ -191,8 +193,9 @@ dependencies {
     androidTestImplementation(libs.kotlinx.coroutines.test)
 
     // Hilt instrumentation testing
-    androidTestImplementation("com.google.dagger:hilt-android-testing:${libs.versions.hilt.get()}")
+    androidTestImplementation(libs.dagger.hilt.android.testing)
     kspAndroidTest("com.google.dagger:hilt-compiler:${libs.versions.hilt.get()}")
+    kspAndroidTest(libs.kotlinx.metadata.jvm)
 
     // Debug Tools
     debugImplementation(libs.androidx.ui.tooling)
