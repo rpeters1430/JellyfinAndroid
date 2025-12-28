@@ -16,6 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltAndroidApp
@@ -30,7 +31,8 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
     @Inject
     lateinit var modernSurfaceCoordinator: ModernSurfaceCoordinator
 
-    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val applicationJob = SupervisorJob()
+    private val applicationScope = CoroutineScope(applicationJob + Dispatchers.Default)
 
     companion object {
         private const val TAG = "JellyfinApplication"
@@ -92,11 +94,13 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
     private fun initializePerformanceOptimizations() {
         applicationScope.launch {
             try {
-                // Initialize network optimizations for StrictMode compliance
+                // Initialize network optimizations off the main thread
                 NetworkOptimizer.initialize(this@JellyfinApplication)
 
-                // Configure StrictMode with network optimizations
-                NetworkOptimizer.configureNetworkStrictMode()
+                // Configure StrictMode on the main thread to ensure it applies correctly
+                withContext(Dispatchers.Main) {
+                    NetworkOptimizer.configureNetworkStrictMode()
+                }
 
                 SecureLogger.i(TAG, "Performance optimizations initialized")
             } catch (e: Exception) {
@@ -104,21 +108,23 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
 
                 // Fallback to basic StrictMode if optimizations fail
                 if (BuildConfig.DEBUG) {
-                    StrictMode.setThreadPolicy(
-                        StrictMode.ThreadPolicy.Builder()
-                            .detectDiskReads()
-                            .detectDiskWrites()
-                            .detectNetwork()
-                            .penaltyLog()
-                            .build(),
-                    )
-                    StrictMode.setVmPolicy(
-                        StrictMode.VmPolicy.Builder()
-                            .detectLeakedClosableObjects()
-                            .detectUntaggedSockets()
-                            .penaltyLog()
-                            .build(),
-                    )
+                    withContext(Dispatchers.Main) {
+                        StrictMode.setThreadPolicy(
+                            StrictMode.ThreadPolicy.Builder()
+                                .detectDiskReads()
+                                .detectDiskWrites()
+                                .detectNetwork()
+                                .penaltyLog()
+                                .build(),
+                        )
+                        StrictMode.setVmPolicy(
+                            StrictMode.VmPolicy.Builder()
+                                .detectLeakedClosableObjects()
+                                .detectUntaggedSockets()
+                                .penaltyLog()
+                                .build(),
+                        )
+                    }
                 }
             }
         }
@@ -141,6 +147,7 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
             if (::offlineDownloadManager.isInitialized) {
                 offlineDownloadManager.cleanup()
             }
+            applicationJob.cancel()
         } catch (e: Exception) {
             SecureLogger.e(TAG, "Error during resource cleanup", e)
         }
