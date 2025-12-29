@@ -85,6 +85,7 @@ import androidx.media3.ui.PlayerView
 import coil3.compose.AsyncImage
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 @UnstableApi
 @Composable
@@ -287,9 +288,14 @@ fun VideoPlayerScreen(
 
         // Periodically sample current position from the player for UI elements like skip buttons
         var currentPosMs by remember { mutableLongStateOf(0L) }
-        LaunchedEffect(exoPlayer) {
-            while (true) {
-                currentPosMs = exoPlayer?.currentPosition ?: 0L
+        LaunchedEffect(exoPlayer, playerState.isPlaying, playerState.isLoading) {
+            val player = exoPlayer ?: run {
+                currentPosMs = 0L
+                return@LaunchedEffect
+            }
+            currentPosMs = player.currentPosition
+            while (isActive && (playerState.isPlaying || playerState.isLoading)) {
+                currentPosMs = player.currentPosition
                 delay(500)
             }
         }
@@ -1071,7 +1077,6 @@ private fun VideoControlsOverlay(
                 }
 
                 // Fullscreen button (right) - triggers PiP if not fullscreen with expressive styling
-                if (supportsPip) 1f else 0.4f
                 Surface(
                     modifier = Modifier
                         .padding(start = 4.dp)
