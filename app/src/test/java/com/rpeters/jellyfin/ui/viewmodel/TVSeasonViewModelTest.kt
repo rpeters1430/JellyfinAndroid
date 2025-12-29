@@ -42,10 +42,10 @@ class TVSeasonViewModelTest {
 
     @Test
     fun `loadSeriesData emits loading states and final data`() = runTest {
-        val seriesId = UUID.randomUUID().toString()
-        val series = BaseItemDto(id = UUID.fromString(seriesId), name = "Series", type = BaseItemKind.SERIES)
-        val season = BaseItemDto(id = UUID.randomUUID(), name = "Season 1")
-        val similar = BaseItemDto(id = UUID.randomUUID(), name = "Similar", type = BaseItemKind.SERIES)
+        val seriesId = randomSeriesId()
+        val series = series(id = seriesId, name = "Series")
+        val season = season(name = "Season 1")
+        val similar = similarSeries(name = "Similar")
 
         coEvery { repository.getSeriesDetails(seriesId) } returns ApiResult.Success(series)
         coEvery { mediaRepository.getSeasonsForSeries(seriesId) } returns ApiResult.Success(listOf(season))
@@ -81,7 +81,7 @@ class TVSeasonViewModelTest {
 
     @Test
     fun `loadSeriesData sets error when repository call fails`() = runTest {
-        val seriesId = "series-id"
+        val seriesId = randomSeriesId()
         coEvery { repository.getSeriesDetails(seriesId) } returns ApiResult.Error("failed to load series")
         coEvery { mediaRepository.getSeasonsForSeries(seriesId) } returns ApiResult.Success(emptyList())
         coEvery { mediaRepository.getSimilarSeries(seriesId) } returns ApiResult.Success(emptyList())
@@ -96,22 +96,32 @@ class TVSeasonViewModelTest {
 
     @Test
     fun `loadSeriesData filters similar series entries`() = runTest {
-        val seriesId = UUID.randomUUID()
-        val series = BaseItemDto(id = seriesId, name = "Main Series", type = BaseItemKind.SERIES)
-        val validSimilar = BaseItemDto(id = UUID.randomUUID(), name = "Valid", type = BaseItemKind.SERIES)
-        val anotherSeries = BaseItemDto(id = UUID.randomUUID(), name = "Another", type = BaseItemKind.SERIES)
-        val unrelatedMovie = BaseItemDto(id = UUID.randomUUID(), name = "Movie", type = BaseItemKind.MOVIE)
+        val seriesId = randomSeriesId()
+        val series = series(id = seriesId, name = "Main Series")
+        val validSimilar = similarSeries(name = "Valid")
+        val anotherSeries = similarSeries(name = "Another")
+        val unrelatedMovie = similarSeries(name = "Movie", type = BaseItemKind.MOVIE)
 
-        coEvery { repository.getSeriesDetails(seriesId.toString()) } returns ApiResult.Success(series)
-        coEvery { mediaRepository.getSeasonsForSeries(seriesId.toString()) } returns ApiResult.Success(emptyList())
-        coEvery { mediaRepository.getSimilarSeries(seriesId.toString()) } returns ApiResult.Success(
+        coEvery { repository.getSeriesDetails(seriesId) } returns ApiResult.Success(series)
+        coEvery { mediaRepository.getSeasonsForSeries(seriesId) } returns ApiResult.Success(emptyList())
+        coEvery { mediaRepository.getSimilarSeries(seriesId) } returns ApiResult.Success(
             listOf(validSimilar, anotherSeries.copy(type = BaseItemKind.MOVIE), series, unrelatedMovie),
         )
 
-        viewModel.loadSeriesData(seriesId.toString())
+        viewModel.loadSeriesData(seriesId)
         dispatcher.scheduler.advanceUntilIdle()
 
         val similarSeries = viewModel.state.value.similarSeries
         assertEquals(listOf(validSimilar), similarSeries)
     }
+
+    private fun randomSeriesId(): String = UUID.randomUUID().toString()
+
+    private fun series(id: String = randomSeriesId(), name: String): BaseItemDto =
+        BaseItemDto(id = UUID.fromString(id), name = name, type = BaseItemKind.SERIES)
+
+    private fun season(name: String): BaseItemDto = BaseItemDto(id = UUID.randomUUID(), name = name)
+
+    private fun similarSeries(name: String, type: BaseItemKind = BaseItemKind.SERIES): BaseItemDto =
+        BaseItemDto(id = UUID.randomUUID(), name = name, type = type)
 }
