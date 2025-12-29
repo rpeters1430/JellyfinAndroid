@@ -31,24 +31,28 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.ThumbDown
+import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -170,12 +174,12 @@ fun TVSeasonScreen(
             Surface(
                 onClick = onBackClick,
                 shape = CircleShape,
-                color = Color.Black.copy(alpha = 0.5f),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f),
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = stringResource(id = R.string.navigate_up),
-                    tint = Color.White,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(12.dp).size(24.dp),
                 )
             }
@@ -184,19 +188,19 @@ fun TVSeasonScreen(
             Surface(
                 onClick = { viewModel.refresh() },
                 shape = CircleShape,
-                color = Color.Black.copy(alpha = 0.5f),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f),
             ) {
                 if (state.isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.padding(12.dp).size(24.dp),
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         strokeWidth = 2.dp,
                     )
                 } else {
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = stringResource(id = R.string.refresh),
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(12.dp).size(24.dp),
                     )
                 }
@@ -224,6 +228,9 @@ private fun TVSeasonContent(
                     series = series,
                     getImageUrl = getImageUrl,
                     getBackdropUrl = getBackdropUrl,
+                    primarySeasonId = state.seasons.firstOrNull()?.id,
+                    onSeriesClick = onSeriesClick,
+                    onSeasonClick = onSeasonClick,
                 )
             }
         }
@@ -318,6 +325,9 @@ private fun SeriesDetailsHeader(
     series: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
     getBackdropUrl: (BaseItemDto) -> String?,
+    primarySeasonId: String?,
+    onSeriesClick: (String) -> Unit,
+    onSeasonClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // Full-bleed hero section - Google TV style
@@ -486,7 +496,125 @@ private fun SeriesDetailsHeader(
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Hero call-to-actions inspired by Google TV
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedButton(
+                    onClick = { series.id?.let(onSeriesClick) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(28.dp),
+                    border = androidx.compose.foundation.BorderStroke(
+                        width = 1.2.dp,
+                        color = Color.White.copy(alpha = 0.35f),
+                    ),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color.White.copy(alpha = 0.08f),
+                        contentColor = Color.White,
+                    ),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 12.dp),
+                    )
+                    Text(
+                        text = "Summaries, reviews & more",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+
+                Button(
+                    onClick = {
+                        when {
+                            primarySeasonId != null -> onSeasonClick(primarySeasonId)
+                            series.id != null -> onSeriesClick(series.id!!)
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(28.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.95f),
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    ),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(22.dp)
+                            .padding(end = 12.dp),
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Watch now",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            text = series.studio ?: "Continue from your library",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    QuickAction(
+                        icon = Icons.Default.BookmarkBorder,
+                        label = "Watchlist",
+                    )
+                    QuickAction(
+                        icon = Icons.Default.CheckCircle,
+                        label = "Watched it?",
+                    )
+                    QuickAction(
+                        icon = Icons.Default.ThumbUp,
+                        label = "Like",
+                    )
+                    QuickAction(
+                        icon = Icons.Default.ThumbDown,
+                        label = "Dislike",
+                    )
+                }
+            }
         }
+    }
+}
+
+@Composable
+private fun QuickAction(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = Color.White.copy(alpha = 0.08f),
+            tonalElevation = 2.dp,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = Color.White,
+                modifier = Modifier.padding(12.dp).size(20.dp),
+            )
+        }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = Color.White.copy(alpha = 0.9f),
+        )
     }
 }
 
