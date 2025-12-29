@@ -72,6 +72,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -108,6 +109,7 @@ fun VideoPlayerScreen(
     onSubtitleDialogDismiss: () -> Unit,
     onCastDeviceSelect: (String) -> Unit,
     onCastDialogDismiss: () -> Unit,
+    onErrorDismiss: () -> Unit,
     onClose: () -> Unit = {},
     exoPlayer: ExoPlayer?,
     supportsPip: Boolean,
@@ -145,6 +147,7 @@ fun VideoPlayerScreen(
             onSeekTo = onSeek,
             onShowAudio = onAudioTrackSelect,
             onShowSubtitles = onSubtitleTrackSelect,
+            onErrorDismiss = onErrorDismiss,
             modifier = modifier,
         )
         return
@@ -188,6 +191,20 @@ fun VideoPlayerScreen(
     LaunchedEffect(playerState.isLoading, playerState.isPlaying) {
         if (playerState.isLoading || !playerState.isPlaying) {
             controlsVisible = true
+        }
+    }
+
+    // Snackbar for showing errors
+    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+
+    // Show error in Snackbar when Cast errors occur
+    LaunchedEffect(playerState.error) {
+        playerState.error?.let { errorMessage ->
+            snackbarHostState.showSnackbar(
+                message = errorMessage,
+                duration = androidx.compose.material3.SnackbarDuration.Short,
+            )
+            onErrorDismiss()
         }
     }
 
@@ -699,6 +716,14 @@ private fun CastNowPlayingOverlay(
                 }
             }
         }
+
+        // Snackbar Host for error messages
+        androidx.compose.material3.SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 80.dp), // Position above player controls
+        )
     }
 }
 
@@ -774,12 +799,9 @@ private fun VideoControlsOverlay(
                 overflow = TextOverflow.Ellipsis,
             )
 
-            // Casting button - top right with expressive styling
-            ExpressiveIconButton(
-                icon = if (playerState.isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
-                contentDescription = if (playerState.isCasting) "Disconnect Cast" else "Cast to Device",
-                onClick = onCastClick,
-                isActive = playerState.isCasting,
+            // Casting button - top right with Google Cast MediaRouteButton
+            // This provides the standard Cast icon and device picker dialog
+            MediaRouteButton(
                 modifier = Modifier.padding(start = 8.dp),
                 colors = playerColors,
             )
