@@ -320,7 +320,7 @@ fun PosterMediaCard(
                     Modifier.width(cardWidth)
                 } else {
                     Modifier.fillMaxWidth() // Fill grid cell or available width
-                }
+                },
             )
             .mediaCardSemantics(item) { onClick(item) }
             .combinedClickable(
