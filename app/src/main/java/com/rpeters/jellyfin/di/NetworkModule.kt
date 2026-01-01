@@ -43,6 +43,9 @@ object NetworkModule {
         @ApplicationContext context: Context,
         connectivityChecker: ConnectivityChecker,
         authInterceptor: JellyfinAuthInterceptor,
+        sslSocketFactory: javax.net.ssl.SSLSocketFactory,
+        pinningTrustManager: com.rpeters.jellyfin.data.security.PinningTrustManager,
+        hostnameVerifier: com.rpeters.jellyfin.data.security.PinningHostnameVerifier,
     ): OkHttpClient {
         val cacheDir = File(context.cacheDir, "http_cache")
         val cache = okhttp3.Cache(cacheDir, 150L * 1024 * 1024) // 150 MB
@@ -53,6 +56,9 @@ object NetworkModule {
             .addInterceptor(authInterceptor)
             .authenticator(authInterceptor)
             .addInterceptor(CachePolicyInterceptor(connectivityChecker))
+            // SECURITY: Add certificate pinning
+            .sslSocketFactory(sslSocketFactory, pinningTrustManager)
+            .hostnameVerifier(hostnameVerifier)
 
         if (BuildConfig.DEBUG) {
             builder.addInterceptor(

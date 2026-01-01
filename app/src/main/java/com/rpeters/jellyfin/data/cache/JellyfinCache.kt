@@ -3,8 +3,8 @@ package com.rpeters.jellyfin.data.cache
 import android.content.Context
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -58,18 +58,33 @@ class JellyfinCache @Inject constructor(
     private val _cacheStats = MutableStateFlow(CacheStats())
     val cacheStats: StateFlow<CacheStats> = _cacheStats.asStateFlow()
 
-    private val cacheDir: File by lazy {
-        File(context.cacheDir, CACHE_DIR).apply {
-            if (!exists()) {
-                mkdirs()
-            }
+    // Use lateinit to avoid file I/O during lazy initialization
+    // Directory creation happens on background thread during init
+    private lateinit var cacheDir: File
+
+    private fun ensureCacheDir(): File {
+        if (!::cacheDir.isInitialized) {
+            cacheDir = File(context.cacheDir, CACHE_DIR)
         }
+        if (!cacheDir.exists()) {
+            cacheDir.mkdirs()
+        }
+        return cacheDir
     }
 
     init {
-        // Clean up old cache entries on initialization - moved to background thread
-        CoroutineScope(Dispatchers.IO).launch {
+        // Clean up old cache entries on initialization
+        // Using GlobalScope for app-wide cache initialization that should complete independently
+        // This is a singleton called at app startup and must complete even if the caller is destroyed
+        @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
+        GlobalScope.launch(Dispatchers.IO) {
             try {
+                // Initialize cache directory on background thread
+                cacheDir = File(context.cacheDir, CACHE_DIR).apply {
+                    if (!exists()) {
+                        mkdirs()
+                    }
+                }
                 cleanupOldEntries()
                 updateCacheStats()
             } catch (e: Exception) {
@@ -235,7 +250,7 @@ class JellyfinCache @Inject constructor(
     suspend fun clearAllCache() = withContext(Dispatchers.IO) {
         memoryCache.clear()
 
-        cacheDir.listFiles()?.forEach { file ->
+        ensureCacheDir().listFiles()?.forEach { file ->
             if (file.isFile && file.name.endsWith(".json")) {
                 file.delete()
             }
@@ -252,7 +267,7 @@ class JellyfinCache @Inject constructor(
      */
     suspend fun getCacheSizeBytes(): Long = withContext(Dispatchers.IO) {
         try {
-            cacheDir.listFiles()?.sumOf { it.length() } ?: 0L
+            ensureCacheDir().listFiles()?.sumOf { it.length() } ?: 0L
         } catch (e: Exception) {
             Log.e(TAG, "Error calculating cache size", e)
             0L
@@ -278,7 +293,7 @@ class JellyfinCache @Inject constructor(
                 }
 
                 // Clean disk cache
-                cacheDir.listFiles()?.forEach { file ->
+                ensureCacheDir().listFiles()?.forEach { file ->
                     if (file.isFile && file.name.endsWith(".json")) {
                         try {
                             val cacheData = json.decodeFromString<CacheData>(file.readText())
@@ -320,7 +335,7 @@ class JellyfinCache @Inject constructor(
      */
     private suspend fun evictOldestEntries(maxSizeBytes: Long) {
         try {
-            val files = cacheDir.listFiles()
+            val files = ensureCacheDir().listFiles()
                 ?.filter { it.isFile && it.name.endsWith(".json") }
                 ?.sortedBy { it.lastModified() } // Oldest first
                 ?: return
@@ -353,7 +368,7 @@ class JellyfinCache @Inject constructor(
      */
     private suspend fun updateCacheStats() {
         try {
-            val diskEntries = cacheDir.listFiles()
+            val diskEntries = ensureCacheDir().listFiles()
                 ?.count { it.isFile && it.name.endsWith(".json") } ?: 0
 
             val memoryEntries = memoryCache.size

@@ -3,7 +3,6 @@ package com.rpeters.jellyfin.data.utils
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.repository.common.ErrorType
 import com.rpeters.jellyfin.utils.SecureLogger
-import io.mockk.any
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject

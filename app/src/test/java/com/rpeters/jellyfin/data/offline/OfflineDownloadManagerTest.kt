@@ -51,10 +51,13 @@ class OfflineDownloadManagerTest {
         every { context.getExternalFilesDir(null) } returns tempDir
         every { context.filesDir } returns tempDir
 
+        val mockEncryptedPreferences = mockk<com.rpeters.jellyfin.data.security.EncryptedPreferences>(relaxed = true)
+
         manager = OfflineDownloadManager(
             context = context,
             repository = repository,
             okHttpClient = okHttpClient,
+            encryptedPreferences = mockEncryptedPreferences,
         )
     }
 

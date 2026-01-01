@@ -2,8 +2,6 @@ package com.rpeters.jellyfin.network
 
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.utils.SecureLogger
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import okhttp3.Authenticator
 import okhttp3.Interceptor
@@ -28,7 +26,11 @@ class JellyfinAuthInterceptor @Inject constructor(
 
         val token = if (shouldAttachToken) {
             ensureFreshToken(repository)
-            repository.getCurrentServer()?.accessToken
+            val server = repository.getCurrentServer()
+            if (server?.accessToken == null) {
+                SecureLogger.w(TAG, "No access token available after token refresh attempt")
+            }
+            server?.accessToken
         } else {
             null
         }
@@ -46,7 +48,9 @@ class JellyfinAuthInterceptor @Inject constructor(
         val attempt = responseCount(response)
         backoff(attempt)
 
-        val refreshed = runBlocking(Dispatchers.IO) {
+        // Note: runBlocking is necessary here as OkHttp's Authenticator is a synchronous API
+        // OkHttp already runs this on a background thread, so we don't need to switch dispatchers
+        val refreshed = runBlocking {
             repository.forceReAuthenticate()
         }
 
@@ -56,9 +60,12 @@ class JellyfinAuthInterceptor @Inject constructor(
         }
 
         val token = repository.getCurrentServer()?.accessToken
-        return token?.let {
-            buildRequestWithHeaders(response.request, it)
+        if (token == null) {
+            SecureLogger.w(TAG, "No token available after successful re-authentication (attempt $attempt)")
+            return null
         }
+
+        return buildRequestWithHeaders(response.request, token)
     }
 
     private fun ensureFreshToken(repository: JellyfinAuthRepository) {
@@ -70,7 +77,9 @@ class JellyfinAuthInterceptor @Inject constructor(
             return
         }
 
-        runBlocking(Dispatchers.IO) {
+        // Note: runBlocking is necessary here as Interceptor.intercept() is a synchronous API
+        // OkHttp already runs this on a background thread, so we don't need to switch dispatchers
+        runBlocking {
             val refreshed = repository.forceReAuthenticate()
             if (!refreshed) {
                 SecureLogger.w(TAG, "Token refresh failed during request preparation")
@@ -96,6 +105,11 @@ class JellyfinAuthInterceptor @Inject constructor(
         return builder.build()
     }
 
+    /**
+     * Builds the X-Emby-Authorization header value.
+     * WARNING: This string contains the authentication token and must NEVER be logged.
+     * Only the last 4-6 characters should be logged for debugging purposes.
+     */
     private fun buildAuthorizationHeader(token: String?): String {
         return buildString {
             append("MediaBrowser Client=\"")
@@ -109,7 +123,7 @@ class JellyfinAuthInterceptor @Inject constructor(
             append("\"")
             if (!token.isNullOrBlank()) {
                 append(", Token=\"")
-                append(token)
+                append(token) // SECURITY: Never log this value
                 append("\"")
             }
         }
@@ -152,9 +166,8 @@ class JellyfinAuthInterceptor @Inject constructor(
             return
         }
 
-        runBlocking {
-            delay(delayMillis)
-        }
+        // Use Thread.sleep instead of runBlocking/delay for synchronous backoff
+        Thread.sleep(delayMillis)
     }
 
     private fun isAuthenticationRequest(request: Request): Boolean {

@@ -74,16 +74,66 @@ class MainActivity : FragmentActivity() {
 
     private fun extractShortcutDestination(intent: Intent?): String? {
         val rawDestination = intent?.getStringExtra(EXTRA_SHORTCUT_DESTINATION) ?: return null
-        return if (SHORTCUT_DESTINATION_PATTERN.matches(rawDestination)) {
-            rawDestination
-        } else {
-            null
+
+        // SECURITY: Validate against whitelist of allowed routes
+        // Pattern matching alone is insufficient - must validate actual route existence
+        if (!SHORTCUT_DESTINATION_PATTERN.matches(rawDestination)) {
+            SecureLogger.w(TAG, "Invalid shortcut destination format")
+            return null
         }
+
+        // Extract base route (without parameters) for validation
+        val baseRoute = rawDestination.split("/").firstOrNull() ?: return null
+
+        // Validate against whitelist of known routes
+        if (!ALLOWED_SHORTCUT_ROUTES.contains(baseRoute)) {
+            SecureLogger.w(TAG, "Shortcut destination not in whitelist: $baseRoute")
+            return null
+        }
+
+        return rawDestination
     }
 
     companion object {
         const val TAG = "MainActivity"
         const val EXTRA_SHORTCUT_DESTINATION = "destination"
+
+        // Pattern to validate basic format (alphanumeric, dash, underscore, slash, braces)
         private val SHORTCUT_DESTINATION_PATTERN = Regex("^[a-zA-Z0-9_\\-/{}]+$")
+
+        // SECURITY: Whitelist of allowed shortcut routes
+        // Only these base routes can be navigated to via shortcuts/deep links
+        private val ALLOWED_SHORTCUT_ROUTES = setOf(
+            // Main screens
+            "home",
+            "enhanced_home",
+            "library",
+            "search",
+            "favorites",
+            "profile",
+            "settings",
+
+            // Content categories
+            "movies",
+            "tv_shows",
+            "music",
+            "home_videos",
+            "books",
+
+            // Detail screens (with parameters)
+            "movie_detail",
+            "episode_detail",
+            "tv_seasons",
+            "tv_episodes",
+            "album_detail",
+            "artist_detail",
+            "home_video_detail",
+            "item_detail",
+            "stuff",
+
+            // Auth screens (limited use)
+            "server_connection",
+            "quick_connect",
+        )
     }
 }

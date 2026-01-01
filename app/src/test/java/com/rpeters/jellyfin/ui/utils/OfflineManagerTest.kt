@@ -17,13 +17,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import org.junit.After
+import org.junit.Before
+import org.junit.Test
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 
 class OfflineManagerTest {
 
@@ -39,7 +39,7 @@ class OfflineManagerTest {
 
     private lateinit var offlineManager: OfflineManager
 
-    @BeforeTest
+    @Before
     fun setUp() {
         MockKAnnotations.init(this)
 
@@ -79,7 +79,7 @@ class OfflineManagerTest {
         offlineManager = OfflineManager(context)
     }
 
-    @AfterTest
+    @After
     fun tearDown() {
         unmockkAll()
     }
