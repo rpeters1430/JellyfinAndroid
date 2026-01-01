@@ -3,7 +3,6 @@ package com.rpeters.jellyfin.ui.viewmodel
 import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import io.mockk.coEvery
-import io.mockk.eq
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -89,7 +88,10 @@ class TVEpisodeDetailViewModelTest {
         assertEquals(listOf("boom", "kaboom"), capturedExceptions.map { it.message })
     }
 
-    private fun createEpisode(): BaseItemDto = BaseItemDto(id = UUID.randomUUID())
+    private fun createEpisode(): BaseItemDto = BaseItemDto(
+        id = UUID.randomUUID(),
+        type = org.jellyfin.sdk.model.api.BaseItemKind.EPISODE
+    )
 
     private fun createPlaybackAnalysis(): PlaybackCapabilityAnalysis =
         PlaybackCapabilityAnalysis(

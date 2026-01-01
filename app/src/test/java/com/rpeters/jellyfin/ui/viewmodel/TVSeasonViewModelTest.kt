@@ -120,7 +120,11 @@ class TVSeasonViewModelTest {
     private fun series(id: String = randomSeriesId(), name: String): BaseItemDto =
         BaseItemDto(id = UUID.fromString(id), name = name, type = BaseItemKind.SERIES)
 
-    private fun season(name: String): BaseItemDto = BaseItemDto(id = UUID.randomUUID(), name = name)
+    private fun season(name: String): BaseItemDto = BaseItemDto(
+        id = UUID.randomUUID(),
+        name = name,
+        type = BaseItemKind.SEASON
+    )
 
     private fun similarSeries(name: String, type: BaseItemKind = BaseItemKind.SERIES): BaseItemDto =
         BaseItemDto(id = UUID.randomUUID(), name = name, type = type)

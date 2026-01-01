@@ -10,8 +10,8 @@ import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.util.DebugLogger
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.utils.DevicePerformanceProfile.Companion.detect
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okio.Path.Companion.toOkioPath
@@ -26,7 +26,10 @@ object ImageLoadingOptimizer {
     private const val BYTES_PER_MEGABYTE = 1024L * 1024L
 
     fun initializeCoil(context: Context, okHttpClient: OkHttpClient) {
-        CoroutineScope(Dispatchers.IO).launch {
+        // Using GlobalScope for app-wide initialization that should complete independently
+        // This is called once at app startup and must complete even if the caller is destroyed
+        @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
+        GlobalScope.launch(Dispatchers.IO) {
             runCatching {
                 val performanceProfile = detect(context)
                 val imageLoader = buildImageLoader(context, okHttpClient, performanceProfile)
@@ -65,12 +68,13 @@ object ImageLoadingOptimizer {
 
                 // Cache 404 responses to prevent repeated failed requests for missing images
                 if (response.code == 404) {
-                    response.newBuilder()
+                    // Return the modified response with cache headers
+                    return@addInterceptor response.newBuilder()
                         .header("Cache-Control", "max-age=3600") // Cache 404s for 1 hour
                         .build()
-                } else {
-                    response
                 }
+
+                response
             }
             .build()
 
@@ -109,7 +113,10 @@ object ImageLoadingOptimizer {
         imageLoader: ImageLoader,
         dispatcher: kotlin.coroutines.CoroutineContext = Dispatchers.IO,
     ) {
-        CoroutineScope(dispatcher).launch {
+        // Using GlobalScope for fire-and-forget cache clearing operation
+        // This operation should complete even if the caller is destroyed
+        @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
+        GlobalScope.launch(dispatcher) {
             runCatching {
                 imageLoader.memoryCache?.clear()
                 imageLoader.diskCache?.clear()

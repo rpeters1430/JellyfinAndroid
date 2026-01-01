@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.data.repository
 
 import android.util.Log
 import androidx.annotation.VisibleForTesting
+import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.model.QuickConnectResult
@@ -59,8 +60,11 @@ class JellyfinAuthRepository @Inject constructor(
     override suspend fun token(): String? = _tokenState.value
 
     private fun saveNewToken(token: String?) {
-        val tokenTail = token?.takeLast(6) ?: "null"
-        Log.d(TAG, "Saving new token: ...$tokenTail")
+        // SECURITY: Never log actual token values, even partially
+        // Tokens should only be logged in extreme debugging scenarios using secure logging
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "Saving new token: ${if (token != null) "[PRESENT]" else "[NULL]"}")
+        }
         _tokenState.update { token }
         // Server state is also updated in authenticateUser method
     }

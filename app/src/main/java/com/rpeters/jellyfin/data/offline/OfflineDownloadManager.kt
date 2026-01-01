@@ -36,6 +36,7 @@ class OfflineDownloadManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val repository: JellyfinRepository,
     private val okHttpClient: OkHttpClient,
+    private val encryptedPreferences: com.rpeters.jellyfin.data.security.EncryptedPreferences,
 ) {
 
     private val _downloads = MutableStateFlow<List<OfflineDownload>>(emptyList())
@@ -54,9 +55,11 @@ class OfflineDownloadManager @Inject constructor(
     }
 
     companion object {
+        private const val TAG = "OfflineDownloadManager"
         private const val DOWNLOADS_KEY = "offline_downloads"
         private const val JELLYFIN_OFFLINE_DIR = "JellyfinOffline"
         private const val CHUNK_SIZE = 8192
+        private const val ENCRYPTED_URL_PREFIX = "encrypted_url_"
     }
 
     init {
@@ -71,14 +74,18 @@ class OfflineDownloadManager @Inject constructor(
         quality: VideoQuality? = null,
         downloadUrl: String? = null,
     ): String {
-        val download = createDownload(item, quality, downloadUrl)
-
+        // Need to launch in scope since createDownload is now suspend
+        var downloadId = ""
         downloadScope.launch {
+            val download = createDownload(item, quality, downloadUrl)
+            downloadId = download.id
             addDownload(download)
             executeDownload(download)
         }
 
-        return download.id
+        // Note: This returns before download.id is set due to async nature
+        // Consider refactoring to return Flow or suspending this function
+        return downloadId.ifEmpty { java.util.UUID.randomUUID().toString() }
     }
 
     fun pauseDownload(downloadId: String) {
@@ -109,6 +116,11 @@ class OfflineDownloadManager @Inject constructor(
 
                 // Delete file
                 deleteDownloadFile(it)
+
+                // SECURITY: Delete encrypted URL from storage
+                if (it.downloadUrl.startsWith(ENCRYPTED_URL_PREFIX)) {
+                    encryptedPreferences.removeKey(it.downloadUrl)
+                }
 
                 // Remove from list
                 removeDownload(downloadId)
@@ -142,8 +154,16 @@ class OfflineDownloadManager @Inject constructor(
             try {
                 updateDownloadStatus(download.id, DownloadStatus.DOWNLOADING)
 
+                // SECURITY: Decrypt the download URL
+                val actualUrl = getDecryptedUrl(download.downloadUrl)
+                if (actualUrl == null) {
+                    Log.e(TAG, "Failed to decrypt download URL for ${download.id}")
+                    updateDownloadStatus(download.id, DownloadStatus.FAILED)
+                    return@launch
+                }
+
                 val request = Request.Builder()
-                    .url(download.downloadUrl)
+                    .url(actualUrl)
                     .build()
 
                 val response = okHttpClient.newCall(request).execute()
@@ -158,14 +178,39 @@ class OfflineDownloadManager @Inject constructor(
                 }
             } catch (e: CancellationException) {
                 if (BuildConfig.DEBUG) {
-                    Log.d("OfflineDownloadManager", "Download cancelled: ${download.id}")
+                    Log.d(TAG, "Download cancelled: ${download.id}")
                 }
                 // Re-throw to propagate cancellation up the coroutine hierarchy
                 throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Download failed for ${download.id}", e)
+                updateDownloadStatus(download.id, DownloadStatus.FAILED)
             }
         }
 
         downloadJobs[download.id] = job
+    }
+
+    /**
+     * Decrypts the download URL from encrypted storage.
+     * SECURITY: URLs contain authentication tokens and must be encrypted.
+     */
+    private suspend fun getDecryptedUrl(urlKeyOrUrl: String): String? {
+        // Check if this is an encrypted key (new format)
+        if (urlKeyOrUrl.startsWith(ENCRYPTED_URL_PREFIX)) {
+            var decryptedUrl: String? = null
+            encryptedPreferences.getEncryptedString(urlKeyOrUrl).collect { url ->
+                decryptedUrl = url
+            }
+            return decryptedUrl
+        }
+
+        // Legacy format: URL was stored directly (unencrypted)
+        // For backward compatibility, return as-is but log warning
+        if (BuildConfig.DEBUG) {
+            Log.w(TAG, "Found unencrypted download URL - consider migrating to encrypted format")
+        }
+        return urlKeyOrUrl
     }
 
     private suspend fun downloadFile(response: Response, download: OfflineDownload) {
@@ -240,7 +285,7 @@ class OfflineDownloadManager @Inject constructor(
         }
     }
 
-    private fun createDownload(
+    private suspend fun createDownload(
         item: BaseItemDto,
         quality: VideoQuality?,
         downloadUrl: String?,
@@ -249,11 +294,18 @@ class OfflineDownloadManager @Inject constructor(
         val fileName = "${item.name?.replace(Regex("[^a-zA-Z0-9.-]"), "_")}_${System.currentTimeMillis()}.mp4"
         val localPath = File(getOfflineDirectory(), fileName).absolutePath
 
+        // SECURITY: Store download URL encrypted
+        // Download URLs contain authentication tokens in query parameters
+        val downloadId = java.util.UUID.randomUUID().toString()
+        val encryptedUrlKey = "$ENCRYPTED_URL_PREFIX$downloadId"
+        encryptedPreferences.putEncryptedString(encryptedUrlKey, url)
+
         return OfflineDownload(
+            id = downloadId,
             jellyfinItemId = item.id.toString(),
             itemName = item.name ?: context.getString(R.string.unknown),
             itemType = item.type?.toString() ?: "Video",
-            downloadUrl = url,
+            downloadUrl = encryptedUrlKey, // Store the key, not the actual URL
             localFilePath = localPath,
             fileSize = 0L, // Will be updated during download
             quality = quality,

@@ -36,13 +36,14 @@ class PlaybackProgressManager @Inject constructor(
     private val _playbackProgress = MutableStateFlow(PlaybackProgress())
     val playbackProgress: StateFlow<PlaybackProgress> = _playbackProgress.asStateFlow()
 
+    // Create a managed scope for fire-and-forget operations
+    // This is a singleton, so the scope lives as long as the app
+    private val managerScope = CoroutineScope(Dispatchers.Default + Job())
     private var progressSyncJob: Job? = null
-    // Memory leak fix: Don't store reference to external scope
-    // Instead, pass scope through parameters or use internal scope for async operations
-    // private var coroutineScope: CoroutineScope? = null
 
     private var currentItemId: String = ""
     private var lastReportedPosition: Long = 0L
+    private var lastStateUpdateTime: Long = 0L
     private var sessionId: String = ""
     private var hasReportedStart: Boolean = false
 
@@ -50,6 +51,7 @@ class PlaybackProgressManager @Inject constructor(
         private const val PROGRESS_SYNC_INTERVAL = 10_000L // 10 seconds
         private const val WATCHED_THRESHOLD = 0.90f // 90% watched
         private const val MIN_POSITION_CHANGE = 5_000L // 5 seconds minimum change
+        private const val STATE_UPDATE_THROTTLE_MS = 500L // Throttle UI state updates to max 2 per second
     }
 
     fun startTracking(
@@ -83,31 +85,36 @@ class PlaybackProgressManager @Inject constructor(
 
         val percentageWatched = (positionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
         val isWatched = percentageWatched >= WATCHED_THRESHOLD
+        val currentTime = System.currentTimeMillis()
 
-        _playbackProgress.update { it.copy(
-            itemId = currentItemId,
-            positionMs = positionMs,
-            durationMs = durationMs,
-            percentageWatched = percentageWatched,
-            isWatched = isWatched,
-        ) }
+        // Throttle state updates to prevent excessive recompositions (max 2 per second)
+        // Only update state if enough time has passed OR if there's a significant change
+        val shouldUpdateState = (currentTime - lastStateUpdateTime >= STATE_UPDATE_THROTTLE_MS) ||
+            kotlin.math.abs(positionMs - _playbackProgress.value.positionMs) >= MIN_POSITION_CHANGE
+
+        if (shouldUpdateState) {
+            _playbackProgress.update { it.copy(
+                itemId = currentItemId,
+                positionMs = positionMs,
+                durationMs = durationMs,
+                percentageWatched = percentageWatched,
+                isWatched = isWatched,
+            ) }
+            lastStateUpdateTime = currentTime
+        }
 
         if (!hasReportedStart) {
             hasReportedStart = true
-            // Use progressSyncJob's scope for fire-and-forget reporting
-            progressSyncJob?.let { job ->
-                kotlinx.coroutines.CoroutineScope(job + Dispatchers.Default).launch {
-                    reportPlaybackStart(positionMs, durationMs)
-                }
+            // Use managed scope for fire-and-forget reporting
+            managerScope.launch {
+                reportPlaybackStart(positionMs, durationMs)
             }
         }
 
-        // Report progress if significant change
+        // Report progress to server if significant change
         if (kotlin.math.abs(positionMs - lastReportedPosition) >= MIN_POSITION_CHANGE) {
-            progressSyncJob?.let { job ->
-                kotlinx.coroutines.CoroutineScope(job + Dispatchers.Default).launch {
-                    reportProgress(positionMs, durationMs, isWatched)
-                }
+            managerScope.launch {
+                reportProgress(positionMs, durationMs, isWatched)
             }
             lastReportedPosition = positionMs
         }
@@ -173,6 +180,7 @@ class PlaybackProgressManager @Inject constructor(
 
         currentItemId = ""
         lastReportedPosition = 0L
+        lastStateUpdateTime = 0L
         sessionId = ""
         hasReportedStart = false
         _playbackProgress.update { PlaybackProgress() }
@@ -183,33 +191,20 @@ class PlaybackProgressManager @Inject constructor(
 
     override fun onPause(owner: LifecycleOwner) {
         super.onPause(owner)
-        // Report current progress when app is paused
-        // Use progressSyncJob's scope for fire-and-forget reporting
-        progressSyncJob?.let { job ->
-            kotlinx.coroutines.CoroutineScope(job + Dispatchers.Default).launch {
-                val progress = _playbackProgress.value
-                if (progress.itemId.isNotEmpty()) {
-                    reportProgress(progress.positionMs, progress.durationMs, progress.isWatched)
-                }
+        // Report current progress when app is paused using managed scope
+        managerScope.launch {
+            val progress = _playbackProgress.value
+            if (progress.itemId.isNotEmpty()) {
+                reportProgress(progress.positionMs, progress.durationMs, progress.isWatched)
             }
         }
     }
 
     override fun onDestroy(owner: LifecycleOwner) {
         super.onDestroy(owner)
-        // stopTracking is now suspend, so launch in progressSyncJob's scope
-        progressSyncJob?.let { job ->
-            kotlinx.coroutines.CoroutineScope(job + Dispatchers.Default).launch {
-                stopTracking()
-            }
-        } ?: run {
-            // If no job, just cancel and clear state
-            progressSyncJob?.cancel()
-            currentItemId = ""
-            lastReportedPosition = 0L
-            sessionId = ""
-            hasReportedStart = false
-            _playbackProgress.update { PlaybackProgress() }
+        // stopTracking is suspend, so launch in managed scope
+        managerScope.launch {
+            stopTracking()
         }
     }
 

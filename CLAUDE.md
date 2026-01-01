@@ -105,6 +105,7 @@ Hilt modules are organized in `di/` directory:
 - **NetworkModule**: Provides OkHttpClient, Jellyfin SDK, ImageLoader, caching
 - **Phase4Module**: Provides repositories and managers
 - **AudioModule**: Provides audio playback services
+- **DispatcherModule**: Provides coroutine dispatchers (Main, IO, Default)
 
 Key pattern: Use `Provider<T>` for circular dependencies (e.g., `Provider<JellyfinAuthRepository>` in interceptors)
 
