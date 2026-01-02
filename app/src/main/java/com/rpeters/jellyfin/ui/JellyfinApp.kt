@@ -50,6 +50,7 @@ fun JellyfinApp(
         val consumeShortcut by rememberUpdatedState(onShortcutConsumed)
         val context = LocalContext.current
         val applicationContext = remember(context) { context.applicationContext }
+
         val startDestination = Screen.ServerConnection.route
 
         var pendingShortcutDestination by rememberSaveable { mutableStateOf<String?>(null) }
