@@ -96,7 +96,7 @@ class ServerConnectionViewModel @Inject constructor(
                     val savedPassword = secureCredentialManager.getPassword(savedServerUrl, savedUsername)
                     if (savedPassword != null) {
                         // Auto-login with saved credentials
-                        connectToServer(savedServerUrl, savedUsername, savedPassword)
+                        connectToServer(savedServerUrl, savedUsername, savedPassword, isAutoLogin = true)
                     }
                 }
             }
@@ -118,7 +118,7 @@ class ServerConnectionViewModel @Inject constructor(
         }
     }
 
-    fun connectToServer(serverUrl: String, username: String, password: String) {
+    fun connectToServer(serverUrl: String, username: String, password: String, isAutoLogin: Boolean = false) {
         // Debounce duplicate connection attempts
         val state = _connectionState.value
         if (state.isConnecting || state.isConnected) {
@@ -180,15 +180,17 @@ class ServerConnectionViewModel @Inject constructor(
                             )
                         }
                         is ApiResult.Error -> {
-                            // ✅ FIX: Don't clear saved credentials on auth failure unless
-                            // it's specifically an authentication error (401/403)
-                            // Network errors or temporary failures shouldn't clear saved credentials
-                            if (authResult.message?.contains("401") == true ||
-                                authResult.message?.contains("403") == true ||
-                                authResult.message?.contains("Unauthorized") == true ||
-                                authResult.message?.contains("Invalid username or password") == true
+                            // ✅ FIX: Don't clear saved credentials on auth failure during auto-login
+                            // Only clear credentials if this is a manual login attempt and the error
+                            // is specifically an authentication error (401/403/Unauthorized)
+                            // Network errors or temporary failures should never clear saved credentials
+                            if (!isAutoLogin &&
+                                (authResult.message?.contains("401") == true ||
+                                 authResult.message?.contains("403") == true ||
+                                 authResult.message?.contains("Unauthorized") == true ||
+                                 authResult.message?.contains("Invalid username or password") == true)
                             ) {
-                                // Only clear for actual auth failures, not network errors
+                                // Only clear for actual auth failures on manual login, not auto-login
                                 clearSavedCredentials()
                             }
                             _connectionState.value = _connectionState.value.copy(
@@ -308,6 +310,7 @@ class ServerConnectionViewModel @Inject constructor(
                         currentState.savedServerUrl,
                         currentState.savedUsername,
                         savedPassword,
+                        isAutoLogin = true,
                     )
                 }
             }
@@ -342,6 +345,7 @@ class ServerConnectionViewModel @Inject constructor(
                     currentState.savedServerUrl,
                     currentState.savedUsername,
                     savedPassword,
+                    isAutoLogin = true,
                 )
             } else {
                 showError(context.getString(R.string.biometric_failed_error))
