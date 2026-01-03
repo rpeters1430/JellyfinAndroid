@@ -69,7 +69,6 @@ fun rememberScreenWidthHeight(height: Dp): Size {
     return remember(widthPx, heightPx) { Size(widthPx, heightPx) }
 }
 
-@Composable
 /**
  * Jellyfin wrapper around Coil's [AsyncImage] that applies shared request defaults.
  *
@@ -83,6 +82,7 @@ fun rememberScreenWidthHeight(height: Dp): Size {
  * pre-built [ImageRequest] instances; prefer configuring the builder here so defaults remain
  * centralized.
  */
+@Composable
 fun JellyfinAsyncImage(
     model: Any?,
     contentDescription: String?,
