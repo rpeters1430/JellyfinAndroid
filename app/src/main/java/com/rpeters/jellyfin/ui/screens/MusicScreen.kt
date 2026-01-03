@@ -375,6 +375,7 @@ fun MusicScreen(
                     items(
                         items = MusicFilter.getAllFilters(),
                         key = { it },
+                        contentType = { "music_filter" },
                     ) { filter ->
                         FilterChip(
                             onClick = { selectedFilter = filter },
@@ -527,7 +528,11 @@ private fun MusicContent(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = modifier.fillMaxSize(),
             ) {
-                items(musicItems, key = { it.id ?: it.name.hashCode() }) { musicItem ->
+                items(
+                    items = musicItems,
+                    key = { it.id ?: it.name.hashCode() },
+                    contentType = { "music_grid_item" },
+                ) { musicItem ->
                     val coroutineScope = rememberCoroutineScope()
                     ExpressiveMusicCard(
                         item = musicItem,
@@ -559,7 +564,11 @@ private fun MusicContent(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = modifier.fillMaxSize(),
             ) {
-                items(musicItems, key = { it.id ?: it.name.hashCode() }) { musicItem ->
+                items(
+                    items = musicItems,
+                    key = { it.id ?: it.name.hashCode() },
+                    contentType = { "music_list_item" },
+                ) { musicItem ->
                     val coroutineScope = rememberCoroutineScope()
                     ExpressiveMusicCard(
                         item = musicItem,

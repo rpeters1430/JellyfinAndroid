@@ -63,7 +63,11 @@ fun RecentlyAddedSection(
                     .fillMaxWidth()
                     .then(focusModifier),
             ) {
-                items(items, key = { it.id ?: it.name ?: "" }) { item ->
+                items(
+                    items = items,
+                    key = { it.id ?: it.name ?: "" },
+                    contentType = { "recently_added_item" },
+                ) { item ->
                     RecentlyAddedCard(
                         item = item,
                         getImageUrl = getImageUrl,

@@ -241,7 +241,11 @@ private fun TVSeasonContent(
                 )
             }
 
-            items(state.seasons, key = { it.id?.hashCode() ?: it.name.hashCode() }) { season ->
+            items(
+                items = state.seasons,
+                key = { it.id?.hashCode() ?: it.name.hashCode() },
+                contentType = { "season_item" },
+            ) { season ->
                 ExpressiveSeasonCard(
                     season = season,
                     getImageUrl = getImageUrl,
@@ -795,7 +799,11 @@ private fun CastAndCrewSection(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(horizontal = 4.dp),
                 ) {
-                    items(cast.take(12), key = { it.id?.hashCode() ?: it.name.hashCode() }) { person ->
+                    items(
+                        items = cast.take(12),
+                        key = { it.id?.hashCode() ?: it.name.hashCode() },
+                        contentType = { "cast_member" },
+                    ) { person ->
                         PersonCard(
                             person = person,
                             getImageUrl = getImageUrl,
@@ -820,7 +828,11 @@ private fun CastAndCrewSection(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(horizontal = 4.dp),
                 ) {
-                    items(crew.take(12), key = { it.id?.hashCode() ?: it.name.hashCode() }) { person ->
+                    items(
+                        items = crew.take(12),
+                        key = { it.id?.hashCode() ?: it.name.hashCode() },
+                        contentType = { "crew_member" },
+                    ) { person ->
                         PersonCard(
                             person = person,
                             getImageUrl = getImageUrl,
@@ -859,6 +871,7 @@ private fun MoreLikeThisSection(
                 items(
                     count = 5,
                     key = { it },
+                    contentType = { "more_like_this_loading" },
                 ) {
                     ExpressiveLoadingCard(
                         modifier = Modifier.width(140.dp),
@@ -873,7 +886,11 @@ private fun MoreLikeThisSection(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(horizontal = 4.dp),
             ) {
-                items(items, key = { it.id?.hashCode() ?: it.name.hashCode() }) { show ->
+                items(
+                    items = items,
+                    key = { it.id?.hashCode() ?: it.name.hashCode() },
+                    contentType = { "more_like_this_item" },
+                ) { show ->
                     PosterMediaCard(
                         item = show,
                         getImageUrl = getImageUrl,

@@ -365,7 +365,11 @@ fun TVShowsScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
                     ) {
-                        items(TVShowFilter.getBasicFilters(), key = { it.name }) { filter ->
+                        items(
+                            items = TVShowFilter.getBasicFilters(),
+                            key = { it.name },
+                            contentType = { "tv_basic_filter" },
+                        ) { filter ->
                             FilterChip(
                                 onClick = { selectedFilter = filter },
                                 label = {
@@ -400,7 +404,11 @@ fun TVShowsScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
                     ) {
-                        items(TVShowFilter.getSmartFilters(), key = { it.name }) { filter ->
+                        items(
+                            items = TVShowFilter.getSmartFilters(),
+                            key = { it.name },
+                            contentType = { "tv_smart_filter" },
+                        ) { filter ->
                             FilterChip(
                                 onClick = { selectedFilter = filter },
                                 label = {
@@ -557,11 +565,12 @@ private fun TVShowsContent(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = modifier.fillMaxSize(),
-                ) {
-                    items(
-                        items = tvShows,
-                        key = { tvShow -> tvShow.getItemKey() },
-                    ) { tvShow ->
+                    ) {
+                        items(
+                            items = tvShows,
+                            key = { tvShow -> tvShow.getItemKey() },
+                            contentType = { "tv_grid_item" },
+                        ) { tvShow ->
                         val scale by animateFloatAsState(
                             targetValue = 1.0f,
                             animationSpec = MotionTokens.expressiveEnter,
@@ -604,11 +613,12 @@ private fun TVShowsContent(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = modifier.fillMaxSize(),
-                ) {
-                    items(
-                        items = tvShows,
-                        key = { tvShow -> tvShow.getItemKey() },
-                    ) { tvShow ->
+                    ) {
+                        items(
+                            items = tvShows,
+                            key = { tvShow -> tvShow.getItemKey() },
+                            contentType = { "tv_list_item" },
+                        ) { tvShow ->
                         val scale by animateFloatAsState(
                             targetValue = 1.0f,
                             animationSpec = MotionTokens.expressiveEnter,
