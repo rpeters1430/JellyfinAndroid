@@ -1,9 +1,11 @@
 package com.rpeters.jellyfin.ui.viewmodel
 
 import android.content.Context
+import androidx.datastore.preferences.core.edit
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewModelScope
 import androidx.test.core.app.ApplicationProvider
+import com.google.common.truth.Truth.assertThat
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
@@ -11,8 +13,6 @@ import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.BIOMETRIC_AUTH_ENABLED
 import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.REMEMBER_LOGIN
 import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.SERVER_URL
 import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.USERNAME
-import com.rpeters.jellyfin.ui.viewmodel.dataStore
-import com.google.common.truth.Truth.assertThat
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -20,6 +20,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -31,8 +32,6 @@ import org.jellyfin.sdk.model.api.PublicSystemInfo
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import androidx.datastore.preferences.core.edit
-import kotlinx.coroutines.flow.first
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ServerConnectionViewModelTest {
