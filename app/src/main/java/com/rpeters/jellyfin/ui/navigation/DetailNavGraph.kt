@@ -79,7 +79,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
             artistName = artistName,
             onBackClick = { navController.popBackStack() },
             onAlbumClick = { album ->
-                album.id?.let { navController.navigate(Screen.AlbumDetail.createRoute(it.toString())) }
+                album.id.let { navController.navigate(Screen.AlbumDetail.createRoute(it.toString())) }
             },
             mainViewModel = mainViewModel,
         )
@@ -224,7 +224,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
             minActiveState = androidx.lifecycle.Lifecycle.State.STARTED,
         )
 
-        val movie = appState.allItems.find { it.id?.toString() == movieId }
+        val movie = appState.allItems.find { it.id.toString() == movieId }
         val detailState by detailViewModel.state.collectAsStateWithLifecycle(lifecycle = lifecycleOwner.lifecycle)
 
         LaunchedEffect(movieId, movie) {
@@ -237,7 +237,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
 
         if (resolvedMovie != null) {
             val relatedItems = appState.allItems.filter { item ->
-                item.id?.toString() != movieId &&
+                item.id.toString() != movieId &&
                     item.type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE &&
                     resolvedMovie.genres?.any { genre -> item.genres?.contains(genre) == true } == true
             }.take(10)
@@ -265,6 +265,8 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 playbackAnalysis = detailState.playbackAnalysis,
                 getImageUrl = { item -> mainViewModel.getImageUrl(item) },
                 getBackdropUrl = { item -> mainViewModel.getBackdropUrl(item) },
+                getLogoUrl = { item -> mainViewModel.getLogoUrl(item) },
+                getPersonImageUrl = { person -> mainViewModel.getPersonImageUrl(person) },
             )
         } else if (detailState.isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -305,7 +307,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
             lifecycle = lifecycleOwner.lifecycle,
         )
 
-        val episode = appState.allItems.find { it.id?.toString() == episodeId }
+        val episode = appState.allItems.find { it.id.toString() == episodeId }
         val series = episode?.seriesId?.let { seriesId ->
             appState.allItems.find { it.id == seriesId }
         }

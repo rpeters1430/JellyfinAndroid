@@ -35,7 +35,8 @@
       "Bash(do sed -i 's/\\\\.type?\\\\.name/.type.name/g' \"$file\")",
       "Bash(do sed -i 's/as? Double/as Double?/g' \"$file\")",
       "Bash(for:*)",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "WebFetch(domain:photos.google.com)"
     ],
     "deny": [],
     "ask": [],

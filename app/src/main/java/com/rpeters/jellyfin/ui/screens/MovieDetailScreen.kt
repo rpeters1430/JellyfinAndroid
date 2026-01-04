@@ -52,6 +52,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -79,6 +80,7 @@ fun MovieDetailScreen(
     movie: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
     getBackdropUrl: (BaseItemDto) -> String?,
+    getLogoUrl: (BaseItemDto) -> String? = { null },
     getPersonImageUrl: (org.jellyfin.sdk.model.api.BaseItemPerson) -> String? = { null },
     onBackClick: () -> Unit,
     onPlayClick: (BaseItemDto) -> Unit = {},
@@ -139,7 +141,7 @@ fun MovieDetailScreen(
                             modifier = Modifier.fillMaxSize(),
                         )
 
-                        // Gradient Scrim - Google TV style (subtle top, dark bottom)
+                        // Subtle gradient at bottom for logo visibility
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -147,12 +149,10 @@ fun MovieDetailScreen(
                                     Brush.verticalGradient(
                                         colors = listOf(
                                             androidx.compose.ui.graphics.Color.Transparent,
-                                            androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.05f),
-                                            androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.15f),
-                                            androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.4f),
-                                            androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                                            androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.9f),
-                                            androidx.compose.ui.graphics.Color.Black,
+                                            androidx.compose.ui.graphics.Color.Transparent,
+                                            androidx.compose.ui.graphics.Color.Transparent,
+                                            androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.1f),
+                                            androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.3f),
                                         ),
                                         startY = 0f,
                                         endY = Float.POSITIVE_INFINITY,
@@ -160,117 +160,144 @@ fun MovieDetailScreen(
                                 ),
                         )
 
-                        // Content overlaid on bottom portion
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 20.dp)
-                                .padding(bottom = 32.dp),
-                            verticalArrangement = Arrangement.Bottom,
-                        ) {
-                            // Title - Google TV style (larger, white)
-                            Text(
-                                text = movie.name ?: stringResource(R.string.unknown),
-                                style = MaterialTheme.typography.displayLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = androidx.compose.ui.graphics.Color.White,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            // Metadata Row (Rating, Year, Runtime)
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
+                        // Logo overlay (centered on bottom third)
+                        getLogoUrl(movie)?.let { logoUrl ->
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 32.dp)
+                                    .padding(bottom = 48.dp),
+                                contentAlignment = Alignment.BottomCenter,
                             ) {
-                                // Rating with star icon
-                                movie.communityRating?.let { rating ->
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Star,
-                                            contentDescription = null,
-                                            tint = RatingGold,
-                                            modifier = Modifier.size(20.dp),
-                                        )
-                                        Text(
-                                            text = "${(rating * 10).roundToInt()}%",
-                                            style = MaterialTheme.typography.titleMedium,
-                                            fontWeight = FontWeight.Bold,
-                                            color = androidx.compose.ui.graphics.Color.White,
-                                        )
-                                    }
-                                }
-
-                                // Official Rating Badge (if available)
-                                movie.officialRating?.let { rating ->
-                                    Surface(
-                                        shape = RoundedCornerShape(6.dp),
-                                        color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.2f),
-                                        border = androidx.compose.foundation.BorderStroke(
-                                            1.dp,
-                                            androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f),
-                                        ),
-                                    ) {
-                                        Text(
-                                            text = rating,
-                                            style = MaterialTheme.typography.labelLarge,
-                                            fontWeight = FontWeight.Bold,
-                                            color = androidx.compose.ui.graphics.Color.White,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                        )
-                                    }
-                                }
-
-                                // Year
-                                movie.productionYear?.let { year ->
-                                    Text(
-                                        text = year.toString(),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.9f),
-                                    )
-                                }
-
-                                // Runtime
-                                movie.runTimeTicks?.let { ticks ->
-                                    val minutes = (ticks / 10_000_000 / 60).toInt()
-                                    val hours = minutes / 60
-                                    val remainingMinutes = minutes % 60
-                                    val runtime = if (hours > 0) "${hours}h ${remainingMinutes}m" else "${minutes}m"
-
-                                    Text(
-                                        text = runtime,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.9f),
-                                    )
-                                }
-                            }
-
-                            // Overview
-                            movie.overview?.let { overview ->
-                                if (overview.isNotBlank()) {
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    Text(
-                                        text = overview,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.9f),
-                                        maxLines = 4,
-                                        overflow = TextOverflow.Ellipsis,
-                                        lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2,
-                                    )
-                                }
-                            }
-
-                            // Playback capability badge
-                            playbackAnalysis?.let { analysis ->
-                                Spacer(modifier = Modifier.height(12.dp))
-                                PlaybackStatusBadge(analysis = analysis)
+                                SubcomposeAsyncImage(
+                                    model = ImageRequest.Builder(LocalContext.current)
+                                        .data(logoUrl)
+                                        .crossfade(true)
+                                        .build(),
+                                    contentDescription = "${movie.name} logo",
+                                    loading = { /* No loading state for logos */ },
+                                    error = { /* Silently fail - title will be shown below */ },
+                                    contentScale = ContentScale.Fit,
+                                    modifier = Modifier
+                                        .fillMaxWidth(0.7f)
+                                        .height(120.dp),
+                                )
                             }
                         }
+                    }
+                }
+            }
+
+            // Title and Metadata Section (Below Image)
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.background)
+                        .padding(horizontal = 20.dp)
+                        .padding(top = 24.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    // Title
+                    Text(
+                        text = movie.name ?: stringResource(R.string.unknown),
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        textAlign = TextAlign.Center,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+
+                    // Metadata Row (Rating, Year, Runtime)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        // Rating with star icon
+                        movie.communityRating?.let { rating ->
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = null,
+                                    tint = RatingGold,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                                Text(
+                                    text = "${(rating * 10).roundToInt()}%",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                )
+                            }
+                        }
+
+                        // Official Rating Badge (if available)
+                        movie.officialRating?.let { rating ->
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.outline,
+                                ),
+                            ) {
+                                Text(
+                                    text = rating,
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                )
+                            }
+                        }
+
+                        // Year
+                        movie.productionYear?.let { year ->
+                            Text(
+                                text = year.toString(),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
+                            )
+                        }
+
+                        // Runtime
+                        movie.runTimeTicks?.let { ticks ->
+                            val minutes = (ticks / 10_000_000 / 60).toInt()
+                            val hours = minutes / 60
+                            val remainingMinutes = minutes % 60
+                            val runtime = if (hours > 0) "${hours}h ${remainingMinutes}m" else "${minutes}m"
+
+                            Text(
+                                text = runtime,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
+                            )
+                        }
+                    }
+
+                    // Overview
+                    movie.overview?.let { overview ->
+                        if (overview.isNotBlank()) {
+                            Text(
+                                text = overview,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
+                                maxLines = 6,
+                                overflow = TextOverflow.Ellipsis,
+                                lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.3,
+                            )
+                        }
+                    }
+
+                    // Playback capability badge
+                    playbackAnalysis?.let { analysis ->
+                        PlaybackStatusBadge(analysis = analysis)
                     }
                 }
             }

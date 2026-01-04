@@ -28,7 +28,7 @@ class SurfaceCoordinatorViewModel @Inject constructor(
             continueWatchingItems
                 .distinctUntilChangedBy { items ->
                     items.mapNotNull { item ->
-                        val id = item.id?.toString() ?: return@mapNotNull null
+                        val id = item.id.toString()
                         val percentage = item.userData?.playedPercentage ?: 0.0
                         val lastPlayed = item.userData?.lastPlayedDate ?: ""
                         "$id|$percentage|$lastPlayed"

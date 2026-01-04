@@ -1,6 +1,6 @@
 <resources>
     <!-- App Name -->
-    <string name="app_name">Jellyfin Android</string>
+    <string name="app_name">JellyfinAndroid</string>
     
     <!-- Navigation -->
     <string name="navigate_up">Navigate up</string>

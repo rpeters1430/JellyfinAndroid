@@ -48,37 +48,38 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
                 navController.navigate(Screen.Search.route)
             },
             onClearSearch = { viewModel.clearSearch() },
+            onSearchClick = { navController.navigate(Screen.Search.route) },
             getImageUrl = { item -> viewModel.getImageUrl(item) },
             getBackdropUrl = { item -> viewModel.getBackdropUrl(item) },
             getSeriesImageUrl = { item -> viewModel.getSeriesImageUrl(item) },
             onItemClick = { item ->
                 when (item.type) {
                     org.jellyfin.sdk.model.api.BaseItemKind.MOVIE -> {
-                        item.id?.let { movieId ->
+                        item.id.let { movieId ->
                             navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
                         }
                     }
 
                     org.jellyfin.sdk.model.api.BaseItemKind.VIDEO -> {
-                        item.id?.let { videoId ->
+                        item.id.let { videoId ->
                             navController.navigate(Screen.HomeVideoDetail.createRoute(videoId.toString()))
                         }
                     }
 
                     org.jellyfin.sdk.model.api.BaseItemKind.SERIES -> {
-                        item.id?.let { seriesId ->
+                        item.id.let { seriesId ->
                             navController.navigate(Screen.TVSeasons.createRoute(seriesId.toString()))
                         }
                     }
 
                     org.jellyfin.sdk.model.api.BaseItemKind.EPISODE -> {
-                        item.id?.let { episodeId ->
+                        item.id.let { episodeId ->
                             navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
                         }
                     }
 
                     else -> {
-                        item.id?.let { genericId ->
+                        item.id.let { genericId ->
                             navController.navigate(Screen.ItemDetail.createRoute(genericId.toString()))
                         }
                     }
@@ -140,6 +141,7 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
                     SecureLogger.e("NavGraph", "Error navigating to library: ${library.name}", e)
                 }
             },
+            onSearchClick = { navController.navigate(Screen.Search.route) },
             onSettingsClick = { navController.navigate(Screen.Profile.route) },
             onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
         )

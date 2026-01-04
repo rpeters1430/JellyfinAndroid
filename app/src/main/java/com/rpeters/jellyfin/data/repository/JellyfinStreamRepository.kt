@@ -411,6 +411,29 @@ class JellyfinStreamRepository @Inject constructor(
     }
 
     /**
+     * Get logo URL for an item (for detail screens)
+     */
+    fun getLogoUrl(item: BaseItemDto): String? {
+        return try {
+            val server = authRepository.getCurrentServer()
+            if (server?.accessToken.isNullOrBlank() || server?.url.isNullOrBlank()) {
+                Log.w("JellyfinStreamRepository", "getLogoUrl: Server not available or missing credentials")
+                return null
+            }
+
+            val logoTag = item.imageTags?.get(ImageType.LOGO)
+            if (logoTag != null) {
+                "${server.url}/Items/${item.id}/Images/Logo?tag=$logoTag"
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Log.w("JellyfinStreamRepository", "getLogoUrl: Failed to generate logo URL for ${item.id}", e)
+            null
+        }
+    }
+
+    /**
      * Assess current network quality for adaptive streaming
      */
     private fun assessNetworkQuality(): NetworkQuality {

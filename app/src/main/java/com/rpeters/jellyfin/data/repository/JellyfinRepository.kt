@@ -879,6 +879,9 @@ class JellyfinRepository @Inject constructor(
     fun getBackdropUrl(item: BaseItemDto): String? =
         streamRepository.getBackdropUrl(item)
 
+    fun getLogoUrl(item: BaseItemDto): String? =
+        streamRepository.getLogoUrl(item)
+
     private suspend fun <T> safeApiCall(operation: suspend () -> T): T = operation()
 
     private fun isTokenExpired(): Boolean {

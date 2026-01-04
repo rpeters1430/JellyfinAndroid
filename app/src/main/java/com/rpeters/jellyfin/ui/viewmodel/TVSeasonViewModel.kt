@@ -73,7 +73,7 @@ class TVSeasonViewModel @Inject constructor(
                 is ApiResult.Success -> {
                     similarSeries = similarResult.data
                         .filter { it.type == BaseItemKind.SERIES }
-                        .filterNot { it.id?.toString() == seriesId }
+                        .filterNot { it.id.toString() == seriesId }
                 }
 
                 is ApiResult.Error -> {

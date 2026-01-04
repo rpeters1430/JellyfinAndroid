@@ -16,7 +16,7 @@ fun libraryRouteFor(library: BaseItemDto): String? {
             CollectionType.MUSIC -> Screen.Music.route
             CollectionType.BOOKS -> Screen.Books.route
             CollectionType.HOMEVIDEOS -> Screen.HomeVideos.route
-            else -> library.id?.toString()?.let { id ->
+            else -> library.id.toString().let { id ->
                 val type = library.collectionType?.toString()?.lowercase(Locale.getDefault())
                     ?: "mixed"
                 Screen.Stuff.createRoute(id, type)

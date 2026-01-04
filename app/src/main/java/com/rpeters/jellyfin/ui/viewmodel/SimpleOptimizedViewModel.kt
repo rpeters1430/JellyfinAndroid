@@ -65,10 +65,8 @@ class SimpleOptimizedViewModel @Inject constructor(
 
                         // Cache items for future use
                         result.data.forEach { item ->
-                            val itemId = item.id?.toString()
-                            if (itemId != null) {
-                                itemCache[itemId] = item
-                            }
+                            val itemId = item.id.toString()
+                            itemCache[itemId] = item
                         }
 
                         // Update performance metrics
