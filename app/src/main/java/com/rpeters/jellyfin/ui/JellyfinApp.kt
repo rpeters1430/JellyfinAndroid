@@ -51,7 +51,19 @@ fun JellyfinApp(
         val context = LocalContext.current
         val applicationContext = remember(context) { context.applicationContext }
 
-        val startDestination = Screen.ServerConnection.route
+        // Determine start destination based on authentication state
+        // If user has saved credentials and remember login is enabled, start at Home
+        // and let auto-login happen in the background
+        // Otherwise, start at ServerConnection (login screen)
+        val startDestination = if (
+            connectionState.isConnected ||
+            (connectionState.hasSavedPassword && connectionState.rememberLogin &&
+                connectionState.savedServerUrl.isNotBlank() && connectionState.savedUsername.isNotBlank())
+        ) {
+            Screen.Home.route
+        } else {
+            Screen.ServerConnection.route
+        }
 
         var pendingShortcutDestination by rememberSaveable { mutableStateOf<String?>(null) }
 
@@ -61,6 +73,7 @@ fun JellyfinApp(
             }
         }
 
+        // Handle shortcut navigation when connected
         LaunchedEffect(connectionState.isConnected, pendingShortcutDestination) {
             val destination = pendingShortcutDestination
             if (destination != null && connectionState.isConnected) {
@@ -73,6 +86,23 @@ fun JellyfinApp(
                 }
                 pendingShortcutDestination = null
                 consumeShortcut()
+            }
+        }
+
+        // Navigation guard: redirect to login if auto-login fails
+        // This handles the case where auto-login fails with an error
+        LaunchedEffect(connectionState.errorMessage, connectionState.isConnected) {
+            val currentRoute = navController.currentBackStackEntry?.destination?.route
+            val hasError = connectionState.errorMessage != null
+            val isNotConnected = !connectionState.isConnected
+            val isNotOnLoginScreens = currentRoute != Screen.ServerConnection.route &&
+                currentRoute != Screen.QuickConnect.route
+
+            // If there's an error during auto-login and we're not on login screen, redirect
+            if (hasError && isNotConnected && isNotOnLoginScreens) {
+                navController.navigate(Screen.ServerConnection.route) {
+                    popUpTo(0) { inclusive = true }
+                }
             }
         }
 

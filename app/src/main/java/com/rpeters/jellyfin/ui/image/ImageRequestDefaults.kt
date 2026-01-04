@@ -25,10 +25,7 @@ import com.rpeters.jellyfin.R
  */
 fun ImageRequest.Builder.applyDefaultImageOptions(size: Size? = null): ImageRequest.Builder {
     size?.let { size(it) }
-    return placeholder(R.drawable.ic_image_placeholder)
-        .error(R.drawable.ic_image_error)
-        .fallback(R.drawable.ic_image_placeholder)
-        .memoryCachePolicy(CachePolicy.ENABLED)
+    return memoryCachePolicy(CachePolicy.ENABLED)
         .diskCachePolicy(CachePolicy.ENABLED)
         .networkCachePolicy(CachePolicy.ENABLED)
 }

@@ -36,6 +36,7 @@ import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.CollectionType
+import org.jellyfin.sdk.model.api.BaseItemPerson
 import java.util.UUID
 import javax.inject.Inject
 
@@ -1022,6 +1023,14 @@ class MainAppViewModel @Inject constructor(
 
     fun getBackdropUrl(item: BaseItemDto): String? =
         streamRepository.getBackdropUrl(item)
+
+    fun getLogoUrl(item: BaseItemDto): String? =
+        streamRepository.getLogoUrl(item)
+
+    fun getPersonImageUrl(person: BaseItemPerson): String? {
+        val personId = person.id?.toString() ?: return null
+        return streamRepository.getImageUrl(personId, "Primary", person.primaryImageTag)
+    }
 
     fun getSeriesImageUrl(item: BaseItemDto): String? =
         streamRepository.getSeriesImageUrl(item)

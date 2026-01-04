@@ -221,7 +221,10 @@ class CastManager @Inject constructor(
                     castContext = ctx
                     ctx.sessionManager.addSessionManagerListener(sessionManagerListener, CastSession::class.java)
 
+                    // Create CastPlayer and add session availability listener
+                    @Suppress("DEPRECATION")
                     castPlayer = CastPlayer(ctx).apply {
+                        @Suppress("DEPRECATION")
                         setSessionAvailabilityListener(sessionAvailabilityListener)
                     }
 

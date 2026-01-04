@@ -1,6 +1,6 @@
 # Jellyfin Android Client - Current Status
 
-**Last Updated**: 2025-12-22
+**Last Updated**: 2026-01-02
 **Kotlin**: 2.3.0 | **JDK**: 21 | **Compose BOM**: 2025.12.01 | **Build Status**: ✅ Passing
 
 ---
@@ -17,9 +17,10 @@ A modern Android client for Jellyfin media servers built with Jetpack Compose an
 - ✅ Server URL input and validation
 - ✅ Username/password authentication
 - ✅ Token-based session management
-- ✅ Remember server credentials
+- ✅ Remember server credentials with auto-login
 - ✅ Multi-server support
 - ✅ Secure credential storage (Android Keystore)
+- ✅ Dynamic certificate pinning with TOFU (Trust-on-First-Use) model
 
 ### Media Library Browsing
 - ✅ Home screen with personalized content
@@ -39,13 +40,15 @@ A modern Android client for Jellyfin media servers built with Jetpack Compose an
 - ✅ Resume playback from last position
 
 ### UI/UX
-- ✅ Material 3 design system
+- ✅ Material 3 design system with Expressive components
+- ✅ Material 3 Expressive features (wavy indicators, expressive buttons, pull-to-refresh)
 - ✅ Dark/Light theme support
 - ✅ Adaptive layouts for different screen sizes
 - ✅ Navigation with bottom navigation bar
 - ✅ Custom carousel implementation (not official Material 3)
+- ✅ Stable lazy list keys for improved performance
 - ✅ Loading states and error handling
-- ✅ Image loading with Coil 3.3.0
+- ✅ Centralized image loading with Coil 3.3.0 (placeholder/error handling)
 
 ### Architecture
 - ✅ MVVM pattern with ViewModels
@@ -78,7 +81,7 @@ A modern Android client for Jellyfin media servers built with Jetpack Compose an
 ### Advanced Features
 - ⚠️ **Advanced search filters** - Basic search works, filters incomplete
 - ⚠️ **Quick Connect** - Backend implementation exists, UI integration unclear
-- ⚠️ **Chromecast** - Dependencies included (`play-services-cast-framework 22.2.0`), integration status unknown
+- ✅ **Chromecast** - MediaRouteButton integrated with device discovery and error feedback
 
 ---
 
@@ -188,6 +191,7 @@ coil = "3.3.0"
 ### UI & Compose
 - androidx.compose.bom: 2025.12.01
 - androidx.compose.material3: 1.5.0-alpha11
+- androidx.compose.material3-expressive: 1.5.0-alpha02
 - androidx.compose.material3.adaptive: 1.3.0-alpha05
 - androidx.tv:tv-material: 1.1.0-alpha01
 
@@ -266,7 +270,7 @@ Based on the current state, recommended priorities:
 3. **Implement audio-only playback** UI for music
 4. **Test and fix** Android TV D-pad navigation
 5. **Add Live TV support** (if required)
-6. **Comprehensive testing** of Chromecast integration
+6. ~~**Comprehensive testing** of Chromecast integration~~ ✅ **COMPLETED** (Jan 2026)
 
 ---
 
@@ -289,3 +293,11 @@ This document should be updated:
 - At minimum: monthly review
 
 **Verification Process**: Each ✅ status should be verified against actual code implementation, not just documentation claims.
+
+### Recent Updates (Jan 2, 2026)
+- ✅ Added dynamic certificate pinning with TOFU model
+- ✅ Integrated Material 3 Expressive components (wavy indicators, buttons, pull-to-refresh)
+- ✅ Centralized image loading with placeholder/error handling
+- ✅ Fixed auto-login persistence
+- ✅ Added stable keys to all lazy lists (30 files updated)
+- ✅ Completed Chromecast MediaRouteButton integration with device discovery

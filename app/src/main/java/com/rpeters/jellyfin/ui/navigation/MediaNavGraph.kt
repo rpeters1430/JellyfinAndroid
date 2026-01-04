@@ -46,7 +46,7 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
         LibraryTypeScreen(
             libraryType = LibraryType.MOVIES,
             onItemClick = { item ->
-                item.id?.let { movieId ->
+                item.id.let { movieId ->
                     navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
                 }
             },
@@ -70,7 +70,7 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
         LibraryTypeScreen(
             libraryType = LibraryType.TV_SHOWS,
             onItemClick = { item ->
-                item.id?.let { itemId ->
+                item.id.let { itemId ->
                     navController.navigate(Screen.ItemDetail.createRoute(itemId.toString()))
                 }
             },
@@ -107,6 +107,7 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
             onBackClick = { navController.popBackStack() },
             getImageUrl = { item -> viewModel.getImageUrl(item) },
             getBackdropUrl = { item -> viewModel.getBackdropUrl(item) },
+            getLogoUrl = { item -> viewModel.getLogoUrl(item) },
             onSeasonClick = { seasonId ->
                 navController.navigate(Screen.TVEpisodes.createRoute(seasonId))
             },
@@ -140,7 +141,7 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
             onBackClick = { navController.popBackStack() },
             getImageUrl = { item -> mainViewModel.getImageUrl(item) },
             onEpisodeClick = { episode ->
-                episode.id?.let { episodeId ->
+                episode.id.let { episodeId ->
                     mainViewModel.addOrUpdateItem(episode)
                     navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
                 }
@@ -189,7 +190,7 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
             onBackClick = { navController.popBackStack() },
             viewModel = viewModel,
             onItemClick = { item ->
-                item.id?.let { id ->
+                item.id.let { id ->
                     when (item.type) {
                         org.jellyfin.sdk.model.api.BaseItemKind.MUSIC_ALBUM -> {
                             navController.navigate(Screen.AlbumDetail.createRoute(id.toString()))
@@ -240,7 +241,7 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
             viewModel = viewModel,
             onItemClick = { id ->
                 val item = appState.itemsByLibrary.values.flatten()
-                    .find { it.id?.toString() == id }
+                    .find { it.id.toString() == id }
                 if (item?.type == org.jellyfin.sdk.model.api.BaseItemKind.VIDEO) {
                     navController.navigate(Screen.HomeVideoDetail.createRoute(id))
                 } else {
@@ -281,7 +282,7 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
         LibraryTypeScreen(
             libraryType = LibraryType.STUFF,
             onItemClick = { item ->
-                item.id?.toString()?.let { id ->
+                item.id.toString().let { id ->
                     when (item.type) {
                         BaseItemKind.VIDEO -> navController.navigate(Screen.HomeVideoDetail.createRoute(id))
                         BaseItemKind.SERIES -> navController.navigate(Screen.TVSeasons.createRoute(id))

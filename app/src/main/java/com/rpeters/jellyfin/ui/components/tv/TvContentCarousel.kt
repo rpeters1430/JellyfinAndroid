@@ -100,7 +100,7 @@ fun TvContentCarousel(
             ) {
                 itemsIndexed(
                     items = items,
-                    key = { index, item -> item.id?.toString() ?: index.toString() },
+                    key = { index, item -> item.id.toString() },
                     contentType = { _, _ -> "tv_content_carousel_item" },
                 ) { index, item ->
                     TvContentCard(

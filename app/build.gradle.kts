@@ -19,8 +19,8 @@ android {
         applicationId = "com.rpeters.jellyfin"
         minSdk = 26 // Android 8.0+ (was 31) - Broader device compatibility
         targetSdk = 35 // Use stable SDK 35 for runtime, keep compileSdk at 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 10
+        versionName = "0.10"
 
         testInstrumentationRunner = "com.rpeters.jellyfin.testing.HiltTestRunner"
 
@@ -42,6 +42,12 @@ android {
         }
     }
 
+    applicationVariants.all {
+        outputs.all {
+            val outputImpl = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            outputImpl.outputFileName = "JellyfinAndroid-${versionName}-${name}.apk"
+        }
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
@@ -247,3 +253,6 @@ tasks.register<JacocoReport>("jacocoTestReport") {
 
 // Ensure jacoco agent is applied for coverage
 apply(plugin = "jacoco")
+
+
+

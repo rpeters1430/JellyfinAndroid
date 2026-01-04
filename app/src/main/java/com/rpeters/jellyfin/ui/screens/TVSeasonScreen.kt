@@ -89,6 +89,7 @@ fun TVSeasonScreen(
     onBackClick: () -> Unit,
     getImageUrl: (BaseItemDto) -> String?,
     getBackdropUrl: (BaseItemDto) -> String?,
+    getLogoUrl: (BaseItemDto) -> String? = { null },
     onSeasonClick: (String) -> Unit,
     onSeriesClick: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -150,6 +151,7 @@ fun TVSeasonScreen(
                         state = state,
                         getImageUrl = getImageUrl,
                         getBackdropUrl = getBackdropUrl,
+                        getLogoUrl = getLogoUrl,
                         onSeasonClick = onSeasonClick,
                         onSeriesClick = onSeriesClick,
                     )
@@ -214,6 +216,7 @@ private fun TVSeasonContent(
     state: TVSeasonState,
     getImageUrl: (BaseItemDto) -> String?,
     getBackdropUrl: (BaseItemDto) -> String?,
+    getLogoUrl: (BaseItemDto) -> String?,
     onSeasonClick: (String) -> Unit,
     onSeriesClick: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -228,6 +231,7 @@ private fun TVSeasonContent(
                     series = series,
                     getImageUrl = getImageUrl,
                     getBackdropUrl = getBackdropUrl,
+                    getLogoUrl = getLogoUrl,
                 )
             }
         }
@@ -275,10 +279,17 @@ private fun TVSeasonContent(
 
         // Cast and Crew Section (if available)
         state.seriesDetails?.people?.takeIf { it.isNotEmpty() }?.let { people ->
-            val cast = people.filter { it.type?.name == "Actor" }
-            val crew = people.filter {
-                val typeName = it.type?.name
-                typeName in listOf("Director", "Producer", "Writer", "Executive Producer")
+            val cast = people.filter { person ->
+                when (person.type?.toString()?.lowercase()) {
+                    "actor", "gueststar", "guest star" -> true
+                    else -> false
+                }
+            }
+            val crew = people.filter { person ->
+                when (person.type?.toString()?.lowercase()) {
+                    "director", "producer", "writer", "executiveproducer", "executive producer", "creator" -> true
+                    else -> false
+                }
             }
 
             // Only show the section if we have cast or crew after filtering
@@ -326,6 +337,7 @@ private fun SeriesDetailsHeader(
     series: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
     getBackdropUrl: (BaseItemDto) -> String?,
+    getLogoUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier,
 ) {
     // Full-bleed hero section - Google TV style
@@ -376,7 +388,7 @@ private fun SeriesDetailsHeader(
                 modifier = Modifier.fillMaxSize(),
             )
 
-            // Google TV style gradient - transparent to black
+            // Subtle gradient at bottom for logo visibility
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -384,122 +396,140 @@ private fun SeriesDetailsHeader(
                         Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                Color.Black.copy(alpha = 0.05f),
-                                Color.Black.copy(alpha = 0.15f),
-                                Color.Black.copy(alpha = 0.4f),
-                                Color.Black.copy(alpha = 0.7f),
-                                Color.Black.copy(alpha = 0.9f),
-                                Color.Black,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.1f),
+                                Color.Black.copy(alpha = 0.3f),
                             ),
                         ),
                     ),
             )
 
-            // Content at bottom
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding() // Add status bar padding to content, not image
-                    .padding(horizontal = 20.dp)
-                    .padding(bottom = 32.dp),
-                verticalArrangement = Arrangement.Bottom, // Align to bottom
-            ) {
-                // Title
-                Text(
-                    text = series.name ?: stringResource(R.string.unknown),
-                    style = MaterialTheme.typography.displayLarge,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
+            // Logo overlay (centered on bottom third)
+            getLogoUrl(series)?.let { logoUrl ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .statusBarsPadding()
+                        .padding(horizontal = 32.dp)
+                        .padding(bottom = 48.dp),
+                    contentAlignment = Alignment.BottomCenter,
+                ) {
+                    SubcomposeAsyncImage(
+                        model = logoUrl,
+                        contentDescription = "${series.name} logo",
+                        loading = { /* No loading state for logos */ },
+                        error = { /* Silently fail - title will be shown below */ },
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .fillMaxWidth(0.7f)
+                            .height(120.dp),
+                    )
+                }
+            }
+        }
+    }
 
-                Spacer(modifier = Modifier.height(12.dp))
+    // Title and Metadata Section (Below backdrop)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = 20.dp)
+            .padding(top = 24.dp, bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        // Title
+        Text(
+            text = series.name ?: stringResource(R.string.unknown),
+            style = MaterialTheme.typography.displaySmall,
+            color = MaterialTheme.colorScheme.onBackground,
+            fontWeight = FontWeight.Bold,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
 
-                // Metadata Row
+        // Metadata Row
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Rating with star icon
+            series.communityRating?.let { rating ->
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    // Rating with star icon
-                    series.communityRating?.let { rating ->
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.tertiary,
-                                modifier = Modifier.size(20.dp),
-                            )
-                            Text(
-                                text = "${(rating * 10).roundToInt()}%",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                            )
-                        }
-                    }
-
-                    // Official Rating Badge (if available)
-                    series.officialRating?.let { rating ->
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = Color.White.copy(alpha = 0.2f),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)),
-                        ) {
-                            Text(
-                                text = rating,
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            )
-                        }
-                    }
-
-                    // Year or Year Range
-                    series.productionYear?.let { year ->
-                        val endYear = series.endDate?.year
-                        val yearText = if (endYear != null && endYear != year) {
-                            "$year - $endYear"
-                        } else if (series.status == "Continuing") {
-                            "$year - Present"
-                        } else {
-                            year.toString()
-                        }
-                        Text(
-                            text = yearText,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = Color.White.copy(alpha = 0.9f),
-                        )
-                    }
-
-                    // Episode count
-                    series.childCount?.let { count ->
-                        Text(
-                            text = "$count episodes",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = Color.White.copy(alpha = 0.9f),
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Text(
+                        text = "${(rating * 10).roundToInt()}%",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
                 }
+            }
 
-                // Overview
-                series.overview?.let { overview ->
-                    if (overview.isNotBlank()) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = overview,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Color.White.copy(alpha = 0.85f),
-                            maxLines = 4,
-                            overflow = TextOverflow.Ellipsis,
-                            lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2,
-                        )
-                    }
+            // Official Rating Badge (if available)
+            series.officialRating?.let { rating ->
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                ) {
+                    Text(
+                        text = rating,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    )
                 }
+            }
+
+            // Year or Year Range
+            series.productionYear?.let { year ->
+                val endYear = series.endDate?.year
+                val yearText = if (endYear != null && endYear != year) {
+                    "$year - $endYear"
+                } else if (series.status == "Continuing") {
+                    "$year - Present"
+                } else {
+                    year.toString()
+                }
+                Text(
+                    text = yearText,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
+                )
+            }
+
+            // Episode count
+            series.childCount?.let { count ->
+                Text(
+                    text = "$count episodes",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
+                )
+            }
+        }
+
+        // Overview
+        series.overview?.let { overview ->
+            if (overview.isNotBlank()) {
+                Text(
+                    text = overview,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
+                    maxLines = 6,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.3,
+                )
             }
         }
     }

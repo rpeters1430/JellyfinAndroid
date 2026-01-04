@@ -24,11 +24,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -100,6 +102,7 @@ fun HomeScreen(
     onRefresh: () -> Unit,
     onSearch: (String) -> Unit,
     onClearSearch: () -> Unit,
+    onSearchClick: () -> Unit = {},
     getImageUrl: (BaseItemDto) -> String?,
     getBackdropUrl: (BaseItemDto) -> String?,
     getSeriesImageUrl: (BaseItemDto) -> String?,
@@ -159,6 +162,14 @@ fun HomeScreen(
         },
         bottomBar = {
             MiniPlayer(onExpandClick = onNowPlayingClick)
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = onSearchClick) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = stringResource(id = R.string.search),
+                )
+            }
         },
         modifier = modifier,
     ) { paddingValues ->
@@ -403,7 +414,7 @@ fun HomeContent(
     LaunchedEffect(surfaceCoordinatorViewModel, contentLists.continueWatching) {
         snapshotFlow {
             contentLists.continueWatching.mapNotNull { item ->
-                val id = item.id?.toString() ?: return@mapNotNull null
+                val id = item.id.toString()
                 Triple(id, item.name, item.seriesName)
             } to contentLists.continueWatching
         }

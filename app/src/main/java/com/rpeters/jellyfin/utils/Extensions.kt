@@ -180,7 +180,7 @@ fun BaseItemDto.getNextUpInfo(): String? {
  * ✅ PHASE 3: Enhanced key generation for lists
  */
 fun BaseItemDto.getItemKey(): String =
-    generateItemKey(type?.toString() ?: "unknown", id?.toString() ?: "")
+    generateItemKey(type.toString(), id.toString())
 
 /**
  * ✅ PHASE 3: Content key generation utility
