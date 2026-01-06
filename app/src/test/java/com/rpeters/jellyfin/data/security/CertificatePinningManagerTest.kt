@@ -4,8 +4,10 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
@@ -14,7 +16,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.security.cert.X509Certificate
-import javax.net.ssl.SSLPeerUnverifiedException
 
 /**
  * Unit tests for CertificatePinningManager - Certificate pin storage and validation.
@@ -92,29 +93,44 @@ class CertificatePinningManagerTest {
     fun `storePin saves pin to encrypted preferences`() = runTest {
         val hostname = "jellyfin.example.com"
         val pin = "sha256/abc123def456"
+        val savedValue = slot<String>()
+        coEvery {
+            mockEncryptedPreferences.putEncryptedString(
+                any(),
+                capture(savedValue),
+            )
+        } returns Unit
 
         certPinningManager.storePin(hostname, pin)
 
         coVerify(exactly = 1) {
             mockEncryptedPreferences.putEncryptedString(
                 "cert_pin_$hostname",
-                pin,
+                any(),
             )
         }
+        val json = JSONObject(savedValue.captured)
+        assertEquals(pin, json.getString("pin"))
     }
 
     @Test
     fun `getStoredPin retrieves pin from encrypted preferences`() = runTest {
         val hostname = "jellyfin.example.com"
         val expectedPin = "sha256/abc123def456"
+        val json = JSONObject()
+        json.put("pin", expectedPin)
+        json.put("backups", emptyList<String>())
+        json.put("firstSeen", 1L)
+        json.put("lastValidated", 1L)
+        json.put("expiresAt", 2L)
 
         coEvery {
             mockEncryptedPreferences.getEncryptedString("cert_pin_$hostname")
-        } returns flowOf(expectedPin)
+        } returns flowOf(json.toString())
 
-        val actualPin = certPinningManager.getStoredPin(hostname)
+        val actualPin = certPinningManager.getStoredPinRecord(hostname)
 
-        assertEquals("Should retrieve stored pin", expectedPin, actualPin)
+        assertEquals("Should retrieve stored pin", expectedPin, actualPin?.primaryPin)
     }
 
     @Test
@@ -125,7 +141,7 @@ class CertificatePinningManagerTest {
             mockEncryptedPreferences.getEncryptedString("cert_pin_$hostname")
         } returns flowOf(null)
 
-        val pin = certPinningManager.getStoredPin(hostname)
+        val pin = certPinningManager.getStoredPinRecord(hostname)
 
         assertNull("Should return null for new server (no pin stored)", pin)
     }
@@ -167,17 +183,23 @@ class CertificatePinningManagerTest {
 
         // Compute expected pin
         val expectedPin = certPinningManager.computeCertificatePin(mockCert)
+        val json = JSONObject()
+        json.put("pin", expectedPin)
+        json.put("backups", emptyList<String>())
+        json.put("firstSeen", 1L)
+        json.put("lastValidated", 1L)
+        json.put("expiresAt", 2L)
 
         // Mock encrypted preferences to return stored pin
         coEvery {
             mockEncryptedPreferences.getEncryptedString("cert_pin_$hostname")
-        } returns flowOf(expectedPin)
+        } returns flowOf(json.toString())
 
         // Should not throw exception when pin matches
         certPinningManager.validatePins(hostname, listOf(mockCert))
     }
 
-    @Test(expected = SSLPeerUnverifiedException::class)
+    @Test(expected = PinningValidationException::class)
     fun `validatePins throws exception when certificate does not match stored pin`() = runTest {
         val hostname = "jellyfin.example.com"
         val mockCert: X509Certificate = mockk()
@@ -189,9 +211,15 @@ class CertificatePinningManagerTest {
 
         // Mock stored pin that won't match
         val differentPin = "sha256/completely_different_pin_value"
+        val json = JSONObject()
+        json.put("pin", differentPin)
+        json.put("backups", emptyList<String>())
+        json.put("firstSeen", 1L)
+        json.put("lastValidated", 1L)
+        json.put("expiresAt", 2L)
         coEvery {
             mockEncryptedPreferences.getEncryptedString("cert_pin_$hostname")
-        } returns flowOf(differentPin)
+        } returns flowOf(json.toString())
 
         // Should throw SSLPeerUnverifiedException for pin mismatch
         certPinningManager.validatePins(hostname, listOf(mockCert))
@@ -221,10 +249,16 @@ class CertificatePinningManagerTest {
 
         // Pin the intermediate certificate
         val intermediatePin = certPinningManager.computeCertificatePin(intermediateCert)
+        val json = JSONObject()
+        json.put("pin", intermediatePin)
+        json.put("backups", emptyList<String>())
+        json.put("firstSeen", 1L)
+        json.put("lastValidated", 1L)
+        json.put("expiresAt", 2L)
 
         coEvery {
             mockEncryptedPreferences.getEncryptedString("cert_pin_$hostname")
-        } returns flowOf(intermediatePin)
+        } returns flowOf(json.toString())
 
         // Should succeed because intermediate cert in chain matches pin
         certPinningManager.validatePins(hostname, listOf(leafCert, intermediateCert, rootCert))

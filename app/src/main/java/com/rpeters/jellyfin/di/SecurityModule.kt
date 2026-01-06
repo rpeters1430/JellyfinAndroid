@@ -42,8 +42,12 @@ object SecurityModule {
     @Singleton
     fun provideCertificatePinningManager(
         encryptedPreferences: EncryptedPreferences,
+        timeProvider: () -> Long,
     ): CertificatePinningManager {
-        return CertificatePinningManager(encryptedPreferences)
+        return CertificatePinningManager(
+            encryptedPreferences = encryptedPreferences,
+            timeProvider = timeProvider,
+        )
     }
 
     /**
