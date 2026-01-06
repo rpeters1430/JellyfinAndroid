@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,6 +12,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -182,6 +184,59 @@ fun ExpressiveSwitchListItem(
                 checked = checked,
                 onCheckedChange = onCheckedChange,
                 enabled = enabled,
+            )
+        },
+        colors = ListItemDefaults.colors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
+    )
+}
+
+/**
+ * Expressive list item with radio button for single-selection choices
+ */
+@Composable
+fun ExpressiveRadioListItem(
+    title: String,
+    selected: Boolean,
+    onSelect: () -> Unit,
+    modifier: Modifier = Modifier,
+    subtitle: String? = null,
+    leadingIcon: ImageVector? = null,
+) {
+    ListItem(
+        headlineContent = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+            )
+        },
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onSelect),
+        supportingContent = subtitle?.let {
+            {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        leadingContent = leadingIcon?.let {
+            {
+                Icon(
+                    imageVector = it,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+        },
+        trailingContent = {
+            RadioButton(
+                selected = selected,
+                onClick = onSelect,
             )
         },
         colors = ListItemDefaults.colors(
