@@ -19,7 +19,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.VpnKey
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -69,9 +72,12 @@ fun ServerConnectionScreen(
     rememberLogin: Boolean = true,
     hasSavedPassword: Boolean = false,
     isBiometricAuthAvailable: Boolean = false,
+    requireStrongBiometric: Boolean = false,
+    isUsingWeakBiometric: Boolean = false,
     onRememberLoginChange: (Boolean) -> Unit = {},
     onAutoLogin: () -> Unit = {},
     onBiometricLogin: () -> Unit = {},
+    onRequireStrongBiometricChange: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var serverUrl by remember { mutableStateOf(savedServerUrl) }
@@ -288,6 +294,14 @@ fun ServerConnectionScreen(
                 }
             }
 
+            if (isBiometricAuthAvailable || isUsingWeakBiometric || requireStrongBiometric) {
+                BiometricSecurityNotice(
+                    requireStrongBiometric = requireStrongBiometric,
+                    isUsingWeakBiometric = isUsingWeakBiometric,
+                    onRequireStrongBiometricChange = onRequireStrongBiometricChange,
+                )
+            }
+
             // Show helper text when saved credentials are available but no password
             if (savedServerUrl.isNotBlank() && savedUsername.isNotBlank() && rememberLogin && !hasSavedPassword) {
                 ElevatedCard(
@@ -365,6 +379,102 @@ fun ServerConnectionScreen(
             }
 
             Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+}
+
+@Composable
+private fun BiometricSecurityNotice(
+    requireStrongBiometric: Boolean,
+    isUsingWeakBiometric: Boolean,
+    onRequireStrongBiometricChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Security,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = stringResource(id = R.string.biometric_security_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = stringResource(id = R.string.biometric_device_credential_info),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Switch(
+                checked = requireStrongBiometric,
+                onCheckedChange = onRequireStrongBiometricChange,
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = stringResource(id = R.string.biometric_require_strong),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Text(
+                    text = stringResource(id = R.string.biometric_require_strong_description),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        val statusContainerColor = if (isUsingWeakBiometric) {
+            MaterialTheme.colorScheme.errorContainer
+        } else {
+            MaterialTheme.colorScheme.secondaryContainer
+        }
+        val statusContentColor = if (isUsingWeakBiometric) {
+            MaterialTheme.colorScheme.onErrorContainer
+        } else {
+            MaterialTheme.colorScheme.onSecondaryContainer
+        }
+
+        ElevatedCard(
+            colors = CardDefaults.elevatedCardColors(containerColor = statusContainerColor),
+            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Row(
+                modifier = Modifier.padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    imageVector = if (isUsingWeakBiometric) Icons.Default.Warning else Icons.Default.Info,
+                    contentDescription = null,
+                    tint = statusContentColor,
+                )
+                Text(
+                    text = if (isUsingWeakBiometric) {
+                        stringResource(id = R.string.biometric_weak_only_notice_body)
+                    } else {
+                        stringResource(id = R.string.biometric_device_credential_info)
+                    },
+                    color = statusContentColor,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
         }
     }
 }
