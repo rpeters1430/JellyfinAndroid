@@ -74,8 +74,12 @@ class SecureCredentialManager @Inject constructor(
      *
      * @return true if biometric authentication is available, false otherwise
      */
-    fun isBiometricAuthAvailable(): Boolean {
-        return biometricAuthManager.isBiometricAuthAvailable()
+    fun isBiometricAuthAvailable(requireStrongBiometric: Boolean = false): Boolean {
+        return biometricAuthManager.isBiometricAuthAvailable(requireStrongBiometric)
+    }
+
+    fun getBiometricCapability(requireStrongBiometric: Boolean): BiometricCapability {
+        return biometricAuthManager.getCapability(requireStrongBiometric)
     }
 
     /**
@@ -317,17 +321,19 @@ class SecureCredentialManager @Inject constructor(
         serverUrl: String,
         username: String,
         activity: FragmentActivity? = null,
+        requireStrongBiometric: Boolean = false,
     ): String? {
         android.util.Log.d(TAG, "🔵 getPassword: CALLED - Retrieving password for user='$username', serverUrl='$serverUrl'")
 
         // If activity is provided and biometric auth is available, request auth
-        if (activity != null && biometricAuthManager.isBiometricAuthAvailable()) {
+        if (activity != null && biometricAuthManager.isBiometricAuthAvailable(requireStrongBiometric)) {
             android.util.Log.d(TAG, "getPassword: Requesting biometric authentication")
             val authSuccess = biometricAuthManager.requestBiometricAuth(
                 activity = activity,
                 title = "Access Credentials",
                 subtitle = "Authenticate to access your saved credentials",
                 description = "Confirm your identity to retrieve saved login information",
+                requireStrongBiometric = requireStrongBiometric,
             )
 
             // If biometric auth failed, return null

@@ -1,15 +1,18 @@
 package com.rpeters.jellyfin.ui.viewmodel
 
 import android.content.Context
+import androidx.biometric.BiometricManager
 import androidx.datastore.preferences.core.edit
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewModelScope
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
+import com.rpeters.jellyfin.data.BiometricCapability
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.BIOMETRIC_AUTH_ENABLED
+import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.BIOMETRIC_REQUIRE_STRONG
 import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.REMEMBER_LOGIN
 import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.SERVER_URL
 import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.USERNAME
@@ -50,7 +53,18 @@ class ServerConnectionViewModelTest {
         secureCredentialManager = mockk(relaxed = true)
 
         every { repository.isConnected } returns MutableStateFlow(false)
+        val strongCapability = BiometricCapability(
+            authenticators = BiometricManager.Authenticators.BIOMETRIC_STRONG or
+                BiometricManager.Authenticators.DEVICE_CREDENTIAL,
+            isAvailable = true,
+            isStrongSupported = true,
+            isWeakOnly = false,
+            allowsDeviceCredentialFallback = true,
+            status = BiometricManager.BIOMETRIC_SUCCESS,
+        )
         every { secureCredentialManager.isBiometricAuthAvailable() } returns true
+        every { secureCredentialManager.isBiometricAuthAvailable(any()) } returns true
+        every { secureCredentialManager.getBiometricCapability(any()) } returns strongCapability
 
         context.dataStore.edit { preferences ->
             preferences.clear()
@@ -70,6 +84,7 @@ class ServerConnectionViewModelTest {
                     "https://example.com",
                     "user",
                     any<FragmentActivity>(),
+                    any(),
                 )
             } returns "biometricPassword"
             coEvery { secureCredentialManager.savePassword(any(), any(), any()) } returns Unit
@@ -99,6 +114,35 @@ class ServerConnectionViewModelTest {
         }
 
     @Test
+    fun setRequireStrongBiometric_updatesStateAndPreference() = runTest(mainDispatcherRule.dispatcher) {
+        val weakOnlyCapability = BiometricCapability(
+            authenticators = BiometricManager.Authenticators.BIOMETRIC_WEAK,
+            isAvailable = true,
+            isStrongSupported = false,
+            isWeakOnly = true,
+            allowsDeviceCredentialFallback = true,
+            status = BiometricManager.BIOMETRIC_SUCCESS,
+        )
+        every { secureCredentialManager.getBiometricCapability(true) } returns weakOnlyCapability
+
+        val viewModel = ServerConnectionViewModel(repository, secureCredentialManager, context)
+
+        advanceUntilIdle()
+
+        viewModel.setRequireStrongBiometric(true)
+
+        advanceUntilIdle()
+
+        val preferences = context.dataStore.data.first()
+        assertThat(preferences[BIOMETRIC_REQUIRE_STRONG]).isTrue()
+        val connectionState = viewModel.connectionState.value
+        assertThat(connectionState.requireStrongBiometric).isTrue()
+        assertThat(connectionState.isUsingWeakBiometric).isTrue()
+
+        viewModel.viewModelScope.cancel()
+    }
+
+    @Test
     fun init_persistsRememberLoginDefaultForFirstTimeUser() = runTest(mainDispatcherRule.dispatcher) {
         context.dataStore.edit { preferences ->
             preferences.clear()
@@ -112,6 +156,8 @@ class ServerConnectionViewModelTest {
         val preferences = context.dataStore.data.first()
         assertThat(preferences[REMEMBER_LOGIN]).isTrue()
         assertThat(viewModel.connectionState.value.rememberLogin).isTrue()
+        assertThat(preferences[BIOMETRIC_AUTH_ENABLED]).isTrue()
+        assertThat(viewModel.connectionState.value.isBiometricAuthEnabled).isTrue()
 
         viewModel.viewModelScope.cancel()
     }
