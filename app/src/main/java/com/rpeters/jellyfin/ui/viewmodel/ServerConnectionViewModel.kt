@@ -294,6 +294,14 @@ class ServerConnectionViewModel @Inject constructor(
             } else {
                 pinningAlert.certificateDetails.map { it.pin }
             }
+            if (pinsToTrust.isEmpty()) {
+                _connectionState.value = _connectionState.value.copy(
+                    pinningAlert = null,
+                    isConnecting = false,
+                    errorMessage = context.getString(R.string.pinning_no_pins_available),
+                )
+                return@launch
+            }
             certificatePinningManager.allowTemporaryTrust(
                 pinningAlert.hostname,
                 pinsToTrust,

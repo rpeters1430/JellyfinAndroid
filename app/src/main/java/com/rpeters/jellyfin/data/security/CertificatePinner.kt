@@ -197,11 +197,16 @@ class CertificatePinningManager @Inject constructor(
      * Allows a temporary trust decision for the given pins.
      */
     suspend fun allowTemporaryTrust(hostname: String, pins: List<String>) {
+        val distinctPins = pins.distinct()
+        if (distinctPins.isEmpty()) {
+            Log.w(TAG, "allowTemporaryTrust called with no pins for hostname: $hostname; ignoring.")
+            return
+        }
         overrideMutex.withLock {
             val expiry = timeProvider() + TEMP_TRUST_DURATION_MS
             temporaryOverrides[hostname] = TemporaryPinOverride(
                 hostname = hostname,
-                acceptedPins = pins.distinct(),
+                acceptedPins = distinctPins,
                 expiresAtEpochMillis = expiry,
             )
         }
@@ -233,7 +238,17 @@ class CertificatePinningManager @Inject constructor(
      * SECURITY WARNING: Only call this during app reset or if user explicitly requests it.
      */
     suspend fun clearAllPins() {
-        Log.w(TAG, "clearAllPins() called - implement if needed")
+        val entries = encryptedPreferences.getEntriesWithPrefix(PIN_PREFIX)
+        entries.keys.forEach { hostname ->
+            removePin(hostname)
+        }
+        overrideMutex.withLock {
+            temporaryOverrides.clear()
+        }
+
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "Cleared all certificate pins (${entries.size} hosts)")
+        }
     }
 
     internal suspend fun toCertificateDetails(chain: List<X509Certificate>): List<CertificateDetails> {

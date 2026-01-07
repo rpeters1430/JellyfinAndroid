@@ -7,6 +7,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -119,10 +120,10 @@ class CertificatePinningManagerTest {
         val expectedPin = "sha256/abc123def456"
         val json = JSONObject()
         json.put("pin", expectedPin)
-        json.put("backups", emptyList<String>())
+        json.put("backups", JSONArray())
         json.put("firstSeen", 1L)
         json.put("lastValidated", 1L)
-        json.put("expiresAt", 2L)
+        json.put("expiresAt", Long.MAX_VALUE)
 
         coEvery {
             mockEncryptedPreferences.getEncryptedString("cert_pin_$hostname")
@@ -185,10 +186,10 @@ class CertificatePinningManagerTest {
         val expectedPin = certPinningManager.computeCertificatePin(mockCert)
         val json = JSONObject()
         json.put("pin", expectedPin)
-        json.put("backups", emptyList<String>())
+        json.put("backups", JSONArray())
         json.put("firstSeen", 1L)
         json.put("lastValidated", 1L)
-        json.put("expiresAt", 2L)
+        json.put("expiresAt", Long.MAX_VALUE)
 
         // Mock encrypted preferences to return stored pin
         coEvery {
@@ -213,15 +214,15 @@ class CertificatePinningManagerTest {
         val differentPin = "sha256/completely_different_pin_value"
         val json = JSONObject()
         json.put("pin", differentPin)
-        json.put("backups", emptyList<String>())
+        json.put("backups", JSONArray())
         json.put("firstSeen", 1L)
         json.put("lastValidated", 1L)
-        json.put("expiresAt", 2L)
+        json.put("expiresAt", Long.MAX_VALUE)
         coEvery {
             mockEncryptedPreferences.getEncryptedString("cert_pin_$hostname")
         } returns flowOf(json.toString())
 
-        // Should throw SSLPeerUnverifiedException for pin mismatch
+        // Should throw PinningValidationException for pin mismatch
         certPinningManager.validatePins(hostname, listOf(mockCert))
     }
 
@@ -251,10 +252,10 @@ class CertificatePinningManagerTest {
         val intermediatePin = certPinningManager.computeCertificatePin(intermediateCert)
         val json = JSONObject()
         json.put("pin", intermediatePin)
-        json.put("backups", emptyList<String>())
+        json.put("backups", JSONArray())
         json.put("firstSeen", 1L)
         json.put("lastValidated", 1L)
-        json.put("expiresAt", 2L)
+        json.put("expiresAt", Long.MAX_VALUE)
 
         coEvery {
             mockEncryptedPreferences.getEncryptedString("cert_pin_$hostname")
