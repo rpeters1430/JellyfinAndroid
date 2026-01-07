@@ -56,18 +56,8 @@ class CredentialSecurityPreferencesRepository(
         }
 
     suspend fun setRequireStrongAuthForCredentials(requireStrongAuth: Boolean) {
-        try {
-            dataStore.edit { prefs ->
-                prefs[PreferencesKeys.REQUIRE_STRONG_AUTH] = requireStrongAuth
-            }
-        } catch (exception: IOException) {
-            SecureLogger.e(
-                TAG,
-                "IOException saving credential security preferences, keeping previous value",
-                exception,
-            )
-        } catch (exception: Exception) {
-            SecureLogger.e(TAG, "Unexpected error saving credential security preferences", exception)
+        dataStore.edit { prefs ->
+            prefs[PreferencesKeys.REQUIRE_STRONG_AUTH] = requireStrongAuth
         }
     }
 
