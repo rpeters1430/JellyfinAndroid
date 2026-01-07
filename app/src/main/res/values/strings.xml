@@ -347,4 +347,5 @@
     <string name="pinning_revoke">Revoke</string>
     <string name="pinning_mismatch_error">Certificate pin mismatch for %1$s</string>
     <string name="pinning_expired_error">Stored certificate pin expired for %1$s</string>
+    <string name="pinning_no_pins_available">No certificate pins are available to trust.</string>
 </resources>
