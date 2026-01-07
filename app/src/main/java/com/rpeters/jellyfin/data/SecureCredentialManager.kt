@@ -91,12 +91,8 @@ class SecureCredentialManager @Inject constructor(
         return "${Constants.Security.KEY_ALIAS}_${KEY_VERSION}_${timestamp / KEY_ROTATION_INTERVAL_MS}"
     }
 
-    /**
-     * Gets the buggy key alias format that was used before the typo fix
-     * This is needed to decrypt passwords saved with the old buggy format
-     */
-    private fun getBuggyKeyAlias(timestamp: Long = System.currentTimeMillis()): String {
-        return "${Constants.Security.KEY_ALIAS}_$KEY_VERSION}_${timestamp / KEY_ROTATION_INTERVAL_MS}"
+    private fun getRotatedKeyAlias(): String {
+        return "${getKeyAlias()}_${System.currentTimeMillis()}"
     }
 
     /**
@@ -107,30 +103,22 @@ class SecureCredentialManager @Inject constructor(
         forceNew: Boolean = false,
         requireUserAuthentication: Boolean = userAuthenticationRequired(),
     ): SecretKey = withContext(Dispatchers.IO) {
-        val currentAlias = getKeyAlias()
-        val buggyAlias = getBuggyKeyAlias()
-
-        val currentKeyExists = keyStore.containsAlias(currentAlias)
-        val buggyKeyExists = keyStore.containsAlias(buggyAlias)
-
         if (forceNew) {
-            deleteAliasIfExists(currentAlias)
-            removeOldKeys(currentAlias)
-            return@withContext generateKey(currentAlias, requireUserAuthentication)
+            val newAlias = getRotatedKeyAlias()
+            val newKey = generateKey(newAlias, requireUserAuthentication)
+            removeOldKeys(newAlias)
+            return@withContext newKey
         }
 
-        if (!currentKeyExists && !buggyKeyExists) {
-            removeOldKeys(currentAlias)
-            return@withContext generateKey(currentAlias, requireUserAuthentication)
+        val latestAlias = getLatestKeyAlias()
+        if (latestAlias != null) {
+            return@withContext keyStore.getKey(latestAlias, null) as SecretKey
         }
 
-        // Try to get the key using the current alias first, then fall back to buggy alias
-        // This provides backward compatibility for passwords encrypted with the old buggy key format
-        return@withContext when {
-            keyStore.containsAlias(currentAlias) -> keyStore.getKey(currentAlias, null) as SecretKey
-            keyStore.containsAlias(buggyAlias) -> keyStore.getKey(buggyAlias, null) as SecretKey
-            else -> throw IllegalStateException("No encryption key found")
-        }
+        val newAlias = getKeyAlias()
+        val newKey = generateKey(newAlias, requireUserAuthentication)
+        removeOldKeys(newAlias)
+        return@withContext newKey
     }
 
     private fun deleteAliasIfExists(alias: String) {
@@ -155,6 +143,33 @@ class SecureCredentialManager @Inject constructor(
                 }
             }
         }
+    }
+
+    private fun getLatestKeyAlias(): String? {
+        val aliases = keyStore.aliases()
+        var latestAlias: String? = null
+        var latestTimestamp = Long.MIN_VALUE
+
+        while (aliases.hasMoreElements()) {
+            val alias = aliases.nextElement()
+            if (!alias.startsWith(Constants.Security.KEY_ALIAS)) {
+                continue
+            }
+            val timestamp = parseKeyAliasTimestamp(alias) ?: continue
+            if (timestamp > latestTimestamp) {
+                latestTimestamp = timestamp
+                latestAlias = alias
+            }
+        }
+
+        return latestAlias
+    }
+
+    private fun parseKeyAliasTimestamp(alias: String): Long? {
+        val match = Regex("(\\d+)(?:_(\\d+))?$").find(alias) ?: return null
+        val primaryValue = match.groupValues.getOrNull(2)?.takeIf { it.isNotBlank() }
+            ?: match.groupValues.getOrNull(1)
+        return primaryValue?.toLongOrNull()
     }
 
     private fun generateKey(alias: String, requireUserAuthentication: Boolean): SecretKey {
@@ -246,18 +261,29 @@ class SecureCredentialManager @Inject constructor(
     suspend fun applyCredentialAuthenticationRequirement(requireAuthentication: Boolean) {
         val currentRequirement = userAuthenticationRequired()
         if (currentRequirement == requireAuthentication) {
-            cachedUserAuthRequired = currentRequirement
-            credentialSecurityPreferencesRepository.setRequireStrongAuthForCredentials(requireAuthentication)
             return
         }
 
+        val existingCredentials = exportPlaintextCredentials()
+        val newAlias = getRotatedKeyAlias()
+
         try {
-            val existingCredentials = exportPlaintextCredentials()
-            getOrCreateSecretKey(forceNew = true, requireUserAuthentication = requireAuthentication)
-            cachedUserAuthRequired = requireAuthentication
+            generateKey(newAlias, requireUserAuthentication = requireAuthentication)
             restoreCredentials(existingCredentials)
             credentialSecurityPreferencesRepository.setRequireStrongAuthForCredentials(requireAuthentication)
+            cachedUserAuthRequired = requireAuthentication
+            removeOldKeys(newAlias)
         } catch (e: Exception) {
+            try {
+                withContext(NonCancellable + Dispatchers.IO) {
+                    deleteAliasIfExists(newAlias)
+                    restoreCredentials(existingCredentials)
+                    credentialSecurityPreferencesRepository.setRequireStrongAuthForCredentials(currentRequirement)
+                    cachedUserAuthRequired = currentRequirement
+                }
+            } catch (rollbackException: Exception) {
+                Log.e(TAG, "Failed to rollback credential authentication requirement", rollbackException)
+            }
             Log.e(TAG, "Failed to apply credential authentication requirement", e)
             throw SecurityException("Failed to update credential encryption policy", e)
         }
@@ -468,16 +494,18 @@ class SecureCredentialManager @Inject constructor(
             if (key is Preferences.Key<*> && key.name.startsWith("pwd_") && !key.name.endsWith("_timestamp")) {
                 val encryptedPassword = value as? String ?: return@forEach
                 val decryptedPassword = decrypt(encryptedPassword)
-                val timestamp = preferences[longPreferencesKey("${key.name}_timestamp")]
-                if (decryptedPassword != null) {
-                    credentials.add(
-                        StoredCredential(
-                            preferenceKey = key.name,
-                            plaintext = decryptedPassword,
-                            timestamp = timestamp,
-                        ),
-                    )
+                if (decryptedPassword == null) {
+                    Log.w(TAG, "Failed to decrypt credential for key: ${key.name}")
+                    throw SecurityException("Failed to decrypt credential for key: ${key.name}")
                 }
+                val timestamp = preferences[longPreferencesKey("${key.name}_timestamp")]
+                credentials.add(
+                    StoredCredential(
+                        preferenceKey = key.name,
+                        plaintext = decryptedPassword,
+                        timestamp = timestamp,
+                    ),
+                )
             }
         }
 
