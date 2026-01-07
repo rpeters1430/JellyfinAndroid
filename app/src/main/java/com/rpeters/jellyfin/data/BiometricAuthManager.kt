@@ -9,6 +9,15 @@ import androidx.fragment.app.FragmentActivity
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
+data class BiometricCapability(
+    val authenticators: Int,
+    val isAvailable: Boolean,
+    val isStrongSupported: Boolean,
+    val isWeakOnly: Boolean,
+    val allowsDeviceCredentialFallback: Boolean,
+    val status: Int,
+)
+
 /**
  * Manager for handling biometric authentication in the Jellyfin Android app.
  * Provides a simple interface for requesting biometric authentication.
@@ -22,11 +31,8 @@ class BiometricAuthManager(private val context: Context) {
      *
      * @return true if biometric authentication is available, false otherwise
      */
-    fun isBiometricAuthAvailable(): Boolean {
-        return when (biometricManager.canAuthenticate(getAuthenticators())) {
-            BiometricManager.BIOMETRIC_SUCCESS -> true
-            else -> false
-        }
+    fun isBiometricAuthAvailable(requireStrongBiometric: Boolean = false): Boolean {
+        return getCapability(requireStrongBiometric).isAvailable
     }
 
     /**
@@ -43,9 +49,11 @@ class BiometricAuthManager(private val context: Context) {
         title: String = "Biometric Authentication",
         subtitle: String = "Authenticate to access your credentials",
         description: String = "Confirm your identity using your biometric credential",
+        requireStrongBiometric: Boolean = false,
     ): Boolean = suspendCancellableCoroutine { continuation ->
         // Check if biometric auth is available
-        if (!isBiometricAuthAvailable()) {
+        val capability = getCapability(requireStrongBiometric)
+        if (!capability.isAvailable) {
             continuation.resume(false)
             return@suspendCancellableCoroutine
         }
@@ -75,13 +83,22 @@ class BiometricAuthManager(private val context: Context) {
             },
         )
 
-        val promptInfo = BiometricPrompt.PromptInfo.Builder()
+        val promptInfoBuilder = BiometricPrompt.PromptInfo.Builder()
             .setTitle(title)
             .setSubtitle(subtitle)
             .setDescription(description)
-            .setAllowedAuthenticators(getAuthenticators())
             .setConfirmationRequired(false) // Don't require explicit confirmation after biometric
-            .build()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            promptInfoBuilder.setAllowedAuthenticators(capability.authenticators)
+        } else if (capability.allowsDeviceCredentialFallback) {
+            @Suppress("DEPRECATION")
+            promptInfoBuilder.setDeviceCredentialAllowed(true)
+        } else {
+            promptInfoBuilder.setAllowedAuthenticators(capability.authenticators)
+        }
+
+        val promptInfo = promptInfoBuilder.build()
 
         biometricPrompt.authenticate(promptInfo)
 
@@ -102,33 +119,59 @@ class BiometricAuthManager(private val context: Context) {
      * - BIOMETRIC_WEAK: Works on more devices but may allow face recognition
      *   without liveness detection or less secure iris recognition
      *
-     * Current Implementation: Prioritizes device compatibility over maximum security
-     * for Android < 11 devices. Users on these older devices get authentication,
-     * but it may be less secure than on newer devices.
-     *
-     * Alternative Implementation (Maximum Security):
-     * To require BIOMETRIC_STRONG on all devices:
-     * ```
-     * BiometricManager.Authenticators.BIOMETRIC_STRONG or
-     *     BiometricManager.Authenticators.DEVICE_CREDENTIAL
-     * ```
-     * Note: This may prevent authentication on some devices, requiring PIN/password fallback.
-     *
-     * TODO: Consider adding a user setting to choose security level vs. compatibility
-     * TODO: Add warning UI for devices using BIOMETRIC_WEAK
+     * Current Implementation: Allows callers to choose between compatibility (BIOMETRIC_WEAK)
+     * and maximum trust (BIOMETRIC_STRONG with device credential fallback). A warning can be
+     * surfaced to users when only BIOMETRIC_WEAK is available.
      *
      * @return Bitmask of authenticators
      */
-    private fun getAuthenticators(): Int {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // On Android 11+ (API 30+) use both biometric and device credential
-            BiometricManager.Authenticators.BIOMETRIC_STRONG or
-                BiometricManager.Authenticators.DEVICE_CREDENTIAL
+    fun getCapability(requireStrongBiometric: Boolean = false): BiometricCapability {
+        val strongStatus = biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+        val weakStatus = biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_WEAK)
+        val strongSupported = strongStatus == BiometricManager.BIOMETRIC_SUCCESS
+        val weakSupported = weakStatus == BiometricManager.BIOMETRIC_SUCCESS
+
+        val deviceCredentialAuth = deviceCredentialAuthenticator()
+        val allowsDeviceCredentialFallback = deviceCredentialAuth != 0 ||
+            (Build.VERSION.SDK_INT < Build.VERSION_CODES.R && !requireStrongBiometric)
+        val authenticators = when {
+            requireStrongBiometric -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    BiometricManager.Authenticators.BIOMETRIC_STRONG or deviceCredentialAuth
+                } else {
+                    BiometricManager.Authenticators.BIOMETRIC_STRONG
+                }
+            }
+
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && strongSupported -> {
+                BiometricManager.Authenticators.BIOMETRIC_STRONG or deviceCredentialAuth
+            }
+
+            else -> {
+                BiometricManager.Authenticators.BIOMETRIC_WEAK or deviceCredentialAuth
+            }
+        }
+        val status = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R && allowsDeviceCredentialFallback) {
+            biometricManager.canAuthenticate()
         } else {
-            // On older versions, use biometric or device credential
-            // Using BIOMETRIC_WEAK for compatibility with more devices
-            BiometricManager.Authenticators.BIOMETRIC_WEAK or
-                BiometricManager.Authenticators.DEVICE_CREDENTIAL
+            biometricManager.canAuthenticate(authenticators)
+        }
+
+        return BiometricCapability(
+            authenticators = authenticators,
+            isAvailable = status == BiometricManager.BIOMETRIC_SUCCESS,
+            isStrongSupported = strongSupported,
+            isWeakOnly = !strongSupported && weakSupported,
+            allowsDeviceCredentialFallback = allowsDeviceCredentialFallback,
+            status = status,
+        )
+    }
+
+    private fun deviceCredentialAuthenticator(): Int {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            BiometricManager.Authenticators.DEVICE_CREDENTIAL
+        } else {
+            0
         }
     }
 }
