@@ -19,6 +19,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -74,7 +76,10 @@ fun ServerConnectionScreen(
     savedUsername: String = "",
     rememberLogin: Boolean = true,
     hasSavedPassword: Boolean = false,
+    isBiometricAuthEnabled: Boolean = false,
     isBiometricAuthAvailable: Boolean = false,
+    requireStrongBiometric: Boolean = false,
+    isUsingWeakBiometric: Boolean = false,
     onRememberLoginChange: (Boolean) -> Unit = {},
     onAutoLogin: () -> Unit = {},
     onBiometricLogin: () -> Unit = {},
@@ -302,6 +307,14 @@ fun ServerConnectionScreen(
                         Text("Remember login")
                     }
                 }
+            }
+
+            if (isBiometricAuthEnabled && (isBiometricAuthAvailable || requireStrongBiometric || isUsingWeakBiometric)) {
+                BiometricSecurityNotice(
+                    requireStrongBiometric = requireStrongBiometric,
+                    isUsingWeakBiometric = isUsingWeakBiometric,
+                    onRequireStrongBiometricChange = onRequireStrongBiometricChange,
+                )
             }
 
             // Show helper text when saved credentials are available but no password

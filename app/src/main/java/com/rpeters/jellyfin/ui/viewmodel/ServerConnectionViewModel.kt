@@ -47,6 +47,7 @@ object PreferencesKeys {
     val USERNAME = stringPreferencesKey("username")
     val REMEMBER_LOGIN = booleanPreferencesKey("remember_login")
     val BIOMETRIC_AUTH_ENABLED = booleanPreferencesKey("biometric_auth_enabled") // New preference
+    val BIOMETRIC_REQUIRE_STRONG = booleanPreferencesKey("biometric_require_strong")
 }
 
 @HiltViewModel
@@ -71,13 +72,15 @@ class ServerConnectionViewModel @Inject constructor(
             val savedUsername = preferences[PreferencesKeys.USERNAME] ?: ""
             val rememberPreference = preferences[PreferencesKeys.REMEMBER_LOGIN]
             var rememberLogin = rememberPreference ?: true
-            val isBiometricAuthEnabled = preferences[PreferencesKeys.BIOMETRIC_AUTH_ENABLED] ?: false
+            val biometricPreference = preferences[PreferencesKeys.BIOMETRIC_AUTH_ENABLED]
+            val isBiometricAuthEnabled = biometricPreference ?: false
+            val requireStrongBiometric = preferences[PreferencesKeys.BIOMETRIC_REQUIRE_STRONG] ?: false
+            val biometricCapability = secureCredentialManager.getBiometricCapability(requireStrongBiometric)
 
             // Persist default remember login preference for first-time users
             if (rememberPreference == null) {
                 updateRememberLoginPreference(true)
             }
-
             // ✅ FIX: Handle suspend function calls properly
             val hasSavedPassword = if (savedServerUrl.isNotBlank() && savedUsername.isNotBlank()) {
                 secureCredentialManager.getPassword(savedServerUrl, savedUsername) != null
@@ -96,26 +99,30 @@ class ServerConnectionViewModel @Inject constructor(
                 savedUsername = savedUsername,
                 rememberLogin = rememberLogin,
                 hasSavedPassword = hasSavedPassword,
-                isBiometricAuthAvailable = secureCredentialManager.isBiometricAuthAvailable(), // Check biometric availability
+                isBiometricAuthEnabled = isBiometricAuthEnabled,
+                isBiometricAuthAvailable = isBiometricAuthEnabled && biometricCapability.isAvailable,
+                isUsingWeakBiometric = isBiometricAuthEnabled && biometricCapability.isWeakOnly && biometricCapability.isAvailable,
+                requireStrongBiometric = requireStrongBiometric,
                 // We don't set biometric auth enabled here because we want to check it separately
             )
 
             // Auto-login if we have saved credentials and remember login is enabled
             if (rememberLogin && savedServerUrl.isNotBlank() && savedUsername.isNotBlank() && hasSavedPassword) {
-                android.util.Log.d("ServerConnectionVM", "Auto-login conditions met. Biometric enabled: $isBiometricAuthEnabled, Biometric available: ${secureCredentialManager.isBiometricAuthAvailable()}")
+                android.util.Log.d("ServerConnectionVM", "Auto-login conditions met. Biometric enabled: $isBiometricAuthEnabled, Biometric available: ${biometricCapability.isAvailable}")
 
                 // We don't auto-login if biometric auth is enabled, user needs to trigger it manually
                 // However, if biometric is enabled but not available on this device, disable it and auto-login
-                if (isBiometricAuthEnabled && !secureCredentialManager.isBiometricAuthAvailable()) {
+                if (isBiometricAuthEnabled && !biometricCapability.isAvailable) {
                     android.util.Log.d("ServerConnectionVM", "Biometric auth was enabled but is no longer available - disabling it")
                     // Biometric auth was enabled but is no longer available - disable it
                     context.dataStore.edit { preferences ->
                         preferences[PreferencesKeys.BIOMETRIC_AUTH_ENABLED] = false
                     }
+                    updateBiometricCapabilityState(enabled = false, requireStrongBiometric = requireStrongBiometric)
                     // Continue with auto-login below
                 }
 
-                if (!isBiometricAuthEnabled || !secureCredentialManager.isBiometricAuthAvailable()) {
+                if (!isBiometricAuthEnabled || !biometricCapability.isAvailable) {
                     android.util.Log.d("ServerConnectionVM", "🔵 AUTO-LOGIN: Attempting to retrieve password for serverUrl='$savedServerUrl', username='$savedUsername'")
                     val savedPassword = secureCredentialManager.getPassword(savedServerUrl, savedUsername)
                     if (savedPassword != null) {
@@ -446,19 +453,50 @@ class ServerConnectionViewModel @Inject constructor(
             context.dataStore.edit { preferences ->
                 preferences[PreferencesKeys.BIOMETRIC_AUTH_ENABLED] = enabled
             }
-            _connectionState.value = _connectionState.value.copy(
-                isBiometricAuthAvailable = enabled && secureCredentialManager.isBiometricAuthAvailable(),
-            )
+            updateBiometricCapabilityState(enabled = enabled)
         }
+    }
+
+    fun setRequireStrongBiometric(requireStrongBiometric: Boolean) {
+        viewModelScope.launch {
+            context.dataStore.edit { preferences ->
+                preferences[PreferencesKeys.BIOMETRIC_REQUIRE_STRONG] = requireStrongBiometric
+            }
+            updateBiometricCapabilityState(requireStrongBiometric = requireStrongBiometric)
+        }
+    }
+
+    private fun updateBiometricCapabilityState(
+        enabled: Boolean? = null,
+        requireStrongBiometric: Boolean? = null,
+    ) {
+        val currentState = _connectionState.value
+        val resolvedEnabled = enabled ?: currentState.isBiometricAuthEnabled
+        val resolvedRequireStrong = requireStrongBiometric ?: currentState.requireStrongBiometric
+        val capability = secureCredentialManager.getBiometricCapability(resolvedRequireStrong)
+        _connectionState.value = currentState.copy(
+            isBiometricAuthEnabled = resolvedEnabled,
+            isBiometricAuthAvailable = resolvedEnabled && capability.isAvailable,
+            isUsingWeakBiometric = resolvedEnabled && capability.isWeakOnly && capability.isAvailable,
+            requireStrongBiometric = resolvedRequireStrong,
+        )
     }
 
     /**
      * Gets a saved password with optional biometric authentication
      */
-    suspend fun getSavedPassword(activity: FragmentActivity? = null): String? {
+    suspend fun getSavedPassword(
+        activity: FragmentActivity? = null,
+        requireStrongBiometric: Boolean = _connectionState.value.requireStrongBiometric,
+    ): String? {
         val currentState = _connectionState.value
         return if (currentState.savedServerUrl.isNotBlank() && currentState.savedUsername.isNotBlank()) {
-            secureCredentialManager.getPassword(currentState.savedServerUrl, currentState.savedUsername, activity)
+            secureCredentialManager.getPassword(
+                currentState.savedServerUrl,
+                currentState.savedUsername,
+                activity,
+                requireStrongBiometric,
+            )
         } else {
             null
         }
@@ -493,8 +531,9 @@ class ServerConnectionViewModel @Inject constructor(
      */
     fun autoLoginWithBiometric(activity: FragmentActivity) {
         val currentState = _connectionState.value
+        val biometricCapability = secureCredentialManager.getBiometricCapability(currentState.requireStrongBiometric)
 
-        if (!secureCredentialManager.isBiometricAuthAvailable()) {
+        if (!biometricCapability.isAvailable) {
             showError(context.getString(R.string.biometric_unavailable_error))
             return
         }
@@ -510,7 +549,7 @@ class ServerConnectionViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            val savedPassword = getSavedPassword(activity)
+            val savedPassword = getSavedPassword(activity, currentState.requireStrongBiometric)
             if (savedPassword != null) {
                 connectToServer(
                     currentState.savedServerUrl,

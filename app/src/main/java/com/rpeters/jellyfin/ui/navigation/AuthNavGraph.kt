@@ -52,7 +52,10 @@ fun androidx.navigation.NavGraphBuilder.authNavGraph(
             savedUsername = connectionState.savedUsername,
             rememberLogin = connectionState.rememberLogin,
             hasSavedPassword = connectionState.hasSavedPassword,
+            isBiometricAuthEnabled = connectionState.isBiometricAuthEnabled,
             isBiometricAuthAvailable = connectionState.isBiometricAuthAvailable,
+            requireStrongBiometric = connectionState.requireStrongBiometric,
+            isUsingWeakBiometric = connectionState.isUsingWeakBiometric,
             onRememberLoginChange = { viewModel.setRememberLogin(it) },
             onAutoLogin = { viewModel.autoLogin() },
             onBiometricLogin = {
