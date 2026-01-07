@@ -92,10 +92,11 @@ fun ServerConnectionScreen(
 
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
+    val passwordText = passwordState.text.toString()
+    val canSubmit = serverUrl.isNotBlank() && username.isNotBlank() && passwordText.isNotBlank()
     val submitIfValid: () -> Unit = {
         keyboardController?.hide()
-        val passwordText = passwordState.text.toString()
-        if (serverUrl.isNotBlank() && username.isNotBlank() && passwordText.isNotBlank()) {
+        if (canSubmit) {
             onConnect(serverUrl, username, passwordText)
         }
     }
@@ -138,87 +139,23 @@ fun ServerConnectionScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            ElevatedCard(
-                colors = CardDefaults.elevatedCardColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                ),
-                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.VpnKey,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(40.dp),
-                    )
-                    Text(
-                        text = "Jellyfin",
-                        style = MaterialTheme.typography.headlineLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        textAlign = TextAlign.Center,
-                    )
-                    Text(
-                        text = "Sign in to your server",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                    )
-                }
-            }
+            LoginHeaderCard(modifier = Modifier.fillMaxWidth())
 
             // Auto-login button if we have saved credentials
-            if (hasSavedPassword && rememberLogin && savedServerUrl.isNotBlank() && savedUsername.isNotBlank()) {
-                ElevatedCard(
-                    colors = CardDefaults.elevatedCardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    ),
-                    elevation = CardDefaults.elevatedCardElevation(
-                        defaultElevation = 6.dp,
-                    ),
+            val showAutoLoginCard = hasSavedPassword &&
+                rememberLogin &&
+                savedServerUrl.isNotBlank() &&
+                savedUsername.isNotBlank()
+            if (showAutoLoginCard) {
+                AutoLoginCard(
+                    savedServerUrl = savedServerUrl,
+                    savedUsername = savedUsername,
+                    isConnecting = connectionState.isConnecting,
+                    isBiometricAuthAvailable = isBiometricAuthAvailable,
+                    onAutoLogin = onAutoLogin,
+                    onBiometricLogin = onBiometricLogin,
                     modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Text(
-                            text = "Welcome back",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        )
-                        Text(
-                            text = "Server: $savedServerUrl\nUser: $savedUsername",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            textAlign = TextAlign.Center,
-                        )
-                        FilledTonalButton(
-                            onClick = onAutoLogin,
-                            enabled = !connectionState.isConnecting,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Text("Auto Login")
-                        }
-
-                        // Biometric login button if available
-                        if (isBiometricAuthAvailable) {
-                            OutlinedButton(
-                                onClick = onBiometricLogin,
-                                enabled = !connectionState.isConnecting,
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                Text("Login with Biometric")
-                            }
-                        }
-                    }
-                }
+                )
 
                 // Divider
                 Row(
@@ -236,77 +173,19 @@ fun ServerConnectionScreen(
                 }
             }
 
-            ElevatedCard(
-                colors = CardDefaults.elevatedCardColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                ),
-                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp),
+            LoginFormCard(
+                serverUrl = serverUrl,
+                onServerUrlChange = { serverUrl = it },
+                username = username,
+                onUsernameChange = { username = it },
+                passwordState = passwordState,
+                rememberLogin = rememberLogin,
+                isConnecting = connectionState.isConnecting,
+                focusRequester = focusRequester,
+                onRememberLoginChange = onRememberLoginChange,
+                onPasswordSubmit = submitIfValid,
                 modifier = Modifier.fillMaxWidth(),
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    // Server URL input
-                    OutlinedTextField(
-                        value = serverUrl,
-                        onValueChange = { serverUrl = it },
-                        label = { Text(stringResource(id = R.string.server_url_label)) },
-                        placeholder = { Text(stringResource(id = R.string.server_url_placeholder)) },
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Uri,
-                            imeAction = ImeAction.Next,
-                        ),
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
-                        enabled = !connectionState.isConnecting,
-                    )
-
-                    // Username input
-                    OutlinedTextField(
-                        value = username,
-                        onValueChange = { username = it },
-                        label = { Text(stringResource(id = R.string.username_label)) },
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Text,
-                            imeAction = ImeAction.Next,
-                        ),
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !connectionState.isConnecting,
-                    )
-
-                    // Password input
-                    OutlinedSecureTextField(
-                        state = passwordState,
-                        label = { Text(stringResource(id = R.string.password_label)) },
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Password,
-                            imeAction = ImeAction.Done,
-                        ),
-                        onKeyboardAction = { performDefaultAction ->
-                            submitIfValid()
-                            performDefaultAction()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !connectionState.isConnecting,
-                    )
-
-                    // Remember login toggle
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Switch(
-                            checked = rememberLogin,
-                            onCheckedChange = { onRememberLoginChange(it) },
-                            enabled = !connectionState.isConnecting,
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Remember login")
-                    }
-                }
-            }
+            )
 
             if (isBiometricAuthEnabled && (isBiometricAuthAvailable || requireStrongBiometric || isUsingWeakBiometric)) {
                 BiometricSecurityNotice(
@@ -317,58 +196,28 @@ fun ServerConnectionScreen(
             }
 
             // Show helper text when saved credentials are available but no password
-            if (savedServerUrl.isNotBlank() && savedUsername.isNotBlank() && rememberLogin && !hasSavedPassword) {
-                ElevatedCard(
-                    colors = CardDefaults.elevatedCardColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    ),
-                    elevation = CardDefaults.elevatedCardElevation(
-                        defaultElevation = 4.dp,
-                    ),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(
-                        text = "Saved credentials found. Just enter your password to connect.",
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(12.dp),
-                        textAlign = TextAlign.Center,
-                    )
-                }
+            val showSavedCredentialsHint = savedServerUrl.isNotBlank() &&
+                savedUsername.isNotBlank() &&
+                rememberLogin &&
+                !hasSavedPassword
+            if (showSavedCredentialsHint) {
+                SavedCredentialsHintCard(modifier = Modifier.fillMaxWidth())
             }
 
             // Error message
             if (connectionState.errorMessage != null) {
-                ElevatedCard(
-                    colors = CardDefaults.elevatedCardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                    ),
-                    elevation = CardDefaults.elevatedCardElevation(
-                        defaultElevation = 6.dp,
-                    ),
+                ConnectionErrorCard(
+                    message = connectionState.errorMessage,
                     modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(
-                        text = connectionState.errorMessage,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(16.dp),
-                    )
-                }
+                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
             // Connect button
             Button(
-                onClick = {
-                    submitIfValid()
-                },
-                enabled =
-                serverUrl.isNotBlank() &&
-                    username.isNotBlank() &&
-                    passwordState.text.isNotBlank() &&
-                    !connectionState.isConnecting,
+                onClick = submitIfValid,
+                enabled = canSubmit && !connectionState.isConnecting,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 if (connectionState.isConnecting) {
@@ -394,6 +243,233 @@ fun ServerConnectionScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
         }
+    }
+}
+
+@Composable
+private fun LoginHeaderCard(
+    modifier: Modifier = Modifier,
+) {
+    ElevatedCard(
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp),
+        modifier = modifier,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(
+                imageVector = Icons.Default.VpnKey,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(40.dp),
+            )
+            Text(
+                text = "Jellyfin",
+                style = MaterialTheme.typography.headlineLarge,
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = "Sign in to your server",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AutoLoginCard(
+    savedServerUrl: String,
+    savedUsername: String,
+    isConnecting: Boolean,
+    isBiometricAuthAvailable: Boolean,
+    onAutoLogin: () -> Unit,
+    onBiometricLogin: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ElevatedCard(
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+        ),
+        elevation = CardDefaults.elevatedCardElevation(
+            defaultElevation = 6.dp,
+        ),
+        modifier = modifier,
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = "Welcome back",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+            Text(
+                text = "Server: $savedServerUrl\nUser: $savedUsername",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                textAlign = TextAlign.Center,
+            )
+            FilledTonalButton(
+                onClick = onAutoLogin,
+                enabled = !isConnecting,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Auto Login")
+            }
+
+            if (isBiometricAuthAvailable) {
+                OutlinedButton(
+                    onClick = onBiometricLogin,
+                    enabled = !isConnecting,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Login with Biometric")
+                }
+            }
+        }
+    }
+}
+
+@OptInAppExperimentalApis
+@Composable
+private fun LoginFormCard(
+    serverUrl: String,
+    onServerUrlChange: (String) -> Unit,
+    username: String,
+    onUsernameChange: (String) -> Unit,
+    passwordState: androidx.compose.foundation.text.input.TextFieldState,
+    rememberLogin: Boolean,
+    isConnecting: Boolean,
+    focusRequester: FocusRequester,
+    onRememberLoginChange: (Boolean) -> Unit,
+    onPasswordSubmit: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ElevatedCard(
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp),
+        modifier = modifier,
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            OutlinedTextField(
+                value = serverUrl,
+                onValueChange = onServerUrlChange,
+                label = { Text(stringResource(id = R.string.server_url_label)) },
+                placeholder = { Text(stringResource(id = R.string.server_url_placeholder)) },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Uri,
+                    imeAction = ImeAction.Next,
+                ),
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester),
+                enabled = !isConnecting,
+            )
+
+            OutlinedTextField(
+                value = username,
+                onValueChange = onUsernameChange,
+                label = { Text(stringResource(id = R.string.username_label)) },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next,
+                ),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isConnecting,
+            )
+
+            OutlinedSecureTextField(
+                state = passwordState,
+                label = { Text(stringResource(id = R.string.password_label)) },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done,
+                ),
+                onKeyboardAction = { performDefaultAction ->
+                    onPasswordSubmit()
+                    performDefaultAction()
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isConnecting,
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Switch(
+                    checked = rememberLogin,
+                    onCheckedChange = onRememberLoginChange,
+                    enabled = !isConnecting,
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Remember login")
+            }
+        }
+    }
+}
+
+@Composable
+private fun SavedCredentialsHintCard(
+    modifier: Modifier = Modifier,
+) {
+    ElevatedCard(
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+        ),
+        elevation = CardDefaults.elevatedCardElevation(
+            defaultElevation = 4.dp,
+        ),
+        modifier = modifier,
+    ) {
+        Text(
+            text = "Saved credentials found. Just enter your password to connect.",
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(12.dp),
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+@Composable
+private fun ConnectionErrorCard(
+    message: String,
+    modifier: Modifier = Modifier,
+) {
+    ElevatedCard(
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer,
+        ),
+        elevation = CardDefaults.elevatedCardElevation(
+            defaultElevation = 6.dp,
+        ),
+        modifier = modifier,
+    ) {
+        Text(
+            text = message,
+            color = MaterialTheme.colorScheme.onErrorContainer,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(16.dp),
+        )
     }
 }
 
