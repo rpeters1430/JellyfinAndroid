@@ -19,6 +19,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -37,6 +39,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -92,8 +95,12 @@ fun ServerConnectionScreen(
 
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
-    val passwordText = passwordState.text.toString()
-    val canSubmit = serverUrl.isNotBlank() && username.isNotBlank() && passwordText.isNotBlank()
+    val passwordText by remember {
+        derivedStateOf { passwordState.text.toString() }
+    }
+    val canSubmit by remember {
+        derivedStateOf { serverUrl.isNotBlank() && username.isNotBlank() && passwordText.isNotBlank() }
+    }
     val submitIfValid: () -> Unit = {
         keyboardController?.hide()
         if (canSubmit) {
@@ -164,7 +171,7 @@ fun ServerConnectionScreen(
                 ) {
                     HorizontalDivider(modifier = Modifier.weight(1f))
                     Text(
-                        text = "OR",
+                        text = stringResource(id = R.string.login_or_divider),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 16.dp),
@@ -238,7 +245,7 @@ fun ServerConnectionScreen(
                 enabled = !connectionState.isConnecting,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Quick Connect")
+                Text(stringResource(id = R.string.quick_connect_title))
             }
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -264,18 +271,18 @@ private fun LoginHeaderCard(
         ) {
             Icon(
                 imageVector = Icons.Default.VpnKey,
-                contentDescription = null,
+                contentDescription = stringResource(id = R.string.sign_in),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(40.dp),
             )
             Text(
-                text = "Jellyfin",
+                text = stringResource(id = R.string.app_name),
                 style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.Center,
             )
             Text(
-                text = "Sign in to your server",
+                text = stringResource(id = R.string.sign_in_to_server),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -309,13 +316,17 @@ private fun AutoLoginCard(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                text = "Welcome back",
+                text = stringResource(id = R.string.welcome_back),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
             Text(
-                text = "Server: $savedServerUrl\nUser: $savedUsername",
+                text = stringResource(
+                    id = R.string.saved_credentials_info,
+                    savedServerUrl,
+                    savedUsername,
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                 textAlign = TextAlign.Center,
@@ -325,7 +336,7 @@ private fun AutoLoginCard(
                 enabled = !isConnecting,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Auto Login")
+                Text(stringResource(id = R.string.auto_login))
             }
 
             if (isBiometricAuthAvailable) {
@@ -334,7 +345,7 @@ private fun AutoLoginCard(
                     enabled = !isConnecting,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text("Login with Biometric")
+                    Text(stringResource(id = R.string.login_with_biometric))
                 }
             }
         }
@@ -421,7 +432,7 @@ private fun LoginFormCard(
                     enabled = !isConnecting,
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Remember login")
+                Text(stringResource(id = R.string.remember_login))
             }
         }
     }
@@ -441,7 +452,7 @@ private fun SavedCredentialsHintCard(
         modifier = modifier,
     ) {
         Text(
-            text = "Saved credentials found. Just enter your password to connect.",
+            text = stringResource(id = R.string.saved_credentials_hint),
             color = MaterialTheme.colorScheme.onSecondaryContainer,
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(12.dp),
@@ -616,20 +627,20 @@ private fun BiometricSecurityNotice(
             ) {
                 Icon(
                     imageVector = Icons.Default.Info,
-                    contentDescription = null,
+                    contentDescription = stringResource(id = R.string.biometric_weak_security_title),
                     tint = MaterialTheme.colorScheme.onErrorContainer,
                     modifier = Modifier.size(24.dp),
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Weak Biometric Security",
+                        text = stringResource(id = R.string.biometric_weak_security_title),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onErrorContainer,
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Your device is using weak biometric authentication (e.g., face unlock). For stronger security, enable \"Require Strong Biometric\" below.",
+                        text = stringResource(id = R.string.biometric_weak_security_body),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onErrorContainer,
                     )
@@ -658,20 +669,20 @@ private fun BiometricSecurityNotice(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Security,
-                        contentDescription = null,
+                        contentDescription = stringResource(id = R.string.biometric_security_settings_title),
                         tint = MaterialTheme.colorScheme.onSecondaryContainer,
                         modifier = Modifier.size(24.dp),
                     )
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Biometric Security Settings",
+                            text = stringResource(id = R.string.biometric_security_settings_title),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Control biometric authentication security level",
+                            text = stringResource(id = R.string.biometric_security_settings_description),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
                         )
@@ -689,12 +700,12 @@ private fun BiometricSecurityNotice(
                     Spacer(modifier = Modifier.width(8.dp))
                     Column {
                         Text(
-                            text = "Require Strong Biometric",
+                            text = stringResource(id = R.string.biometric_require_strong),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
                         )
                         Text(
-                            text = "Only allow fingerprint or iris authentication",
+                            text = stringResource(id = R.string.biometric_require_strong_description),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
                         )
