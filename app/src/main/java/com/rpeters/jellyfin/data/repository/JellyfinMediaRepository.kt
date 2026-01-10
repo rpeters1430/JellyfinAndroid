@@ -467,6 +467,33 @@ class JellyfinMediaRepository @Inject constructor(
             }
         }
 
+    suspend fun getSimilarMovies(movieId: String, limit: Int = 20): ApiResult<List<BaseItemDto>> =
+        withServerClient("getSimilarMovies") { server, client ->
+            val userUuid = parseUuid(server.userId ?: "", "user")
+            val movieUuid = parseUuid(movieId, "movie")
+
+            try {
+                val response = client.libraryApi.getSimilarItems(
+                    itemId = movieUuid,
+                    userId = userUuid,
+                    limit = limit,
+                    fields = listOf(
+                        org.jellyfin.sdk.model.api.ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+                        org.jellyfin.sdk.model.api.ItemFields.OVERVIEW,
+                        org.jellyfin.sdk.model.api.ItemFields.GENRES,
+                    ),
+                )
+                response.content.items
+            } catch (e: Exception) {
+                SecureLogger.w(
+                    "JellyfinMediaRepository",
+                    "Failed to load similar movies: ${e.message}",
+                )
+                // Return empty list on error - this is a non-critical feature
+                emptyList()
+            }
+        }
+
     suspend fun getEpisodesForSeason(seasonId: String): ApiResult<List<BaseItemDto>> =
         // ✅ FIX: Use withServerClient helper to ensure fresh server/client on token refresh
         withServerClient("getEpisodesForSeason") { server, client ->
