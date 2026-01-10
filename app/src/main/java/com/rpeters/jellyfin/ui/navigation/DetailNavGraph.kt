@@ -236,19 +236,13 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
         val resolvedMovie = movie ?: detailState.movie
 
         if (resolvedMovie != null) {
-            val relatedItems = appState.allItems.filter { item ->
-                item.id.toString() != movieId &&
-                    item.type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE &&
-                    resolvedMovie.genres?.any { genre -> item.genres?.contains(genre) == true } == true
-            }.take(10)
-
             LaunchedEffect(resolvedMovie.id) {
                 mainViewModel.sendCastPreview(resolvedMovie)
             }
 
             MovieDetailScreen(
                 movie = resolvedMovie,
-                relatedItems = relatedItems,
+                relatedItems = detailState.similarMovies,
                 onBackClick = { navController.popBackStack() },
                 onPlayClick = {
                     val streamUrl = mainViewModel.getStreamUrl(resolvedMovie)
@@ -262,6 +256,11 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 },
                 onFavoriteClick = { mainViewModel.toggleFavorite(resolvedMovie) },
                 onShareClick = { ShareUtils.shareMedia(navController.context, resolvedMovie) },
+                onRelatedMovieClick = { relatedMovieId ->
+                    navController.navigate(Screen.MovieDetail.createRoute(relatedMovieId))
+                },
+                onRefresh = { detailViewModel.refresh() },
+                isRefreshing = detailState.isLoading || detailState.isSimilarMoviesLoading,
                 playbackAnalysis = detailState.playbackAnalysis,
                 getImageUrl = { item -> mainViewModel.getImageUrl(item) },
                 getBackdropUrl = { item -> mainViewModel.getBackdropUrl(item) },
@@ -319,7 +318,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
             if (episode == null) {
                 mainViewModel.loadEpisodeDetails(episodeId)
             }
-            episode?.let { viewModel.loadEpisodeAnalysis(it) }
+            episode?.let { viewModel.loadEpisodeDetails(it, series) }
         }
 
         when {
@@ -334,10 +333,22 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
 
                 TVEpisodeDetailScreen(
                     episode = episode,
-                    seriesInfo = series,
+                    seriesInfo = detailState.seriesInfo ?: series,
+                    previousEpisode = detailState.previousEpisode,
+                    nextEpisode = detailState.nextEpisode,
                     getImageUrl = { mainViewModel.getImageUrl(it) },
                     getBackdropUrl = { mainViewModel.getBackdropUrl(it) },
                     onBackClick = { navController.popBackStack() },
+                    onPreviousEpisodeClick = { previousEpisodeId ->
+                        navController.navigate(Screen.TVEpisodeDetail.createRoute(previousEpisodeId)) {
+                            popUpTo(Screen.TVEpisodeDetail.route) { inclusive = true }
+                        }
+                    },
+                    onNextEpisodeClick = { nextEpisodeId ->
+                        navController.navigate(Screen.TVEpisodeDetail.createRoute(nextEpisodeId)) {
+                            popUpTo(Screen.TVEpisodeDetail.route) { inclusive = true }
+                        }
+                    },
                     onPlayClick = { episodeItem ->
                         try {
                             val streamUrl = mainViewModel.getStreamUrl(episodeItem)

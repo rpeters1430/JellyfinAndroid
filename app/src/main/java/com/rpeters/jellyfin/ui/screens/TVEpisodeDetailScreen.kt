@@ -96,9 +96,13 @@ import java.util.Locale
 fun TVEpisodeDetailScreen(
     episode: BaseItemDto,
     seriesInfo: BaseItemDto? = null,
+    previousEpisode: BaseItemDto? = null,
+    nextEpisode: BaseItemDto? = null,
     getImageUrl: (BaseItemDto) -> String?,
     getBackdropUrl: (BaseItemDto) -> String?,
     onBackClick: () -> Unit,
+    onPreviousEpisodeClick: (String) -> Unit = {},
+    onNextEpisodeClick: (String) -> Unit = {},
     onPlayClick: (BaseItemDto) -> Unit = {},
     onDownloadClick: (BaseItemDto) -> Unit = {},
     onDeleteClick: (BaseItemDto) -> Unit = {},
@@ -166,10 +170,9 @@ fun TVEpisodeDetailScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(paddingValues),
-                        contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(24.dp),
                     ) {
-                        // Hero Section with Episode Image
+                        // Hero Section with Episode Image - Full Bleed
                         item {
                             ExpressiveEpisodeHero(
                                 episode = episode,
@@ -181,7 +184,10 @@ fun TVEpisodeDetailScreen(
 
                         // Episode Information Card
                         item {
-                            ExpressiveEpisodeInfoCard(episode = episode)
+                            ExpressiveEpisodeInfoCard(
+                                episode = episode,
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                            )
                         }
 
                         // Action Buttons
@@ -194,12 +200,33 @@ fun TVEpisodeDetailScreen(
                                 onMarkUnwatchedClick = onMarkUnwatchedClick,
                                 onFavoriteClick = onFavoriteClick,
                                 playbackAnalysis = playbackAnalysis,
+                                modifier = Modifier.padding(horizontal = 16.dp),
                             )
+                        }
+
+                        // Next/Previous Episode Navigation
+                        if (previousEpisode != null || nextEpisode != null) {
+                            item {
+                                EpisodeNavigationButtons(
+                                    previousEpisode = previousEpisode,
+                                    nextEpisode = nextEpisode,
+                                    onPreviousClick = {
+                                        previousEpisode?.id?.let { onPreviousEpisodeClick(it.toString()) }
+                                    },
+                                    onNextClick = {
+                                        nextEpisode?.id?.let { onNextEpisodeClick(it.toString()) }
+                                    },
+                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                )
+                            }
                         }
 
                         // Episode Details
                         item {
-                            ExpressiveEpisodeOverview(episode = episode)
+                            ExpressiveEpisodeOverview(
+                                episode = episode,
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                            )
                         }
 
                         // Series Information (if available)
@@ -208,6 +235,7 @@ fun TVEpisodeDetailScreen(
                                 ExpressiveSeriesInfo(
                                     series = series,
                                     getImageUrl = getImageUrl,
+                                    modifier = Modifier.padding(horizontal = 16.dp),
                                 )
                             }
                         }
@@ -253,7 +281,7 @@ private fun ExpressiveEpisodeHero(
         label = "hero_scale",
     )
 
-    ElevatedCard(
+    Box(
         modifier = modifier
             .fillMaxWidth()
             .height(360.dp)
@@ -261,89 +289,80 @@ private fun ExpressiveEpisodeHero(
                 scaleX = heroScale
                 scaleY = heroScale
             },
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 12.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-        ),
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            // Background Image (episode or series backdrop)
-            val backdropUrl = getBackdropUrl(episode) ?: seriesInfo?.let { getBackdropUrl(it) }
+        // Background Image (episode or series backdrop)
+        val backdropUrl = getBackdropUrl(episode) ?: seriesInfo?.let { getBackdropUrl(it) }
 
-            SubcomposeAsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(backdropUrl)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = episode.name,
-                loading = {
-                    ExpressiveLoadingCard(
+        SubcomposeAsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(backdropUrl)
+                .crossfade(true)
+                .build(),
+            contentDescription = episode.name,
+            loading = {
+                ExpressiveLoadingCard(
+                    modifier = Modifier.fillMaxSize(),
+                    showTitle = false,
+                    showSubtitle = false,
+                    imageHeight = 360.dp,
+                )
+            },
+            error = {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f),
+                ) {
+                    Column(
                         modifier = Modifier.fillMaxSize(),
-                        showTitle = false,
-                        showSubtitle = false,
-                        imageHeight = 360.dp,
-                    )
-                },
-                error = {
-                    Surface(
-                        modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f),
-                        shape = RoundedCornerShape(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
                     ) {
-                        Column(
-                            modifier = Modifier.fillMaxSize(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Tv,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(80.dp),
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = episode.name ?: "Episode",
-                                style = MaterialTheme.typography.headlineMedium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                textAlign = TextAlign.Center,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Default.Tv,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(80.dp),
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = episode.name ?: "Episode",
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            textAlign = TextAlign.Center,
+                            fontWeight = FontWeight.Bold,
+                        )
                     }
-                },
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(20.dp)),
-            )
+                }
+            },
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
 
-            // Enhanced gradient overlay for better text readability
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.scrim.copy(alpha = 0.2f),
-                                MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f),
-                                MaterialTheme.colorScheme.scrim.copy(alpha = 0.8f),
-                                MaterialTheme.colorScheme.scrim.copy(alpha = 0.95f),
-                            ),
-                            startY = 0f,
-                            endY = Float.POSITIVE_INFINITY,
+        // Enhanced gradient overlay for better text readability
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.scrim.copy(alpha = 0.2f),
+                            MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f),
+                            MaterialTheme.colorScheme.scrim.copy(alpha = 0.8f),
+                            MaterialTheme.colorScheme.scrim.copy(alpha = 0.95f),
                         ),
+                        startY = 0f,
+                        endY = Float.POSITIVE_INFINITY,
                     ),
-            )
+                ),
+        )
 
-            // Episode information overlay with enhanced typography
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
+        // Episode information overlay with enhanced typography
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
                 seriesInfo?.name?.let { seriesName ->
                     Text(
                         text = seriesName,
@@ -453,7 +472,6 @@ private fun ExpressiveEpisodeHero(
             }
         }
     }
-}
 
 @Composable
 private fun ExpressiveEpisodeInfoCard(
@@ -1097,6 +1115,116 @@ private fun ExpressiveSeriesInfo(
                             lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.1,
                         )
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EpisodeNavigationButtons(
+    previousEpisode: BaseItemDto?,
+    nextEpisode: BaseItemDto?,
+    onPreviousClick: () -> Unit,
+    onNextClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val navScale by animateFloatAsState(
+        targetValue = 1.0f,
+        animationSpec = MotionTokens.expressiveEnter,
+        label = "nav_buttons_scale",
+    )
+
+    ElevatedCard(
+        modifier = modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                scaleX = navScale
+                scaleY = navScale
+            },
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text(
+                text = "Episode Navigation",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                // Previous Episode Button
+                if (previousEpisode != null) {
+                    FilledTonalButton(
+                        onClick = onPreviousClick,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column(
+                            horizontalAlignment = Alignment.Start,
+                        ) {
+                            Text(
+                                text = "Previous",
+                                fontWeight = FontWeight.Medium,
+                                style = MaterialTheme.typography.labelMedium,
+                            )
+                            Text(
+                                text = "EP ${previousEpisode.indexNumber ?: "?"}",
+                                fontWeight = FontWeight.SemiBold,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
+                } else {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+
+                // Next Episode Button
+                if (nextEpisode != null) {
+                    FilledTonalButton(
+                        onClick = onNextClick,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.End,
+                        ) {
+                            Text(
+                                text = "Next",
+                                fontWeight = FontWeight.Medium,
+                                style = MaterialTheme.typography.labelMedium,
+                            )
+                            Text(
+                                text = "EP ${nextEpisode.indexNumber ?: "?"}",
+                                fontWeight = FontWeight.SemiBold,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                } else {
+                    Spacer(modifier = Modifier.weight(1f))
                 }
             }
         }

@@ -17,6 +17,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -28,11 +31,14 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -74,6 +80,7 @@ import kotlin.math.roundToInt
 
 private val GENRE_BADGE_MAX_WIDTH = 100.dp
 
+@OptIn(ExperimentalMaterial3Api::class)
 @OptInAppExperimentalApis
 @Composable
 fun MovieDetailScreen(
@@ -88,17 +95,27 @@ fun MovieDetailScreen(
     onShareClick: (BaseItemDto) -> Unit = {},
     onDeleteClick: (BaseItemDto) -> Unit = {},
     onMarkWatchedClick: (BaseItemDto) -> Unit = {},
+    onRelatedMovieClick: (String) -> Unit = {},
+    onRefresh: () -> Unit = {},
     relatedItems: List<BaseItemDto> = emptyList(),
     playbackAnalysis: PlaybackCapabilityAnalysis? = null,
+    isRefreshing: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     var isFavorite by remember { mutableStateOf(movie.userData?.isFavorite == true) }
     var isWatched by remember { mutableStateOf(movie.userData?.played == true) }
+    var showMoreOptions by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     Box(modifier = modifier.fillMaxSize()) {
-        LazyColumn(
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = onRefresh,
             modifier = Modifier.fillMaxSize(),
         ) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+            ) {
             // Full-bleed Hero Section - Google TV style
             item {
                 BoxWithConstraints {
@@ -394,34 +411,30 @@ fun MovieDetailScreen(
                 )
             }
 
-            // Cast Section
-            movie.people?.filter { person ->
-                person.type.toString() == "Actor"
-            }?.takeIf { it.isNotEmpty() }?.let { cast ->
-                item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp)
-                            .padding(top = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        Text(
-                            text = "Cast",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                        )
+            // Cast & Crew Section
+            movie.people?.takeIf { it.isNotEmpty() }?.let { people ->
+                val directors = people.filter { it.type.toString().equals("Director", ignoreCase = true) }
+                val writers = people.filter {
+                    val type = it.type.toString()
+                    type.equals("Writer", ignoreCase = true) ||
+                    type.equals("Screenplay", ignoreCase = true)
+                }
+                val producers = people.filter {
+                    val type = it.type.toString()
+                    type.equals("Producer", ignoreCase = true) ||
+                    type.equals("Executive Producer", ignoreCase = true)
+                }
+                val cast = people.filter { it.type.toString().equals("Actor", ignoreCase = true) }
 
-                        LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        ) {
-                            items(cast.take(15), key = { it.id.toString() }) { person ->
-                                CastMemberCard(
-                                    person = person,
-                                    imageUrl = getPersonImageUrl(person),
-                                )
-                            }
-                        }
+                if (directors.isNotEmpty() || writers.isNotEmpty() || producers.isNotEmpty() || cast.isNotEmpty()) {
+                    item {
+                        EnhancedCastAndCrewSection(
+                            directors = directors,
+                            writers = writers,
+                            producers = producers,
+                            cast = cast,
+                            getPersonImageUrl = getPersonImageUrl,
+                        )
                     }
                 }
             }
@@ -489,7 +502,11 @@ fun MovieDetailScreen(
                                     subtitle = relatedMovie.productionYear?.toString() ?: "",
                                     imageUrl = getImageUrl(relatedMovie) ?: "",
                                     rating = relatedMovie.communityRating,
-                                    onCardClick = { /* Navigate to related movie */ },
+                                    onCardClick = {
+                                        relatedMovie.id?.let { movieId ->
+                                            onRelatedMovieClick(movieId.toString())
+                                        }
+                                    },
                                     modifier = Modifier.width(140.dp),
                                 )
                             }
@@ -502,6 +519,7 @@ fun MovieDetailScreen(
             item {
                 Spacer(modifier = Modifier.height(40.dp))
             }
+        }
         }
 
         // Floating Action Buttons - Overlaid on top
@@ -527,18 +545,76 @@ fun MovieDetailScreen(
                 )
             }
 
-            // More Options Button
-            Surface(
-                onClick = { /* Show more options */ },
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = "More options",
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(12.dp).size(24.dp),
-                )
+            // More Options Button with Dropdown
+            Box {
+                Surface(
+                    onClick = { showMoreOptions = true },
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "More options",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(12.dp).size(24.dp),
+                    )
+                }
+
+                DropdownMenu(
+                    expanded = showMoreOptions,
+                    onDismissRequest = { showMoreOptions = false },
+                ) {
+                    // Open in Browser
+                    movie.id?.let { movieId ->
+                        DropdownMenuItem(
+                            text = { Text("Open in Browser") },
+                            onClick = {
+                                val intent = android.content.Intent(
+                                    android.content.Intent.ACTION_VIEW,
+                                    android.net.Uri.parse("${movie.serverId}/web/index.html#!/details?id=$movieId"),
+                                )
+                                context.startActivity(intent)
+                                showMoreOptions = false
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.OpenInBrowser,
+                                    contentDescription = null,
+                                )
+                            },
+                        )
+                    }
+
+                    // Share
+                    DropdownMenuItem(
+                        text = { Text("Share") },
+                        onClick = {
+                            onShareClick(movie)
+                            showMoreOptions = false
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = null,
+                            )
+                        },
+                    )
+
+                    // Delete
+                    DropdownMenuItem(
+                        text = { Text("Delete") },
+                        onClick = {
+                            onDeleteClick(movie)
+                            showMoreOptions = false
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = null,
+                            )
+                        },
+                    )
+                }
             }
         }
     }
@@ -851,6 +927,120 @@ private fun CastMemberCard(
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             )
         }
+    }
+}
+
+@Composable
+private fun EnhancedCastAndCrewSection(
+    directors: List<org.jellyfin.sdk.model.api.BaseItemPerson>,
+    writers: List<org.jellyfin.sdk.model.api.BaseItemPerson>,
+    producers: List<org.jellyfin.sdk.model.api.BaseItemPerson>,
+    cast: List<org.jellyfin.sdk.model.api.BaseItemPerson>,
+    getPersonImageUrl: (org.jellyfin.sdk.model.api.BaseItemPerson) -> String?,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+            .padding(top = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+    ) {
+        // Section Title
+        Text(
+            text = "Cast & Crew",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+        )
+
+        // Key Crew Information (Compact)
+        if (directors.isNotEmpty() || writers.isNotEmpty() || producers.isNotEmpty()) {
+            androidx.compose.material3.ElevatedCard(
+                colors = androidx.compose.material3.CardDefaults.elevatedCardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                ),
+                elevation = androidx.compose.material3.CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
+                shape = RoundedCornerShape(16.dp),
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    // Directors
+                    if (directors.isNotEmpty()) {
+                        CrewInfoRow(
+                            label = if (directors.size == 1) "Director" else "Directors",
+                            people = directors,
+                        )
+                    }
+
+                    // Writers
+                    if (writers.isNotEmpty()) {
+                        CrewInfoRow(
+                            label = if (writers.size == 1) "Writer" else "Writers",
+                            people = writers,
+                        )
+                    }
+
+                    // Producers
+                    if (producers.isNotEmpty()) {
+                        CrewInfoRow(
+                            label = if (producers.size == 1) "Producer" else "Producers",
+                            people = producers,
+                        )
+                    }
+                }
+            }
+        }
+
+        // Cast Section
+        if (cast.isNotEmpty()) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(
+                    text = "Cast",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    items(cast.take(15), key = { it.id.toString() }) { person ->
+                        CastMemberCard(
+                            person = person,
+                            imageUrl = getPersonImageUrl(person),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CrewInfoRow(
+    label: String,
+    people: List<org.jellyfin.sdk.model.api.BaseItemPerson>,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Medium,
+        )
+        Text(
+            text = people.joinToString(", ") { it.name ?: "Unknown" },
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.SemiBold,
+        )
     }
 }
 
