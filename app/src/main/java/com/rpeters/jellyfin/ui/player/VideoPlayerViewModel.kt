@@ -760,7 +760,7 @@ class VideoPlayerViewModel @Inject constructor(
 
         return buildString {
             append(primary)
-            if (descriptor != null) append(" (${descriptor})")
+            if (descriptor != null) append(" ($descriptor)")
             if (trackType == androidx.media3.common.C.TRACK_TYPE_AUDIO) {
                 if (format.channelCount != androidx.media3.common.Format.NO_VALUE && format.channelCount > 0) {
                     append(" • ${format.channelCount}ch")
