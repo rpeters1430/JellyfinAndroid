@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemDto
+import java.util.Locale
 import javax.inject.Inject
 
 @UnstableApi
@@ -192,18 +193,11 @@ class VideoPlayerViewModel @Inject constructor(
                 for (i in 0 until mediaGroup.length) {
                     val format = mediaGroup.getFormat(i)
                     val isSelected = group.isTrackSelected(i)
-                    val display = buildString {
-                        format.label?.let { append(it) }
-                        if (isEmpty() && !format.language.isNullOrBlank()) append(format.language)
-                        if (format.channelCount != androidx.media3.common.Format.NO_VALUE && format.channelCount > 0) {
-                            if (isNotEmpty()) append(" • ")
-                            append("${format.channelCount}ch")
-                        }
-                        if (format.sampleRate != androidx.media3.common.Format.NO_VALUE && format.sampleRate > 0) {
-                            if (isNotEmpty()) append(" • ")
-                            append("${format.sampleRate}Hz")
-                        }
-                    }.ifBlank { "Track ${i + 1}" }
+                    val display = buildTrackDisplayName(
+                        format = format,
+                        index = i,
+                        trackType = trackType,
+                    )
 
                     val info = TrackInfo(
                         groupIndex = groupIndex,
@@ -744,6 +738,45 @@ class VideoPlayerViewModel @Inject constructor(
 
     fun showSubtitleDialog() {
         /* UI handled in composable for now */
+    }
+
+    private fun buildTrackDisplayName(
+        format: androidx.media3.common.Format,
+        index: Int,
+        trackType: Int,
+    ): String {
+        val label = format.label?.trim().orEmpty()
+        val languageName = format.language?.toDisplayLanguage()
+        val primary = when {
+            label.isNotBlank() && label.length > 3 -> label
+            languageName != null -> languageName
+            label.isNotBlank() -> label.uppercase()
+            else -> null
+        } ?: "Track ${index + 1}"
+
+        val descriptor = label.takeIf {
+            it.isNotBlank() && !it.equals(primary, true) && !it.equals(format.language, true)
+        }
+
+        return buildString {
+            append(primary)
+            if (descriptor != null) append(" ($descriptor)")
+            if (trackType == androidx.media3.common.C.TRACK_TYPE_AUDIO) {
+                if (format.channelCount != androidx.media3.common.Format.NO_VALUE && format.channelCount > 0) {
+                    append(" • ${format.channelCount}ch")
+                }
+                if (format.sampleRate != androidx.media3.common.Format.NO_VALUE && format.sampleRate > 0) {
+                    append(" • ${format.sampleRate}Hz")
+                }
+            }
+        }.ifBlank { "Track ${index + 1}" }
+    }
+
+    private fun String.toDisplayLanguage(): String? {
+        if (isBlank() || equals("und", true)) return null
+        val locale = Locale.forLanguageTag(this)
+        val display = locale.getDisplayName(Locale.getDefault()).trim()
+        return display.takeIf { it.isNotBlank() }
     }
 
     fun selectAudioTrack(track: TrackInfo) {
