@@ -9,6 +9,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.common.MimeTypes
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -44,15 +45,6 @@ data class TrackInfo(
     val displayName: String,
 )
 
-/**
- * Subtitle specification for side-loading subtitles (for ExoPlayer and Cast)
- */
-data class SubtitleSpec(
-    val url: String,
-    val mimeType: String,
-    val language: String?,
-    val label: String?,
-)
 
 data class VideoQuality(
     val id: String,
@@ -147,7 +139,7 @@ class VideoPlayerViewModel @Inject constructor(
     private var positionJob: kotlinx.coroutines.Job? = null
     private var currentMediaItem: MediaItem? = null
     private var currentItemMetadata: BaseItemDto? = null
-    private var currentSubtitleSpecs: List<SubtitleSpec> = emptyList()
+    private var currentSubtitleSpecs: List<com.rpeters.jellyfin.ui.player.SubtitleSpec> = emptyList()
     private var wasPlayingBeforeCast: Boolean = false
     private var hasSentCastLoad: Boolean = false
     private var lastCastState: CastState? = null
@@ -330,8 +322,15 @@ class VideoPlayerViewModel @Inject constructor(
                 // Attempt to load chapter markers and full metadata for intro/outro skip
                 currentItemMetadata = loadSkipMarkers(itemId)
 
-                // Extract subtitle specs from metadata for casting support
-                currentSubtitleSpecs = extractSubtitleSpecs(currentItemMetadata)
+                // Get playbook info once and reuse it for both subtitle extraction and playback URL selection
+                val playbackInfo = try {
+                    repository.getPlaybackInfo(itemId)
+                } catch (e: Exception) {
+                    null
+                }
+
+                // Extract subtitle specs from metadata and playback info for casting support
+                currentSubtitleSpecs = extractSubtitleSpecs(currentItemMetadata, playbackInfo)
 
                 // Update cast state with poster and backdrop if connected
                 if (lastCastState?.isConnected == true && !hasSentCastLoad) {
@@ -517,24 +516,27 @@ class VideoPlayerViewModel @Inject constructor(
 
     /**
      * Extract subtitle specifications from item metadata for casting support
+     * @param item The media item metadata
+     * @param playbackInfo Pre-fetched playback info to avoid redundant API calls
      */
-    private suspend fun extractSubtitleSpecs(item: BaseItemDto?): List<SubtitleSpec> {
-        if (item == null) return emptyList()
+    private suspend fun extractSubtitleSpecs(
+        item: BaseItemDto?, 
+        playbackInfo: org.jellyfin.sdk.model.api.PlaybackInfoResponse?
+    ): List<com.rpeters.jellyfin.ui.player.SubtitleSpec> {
+        if (item == null || playbackInfo == null) return emptyList()
 
         return try {
-            val subtitleSpecs = mutableListOf<SubtitleSpec>()
+            val subtitleSpecs = mutableListOf<com.rpeters.jellyfin.ui.player.SubtitleSpec>()
             val itemId = item.id?.toString() ?: return emptyList()
             val serverUrl = repository.getCurrentServer()?.url ?: return emptyList()
             val accessToken = repository.getCurrentServer()?.accessToken ?: return emptyList()
 
-            // Get playback info to access media streams
-            val playbackInfo = repository.getPlaybackInfo(itemId)
-            val mediaSource = playbackInfo?.mediaSources?.firstOrNull() ?: return emptyList()
+            val mediaSource = playbackInfo.mediaSources?.firstOrNull() ?: return emptyList()
 
             // Extract subtitle streams
             mediaSource.mediaStreams
                 ?.filter { stream -> stream.type == org.jellyfin.sdk.model.api.MediaStreamType.SUBTITLE }
-                ?.filter { stream -> !stream.isExternal } // Only include sidecar/embedded subtitles
+                ?.filter { stream -> !stream.isExternal } // Only include embedded subtitles
                 ?.forEach { stream ->
                     val codec = stream.codec?.lowercase() ?: return@forEach
                     val language = stream.language ?: "und"
@@ -551,14 +553,16 @@ class VideoPlayerViewModel @Inject constructor(
 
                     if (mimeType != null && stream.index != null) {
                         // Build subtitle URL with authentication
+                        // Note: Using query parameter for auth because Cast receiver may not support custom headers
                         val subtitleUrl = "$serverUrl/Videos/$itemId/${mediaSource.id}/Subtitles/${stream.index}/Stream.$codec?api_key=$accessToken"
 
                         subtitleSpecs.add(
-                            SubtitleSpec(
+                            com.rpeters.jellyfin.ui.player.SubtitleSpec(
                                 url = subtitleUrl,
                                 mimeType = mimeType,
                                 language = language,
                                 label = displayTitle,
+                                isForced = false,
                             ),
                         )
 
@@ -754,8 +758,6 @@ class VideoPlayerViewModel @Inject constructor(
                 // Clear all video outputs to properly detach surfaces and prevent black screen issues
                 // This is critical for proper cleanup with HEVC/high-resolution content
                 p.clearVideoSurface()
-                p.clearVideoSurfaceHolder(null)
-                p.clearVideoSurfaceView(null)
             } catch (_: Exception) {
             }
             try {
