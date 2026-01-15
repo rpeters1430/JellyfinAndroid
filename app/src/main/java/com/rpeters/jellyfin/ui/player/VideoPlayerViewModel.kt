@@ -344,21 +344,21 @@ class VideoPlayerViewModel @Inject constructor(
 
                 // Use EnhancedPlaybackManager for intelligent playback URL selection
                 val playbackResult = enhancedPlaybackManager.getOptimalPlaybackUrl(
-                    currentItemMetadata ?: throw Exception("Failed to load item metadata")
+                    currentItemMetadata ?: throw Exception("Failed to load item metadata"),
                 )
 
                 val streamUrl = when (playbackResult) {
                     is com.rpeters.jellyfin.data.playback.PlaybackResult.DirectPlay -> {
                         SecureLogger.d(
                             "VideoPlayer",
-                            "Direct Play: ${playbackResult.container} (${playbackResult.videoCodec}/${playbackResult.audioCodec}) @ ${playbackResult.bitrate / 1_000_000}Mbps - ${playbackResult.reason}"
+                            "Direct Play: ${playbackResult.container} (${playbackResult.videoCodec}/${playbackResult.audioCodec}) @ ${playbackResult.bitrate / 1_000_000}Mbps - ${playbackResult.reason}",
                         )
                         playbackResult.url
                     }
                     is com.rpeters.jellyfin.data.playback.PlaybackResult.Transcoding -> {
                         SecureLogger.d(
                             "VideoPlayer",
-                            "Transcoding: ${playbackResult.targetResolution} ${playbackResult.targetVideoCodec}/${playbackResult.targetAudioCodec} @ ${playbackResult.targetBitrate / 1_000_000}Mbps - ${playbackResult.reason}"
+                            "Transcoding: ${playbackResult.targetResolution} ${playbackResult.targetVideoCodec}/${playbackResult.targetAudioCodec} @ ${playbackResult.targetBitrate / 1_000_000}Mbps - ${playbackResult.reason}",
                         )
                         playbackResult.url
                     }
@@ -558,8 +558,8 @@ class VideoPlayerViewModel @Inject constructor(
                                 url = subtitleUrl,
                                 mimeType = mimeType,
                                 language = language,
-                                label = displayTitle
-                            )
+                                label = displayTitle,
+                            ),
                         )
 
                         SecureLogger.d("VideoPlayer", "Added subtitle spec: $displayTitle ($language) - $codec")
