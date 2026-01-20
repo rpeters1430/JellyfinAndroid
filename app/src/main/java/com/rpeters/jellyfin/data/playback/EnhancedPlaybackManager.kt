@@ -106,6 +106,14 @@ class EnhancedPlaybackManager @Inject constructor(
             val serverTranscodingUrl = transcodingSource.transcodingUrl?.let { url ->
                 if (!serverUrl.isNullOrBlank()) buildServerUrl(serverUrl, url) else null
             }
+            if (BuildConfig.DEBUG) {
+                SecureLogger.d(
+                    TAG,
+                    "Server-directed transcoding source id=${transcodingSource.id}, " +
+                        "container=${transcodingSource.container}, " +
+                        "urlPresent=${!transcodingSource.transcodingUrl.isNullOrBlank()}",
+                )
+            }
             if (!serverTranscodingUrl.isNullOrBlank()) {
                 return PlaybackResult.Transcoding(
                     url = serverTranscodingUrl,
@@ -125,6 +133,16 @@ class EnhancedPlaybackManager @Inject constructor(
         val mediaSourceId = mediaSource.id
         val container = mediaSource.container ?: "mkv"
         val playSessionId = playbackInfo.playSessionId
+        if (BuildConfig.DEBUG) {
+            SecureLogger.d(
+                TAG,
+                "Server-directed direct play source id=$mediaSourceId, " +
+                    "container=$container, " +
+                    "directPlay=${mediaSource.supportsDirectPlay}, " +
+                    "directStream=${mediaSource.supportsDirectStream}, " +
+                    "playSessionId=${playSessionId ?: "none"}",
+            )
+        }
         val directPlayUrl = if (serverUrl != null && mediaSourceId != null) {
             buildString {
                 append(serverUrl)
@@ -244,6 +262,7 @@ class EnhancedPlaybackManager @Inject constructor(
         playbackInfo: PlaybackInfoResponse,
     ): PlaybackResult {
         val itemId = item.id.toString()
+        val serverUrl = repository.getCurrentServer()?.url
         val transcodingSource = playbackInfo.mediaSources.firstOrNull {
             it.supportsTranscoding || it.supportsDirectStream
         }
