@@ -34,6 +34,7 @@ import com.rpeters.jellyfin.ui.screens.HomeVideoDetailScreen
 import com.rpeters.jellyfin.ui.screens.ItemDetailViewModel
 import com.rpeters.jellyfin.ui.screens.MovieDetailScreen
 import com.rpeters.jellyfin.ui.screens.TVEpisodeDetailScreen
+import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
 import com.rpeters.jellyfin.ui.utils.MediaPlayerUtils
 import com.rpeters.jellyfin.ui.utils.ShareUtils
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
@@ -96,6 +97,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
         }
         val mainViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
         val detailViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<ItemDetailViewModel>()
+        val downloadsViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<DownloadsViewModel>()
         LaunchedEffect(videoId) {
             try {
                 detailViewModel.load(videoId)
@@ -126,6 +128,26 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 onShareClick = { video ->
                     ShareUtils.shareMedia(context = navController.context, item = video)
                 },
+                onDownloadClick = { video ->
+                    downloadsViewModel.startDownload(video)
+                },
+                onDeleteClick = { video ->
+                    mainViewModel.deleteItem(video) { success, message ->
+                        if (success) {
+                            navController.popBackStack()
+                        } else {
+                            // Show error via Toast
+                            android.widget.Toast.makeText(
+                                navController.context,
+                                message ?: "Failed to delete item",
+                                android.widget.Toast.LENGTH_SHORT,
+                            ).show()
+                        }
+                    }
+                },
+                onMarkWatchedClick = { video ->
+                    mainViewModel.toggleWatchedStatus(video)
+                },
                 playbackAnalysis = playbackAnalysis,
             )
         } ?: run {
@@ -152,6 +174,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
             backStackEntry.arguments?.getString(Screen.ITEM_ID_ARG) ?: return@composable
         val mainViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
         val detailViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<ItemDetailViewModel>()
+        val downloadsViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<DownloadsViewModel>()
         LaunchedEffect(itemId) {
             try {
                 detailViewModel.load(itemId)
@@ -181,6 +204,26 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 onFavoriteClick = { video -> mainViewModel.toggleFavorite(video) },
                 onShareClick = { video ->
                     ShareUtils.shareMedia(context = navController.context, item = video)
+                },
+                onDownloadClick = { video ->
+                    downloadsViewModel.startDownload(video)
+                },
+                onDeleteClick = { video ->
+                    mainViewModel.deleteItem(video) { success, message ->
+                        if (success) {
+                            navController.popBackStack()
+                        } else {
+                            // Show error via Toast
+                            android.widget.Toast.makeText(
+                                navController.context,
+                                message ?: "Failed to delete item",
+                                android.widget.Toast.LENGTH_SHORT,
+                            ).show()
+                        }
+                    }
+                },
+                onMarkWatchedClick = { video ->
+                    mainViewModel.toggleWatchedStatus(video)
                 },
                 playbackAnalysis = playbackAnalysis,
             )

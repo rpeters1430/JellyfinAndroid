@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.CheckCircle
@@ -58,10 +59,12 @@ fun MediaItemActionsSheet(
     sheetState: SheetState,
     onDismiss: () -> Unit,
     onPlay: (() -> Unit)? = null,
+    onDownload: (() -> Unit)? = null,
     onDelete: ((Boolean, String?) -> Unit)? = null,
     onRefreshMetadata: ((Boolean, String?) -> Unit)? = null,
     onToggleWatched: (() -> Unit)? = null,
     showPlay: Boolean = true,
+    showDownload: Boolean = true,
     showDelete: Boolean = true,
     showRefresh: Boolean = true,
     showToggleWatched: Boolean = true,
@@ -112,6 +115,24 @@ fun MediaItemActionsSheet(
                         modifier = Modifier.padding(end = Dimens.Spacing8),
                     )
                     Text(text = stringResource(id = R.string.play))
+                }
+            }
+
+            // Download Action
+            if (showDownload && onDownload != null) {
+                OutlinedButton(
+                    onClick = {
+                        onDismiss()
+                        onDownload()
+                    },
+                    modifier = Modifier.padding(vertical = Dimens.Spacing4),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Download,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = Dimens.Spacing8),
+                    )
+                    Text(text = stringResource(id = R.string.download))
                 }
             }
 

@@ -354,20 +354,38 @@ class VideoPlayerViewModel @Inject constructor(
                     currentItemMetadata ?: throw Exception("Failed to load item metadata"),
                 )
 
-                val streamUrl = when (playbackResult) {
+                val streamUrl: String
+                val mimeType: String?
+
+                when (playbackResult) {
                     is com.rpeters.jellyfin.data.playback.PlaybackResult.DirectPlay -> {
                         SecureLogger.d(
                             "VideoPlayer",
                             "Direct Play: ${playbackResult.container} (${playbackResult.videoCodec}/${playbackResult.audioCodec}) @ ${playbackResult.bitrate / 1_000_000}Mbps - ${playbackResult.reason}",
                         )
-                        playbackResult.url
+                        streamUrl = playbackResult.url
+                        // Infer MIME type from container for direct play
+                        mimeType = when (playbackResult.container.lowercase(Locale.ROOT)) {
+                            "mp4", "m4v" -> MimeTypes.VIDEO_MP4
+                            "mkv" -> MimeTypes.VIDEO_MATROSKA
+                            "webm" -> MimeTypes.VIDEO_WEBM
+                            "avi" -> "video/avi"
+                            else -> null // Let ExoPlayer auto-detect
+                        }
                     }
                     is com.rpeters.jellyfin.data.playback.PlaybackResult.Transcoding -> {
                         SecureLogger.d(
                             "VideoPlayer",
                             "Transcoding: ${playbackResult.targetResolution} ${playbackResult.targetVideoCodec}/${playbackResult.targetAudioCodec} @ ${playbackResult.targetBitrate / 1_000_000}Mbps - ${playbackResult.reason}",
                         )
-                        playbackResult.url
+                        streamUrl = playbackResult.url
+                        // Transcoded streams are always MP4 - CRITICAL for ExoPlayer to initialize correctly
+                        mimeType = when (playbackResult.targetContainer.lowercase(Locale.ROOT)) {
+                            "mp4" -> MimeTypes.VIDEO_MP4
+                            "webm" -> MimeTypes.VIDEO_WEBM
+                            "mkv" -> MimeTypes.VIDEO_MATROSKA
+                            else -> MimeTypes.VIDEO_MP4 // Safe default for transcoding
+                        }
                     }
                     is com.rpeters.jellyfin.data.playback.PlaybackResult.Error -> {
                         throw Exception("Playback URL error: ${playbackResult.message}")
@@ -378,7 +396,7 @@ class VideoPlayerViewModel @Inject constructor(
                     throw Exception("No stream URL available from playback manager")
                 }
 
-                SecureLogger.d("VideoPlayer", "Final stream URL: $streamUrl")
+                SecureLogger.d("VideoPlayer", "Final stream URL: $streamUrl (MIME: $mimeType)")
 
                 withContext(Dispatchers.Main) {
                     // Create ExoPlayer with optimized renderer support
@@ -413,9 +431,18 @@ class VideoPlayerViewModel @Inject constructor(
                     // Add listener
                     exoPlayer?.addListener(playerListener)
 
-                    // Create media item
-                    val mediaItem = MediaItem.fromUri(streamUrl)
+                    // Create media item with proper MIME type for transcoded content
+                    val mediaItem = if (mimeType != null) {
+                        MediaItem.Builder()
+                            .setUri(streamUrl)
+                            .setMimeType(mimeType)
+                            .build()
+                    } else {
+                        MediaItem.fromUri(streamUrl)
+                    }
                     currentMediaItem = mediaItem
+
+                    SecureLogger.d("VideoPlayer", "Created MediaItem with MIME type: $mimeType")
 
                     // Set media and prepare
                     exoPlayer?.setMediaItem(mediaItem)

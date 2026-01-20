@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,11 +12,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -33,6 +38,8 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.ShimmerBox
 import com.rpeters.jellyfin.ui.components.MaterialText
+import com.rpeters.jellyfin.ui.components.WatchProgressBar
+import com.rpeters.jellyfin.ui.components.WatchedIndicatorBadge
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
@@ -46,6 +53,7 @@ fun LibraryItemCard(
     onItemClick: (BaseItemDto) -> Unit = {},
     onTVShowClick: ((String) -> Unit)? = null,
     onItemLongPress: ((BaseItemDto) -> Unit)? = null,
+    onMoreClick: ((BaseItemDto) -> Unit)? = null,
     isCompact: Boolean,
     modifier: Modifier = Modifier,
 ) {
@@ -132,6 +140,47 @@ fun LibraryItemCard(
                                 .padding(LibraryScreenDefaults.FavoriteIconPadding),
                         )
                     }
+
+                    // Top-right: Three-dot menu
+                    if (onMoreClick != null) {
+                        IconButton(
+                            onClick = { onMoreClick(item) },
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(LibraryScreenDefaults.FavoriteIconPadding)
+                                .size(32.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                    CircleShape
+                                )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "More options",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+
+                    // Bottom-left: Watched indicator
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(LibraryScreenDefaults.FavoriteIconPadding)
+                    ) {
+                        WatchedIndicatorBadge(item = item)
+                    }
+
+                    // Bottom: Watch progress bar
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .padding(horizontal = LibraryScreenDefaults.FavoriteIconPadding, vertical = LibraryScreenDefaults.FavoriteIconPadding)
+                    ) {
+                        WatchProgressBar(item = item)
+                    }
                 }
 
                 Column(modifier = Modifier.padding(LibraryScreenDefaults.CompactCardPadding)) {
@@ -203,6 +252,47 @@ fun LibraryItemCard(
                                 .align(Alignment.TopEnd)
                                 .padding(LibraryScreenDefaults.ListItemFavoriteIconPadding),
                         )
+                    }
+
+                    // Top-right: Three-dot menu
+                    if (onMoreClick != null) {
+                        IconButton(
+                            onClick = { onMoreClick(item) },
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(LibraryScreenDefaults.ListItemFavoriteIconPadding)
+                                .size(32.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                    CircleShape
+                                )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "More options",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+
+                    // Bottom-left: Watched indicator
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(LibraryScreenDefaults.ListItemFavoriteIconPadding)
+                    ) {
+                        WatchedIndicatorBadge(item = item)
+                    }
+
+                    // Bottom: Watch progress bar
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .padding(horizontal = LibraryScreenDefaults.ListItemFavoriteIconPadding, vertical = LibraryScreenDefaults.ListItemFavoriteIconPadding)
+                    ) {
+                        WatchProgressBar(item = item)
                     }
                 }
 
