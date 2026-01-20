@@ -177,7 +177,8 @@ class JellyfinStreamRepository @Inject constructor(
     }
 
     /**
-     * Get transcoded stream URL with specific quality parameters
+     * Get transcoded stream URL with specific quality parameters.
+     * Uses progressive streaming endpoint for better compatibility and immediate playback.
      */
     fun getTranscodedStreamUrl(
         itemId: String,
@@ -220,9 +221,16 @@ class JellyfinStreamRepository @Inject constructor(
             params.add("Container=$container")
             params.add("TranscodingMaxAudioChannels=$DEFAULT_MAX_AUDIO_CHANNELS")
             params.add("BreakOnNonKeyFrames=true")
+            // Force transcoding - don't allow stream copy when we explicitly need transcoding
+            params.add("AllowVideoStreamCopy=false")
+            params.add("AllowAudioStreamCopy=true")
+            // Add play session for server-side tracking
+            params.add("PlaySessionId=${UUID.randomUUID()}")
             // Auth via header (OkHttp interceptor)
 
-            "${server.url}/Videos/$itemId/master.m3u8?${params.joinToString("&")}"
+            // Use progressive stream endpoint instead of HLS for better compatibility
+            // HLS (master.m3u8) requires additional manifest parsing and can fail if not ready
+            "${server.url}/Videos/$itemId/stream?${params.joinToString("&")}"
         } catch (e: Exception) {
             Log.e("JellyfinStreamRepository", "getTranscodedStreamUrl: Failed to generate transcoded stream URL for item $itemId", e)
             null

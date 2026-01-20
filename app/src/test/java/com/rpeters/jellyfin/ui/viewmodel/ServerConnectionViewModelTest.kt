@@ -6,7 +6,6 @@ import androidx.datastore.preferences.core.edit
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewModelScope
 import androidx.test.core.app.ApplicationProvider
-import com.google.common.truth.Truth.assertThat
 import com.rpeters.jellyfin.data.BiometricCapability
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
@@ -36,6 +35,9 @@ import org.jellyfin.sdk.model.api.PublicSystemInfo
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ServerConnectionViewModelTest {
@@ -132,7 +134,12 @@ class ServerConnectionViewModelTest {
         )
         every { secureCredentialManager.getBiometricCapability(true) } returns weakOnlyCapability
 
-        val viewModel = ServerConnectionViewModel(repository, secureCredentialManager, context)
+        val viewModel = ServerConnectionViewModel(
+            repository,
+            secureCredentialManager,
+            certificatePinningManager,
+            context,
+        )
 
         advanceUntilIdle()
 
@@ -141,10 +148,10 @@ class ServerConnectionViewModelTest {
         advanceUntilIdle()
 
         val preferences = context.dataStore.data.first()
-        assertThat(preferences[BIOMETRIC_REQUIRE_STRONG]).isTrue()
+        assertTrue(preferences[BIOMETRIC_REQUIRE_STRONG] == true)
         val connectionState = viewModel.connectionState.value
-        assertThat(connectionState.requireStrongBiometric).isTrue()
-        assertThat(connectionState.isUsingWeakBiometric).isFalse()
+        assertTrue(connectionState.requireStrongBiometric)
+        assertFalse(connectionState.isUsingWeakBiometric)
 
         viewModel.viewModelScope.cancel()
     }
@@ -166,10 +173,10 @@ class ServerConnectionViewModelTest {
         advanceUntilIdle()
 
         val preferences = context.dataStore.data.first()
-        assertThat(preferences[REMEMBER_LOGIN]).isTrue()
-        assertThat(viewModel.connectionState.value.rememberLogin).isTrue()
-        assertThat(preferences[BIOMETRIC_AUTH_ENABLED]).isNull()
-        assertThat(viewModel.connectionState.value.isBiometricAuthEnabled).isFalse()
+        assertTrue(preferences[REMEMBER_LOGIN] == true)
+        assertTrue(viewModel.connectionState.value.rememberLogin)
+        assertNull(preferences[BIOMETRIC_AUTH_ENABLED])
+        assertFalse(viewModel.connectionState.value.isBiometricAuthEnabled)
 
         viewModel.viewModelScope.cancel()
     }
@@ -198,7 +205,12 @@ class ServerConnectionViewModelTest {
                 repository.authenticateUser("https://example.com", "user", "biometricPassword")
             } returns ApiResult.Success(mockk<AuthenticationResult>(relaxed = true))
 
-            val viewModel = ServerConnectionViewModel(repository, secureCredentialManager, context)
+            val viewModel = ServerConnectionViewModel(
+                repository,
+                secureCredentialManager,
+                certificatePinningManager,
+                context,
+            )
 
             advanceUntilIdle()
 
@@ -249,7 +261,7 @@ class ServerConnectionViewModelTest {
         advanceUntilIdle()
 
         val preferences = context.dataStore.data.first()
-        assertThat(preferences[REMEMBER_LOGIN]).isFalse()
+        assertFalse(preferences[REMEMBER_LOGIN] == true)
         coVerify(exactly = 0) { secureCredentialManager.savePassword(any(), any(), any()) }
         viewModel.viewModelScope.cancel()
     }

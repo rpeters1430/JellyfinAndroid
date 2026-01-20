@@ -6,9 +6,7 @@ import androidx.media3.common.util.UnstableApi
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import com.rpeters.jellyfin.ui.player.CastManager
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemDto
 import javax.inject.Inject
 
@@ -70,9 +68,9 @@ class StreamingViewModel @Inject constructor(
     @UnstableApi
     fun sendCastPreview(item: BaseItemDto) {
         viewModelScope.launch {
-            // Initialize cast on background thread if not yet initialized (safe to call multiple times)
-            withContext(Dispatchers.IO) {
-                castManager.initialize()
+            val ready = castManager.awaitInitialization()
+            if (!ready) {
+                return@launch
             }
 
             val image = getImageUrl(item)

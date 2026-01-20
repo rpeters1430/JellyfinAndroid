@@ -309,7 +309,12 @@ class DeviceCapabilities @Inject constructor(
             try {
                 val mimeType = codecToMimeType(codec, isVideo) ?: return false
                 val codecList = MediaCodecList(MediaCodecList.REGULAR_CODECS)
-                codecList.findDecoderForFormat(android.media.MediaFormat.createVideoFormat(mimeType, 1920, 1080)) != null
+                val format = if (isVideo) {
+                    android.media.MediaFormat.createVideoFormat(mimeType, 1920, 1080)
+                } else {
+                    android.media.MediaFormat.createAudioFormat(mimeType, 48_000, 2)
+                }
+                codecList.findDecoderForFormat(format) != null
             } catch (e: Exception) {
                 SecureLogger.w(TAG, "Failed to check codec support for $codec", e)
                 // Safer to assume NOT supported if we can't check

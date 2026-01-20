@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.viewmodel
 
+import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import io.mockk.coEvery
@@ -24,9 +25,10 @@ import java.util.UUID
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TVEpisodeDetailViewModelTest {
+    private val mediaRepository: JellyfinMediaRepository = mockk()
     private val enhancedPlaybackUtils: EnhancedPlaybackUtils = mockk()
     private val dispatcher = StandardTestDispatcher()
-    private val viewModel by lazy { TVEpisodeDetailViewModel(enhancedPlaybackUtils) }
+    private val viewModel by lazy { TVEpisodeDetailViewModel(mediaRepository, enhancedPlaybackUtils) }
 
     @Before
     fun setup() {
@@ -44,7 +46,7 @@ class TVEpisodeDetailViewModelTest {
         val analysis = createPlaybackAnalysis()
         coEvery { enhancedPlaybackUtils.analyzePlaybackCapabilities(episode) } returns analysis
 
-        viewModel.loadEpisodeAnalysis(episode)
+        viewModel.loadEpisodeDetails(episode)
         dispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(analysis, viewModel.state.value.playbackAnalysis)
@@ -75,7 +77,7 @@ class TVEpisodeDetailViewModelTest {
         ).forEach { throwable ->
             coEvery { enhancedPlaybackUtils.analyzePlaybackCapabilities(episode) } throws throwable
 
-            viewModel.loadEpisodeAnalysis(episode)
+            viewModel.loadEpisodeDetails(episode)
             dispatcher.scheduler.advanceUntilIdle()
 
             assertNull(viewModel.state.value.playbackAnalysis)

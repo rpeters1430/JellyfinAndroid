@@ -170,7 +170,8 @@ fun VideoPlayerScreen(
     }
 
     val playerColors = rememberVideoPlayerColors()
-    val isCastAvailable = rememberIsCastAvailable()
+    // Use cast availability from ViewModel state instead of deprecated sync API
+    val isCastAvailable = playerState.isCastAvailable
 
     // Mobile/Tablet player UI below
     var controlsVisible by remember { mutableStateOf(true) }
@@ -227,6 +228,20 @@ fun VideoPlayerScreen(
         }
     }
 
+    // Track real-time position for accurate double-tap seeking
+    var currentPosMs by remember { mutableLongStateOf(0L) }
+    LaunchedEffect(exoPlayer, playerState.isPlaying, playerState.isLoading) {
+        val player = exoPlayer ?: run {
+            currentPosMs = 0L
+            return@LaunchedEffect
+        }
+        currentPosMs = player.currentPosition
+        while (isActive && (playerState.isPlaying || playerState.isLoading)) {
+            currentPosMs = player.currentPosition
+            delay(500)
+        }
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -242,8 +257,9 @@ fun VideoPlayerScreen(
                             // Double tap detected
                             val isRightSide = offset.x > screenWidth / 2
                             val seekAmount = if (isRightSide) 10000L else -10000L
-                            val newPosition =
-                                (playerState.currentPosition + seekAmount).coerceAtLeast(0L)
+                            // Use real-time position from exoPlayer, fallback to state
+                            val currentPos = exoPlayer?.currentPosition ?: currentPosMs
+                            val newPosition = (currentPos + seekAmount).coerceIn(0L, playerState.duration)
 
                             onSeek(newPosition)
 
@@ -339,20 +355,6 @@ fun VideoPlayerScreen(
                 // to avoid surface detachment warnings during rapid teardown.
                 // We cannot reference the composited playerView instance here,
                 // but releasing ExoPlayer clears the surface; this hook remains for clarity.
-            }
-        }
-
-        // Periodically sample current position from the player for UI elements like skip buttons
-        var currentPosMs by remember { mutableLongStateOf(0L) }
-        LaunchedEffect(exoPlayer, playerState.isPlaying, playerState.isLoading) {
-            val player = exoPlayer ?: run {
-                currentPosMs = 0L
-                return@LaunchedEffect
-            }
-            currentPosMs = player.currentPosition
-            while (isActive && (playerState.isPlaying || playerState.isLoading)) {
-                currentPosMs = player.currentPosition
-                delay(500)
             }
         }
 
@@ -956,10 +958,10 @@ private fun VideoControlsOverlay(
             // Using custom button instead of MediaRouteButton to prevent unintended navigation
             if (showCastButton) {
                 ExpressiveIconButton(
-                    icon = if (playerState.isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
-                    contentDescription = if (playerState.isCasting) "Disconnect Cast" else "Cast to Device",
+                    icon = if (playerState.isCastConnected) Icons.Default.CastConnected else Icons.Default.Cast,
+                    contentDescription = if (playerState.isCastConnected) "Disconnect Cast" else "Cast to Device",
                     onClick = onCastClick,
-                    isActive = playerState.isCasting,
+                    isActive = playerState.isCastConnected,
                     modifier = Modifier.padding(start = 8.dp),
                     colors = playerColors,
                 )
@@ -981,13 +983,24 @@ private fun VideoControlsOverlay(
                 val progress = playerState.currentPosition.toFloat() / duration
                 val buffered = playerState.bufferedPosition.toFloat() / duration
 
+                // Local state for tracking slider position during drag
+                var sliderPosition by remember { mutableStateOf(progress) }
+                var isSeeking by remember { mutableStateOf(false) }
+
+                // Update slider position from player state when not seeking
+                LaunchedEffect(playerState.currentPosition) {
+                    if (!isSeeking) {
+                        sliderPosition = progress
+                    }
+                }
+
                 // Time indicators above progress bar
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        text = formatTime(playerState.currentPosition),
+                        text = formatTime(if (isSeeking) (sliderPosition * playerState.duration).toLong() else playerState.currentPosition),
                         color = playerColors.overlayContent,
                         style = MaterialTheme.typography.bodySmall,
                     )
@@ -1007,10 +1020,15 @@ private fun VideoControlsOverlay(
                 ) {
                     // Main progress slider with expressive styling
                     Slider(
-                        value = progress,
+                        value = sliderPosition,
                         onValueChange = { newProgress ->
-                            val newPosition = (newProgress * playerState.duration).toLong()
+                            isSeeking = true
+                            sliderPosition = newProgress
+                        },
+                        onValueChangeFinished = {
+                            val newPosition = (sliderPosition * playerState.duration).toLong()
                             onSeek(newPosition)
+                            isSeeking = false
                         },
                         modifier = Modifier.fillMaxWidth(),
                         colors = SliderDefaults.colors(
@@ -1576,15 +1594,5 @@ private fun formatTime(timeMs: Long): String {
     }
 }
 
-@Composable
-private fun rememberIsCastAvailable(): Boolean {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    return remember(context) {
-        try {
-            com.google.android.gms.cast.framework.CastContext.getSharedInstance(context)
-            true
-        } catch (e: Exception) {
-            false
-        }
-    }
-}
+// Removed rememberIsCastAvailable() - now using playerState.isCastAvailable from ViewModel
+// This avoids the deprecated blocking CastContext.getSharedInstance() call during composition

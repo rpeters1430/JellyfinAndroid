@@ -169,6 +169,8 @@ class VideoPlayerActivity : FragmentActivity() {
                         updatePipParams()
                     }
                     updateHdrMode(it.isHdrContent)
+                    // Allow portrait orientation when casting since video isn't on phone
+                    updateOrientation(it.isCastConnected)
                 }
             }
 
@@ -278,6 +280,21 @@ class VideoPlayerActivity : FragmentActivity() {
         )
         isHdrModeEnabled = shouldEnable
         SecureLogger.d("VideoPlayerActivity", "HDR mode ${if (shouldEnable) "enabled" else "disabled"}")
+    }
+
+    /**
+     * Update screen orientation based on cast state.
+     * When casting, allow portrait orientation since video is on Cast device.
+     * When not casting, lock to landscape for optimal viewing.
+     */
+    private fun updateOrientation(isCasting: Boolean) {
+        requestedOrientation = if (isCasting) {
+            // Allow sensor-based rotation when casting
+            ActivityInfo.SCREEN_ORIENTATION_SENSOR
+        } else {
+            // Lock to landscape when playing locally
+            ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        }
     }
 
     private fun enterPictureInPictureModeCustom() {

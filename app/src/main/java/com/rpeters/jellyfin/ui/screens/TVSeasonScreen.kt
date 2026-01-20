@@ -404,18 +404,6 @@ private fun SeriesDetailsHeader(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        getLogoUrl(series)?.let { logoUrl ->
-            JellyfinAsyncImage(
-                model = logoUrl,
-                contentDescription = "${series.name} logo",
-                modifier = Modifier
-                    .fillMaxWidth(0.6f)
-                    .height(80.dp),
-                contentScale = ContentScale.Fit,
-                requestSize = rememberCoilSize(240.dp, 80.dp),
-            )
-        }
-
         Text(
             text = series.name ?: stringResource(R.string.unknown),
             style = MaterialTheme.typography.headlineMedium,

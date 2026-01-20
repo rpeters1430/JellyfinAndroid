@@ -1045,8 +1045,9 @@ class MainAppViewModel @Inject constructor(
     @UnstableApi
     fun sendCastPreview(item: BaseItemDto) {
         viewModelScope.launch {
-            withContext(dispatchers.io) {
-                castManager.initialize()
+            val ready = castManager.awaitInitialization()
+            if (!ready) {
+                return@launch
             }
             val image = getImageUrl(item)
             val backdrop = getBackdropUrl(item)

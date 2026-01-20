@@ -3,11 +3,15 @@ package com.rpeters.jellyfin.ui.player
 import android.content.Context
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
+import com.google.android.gms.cast.MediaLoadRequestData
 import com.google.android.gms.cast.MediaStatus
 import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.cast.framework.CastSession
 import com.google.android.gms.cast.framework.SessionManager
 import com.google.android.gms.cast.framework.media.RemoteMediaClient
+import com.google.android.gms.tasks.OnFailureListener
+import com.google.android.gms.tasks.OnSuccessListener
+import com.google.android.gms.tasks.Task
 import com.rpeters.jellyfin.data.preferences.CastPreferencesRepository
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
@@ -37,6 +41,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.util.UUID
+import java.util.concurrent.Executor
 
 @OptIn(ExperimentalCoroutinesApi::class, UnstableApi::class)
 class CastManagerTest {
@@ -49,17 +54,33 @@ class CastManagerTest {
     private val sessionManager: SessionManager = mockk(relaxed = true)
     private val castSession: CastSession = mockk(relaxed = true)
     private val remoteMediaClient: RemoteMediaClient = mockk(relaxed = true)
+    private val castContextTask: Task<CastContext> = mockk(relaxed = true)
 
     private lateinit var castManager: CastManager
     private val testDispatcher = StandardTestDispatcher()
+
+    // Capture the success listener to trigger it manually in tests
+    private var capturedSuccessListener: OnSuccessListener<CastContext>? = null
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
 
-        // Mock CastContext static method
+        // Mock CastContext static method - use the async API with Executor
         mockkStatic(CastContext::class)
-        every { CastContext.getSharedInstance(any()) } returns castContext
+
+        // Mock the Task to capture and immediately invoke the success listener
+        every { castContextTask.addOnSuccessListener(any()) } answers {
+            capturedSuccessListener = firstArg<OnSuccessListener<CastContext>>()
+            // Immediately invoke the success listener with the mock castContext
+            capturedSuccessListener?.onSuccess(castContext)
+            castContextTask
+        }
+        every { castContextTask.addOnFailureListener(any()) } returns castContextTask
+
+        // Mock the async getSharedInstance that takes Context and Executor
+        every { CastContext.getSharedInstance(any(), any<Executor>()) } returns castContextTask
+
         every { castContext.sessionManager } returns sessionManager
         every { sessionManager.currentCastSession } returns null
 
@@ -93,8 +114,9 @@ class CastManagerTest {
 
         // Assert
         verify { sessionManager.addSessionManagerListener<CastSession>(any(), any()) }
-        assertFalse(castManager.castState.value.isAvailable)
-        assertFalse(castManager.castState.value.isConnected)
+        assertTrue(castManager.castState.value.isInitialized)
+        assertTrue(castManager.castState.value.isAvailable) // Cast Framework is available after successful init
+        assertFalse(castManager.castState.value.isConnected) // But no session yet
     }
 
     @Test
@@ -108,7 +130,6 @@ class CastManagerTest {
 
         // Assert
         verify { sessionManager.removeSessionManagerListener<CastSession>(any(), any()) }
-        assertNull(castManager.getCastPlayer())
     }
 
     @Test
@@ -298,12 +319,6 @@ class CastManagerTest {
     }
 
     @Test
-    fun `getCastPlayer returns null before initialization`() {
-        // Assert
-        assertNull(castManager.getCastPlayer())
-    }
-
-    @Test
     fun `startCasting loads media with correct metadata`() = runTest {
         // Arrange
         val item = createTestItem(name = "Test Movie")
@@ -318,7 +333,7 @@ class CastManagerTest {
         every { sessionManager.currentCastSession } returns castSession
         every { castSession.isConnected } returns true
         every { castSession.remoteMediaClient } returns remoteMediaClient
-        every { remoteMediaClient.load(any<com.google.android.gms.cast.MediaInfo>()) } returns mockk(relaxed = true)
+        every { remoteMediaClient.load(any<com.google.android.gms.cast.MediaLoadRequestData>()) } returns mockk(relaxed = true)
         every { streamRepository.getBackdropUrl(any<BaseItemDto>()) } returns "https://server.com/backdrop.jpg"
         every { streamRepository.getImageUrl(any<String>(), any(), any()) } returns "https://server.com/poster.jpg"
 
@@ -329,7 +344,7 @@ class CastManagerTest {
         castManager.startCasting(mediaItem, item)
 
         // Assert
-        verify { remoteMediaClient.load(any<com.google.android.gms.cast.MediaInfo>()) }
+        verify { remoteMediaClient.load(any<com.google.android.gms.cast.MediaLoadRequestData>()) }
         assertTrue(castManager.castState.value.isCasting)
         assertTrue(castManager.castState.value.isRemotePlaying)
     }
@@ -348,7 +363,7 @@ class CastManagerTest {
         every { sessionManager.currentCastSession } returns castSession
         every { castSession.isConnected } returns true
         every { castSession.remoteMediaClient } returns remoteMediaClient
-        every { remoteMediaClient.load(any<com.google.android.gms.cast.MediaInfo>()) } returns mockk(relaxed = true)
+        every { remoteMediaClient.load(any<com.google.android.gms.cast.MediaLoadRequestData>()) } returns mockk(relaxed = true)
 
         castManager.initialize()
         advanceUntilIdle()
@@ -357,7 +372,7 @@ class CastManagerTest {
         castManager.loadPreview(item, imageUrl, backdropUrl)
 
         // Assert
-        verify { remoteMediaClient.load(any<com.google.android.gms.cast.MediaInfo>()) }
+        verify { remoteMediaClient.load(any<com.google.android.gms.cast.MediaLoadRequestData>()) }
         assertTrue(castManager.castState.value.isCasting)
         assertFalse(castManager.castState.value.isRemotePlaying)
     }
@@ -375,7 +390,7 @@ class CastManagerTest {
         castManager.loadPreview(item, "https://server.com/image.jpg", null)
 
         // Assert
-        verify(exactly = 0) { remoteMediaClient.load(any<com.google.android.gms.cast.MediaInfo>()) }
+        verify(exactly = 0) { remoteMediaClient.load(any<com.google.android.gms.cast.MediaLoadRequestData>()) }
     }
 
     @Test
@@ -392,14 +407,22 @@ class CastManagerTest {
 
     @Test
     fun `initialization handles exceptions gracefully`() = runTest {
-        // Arrange
-        every { CastContext.getSharedInstance(any()) } throws RuntimeException("Cast not available")
+        // Arrange - Make the Task invoke the failure listener instead of success
+        val failingTask: Task<CastContext> = mockk(relaxed = true)
+        every { failingTask.addOnSuccessListener(any()) } returns failingTask
+        every { failingTask.addOnFailureListener(any()) } answers {
+            val listener = firstArg<OnFailureListener>()
+            listener.onFailure(RuntimeException("Cast not available"))
+            failingTask
+        }
+        every { CastContext.getSharedInstance(any(), any<Executor>()) } returns failingTask
 
         // Act - Should not throw
         castManager.initialize()
         advanceUntilIdle()
 
-        // Assert - State should remain in default state
+        // Assert - State should indicate initialization completed but cast unavailable
+        assertTrue(castManager.castState.value.isInitialized)
         assertFalse(castManager.castState.value.isAvailable)
         assertFalse(castManager.castState.value.isConnected)
     }

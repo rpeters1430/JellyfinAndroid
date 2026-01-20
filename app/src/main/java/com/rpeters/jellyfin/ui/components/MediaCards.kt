@@ -28,9 +28,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -66,7 +69,7 @@ fun MediaCard(
     cardAspectRatio: Float = 16f / 9f,
 ) {
     val contentTypeColor = getContentTypeColor(item.type.toString())
-    val coroutineScope = rememberCoroutineScope()
+    // ✅ Performance: Removed unused rememberCoroutineScope()
 
     Card(
         modifier = modifier
@@ -200,20 +203,24 @@ fun MediaCard(
                     .padding(horizontal = 12.dp, vertical = 8.dp),
             )
 
-            // Gradient Overlay
+            // ✅ Performance: Use drawWithCache for gradient to avoid recomposition
+            val surfaceColor = MaterialTheme.colorScheme.surface
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
+                    .drawWithCache {
+                        val gradientBrush = Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                                surfaceColor.copy(alpha = 0.85f),
                             ),
                             startY = 0f,
-                            endY = Float.POSITIVE_INFINITY,
-                        ),
-                    ),
+                            endY = size.height,
+                        )
+                        onDrawBehind {
+                            drawRect(gradientBrush)
+                        }
+                    },
             ) {
                 // Content Overlay
                 Column(
@@ -306,7 +313,7 @@ fun PosterMediaCard(
     cardWidth: Dp? = null, // Made optional - null means fill available width
 ) {
     val contentTypeColor = getContentTypeColor(item.type.toString())
-    val coroutineScope = rememberCoroutineScope()
+    // ✅ Performance: Removed unused rememberCoroutineScope()
 
     Card(
         modifier = modifier

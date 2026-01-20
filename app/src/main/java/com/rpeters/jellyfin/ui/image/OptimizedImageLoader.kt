@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.ui.image
 
 import android.content.Context
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -11,17 +12,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.ImageLoader
+import coil3.compose.AsyncImage
+import coil3.compose.AsyncImagePainter
 import coil3.compose.SubcomposeAsyncImage
 import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
+import coil3.request.crossfade
 import coil3.request.transformations
 import coil3.size.Size
 import coil3.transform.RoundedCornersTransformation
@@ -101,7 +106,16 @@ fun createOptimizedImageLoader(
 }
 
 /**
- * Optimized image loading composable with intelligent sizing and caching.
+ * Performance-optimized image loading composable.
+ *
+ * Uses AsyncImage for better performance when custom loading/error composables
+ * are not needed. Falls back to SubcomposeAsyncImage only when custom composables
+ * are required.
+ *
+ * Performance optimizations:
+ * - Uses crossfade for smoother transitions without recomposition
+ * - Caches ImageRequest to prevent recreation
+ * - Avoids subcomposition overhead when possible
  */
 @Composable
 fun OptimizedImage(
@@ -117,7 +131,7 @@ fun OptimizedImage(
     loading: @Composable (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
-    val backgroundColor = MaterialTheme.colorScheme.surfaceVariant.toArgb()
+    val backgroundColor = MaterialTheme.colorScheme.surfaceVariant
 
     // ✅ Performance: Remember request with stable key to prevent recreation
     val imageRequest: ImageRequest = remember(imageUrl, size.width, size.height, cornerRadius.value) {
@@ -127,6 +141,8 @@ fun OptimizedImage(
             .memoryCachePolicy(CachePolicy.ENABLED)
             .diskCachePolicy(CachePolicy.ENABLED)
             .networkCachePolicy(CachePolicy.ENABLED)
+            // ✅ Performance: Enable crossfade for smoother loading
+            .crossfade(true)
 
         // Coil 3.x: Apply rounded corners transformation if needed
         if (cornerRadius > 0.dp) {
@@ -136,31 +152,52 @@ fun OptimizedImage(
         builder.build()
     }
 
-    SubcomposeAsyncImage(
-        model = imageRequest,
-        contentDescription = contentDescription,
-        modifier = modifier.clip(RoundedCornerShape(cornerRadius)),
-        contentScale = contentScale,
-        loading = {
-            loading?.invoke() ?: Box(
+    // ✅ Performance: Use simpler AsyncImage when no custom loading/error content needed
+    val hasCustomContent = loading != null || error != null || placeholder != null
+
+    if (!hasCustomContent) {
+        // Fast path: Use AsyncImage without subcomposition
+        // Background provides a placeholder color while loading, crossfade handles transition
+        Box(
+            modifier = modifier
+                .clip(RoundedCornerShape(cornerRadius))
+                .background(backgroundColor),
+        ) {
+            AsyncImage(
+                model = imageRequest,
+                contentDescription = contentDescription,
                 modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                ShimmerBox(
+                contentScale = contentScale,
+            )
+        }
+    } else {
+        // Full path: Use SubcomposeAsyncImage for custom loading/error states
+        SubcomposeAsyncImage(
+            model = imageRequest,
+            contentDescription = contentDescription,
+            modifier = modifier.clip(RoundedCornerShape(cornerRadius)),
+            contentScale = contentScale,
+            loading = {
+                loading?.invoke() ?: Box(
                     modifier = Modifier.fillMaxSize(),
-                    shape = RoundedCornerShape(cornerRadius),
-                )
-            }
-        },
-        error = {
-            error?.invoke() ?: Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                placeholder?.invoke()
-            }
-        },
-    )
+                    contentAlignment = Alignment.Center,
+                ) {
+                    ShimmerBox(
+                        modifier = Modifier.fillMaxSize(),
+                        shape = RoundedCornerShape(cornerRadius),
+                    )
+                }
+            },
+            error = {
+                error?.invoke() ?: Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    placeholder?.invoke()
+                }
+            },
+        )
+    }
 }
 
 /**
