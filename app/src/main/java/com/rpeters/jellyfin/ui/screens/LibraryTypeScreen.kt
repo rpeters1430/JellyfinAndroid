@@ -61,6 +61,7 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.MediaItemActionsSheet
 import com.rpeters.jellyfin.ui.components.shimmer
+import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
 import com.rpeters.jellyfin.ui.utils.MediaPlayerUtils
 import com.rpeters.jellyfin.ui.viewmodel.LibraryActionsPreferencesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
@@ -80,6 +81,7 @@ fun LibraryTypeScreen(
     modifier: Modifier = Modifier,
     viewModel: MainAppViewModel = hiltViewModel(),
     libraryActionsPreferencesViewModel: LibraryActionsPreferencesViewModel = hiltViewModel(),
+    downloadsViewModel: DownloadsViewModel = hiltViewModel(),
 ) {
     val appState by viewModel.appState.collectAsState()
     val libraryActionPrefs by libraryActionsPreferencesViewModel.preferences.collectAsStateWithLifecycle()
@@ -303,6 +305,9 @@ fun LibraryTypeScreen(
                 onPlay = {
                     handlePlay(item)
                 },
+                onDownload = {
+                    downloadsViewModel.startDownload(item)
+                },
                 onDelete = { _, _ ->
                     viewModel.deleteItem(item) { success, message ->
                         coroutineScope.launch {
@@ -331,6 +336,7 @@ fun LibraryTypeScreen(
                     viewModel.toggleWatchedStatus(item)
                 },
                 managementEnabled = managementEnabled,
+                showDownload = true,
             )
         }
     }
@@ -395,6 +401,7 @@ private fun GridContent(
                 onItemClick = onItemClick,
                 onTVShowClick = onTVShowClick,
                 onItemLongPress = onItemLongPress,
+                onMoreClick = onItemLongPress,
                 isCompact = true,
             )
         }
@@ -437,6 +444,7 @@ private fun ListContent(
                 onItemClick = onItemClick,
                 onTVShowClick = onTVShowClick,
                 onItemLongPress = onItemLongPress,
+                onMoreClick = onItemLongPress,
                 isCompact = false,
             )
         }
