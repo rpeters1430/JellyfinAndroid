@@ -32,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -180,19 +181,24 @@ private fun ExpressiveHeroCard(
                     .clip(RoundedCornerShape(16.dp)),
             )
 
-            // Gradient Overlay
+            // ✅ Performance: Use drawWithCache for gradient to avoid recomposition
+            val scrimColor = MaterialTheme.colorScheme.scrim
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
+                    .drawWithCache {
+                        val gradientBrush = Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                MaterialTheme.colorScheme.scrim.copy(alpha = 0.7f),
+                                scrimColor.copy(alpha = 0.7f),
                             ),
-                            startY = 200f,
-                        ),
-                    ),
+                            startY = size.height * 0.4f,
+                            endY = size.height,
+                        )
+                        onDrawBehind {
+                            drawRect(gradientBrush)
+                        }
+                    },
             )
 
             // Content overlay

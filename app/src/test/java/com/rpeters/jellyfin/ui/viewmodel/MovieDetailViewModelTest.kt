@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.ui.viewmodel
 
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
 import io.mockk.coEvery
@@ -25,9 +26,10 @@ import java.util.UUID
 @OptIn(ExperimentalCoroutinesApi::class)
 class MovieDetailViewModelTest {
     private val repository: JellyfinRepository = mockk()
+    private val mediaRepository: JellyfinMediaRepository = mockk()
     private val playbackUtils: EnhancedPlaybackUtils = mockk()
     private val dispatcher = StandardTestDispatcher()
-    private val viewModel by lazy { MovieDetailViewModel(repository, playbackUtils) }
+    private val viewModel by lazy { MovieDetailViewModel(repository, mediaRepository, playbackUtils) }
 
     @Before
     fun setup() {
@@ -43,6 +45,8 @@ class MovieDetailViewModelTest {
     fun `loadMovieDetails updates state on success`() = runTest {
         val movie = BaseItemDto(id = UUID.randomUUID(), name = "Test", type = BaseItemKind.MOVIE)
         coEvery { repository.getMovieDetails(movie.id.toString()) } returns ApiResult.Success(movie)
+        coEvery { playbackUtils.analyzePlaybackCapabilities(movie) } returns mockk()
+        coEvery { mediaRepository.getSimilarMovies(movie.id.toString(), limit = 10) } returns ApiResult.Success(emptyList())
 
         viewModel.loadMovieDetails(movie.id.toString())
         dispatcher.scheduler.advanceUntilIdle()

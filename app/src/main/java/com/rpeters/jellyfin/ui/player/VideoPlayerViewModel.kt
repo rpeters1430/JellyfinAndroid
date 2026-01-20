@@ -75,6 +75,7 @@ data class VideoPlayerState(
     val availableCastDevices: List<String> = emptyList(),
     val availableQualities: List<VideoQuality> = emptyList(),
     val selectedQuality: VideoQuality? = null,
+    val isCastAvailable: Boolean = false,
     val isCasting: Boolean = false,
     val isCastConnected: Boolean = false,
     val castDeviceName: String? = null,
@@ -591,6 +592,7 @@ class VideoPlayerViewModel @Inject constructor(
         val currentState = _playerState.value
         val hideDialog = castState.isConnected
         _playerState.value = currentState.copy(
+            isCastAvailable = castState.isAvailable,
             isCasting = castState.isCasting,
             isCastConnected = castState.isConnected,
             castDeviceName = castState.deviceName,
@@ -648,16 +650,20 @@ class VideoPlayerViewModel @Inject constructor(
         val metadata = currentItemMetadata ?: return false
         val subtitles = currentSubtitleSpecs
 
-        withContext(Dispatchers.Main) {
+        // Get current playback position before pausing
+        val currentPosition = withContext(Dispatchers.Main) {
             exoPlayer?.let { player ->
+                val position = player.currentPosition
                 if (!wasPlayingBeforeCast && player.isPlaying) {
                     wasPlayingBeforeCast = true
                 }
                 player.pause()
-            }
+                position
+            } ?: 0L
         }
 
-        castManager.startCasting(mediaItem, metadata, subtitles)
+        // Start casting from current position
+        castManager.startCasting(mediaItem, metadata, subtitles, currentPosition)
         return true
     }
 
@@ -828,11 +834,29 @@ class VideoPlayerViewModel @Inject constructor(
     }
 
     fun showCastDialog() {
-        val devices = castManager.discoverDevices()
-        _playerState.value = _playerState.value.copy(
-            availableCastDevices = devices,
-            showCastDialog = true,
-        )
+        viewModelScope.launch {
+            val ready = castManager.awaitInitialization()
+            val castState = castManager.castState.value
+            if (!ready || !castState.isAvailable) {
+                _playerState.value = _playerState.value.copy(
+                    error = "Cast is not available on this device",
+                )
+                return@launch
+            }
+
+            val devices = castManager.discoverDevices()
+            if (devices.isEmpty()) {
+                _playerState.value = _playerState.value.copy(
+                    error = "No Cast devices found. Make sure your device is on the same network.",
+                )
+                return@launch
+            }
+
+            _playerState.value = _playerState.value.copy(
+                availableCastDevices = devices,
+                showCastDialog = true,
+            )
+        }
     }
 
     fun showSubtitleDialog() {
@@ -933,9 +957,20 @@ class VideoPlayerViewModel @Inject constructor(
     }
 
     fun selectCastDevice(deviceName: String) {
-        val connected = castManager.connectToDevice(deviceName)
-        if (connected) {
-            _playerState.value = _playerState.value.copy(showCastDialog = false)
+        // Always close the dialog - error feedback comes via castState.error → playerState.error
+        _playerState.value = _playerState.value.copy(showCastDialog = false)
+        viewModelScope.launch {
+            val ready = castManager.awaitInitialization()
+            if (!ready) {
+                _playerState.value = _playerState.value.copy(
+                    error = "Cast is not available on this device",
+                )
+                return@launch
+            }
+            castManager.connectToDevice(deviceName)
+            // Note: Connection result will come through castState updates
+            // Success: onSessionStarted callback → handleCastState() → starts casting
+            // Failure: error set in CastManager → propagated to playerState.error → shown in Snackbar
         }
     }
 

@@ -351,6 +351,41 @@ class EnhancedPlaybackManagerTest {
     }
 
     @Test
+    fun `getOptimalPlaybackUrl prefers server transcoding url when provided`() = runTest {
+        val itemId = UUID.randomUUID()
+        val item = buildBaseItem(id = itemId)
+        val mediaSource = buildMediaSource(
+            container = "mp4",
+            videoCodec = "h264",
+            audioCodec = "aac",
+            bitrate = 10_000_000,
+            transcodingUrl = "/Videos/$itemId/master.m3u8?VideoCodec=h264",
+        )
+        val playbackInfo = buildPlaybackInfo(listOf(mediaSource))
+
+        every { deviceCapabilities.getDirectPlayCapabilities() } returns mockk(relaxed = true)
+        every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) } returns true
+
+        coEvery { repository.getPlaybackInfo(itemId.toString()) } returns playbackInfo
+        every {
+            repository.getCurrentServer()
+        } returns com.rpeters.jellyfin.data.JellyfinServer(
+            id = "server",
+            name = "Test",
+            url = "https://server",
+        )
+
+        val result = manager.getOptimalPlaybackUrl(item)
+
+        assertTrue(result is PlaybackResult.Transcoding)
+        assertEquals(
+            "https://server/Videos/$itemId/master.m3u8?VideoCodec=h264",
+            (result as PlaybackResult.Transcoding).url,
+        )
+        verify(exactly = 0) { streamRepository.getTranscodedStreamUrl(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
     fun `getOptimalPlaybackUrl verifies DeviceCapabilities called correctly`() = runTest {
         val itemId = UUID.randomUUID()
         val item = buildBaseItem(id = itemId)
@@ -403,9 +438,17 @@ class EnhancedPlaybackManagerTest {
         bitrate: Int,
         width: Int = 1920,
         height: Int = 1080,
+        transcodingUrl: String? = null,
+        supportsDirectPlay: Boolean = true,
+        supportsTranscoding: Boolean = true,
+        supportsDirectStream: Boolean = true,
     ): MediaSourceInfo = mockk<MediaSourceInfo>(relaxed = true).also { mediaSource ->
         every { mediaSource.container } returns container
         every { mediaSource.bitrate } returns bitrate
+        every { mediaSource.supportsDirectPlay } returns supportsDirectPlay
+        every { mediaSource.supportsTranscoding } returns supportsTranscoding
+        every { mediaSource.supportsDirectStream } returns supportsDirectStream
+        every { mediaSource.transcodingUrl } returns transcodingUrl
         every { mediaSource.mediaStreams } returns listOf(
             mockk<MediaStream>(relaxed = true).also { stream ->
                 every { stream.type } returns MediaStreamType.VIDEO

@@ -23,6 +23,7 @@ import com.rpeters.jellyfin.utils.AppResources
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,6 +42,7 @@ import com.google.android.gms.cast.MediaMetadata as CastMediaMetadata
 
 @UnstableApi
 data class CastState(
+    val isInitialized: Boolean = false,
     val isAvailable: Boolean = false,
     val isConnected: Boolean = false,
     val deviceName: String? = null,
@@ -66,12 +68,12 @@ class CastManager @Inject constructor(
     val castState: StateFlow<CastState> = _castState.asStateFlow()
 
     private var castContext: CastContext? = null
+    private var sessionListenerAdded = false
+    private val initializationLock = Any()
+    private var initializationDeferred: CompletableDeferred<Boolean>? = null
 
     // Single coroutine scope for this singleton, tied to the manager's lifecycle
     private val managerScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-
-    // Store initialization job to prevent scope leak
-    private var initializationJob: kotlinx.coroutines.Job? = null
 
     private val sessionManagerListener = object : SessionManagerListener<CastSession> {
         override fun onSessionStarted(session: CastSession, sessionId: String) {
@@ -188,39 +190,92 @@ class CastManager @Inject constructor(
     }
 
     fun initialize() {
-        // Cancel any existing initialization job to prevent duplicate listeners
-        initializationJob?.cancel()
+        managerScope.launch {
+            awaitInitialization()
+        }
+    }
 
-        // Use the managed scope to prevent scope leak
-        initializationJob = managerScope.launch {
-            try {
-                // Use modern CastContext API with executor to avoid deprecation warning
-                val contextTask = CastContext.getSharedInstance(
-                    context.applicationContext,
-                    Executors.newSingleThreadExecutor(),
-                )
-                contextTask.addOnSuccessListener { ctx ->
-                    castContext = ctx
-                    ctx.sessionManager.addSessionManagerListener(sessionManagerListener, CastSession::class.java)
+    suspend fun awaitInitialization(): Boolean {
+        if (castState.value.isInitialized) {
+            return castState.value.isAvailable
+        }
 
-                    _castState.update { state ->
-                        state.copy(
-                            isAvailable = ctx.sessionManager.currentCastSession != null,
-                            isRemotePlaying = isRemotePlaying(),
-                            error = null,
-                        )
-                    }
-
-                    if (BuildConfig.DEBUG) {
-                        SecureLogger.d("CastManager", "Cast manager initialized successfully")
-                    }
-                }
-            } catch (e: Exception) {
-                SecureLogger.e("CastManager", "Failed to initialize Cast", e)
-                _castState.update { state ->
-                    state.copy(error = "Failed to initialize Cast: ${e.message}")
+        val deferred = synchronized(initializationLock) {
+            val updatedState = castState.value
+            if (updatedState.isInitialized) {
+                null
+            } else {
+                val existing = initializationDeferred
+                if (existing != null && !existing.isCompleted) {
+                    existing
+                } else {
+                    val created = CompletableDeferred<Boolean>()
+                    initializationDeferred = created
+                    startInitialization(created)
+                    created
                 }
             }
+        }
+
+        return deferred?.await() ?: castState.value.isAvailable
+    }
+
+    private fun startInitialization(deferred: CompletableDeferred<Boolean>) {
+        try {
+            // Use modern CastContext API with executor to avoid deprecation warning
+            val contextTask = CastContext.getSharedInstance(
+                context.applicationContext,
+                Executors.newSingleThreadExecutor(),
+            )
+            contextTask.addOnSuccessListener { ctx ->
+                castContext = ctx
+                if (!sessionListenerAdded) {
+                    ctx.sessionManager.addSessionManagerListener(sessionManagerListener, CastSession::class.java)
+                    sessionListenerAdded = true
+                }
+
+                // Check if there's an existing session (e.g., from a previous app launch)
+                val existingSession = ctx.sessionManager.currentCastSession
+                val hasExistingSession = existingSession?.isConnected == true
+
+                _castState.update { state ->
+                    state.copy(
+                        isInitialized = true,
+                        isAvailable = true, // Cast Framework is available
+                        isConnected = hasExistingSession,
+                        deviceName = existingSession?.castDevice?.friendlyName,
+                        isCasting = hasExistingSession,
+                        isRemotePlaying = isRemotePlaying(),
+                        error = null,
+                    )
+                }
+
+                if (BuildConfig.DEBUG) {
+                    SecureLogger.d("CastManager", "Cast manager initialized successfully (existing session: $hasExistingSession)")
+                }
+                deferred.complete(true)
+            }
+            contextTask.addOnFailureListener { e ->
+                SecureLogger.e("CastManager", "Failed to initialize Cast context", e)
+                _castState.update { state ->
+                    state.copy(
+                        isInitialized = true, // Mark as initialized even on failure so we don't keep retrying
+                        isAvailable = false,
+                        error = "Cast not available: ${e.message}",
+                    )
+                }
+                deferred.complete(false)
+            }
+        } catch (e: Exception) {
+            SecureLogger.e("CastManager", "Failed to initialize Cast", e)
+            _castState.update { state ->
+                state.copy(
+                    isInitialized = true,
+                    isAvailable = false,
+                    error = "Failed to initialize Cast: ${e.message}",
+                )
+            }
+            deferred.complete(false)
         }
     }
 
@@ -244,26 +299,56 @@ class CastManager @Inject constructor(
     /**
      * Discover available Cast devices on the local network.
      * Returns a list of friendly device names.
+     * Returns empty list if Cast is not initialized yet.
      */
     fun discoverDevices(): List<String> {
+        val ctx = castContext
+        if (ctx == null) {
+            if (BuildConfig.DEBUG) {
+                SecureLogger.d("CastManager", "discoverDevices: Cast not initialized yet")
+            }
+            return emptyList()
+        }
+
         val router = MediaRouter.getInstance(context)
-        val selector = castContext?.mergedSelector
-        return router.routes
+        val selector = ctx.mergedSelector
+        val devices = router.routes
             .filter { route -> selector?.matchesControlFilters(route.controlFilters) == true }
             .map { it.name }
+
+        if (BuildConfig.DEBUG) {
+            SecureLogger.d("CastManager", "discoverDevices: Found ${devices.size} devices")
+        }
+        return devices
     }
 
     /**
      * Connect to the specified Cast device by name.
      * Returns true if a matching device was found and selected.
+     * Returns false if Cast is not initialized or device not found.
      */
     fun connectToDevice(deviceName: String): Boolean {
+        if (castContext == null) {
+            SecureLogger.w("CastManager", "connectToDevice: Cast not initialized yet, cannot connect to '$deviceName'")
+            _castState.update { state ->
+                state.copy(error = "Cast is still initializing, please try again")
+            }
+            return false
+        }
+
         val router = MediaRouter.getInstance(context)
         val route = router.routes.firstOrNull { it.name == deviceName }
         return if (route != null) {
+            if (BuildConfig.DEBUG) {
+                SecureLogger.d("CastManager", "connectToDevice: Selecting route '$deviceName'")
+            }
             router.selectRoute(route)
             true
         } else {
+            SecureLogger.w("CastManager", "connectToDevice: Device '$deviceName' not found")
+            _castState.update { state ->
+                state.copy(error = "Device '$deviceName' not found")
+            }
             false
         }
     }
@@ -275,6 +360,9 @@ class CastManager @Inject constructor(
      */
     suspend fun attemptAutoReconnect() {
         try {
+            if (!awaitInitialization()) {
+                return
+            }
             val preferences = castPreferencesRepository.castPreferencesFlow
                 .firstOrNull() ?: return
 
@@ -374,7 +462,7 @@ class CastManager @Inject constructor(
         return builder.build()
     }
 
-    fun startCasting(mediaItem: MediaItem, item: BaseItemDto, sideLoadedSubs: List<SubtitleSpec> = emptyList()) {
+    fun startCasting(mediaItem: MediaItem, item: BaseItemDto, sideLoadedSubs: List<SubtitleSpec> = emptyList(), startPositionMs: Long = 0L) {
         try {
             val castSession = castContext?.sessionManager?.currentCastSession
             if (castSession?.isConnected == true) {
@@ -415,10 +503,11 @@ class CastManager @Inject constructor(
                     fontScale = 1.0f
                 }
 
-                // Load media on Cast device
+                // Load media on Cast device with start position
                 val request = MediaLoadRequestData.Builder()
                     .setMediaInfo(mediaInfo)
                     .setAutoplay(true)
+                    .setCurrentTime(startPositionMs) // Start from current position
                     // Uncomment to enable default text styling:
                     // .setTextTrackStyle(textTrackStyle)
                     .build()
@@ -738,14 +827,15 @@ class CastManager @Inject constructor(
 
     fun release() {
         try {
-            // Cancel initialization job to prevent scope leak
-            initializationJob?.cancel()
-            initializationJob = null
+            initializationDeferred?.cancel()
+            initializationDeferred = null
 
             // Cancel the manager scope to clean up all coroutines
             managerScope.coroutineContext[kotlinx.coroutines.Job]?.cancel()
 
             castContext?.sessionManager?.removeSessionManagerListener(sessionManagerListener, CastSession::class.java)
+            sessionListenerAdded = false
+            castContext = null
 
             if (BuildConfig.DEBUG) {
                 SecureLogger.d("CastManager", "Cast manager released")

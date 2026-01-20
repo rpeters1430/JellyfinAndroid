@@ -468,23 +468,37 @@ fun HomeContent(
             }
     }
 
+    // ✅ Performance: Move expensive computations outside PullToRefreshBox
+    // This prevents recreation on every scroll/refresh
+    val imageProviders = remember(getImageUrl, getSeriesImageUrl, getBackdropUrl) {
+        mapOf<HomeImageSelector, (BaseItemDto) -> String?>(
+            HomeImageSelector.DEFAULT to getImageUrl,
+            HomeImageSelector.SERIES_OR_DEFAULT to { item ->
+                getSeriesImageUrl(item) ?: getImageUrl(item)
+            },
+            HomeImageSelector.BACKDROP_OR_DEFAULT to { item ->
+                getBackdropUrl(item) ?: getImageUrl(item)
+            },
+        )
+    }
+
+    // ✅ Performance: Pre-cache string resources outside lazy content
+    val unknownText = stringResource(id = R.string.unknown)
+    val continueWatchingTitle = "Continue Watching"
+    val librariesTitle = "Libraries"
+
+    // ✅ Performance: Stabilize callbacks to prevent recomposition
+    val stableOnItemClick = remember(onItemClick) { onItemClick }
+    val stableOnItemLongPress = remember(onItemLongPress) { onItemLongPress }
+    val stableOnLibraryClick = remember(onLibraryClick) { onLibraryClick }
+
+    val listState = rememberLazyListState()
+
     PullToRefreshBox(
         isRefreshing = appState.isLoading,
         onRefresh = onRefresh,
         modifier = modifier,
     ) {
-        val listState = rememberLazyListState()
-        val imageProviders = remember(getImageUrl, getSeriesImageUrl, getBackdropUrl) {
-            mapOf<HomeImageSelector, (BaseItemDto) -> String?>(
-                HomeImageSelector.DEFAULT to getImageUrl,
-                HomeImageSelector.SERIES_OR_DEFAULT to { item ->
-                    getSeriesImageUrl(item) ?: getImageUrl(item)
-                },
-                HomeImageSelector.BACKDROP_OR_DEFAULT to { item ->
-                    getBackdropUrl(item) ?: getImageUrl(item)
-                },
-            )
-        }
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
@@ -494,7 +508,7 @@ fun HomeContent(
         ) {
             if (contentLists.featuredItems.isNotEmpty()) {
                 item(key = "featured", contentType = "carousel") {
-                    val unknownText = stringResource(id = R.string.unknown)
+                    // ✅ Performance: Use pre-cached unknownText from outside LazyColumn
                     val featured = remember(contentLists.featuredItems, unknownText) {
                         contentLists.featuredItems.map {
                             it.toCarouselItem(
@@ -509,11 +523,11 @@ fun HomeContent(
                         items = featured,
                         onItemClick = { selected ->
                             contentLists.featuredItems.firstOrNull { it.id.toString() == selected.id }
-                                ?.let(onItemClick)
+                                ?.let(stableOnItemClick)
                         },
                         onPlayClick = { selected ->
                             contentLists.featuredItems.firstOrNull { it.id.toString() == selected.id }
-                                ?.let(onItemClick)
+                                ?.let(stableOnItemClick)
                         },
                         heroHeight = layoutConfig.heroHeight,
                         horizontalPadding = layoutConfig.heroHorizontalPadding,
@@ -528,8 +542,8 @@ fun HomeContent(
                     ContinueWatchingSection(
                         items = contentLists.continueWatching,
                         getImageUrl = getImageUrl,
-                        onItemClick = onItemClick,
-                        onItemLongPress = onItemLongPress,
+                        onItemClick = stableOnItemClick,
+                        onItemLongPress = stableOnItemLongPress,
                         cardWidth = layoutConfig.continueWatchingCardWidth,
                     )
                 }
@@ -553,8 +567,8 @@ fun HomeContent(
                     LibraryGridSection(
                         libraries = orderedLibraries,
                         getImageUrl = getImageUrl,
-                        onLibraryClick = onLibraryClick,
-                        title = "Libraries",
+                        onLibraryClick = stableOnLibraryClick,
+                        title = librariesTitle,
                     )
                 }
             }
@@ -570,8 +584,8 @@ fun HomeContent(
                                 title = title,
                                 items = section.items,
                                 getImageUrl = imageProvider,
-                                onItemClick = onItemClick,
-                                onItemLongPress = onItemLongPress,
+                                onItemClick = stableOnItemClick,
+                                onItemLongPress = stableOnItemLongPress,
                                 cardWidth = layoutConfig.posterCardWidth,
                             )
                         }
@@ -580,8 +594,8 @@ fun HomeContent(
                                 title = title,
                                 items = section.items,
                                 getImageUrl = imageProvider,
-                                onItemClick = onItemClick,
-                                onItemLongPress = onItemLongPress,
+                                onItemClick = stableOnItemClick,
+                                onItemLongPress = stableOnItemLongPress,
                                 cardWidth = layoutConfig.mediaCardWidth,
                             )
                         }
@@ -590,8 +604,8 @@ fun HomeContent(
                                 title = title,
                                 items = section.items,
                                 getImageUrl = imageProvider,
-                                onItemClick = onItemClick,
-                                onItemLongPress = onItemLongPress,
+                                onItemClick = stableOnItemClick,
+                                onItemLongPress = stableOnItemLongPress,
                                 cardWidth = layoutConfig.mediaCardWidth,
                             )
                         }

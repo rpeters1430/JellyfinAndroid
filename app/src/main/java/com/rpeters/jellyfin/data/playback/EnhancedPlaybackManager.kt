@@ -7,6 +7,7 @@ import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.DeviceCapabilities
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
+import com.rpeters.jellyfin.ui.utils.findDefaultAudioStream
 import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.coroutines.Dispatchers
@@ -73,7 +74,15 @@ class EnhancedPlaybackManager @Inject constructor(
                 // Fallback to optimized transcoding
                 val transcodingResult = getOptimalTranscodingUrl(item, playbackInfo)
                 if (BuildConfig.DEBUG) {
-                    SecureLogger.v(TAG, "Using transcoding: ${transcodingResult.url}")
+                    when (transcodingResult) {
+                        is PlaybackResult.Transcoding -> {
+                            SecureLogger.v(TAG, "Using transcoding: ${transcodingResult.url}")
+                        }
+                        is PlaybackResult.Error -> {
+                            SecureLogger.e(TAG, "Transcoding failed: ${transcodingResult.message}")
+                        }
+                        else -> {}
+                    }
                 }
 
                 return@withContext transcodingResult
@@ -105,11 +114,24 @@ class EnhancedPlaybackManager @Inject constructor(
                 val itemId = item.id.toString()
                 val mediaSourceId = mediaSource.id
                 val container = mediaSource.container ?: "mkv"
+                val playSessionId = playbackInfo.playSessionId
 
                 // Construct direct play URL with static=true and mediaSourceId
                 val server = repository.getCurrentServer()
                 val directPlayUrl = if (server?.url != null && mediaSourceId != null) {
-                    "${server.url}/Videos/$itemId/stream.$container?static=true&mediaSourceId=$mediaSourceId"
+                    buildString {
+                        append(server.url)
+                        append("/Videos/")
+                        append(itemId)
+                        append("/stream.")
+                        append(container)
+                        append("?static=true&mediaSourceId=")
+                        append(mediaSourceId)
+                        if (!playSessionId.isNullOrBlank()) {
+                            append("&PlaySessionId=")
+                            append(playSessionId)
+                        }
+                    }
                 } else {
                     // Fallback to stream repository method
                     streamRepository.getDirectStreamUrl(itemId, container)
@@ -138,6 +160,11 @@ class EnhancedPlaybackManager @Inject constructor(
         mediaSource: org.jellyfin.sdk.model.api.MediaSourceInfo,
         item: BaseItemDto,
     ): Boolean {
+        if (!mediaSource.supportsDirectPlay) {
+            SecureLogger.v(TAG, "Server reports media source does not support Direct Play")
+            return false
+        }
+
         // Check container support
         val container = mediaSource.container
         if (!deviceCapabilities.canPlayContainer(container)) {
@@ -159,7 +186,7 @@ class EnhancedPlaybackManager @Inject constructor(
         }
 
         // Check audio codec support
-        val audioStream = mediaSource.mediaStreams?.find { it.type == MediaStreamType.AUDIO }
+        val audioStream = mediaSource.mediaStreams.findDefaultAudioStream()
         if (audioStream != null) {
             val audioCodec = audioStream.codec
             if (!deviceCapabilities.canPlayAudioCodec(audioCodec)) {
@@ -205,13 +232,21 @@ class EnhancedPlaybackManager @Inject constructor(
     }
 
     /**
-     * Get optimal transcoding URL based on device capabilities and network conditions
+     * Get optimal transcoding URL based on device capabilities and network conditions.
+     * Returns PlaybackResult.Error if no valid URL can be generated.
      */
     private fun getOptimalTranscodingUrl(
         item: BaseItemDto,
         playbackInfo: PlaybackInfoResponse,
-    ): PlaybackResult.Transcoding {
+    ): PlaybackResult {
         val itemId = item.id.toString()
+        val serverUrl = repository.getCurrentServer()?.url
+        val serverTranscodingSource = playbackInfo.mediaSources.firstOrNull {
+            it.transcodingUrl != null && (it.supportsTranscoding || it.supportsDirectStream)
+        }
+        val serverTranscodingUrl = serverTranscodingSource?.transcodingUrl?.let { url ->
+            if (!serverUrl.isNullOrBlank()) buildServerUrl(serverUrl, url) else null
+        }
         val networkQuality = getNetworkQuality()
         val deviceCaps = deviceCapabilities.getDirectPlayCapabilities()
 
@@ -242,6 +277,26 @@ class EnhancedPlaybackManager @Inject constructor(
             )
         }
 
+        if (!serverTranscodingUrl.isNullOrBlank()) {
+            val reason = if (serverTranscodingSource.supportsDirectStream &&
+                !serverTranscodingSource.supportsTranscoding
+            ) {
+                "Server direct stream selected"
+            } else {
+                "Server transcoding selected"
+            }
+            return PlaybackResult.Transcoding(
+                url = serverTranscodingUrl,
+                targetBitrate = transcodingParams.maxBitrate,
+                targetResolution = "${transcodingParams.maxWidth}x${transcodingParams.maxHeight}",
+                targetVideoCodec = transcodingParams.videoCodec,
+                targetAudioCodec = transcodingParams.audioCodec,
+                targetContainer = transcodingParams.container,
+                reason = reason,
+            )
+        }
+
+        // Try primary transcoding URL
         val transcodingUrl = streamRepository.getTranscodedStreamUrl(
             itemId = itemId,
             maxBitrate = transcodingParams.maxBitrate,
@@ -250,10 +305,16 @@ class EnhancedPlaybackManager @Inject constructor(
             videoCodec = transcodingParams.videoCodec,
             audioCodec = transcodingParams.audioCodec,
             container = transcodingParams.container,
-        ) ?: streamRepository.getStreamUrl(itemId) // Fallback to default
+        )
+
+        // Return error if no valid URL could be generated
+        if (transcodingUrl.isNullOrBlank()) {
+            SecureLogger.e(TAG, "Failed to generate any valid transcoding URL for item $itemId")
+            return PlaybackResult.Error("Unable to generate playback URL. Please check server connection.")
+        }
 
         return PlaybackResult.Transcoding(
-            url = transcodingUrl ?: "",
+            url = transcodingUrl,
             targetBitrate = transcodingParams.maxBitrate,
             targetResolution = "${transcodingParams.maxWidth}x${transcodingParams.maxHeight}",
             targetVideoCodec = transcodingParams.videoCodec,
@@ -336,6 +397,15 @@ class EnhancedPlaybackManager @Inject constructor(
      */
     private fun getAudioCodec(mediaSource: org.jellyfin.sdk.model.api.MediaSourceInfo): String? {
         return mediaSource.mediaStreams?.find { it.type == MediaStreamType.AUDIO }?.codec
+    }
+
+    private fun buildServerUrl(serverUrl: String, path: String): String {
+        if (path.startsWith("http://") || path.startsWith("https://")) {
+            return path
+        }
+        val normalizedServer = serverUrl.removeSuffix("/")
+        val normalizedPath = if (path.startsWith("/")) path else "/$path"
+        return normalizedServer + normalizedPath
     }
 }
 

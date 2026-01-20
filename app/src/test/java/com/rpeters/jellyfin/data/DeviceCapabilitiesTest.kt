@@ -9,6 +9,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import androidx.test.core.app.ApplicationProvider
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
@@ -18,7 +19,8 @@ class DeviceCapabilitiesTest {
 
     @Before
     fun setUp() {
-        deviceCapabilities = DeviceCapabilities()
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        deviceCapabilities = DeviceCapabilities(context)
     }
 
     // Container Format Tests

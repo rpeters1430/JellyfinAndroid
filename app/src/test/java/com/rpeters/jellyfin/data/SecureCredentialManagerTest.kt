@@ -1,14 +1,19 @@
 package com.rpeters.jellyfin.data
 
 import android.content.Context
+import com.rpeters.jellyfin.data.preferences.CredentialSecurityPreferences
+import com.rpeters.jellyfin.data.preferences.CredentialSecurityPreferencesRepository
 import com.rpeters.jellyfin.utils.SecureLogger
 import com.rpeters.jellyfin.utils.normalizeServerUrl
 import com.rpeters.jellyfin.utils.normalizeServerUrlLegacy
+import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import io.mockk.verify
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -66,8 +71,8 @@ class SecureCredentialManagerTest {
     @Test
     fun `debug logs are suppressed when not in debug mode`() {
         mockkObject(SecureLogger)
+        val originalFlag = manager.debugLoggingEnabled
         try {
-            val originalFlag = manager.debugLoggingEnabled
             justRun { SecureLogger.d(any(), any(), any()) }
             manager.debugLoggingEnabled = false
 
