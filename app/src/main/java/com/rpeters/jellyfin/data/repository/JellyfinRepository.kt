@@ -17,6 +17,7 @@ import com.rpeters.jellyfin.data.utils.RepositoryUtils
 import com.rpeters.jellyfin.ui.utils.ErrorHandler
 import com.rpeters.jellyfin.ui.utils.OfflineManager
 import com.rpeters.jellyfin.utils.AppResources
+import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.api.client.ApiClient
@@ -1080,10 +1081,42 @@ class JellyfinRepository @Inject constructor(
             autoOpenLiveStream = null,
         )
 
-        return client.mediaInfoApi.getPostedPlaybackInfo(
+        if (BuildConfig.DEBUG) {
+            SecureLogger.d(
+                "JellyfinRepository",
+                "PlaybackInfo request for item $itemId: " +
+                    "maxBitrate=${playbackInfoDto.maxStreamingBitrate}, " +
+                    "directPlay=${playbackInfoDto.enableDirectPlay}, " +
+                    "directStream=${playbackInfoDto.enableDirectStream}, " +
+                    "transcode=${playbackInfoDto.enableTranscoding}",
+            )
+        }
+
+        val response = client.mediaInfoApi.getPostedPlaybackInfo(
             itemId = itemUuid,
             data = playbackInfoDto,
         ).content
+
+        if (BuildConfig.DEBUG) {
+            val sourceSummaries = response.mediaSources.orEmpty().map { source ->
+                "id=${source.id}, " +
+                    "directPlay=${source.supportsDirectPlay}, " +
+                    "directStream=${source.supportsDirectStream}, " +
+                    "transcode=${source.supportsTranscoding}, " +
+                    "container=${source.container}, " +
+                    "transcodingUrl=${!source.transcodingUrl.isNullOrBlank()}"
+            }
+            SecureLogger.d(
+                "JellyfinRepository",
+                "PlaybackInfo response: playSessionId=${response.playSessionId}, " +
+                    "mediaSources=${sourceSummaries.size}",
+            )
+            if (sourceSummaries.isNotEmpty()) {
+                SecureLogger.v("JellyfinRepository", "PlaybackInfo sources: ${sourceSummaries.joinToString(" | ")}")
+            }
+        }
+
+        return response
     }
 
     fun getCurrentServer(): JellyfinServer? = authRepository.getCurrentServer()
