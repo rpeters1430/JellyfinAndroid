@@ -202,8 +202,9 @@ Automated workflows for:
 
 **Quick Links**:
 - **[CURRENT_STATUS.md](CURRENT_STATUS.md)** - Verified project status and features
-- **[IMPROVEMENTS.md](IMPROVEMENTS.md)** - Development roadmap and planned features
+- **[ROADMAP.md](ROADMAP.md)** - Development roadmap and planned features
 - **[KNOWN_ISSUES.md](KNOWN_ISSUES.md)** - Active bugs and workarounds
+- **[UPGRADE_PATH.md](UPGRADE_PATH.md)** - Dependency upgrade strategy
 
 ### **Current Status** ✅
 - [x] Core functionality (authentication, library browsing, Material 3 UI)
@@ -222,7 +223,7 @@ Automated workflows for:
 - **Advanced Media**: Music playback, offline downloads, live TV
 - **Power User Features**: Chromecast, sync play, widgets
 
-**[📖 See detailed roadmap in IMPROVEMENTS.md](IMPROVEMENTS.md)**
+**[📖 See detailed roadmap in ROADMAP.md](ROADMAP.md)**
 
 ## 🤝 Contributing
 

@@ -11,6 +11,10 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.trackselection.AdaptiveTrackSelection
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
+import androidx.media3.common.TrackSelectionParameters
+import androidx.media3.common.Tracks
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -148,6 +152,8 @@ class VideoPlayerViewModel @Inject constructor(
     var exoPlayer: ExoPlayer? = null
         private set
 
+    private var trackSelector: DefaultTrackSelector? = null
+
     private var currentItemId: String? = null
     private var currentItemName: String? = null
     private var defaultsApplied: Boolean = false
@@ -284,6 +290,9 @@ class VideoPlayerViewModel @Inject constructor(
                 builder.setTrackTypeDisabled(androidx.media3.common.C.TRACK_TYPE_TEXT, true)
                 player.trackSelectionParameters = builder.build()
             }
+
+            // Update available qualities for the quality selection menu
+            updateAvailableQualities(tracks)
         }
 
         override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
@@ -516,11 +525,23 @@ class VideoPlayerViewModel @Inject constructor(
                     val mediaSourceFactory =
                         androidx.media3.exoplayer.source.DefaultMediaSourceFactory(dataSourceFactory)
 
+                    // Create track selector with adaptive bitrate support
+                    trackSelector = DefaultTrackSelector(context).apply {
+                        // Enable adaptive track selection for better quality switching
+                        setParameters(
+                            buildUponParameters()
+                                .setAllowVideoMixedMimeTypeAdaptiveness(true)
+                                .setAllowVideoNonSeamlessAdaptiveness(true)
+                                .build(),
+                        )
+                    }
+
                     exoPlayer = ExoPlayer.Builder(context)
                         .setSeekBackIncrementMs(10_000)
                         .setSeekForwardIncrementMs(10_000)
                         .setMediaSourceFactory(mediaSourceFactory)
                         .setRenderersFactory(renderersFactory)
+                        .setTrackSelector(trackSelector!!)
                         // Handle video output to ensure proper surface attachment
                         .setVideoScalingMode(androidx.media3.common.C.VIDEO_SCALING_MODE_SCALE_TO_FIT)
                         .build()
@@ -901,6 +922,7 @@ class VideoPlayerViewModel @Inject constructor(
             }
         }
         exoPlayer = null
+        trackSelector = null
         playbackSessionId = null
     }
 
@@ -926,9 +948,119 @@ class VideoPlayerViewModel @Inject constructor(
         positionJob = null
     }
 
-    // Placeholder methods for UI compatibility
-    fun changeQuality(quality: VideoQuality) {
-        /* Not implemented yet */
+    /**
+     * Changes video quality based on user selection.
+     * @param quality The selected quality, or null for automatic selection
+     */
+    fun changeQuality(quality: VideoQuality?) {
+        val selector = trackSelector ?: return
+        val player = exoPlayer ?: return
+
+        if (quality == null) {
+            // Auto quality: Clear overrides and let ExoPlayer use adaptive bitrate streaming
+            selector.setParameters(
+                selector.buildUponParameters()
+                    .clearOverridesOfType(androidx.media3.common.C.TRACK_TYPE_VIDEO)
+                    .build(),
+            )
+            _playerState.value = _playerState.value.copy(selectedQuality = null)
+            SecureLogger.d("VideoPlayer", "Set quality to Auto (adaptive bitrate streaming)")
+        } else {
+            // Manual quality: Find and select the specific track
+            val currentTracks = player.currentTracks
+            var trackSelected = false
+
+            // Find the video track that matches the requested quality
+            for (trackGroup in currentTracks.groups) {
+                if (trackGroup.type == androidx.media3.common.C.TRACK_TYPE_VIDEO) {
+                    for (i in 0 until trackGroup.length) {
+                        val format = trackGroup.getTrackFormat(i)
+                        val formatWidth = format.width
+                        val formatHeight = format.height
+
+                        // Match based on resolution
+                        if (formatWidth == quality.width && formatHeight == quality.height) {
+                            // Create track selection override for this specific track
+                            val trackSelectionOverride = androidx.media3.common.TrackSelectionOverride(
+                                trackGroup.mediaTrackGroup,
+                                listOf(i),
+                            )
+
+                            selector.setParameters(
+                                selector.buildUponParameters()
+                                    .clearOverridesOfType(androidx.media3.common.C.TRACK_TYPE_VIDEO)
+                                    .addOverride(trackSelectionOverride)
+                                    .build(),
+                            )
+
+                            _playerState.value = _playerState.value.copy(selectedQuality = quality)
+                            trackSelected = true
+                            SecureLogger.d(
+                                "VideoPlayer",
+                                "Set quality to ${quality.label} (${quality.width}x${quality.height})",
+                            )
+                            break
+                        }
+                    }
+                }
+                if (trackSelected) break
+            }
+
+            if (!trackSelected) {
+                SecureLogger.w("VideoPlayer", "Could not find track for quality ${quality.label}")
+            }
+        }
+    }
+
+    /**
+     * Extracts available video qualities from the current player tracks.
+     * Called when tracks change to update the quality menu options.
+     */
+    private fun updateAvailableQualities(tracks: Tracks) {
+        val qualities = mutableListOf<VideoQuality>()
+
+        for (trackGroup in tracks.groups) {
+            if (trackGroup.type == androidx.media3.common.C.TRACK_TYPE_VIDEO) {
+                for (i in 0 until trackGroup.length) {
+                    val format = trackGroup.getTrackFormat(i)
+                    val width = format.width
+                    val height = format.height
+                    val bitrate = format.bitrate
+
+                    if (width > 0 && height > 0) {
+                        // Create quality label based on resolution
+                        val label = when {
+                            height >= 2160 -> "4K (${width}x${height})"
+                            height >= 1440 -> "1440p"
+                            height >= 1080 -> "1080p"
+                            height >= 720 -> "720p"
+                            height >= 480 -> "480p"
+                            height >= 360 -> "360p"
+                            else -> "${height}p"
+                        }
+
+                        val quality = VideoQuality(
+                            id = "${width}x${height}",
+                            label = label,
+                            bitrate = if (bitrate > 0) bitrate else 0,
+                            width = width,
+                            height = height,
+                        )
+
+                        // Avoid duplicates (same resolution)
+                        if (qualities.none { it.width == width && it.height == height }) {
+                            qualities.add(quality)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Sort by resolution (highest first)
+        qualities.sortByDescending { it.height }
+
+        _playerState.value = _playerState.value.copy(availableQualities = qualities)
+        SecureLogger.d("VideoPlayer", "Updated available qualities: ${qualities.map { it.label }}")
     }
 
     fun changeAspectRatio(aspectRatio: AspectRatioMode) {

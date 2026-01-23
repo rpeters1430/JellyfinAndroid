@@ -6,13 +6,9 @@ import coil3.memory.MemoryCache
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class ImageLoadingOptimizerTest {
 
     private val memoryCache: MemoryCache = mockk(relaxed = true)
@@ -23,12 +19,8 @@ class ImageLoadingOptimizerTest {
     }
 
     @Test
-    fun clearImageCache_clearsCachesOnProvidedDispatcher() = runTest {
-        val dispatcher = StandardTestDispatcher(testScheduler)
-
-        ImageLoadingOptimizer.clearImageCache(imageLoader, dispatcher)
-
-        advanceUntilIdle()
+    fun clearImageCache_clearsCaches() = runTest {
+        ImageLoadingOptimizer.clearImageCache(imageLoader)
 
         verify { memoryCache.clear() }
         verify { diskCache.clear() }

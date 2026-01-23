@@ -3,8 +3,9 @@ package com.rpeters.jellyfin.data.cache
 import android.content.Context
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.di.ApplicationScope
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,6 +26,7 @@ import javax.inject.Singleton
 @Singleton
 class JellyfinCache @Inject constructor(
     private val context: Context,
+    @ApplicationScope private val applicationScope: CoroutineScope,
 ) {
 
     companion object {
@@ -74,10 +76,9 @@ class JellyfinCache @Inject constructor(
 
     init {
         // Clean up old cache entries on initialization
-        // Using GlobalScope for app-wide cache initialization that should complete independently
+        // Using ApplicationScope for app-wide cache initialization that should complete independently
         // This is a singleton called at app startup and must complete even if the caller is destroyed
-        @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
-        GlobalScope.launch(Dispatchers.IO) {
+        applicationScope.launch(Dispatchers.IO) {
             try {
                 // Initialize cache directory on background thread
                 cacheDir = File(context.cacheDir, CACHE_DIR).apply {
@@ -120,8 +121,8 @@ class JellyfinCache @Inject constructor(
                     memoryCache[key] = cacheEntry
                 }
 
-                // Store on disk
-                val file = File(cacheDir, "$key.json")
+                // Store on disk (ensure cache directory exists first)
+                val file = File(ensureCacheDir(), "$key.json")
                 file.writeText(json.encodeToString(CacheData.serializer(), cacheData))
 
                 if (BuildConfig.DEBUG) {
@@ -163,19 +164,21 @@ class JellyfinCache @Inject constructor(
                     }
                 }
 
-                // Check disk cache
-                val file = File(cacheDir, "$key.json")
+                // Check disk cache (ensure cache directory exists first)
+                val file = File(ensureCacheDir(), "$key.json")
                 if (file.exists()) {
                     val cacheData = json.decodeFromString<CacheData>(file.readText())
                     val isValid = (System.currentTimeMillis() - cacheData.timestamp) < cacheData.ttlMs
 
                     if (isValid) {
-                        // Add back to memory cache
+                        // Add back to memory cache (synchronized for thread safety)
                         val cacheEntry = CacheEntry(
                             data = cacheData,
                             expiresAt = cacheData.timestamp + cacheData.ttlMs,
                         )
-                        memoryCache[key] = cacheEntry
+                        synchronized(memoryCache) {
+                            memoryCache[key] = cacheEntry
+                        }
 
                         if (BuildConfig.DEBUG) {
                             Log.d(TAG, "Disk cache hit for key: $key")
@@ -212,8 +215,8 @@ class JellyfinCache @Inject constructor(
             }
         }
 
-        // Check disk cache
-        val file = File(cacheDir, "$key.json")
+        // Check disk cache (ensure cache directory exists first)
+        val file = File(ensureCacheDir(), "$key.json")
         if (file.exists()) {
             try {
                 val cacheData = json.decodeFromString<CacheData>(file.readText())
@@ -233,8 +236,10 @@ class JellyfinCache @Inject constructor(
      * Invalidates cache for a specific key.
      */
     suspend fun invalidateCache(key: String) = withContext(Dispatchers.IO) {
-        memoryCache.remove(key)
-        val file = File(cacheDir, "$key.json")
+        synchronized(memoryCache) {
+            memoryCache.remove(key)
+        }
+        val file = File(ensureCacheDir(), "$key.json")
         if (file.exists()) {
             file.delete()
             if (BuildConfig.DEBUG) {
@@ -248,7 +253,9 @@ class JellyfinCache @Inject constructor(
      * Clears all cached data.
      */
     suspend fun clearAllCache() = withContext(Dispatchers.IO) {
-        memoryCache.clear()
+        synchronized(memoryCache) {
+            memoryCache.clear()
+        }
 
         ensureCacheDir().listFiles()?.forEach { file ->
             if (file.isFile && file.name.endsWith(".json")) {
@@ -283,13 +290,17 @@ class JellyfinCache @Inject constructor(
             try {
                 val currentTime = System.currentTimeMillis()
 
-                // Clean memory cache
-                val expiredKeys = memoryCache.entries
-                    .filter { !it.value.isValid() }
-                    .map { it.key }
+                // Clean memory cache (synchronized for thread safety)
+                val expiredKeys = synchronized(memoryCache) {
+                    memoryCache.entries
+                        .filter { !it.value.isValid() }
+                        .map { it.key }
+                }
 
-                expiredKeys.forEach { key ->
-                    memoryCache.remove(key)
+                synchronized(memoryCache) {
+                    expiredKeys.forEach { key ->
+                        memoryCache.remove(key)
+                    }
                 }
 
                 // Clean disk cache
@@ -350,9 +361,11 @@ class JellyfinCache @Inject constructor(
                 file.delete()
                 deletedCount++
 
-                // Remove from memory cache too
+                // Remove from memory cache too (synchronized for thread safety)
                 val key = file.nameWithoutExtension
-                memoryCache.remove(key)
+                synchronized(memoryCache) {
+                    memoryCache.remove(key)
+                }
             }
 
             if (BuildConfig.DEBUG && deletedCount > 0) {
@@ -371,7 +384,9 @@ class JellyfinCache @Inject constructor(
             val diskEntries = ensureCacheDir().listFiles()
                 ?.count { it.isFile && it.name.endsWith(".json") } ?: 0
 
-            val memoryEntries = memoryCache.size
+            val memoryEntries = synchronized(memoryCache) {
+                memoryCache.size
+            }
             val totalSizeBytes = getCacheSizeBytes()
             val totalSizeMB = totalSizeBytes / (1024.0 * 1024.0)
 

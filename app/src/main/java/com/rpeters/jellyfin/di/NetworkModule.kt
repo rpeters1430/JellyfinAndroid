@@ -125,8 +125,11 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideJellyfinCache(@ApplicationContext context: Context): JellyfinCache {
-        return JellyfinCache(context)
+    fun provideJellyfinCache(
+        @ApplicationContext context: Context,
+        @ApplicationScope applicationScope: kotlinx.coroutines.CoroutineScope,
+    ): JellyfinCache {
+        return JellyfinCache(context, applicationScope)
     }
 
     @Provides

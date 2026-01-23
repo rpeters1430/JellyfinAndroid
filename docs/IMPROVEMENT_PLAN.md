@@ -1,26 +1,31 @@
 # Jellyfin Android Improvement Plan
 
-Date: 2026-01-14
-Scope: app/src/main/java, key logs in Pixel-9-Pro-XL-Android-16_2026-01-14_200046.logcat, existing docs/archive plan
+**Last Updated**: January 23, 2026
+**Scope**: app/src/main/java, key logs in Pixel-9-Pro-XL-Android-16_2026-01-14_200046.logcat, existing docs/archive plan
+
+> **Note**: For user-facing bugs with workarounds, see [KNOWN_ISSUES.md](../KNOWN_ISSUES.md). This document focuses on technical debt and code quality.
 
 This plan focuses on concrete issues found during a code read-through, plus targeted performance and UX work.
 
-## Priority 0 (Blocking/Functional Bugs)
+---
 
-1) Offline downloads can hang indefinitely when URLs are stored encrypted.
-- Evidence: getDecryptedUrl collects an infinite DataStore Flow and never returns.
-- File: app/src/main/java/com/rpeters/jellyfin/data/offline/OfflineDownloadManager.kt:198
-- Plan:
-  - Replace collect with first() or firstOrNull() to read a single value.
-  - Add a small timeout and fail fast with a user-visible error.
+## Recently Completed ✅
 
-2) Offline download IDs returned to callers are not the IDs stored in state.
-- Evidence: startDownload returns a placeholder UUID because the real ID is assigned asynchronously.
-- File: app/src/main/java/com/rpeters/jellyfin/data/offline/OfflineDownloadManager.kt:72
-- Plan:
-  - Make startDownload suspend and return the actual ID.
-  - Alternatively return a Flow/Deferred and update callers to await the ID.
-  - Add unit tests verifying the ID used for progress and delete matches the returned ID.
+**Completion Date**: January 2026
+
+1) **Offline downloads hanging bug - FIXED**
+- Issue: getDecryptedUrl was collecting an infinite DataStore Flow and never returning
+- File: app/src/main/java/com/rpeters/jellyfin/data/offline/OfflineDownloadManager.kt:207
+- Solution: Replaced collect with first() and added timeout to read single value
+- Status: ✅ Verified fixed
+
+2) **Offline download ID mismatch - FIXED**
+- Issue: startDownload returned placeholder UUID instead of actual download ID stored in state
+- File: app/src/main/java/com/rpeters/jellyfin/data/offline/OfflineDownloadManager.kt:84-94
+- Solution: Made startDownload suspend and return actual ID asynchronously
+- Status: ✅ Verified fixed with unit tests
+
+---
 
 ## High Priority (Crash/Corruption Risk)
 
@@ -86,28 +91,28 @@ This plan focuses on concrete issues found during a code read-through, plus targ
   - Add tests for OfflineDownloadManager ID handling and encrypted URL retrieval.
   - Add a mock WebServer test for auth refresh behavior in JellyfinAuthInterceptor.
 
-## Suggested Implementation Order
+## Suggested Implementation Priority Order
 
-1) Fix OfflineDownloadManager blocking + ID mismatch (critical).
-2) Stabilize JellyfinCache initialization/thread-safety.
-3) Replace GlobalScope with ApplicationScope (cache + image).
-4) Implement Auto quality selection for video player.
-5) Refactor VideoPlayerScreen/MediaCards for composition stability.
-6) Improve auth retry behavior and add tests.
+1) ✅ ~~Fix OfflineDownloadManager blocking + ID mismatch~~ - **COMPLETED** (Jan 2026)
+2) Stabilize JellyfinCache initialization/thread-safety (Priority 3-4)
+3) Replace GlobalScope with ApplicationScope (Priority 5)
+4) Implement Auto quality selection for video player (Priority 6)
+5) Refactor VideoPlayerScreen/MediaCards for composition stability (Priority 7)
+6) Improve auth retry behavior and add tests (Priority 8)
 
-## Progress Update (2026-01-14)
+## Progress Update (2026-01-23)
 
-Completed
-- Offline downloads: `startDownload` is now suspend/returns real IDs, and encrypted URL retrieval uses `first()` with timeout to prevent hanging.
+### Completed (January 2026)
+- ✅ **Offline downloads**: `startDownload` is now suspend/returns real IDs, and encrypted URL retrieval uses `first()` with timeout to prevent hanging.
   - Files: app/src/main/java/com/rpeters/jellyfin/data/offline/OfflineDownloadManager.kt,
     app/src/main/java/com/rpeters/jellyfin/ui/downloads/DownloadsViewModel.kt
-- Refactor: Split Movies/TV Shows/Stuff screens into smaller content/top-bar files for readability and composition stability.
+- ✅ **Refactor**: Split Movies/TV Shows/Stuff screens into smaller content/top-bar files for readability and composition stability.
   - Files: app/src/main/java/com/rpeters/jellyfin/ui/screens/MoviesContent.kt,
     app/src/main/java/com/rpeters/jellyfin/ui/screens/MoviesTopBar.kt,
     app/src/main/java/com/rpeters/jellyfin/ui/screens/TVShowsContent.kt,
     app/src/main/java/com/rpeters/jellyfin/ui/screens/TVShowsTopBar.kt,
     app/src/main/java/com/rpeters/jellyfin/ui/screens/StuffContent.kt
-- Warning cleanup sweep in refactor and related areas (safe-call removal, redundant casts, deprecated Cast seek).
+- ✅ **Warning cleanup**: Cleanup sweep in refactor and related areas (safe-call removal, redundant casts, deprecated Cast seek).
   - Notable files: app/src/main/java/com/rpeters/jellyfin/ui/screens/HomeScreen.kt,
     app/src/main/java/com/rpeters/jellyfin/ui/screens/HomeVideosScreen.kt,
     app/src/main/java/com/rpeters/jellyfin/ui/screens/home/HomeCarousel.kt,
@@ -117,13 +122,27 @@ Completed
     app/src/main/java/com/rpeters/jellyfin/ui/viewmodel/ServerConnectionViewModel.kt,
     app/src/main/java/com/rpeters/jellyfin/ui/viewmodel/common/SharedAppStateManager.kt
 
-Pending
-- Cache initialization/thread-safety fixes (JellyfinCache).
-- Replace GlobalScope usage with ApplicationScope.
-- Auto quality selection in video player.
-- Auth retry non-blocking improvements.
+### Pending (Next Phase)
+- 🔜 Cache initialization/thread-safety fixes (JellyfinCache) - Priority 3-4
+- 🔜 Replace GlobalScope usage with ApplicationScope - Priority 5
+- 🔜 Auto quality selection in video player - Priority 6
+- 🔜 Auth retry non-blocking improvements - Priority 8
+- 🔜 Large composable refactoring (VideoPlayerScreen, HomeScreen) - Priority 7
+- 🔜 Testing gaps for cache and auth - Priority 10
 
 ## Notes
 
 - The previous archived plan (docs/archive/IMPROVEMENT_PLAN_DEC30_2025.md) contains older issues that appear resolved or refactored.
 - Re-run lint and targeted tests after the fixes above.
+- This document tracks technical debt and code quality improvements. For user-facing bugs, see [KNOWN_ISSUES.md](../KNOWN_ISSUES.md).
+
+---
+
+## Related Documentation
+
+- **[KNOWN_ISSUES.md](../KNOWN_ISSUES.md)** - User-facing bugs with workarounds and fix status
+- **[ROADMAP.md](../ROADMAP.md)** - Future features and development roadmap
+- **[UPGRADE_PATH.md](../UPGRADE_PATH.md)** - Dependency upgrade strategy
+- **[CURRENT_STATUS.md](../CURRENT_STATUS.md)** - Current feature status and platform support
+- **[CLAUDE.md](../CLAUDE.md)** - Development guidelines and architecture details
+- **[TESTING_GUIDE.md](TESTING_GUIDE.md)** - Testing patterns and best practices
