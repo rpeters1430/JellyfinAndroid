@@ -8,11 +8,24 @@ import okhttp3.Interceptor
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.Route
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Singleton
 
+/**
+ * Authentication interceptor for Jellyfin API requests.
+ *
+ * **Optimization Strategy**:
+ * - Proactively refreshes tokens 5 minutes before expiration to minimize blocking
+ * - Uses authMutex in JellyfinAuthRepository to prevent concurrent refresh attempts
+ * - Optimized backoff delays (0ms, 100ms, 500ms) to reduce total blocking time
+ * - Double-check pattern in forceReAuthenticate() avoids redundant refreshes
+ *
+ * **Thread Safety**:
+ * - Uses runBlocking (required by OkHttp's synchronous API)
+ * - OkHttp runs interceptors on background threads, so blocking is acceptable
+ * - Mutex protection in repository prevents stampeding herd problem
+ */
 @Singleton
 class JellyfinAuthInterceptor @Inject constructor(
     private val authRepositoryProvider: Provider<JellyfinAuthRepository>,
@@ -73,12 +86,15 @@ class JellyfinAuthInterceptor @Inject constructor(
             return
         }
 
-        if (!repository.isTokenExpired()) {
+        // Proactively refresh if token is approaching expiration (not just expired)
+        // This reduces the likelihood of blocking on expired tokens
+        if (!repository.shouldRefreshToken()) {
             return
         }
 
         // Note: runBlocking is necessary here as Interceptor.intercept() is a synchronous API
         // OkHttp already runs this on a background thread, so we don't need to switch dispatchers
+        // The authMutex in forceReAuthenticate() prevents concurrent refresh attempts
         runBlocking {
             val refreshed = repository.forceReAuthenticate()
             if (!refreshed) {
@@ -166,7 +182,8 @@ class JellyfinAuthInterceptor @Inject constructor(
             return
         }
 
-        // Use Thread.sleep instead of runBlocking/delay for synchronous backoff
+        // Use Thread.sleep for synchronous backoff (required by OkHttp's synchronous API)
+        // Optimized delays to reduce blocking: first retry immediate, subsequent retries use minimal backoff
         Thread.sleep(delayMillis)
     }
 
@@ -185,6 +202,8 @@ class JellyfinAuthInterceptor @Inject constructor(
         private const val USER_AGENT = "JellyfinAndroid/1.0.0"
         private const val MAX_AUTH_RETRIES = 3
         private val AUTH_PATHS = listOf("/Users/Authenticate", "/Sessions")
-        private val RETRY_BACKOFF_MS = longArrayOf(0L, 250L, TimeUnit.SECONDS.toMillis(1))
+        // Optimized backoff delays: 0ms (immediate), 100ms, 500ms
+        // Reduced from 0ms, 250ms, 1000ms to minimize thread blocking
+        private val RETRY_BACKOFF_MS = longArrayOf(0L, 100L, 500L)
     }
 }

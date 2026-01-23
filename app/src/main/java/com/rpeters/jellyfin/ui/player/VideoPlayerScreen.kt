@@ -111,7 +111,7 @@ fun VideoPlayerScreen(
     playerState: VideoPlayerState,
     onPlayPause: () -> Unit,
     onSeek: (Long) -> Unit,
-    onQualityChange: (VideoQuality) -> Unit,
+    onQualityChange: (VideoQuality?) -> Unit,
     onPlaybackSpeedChange: (Float) -> Unit,
     onAspectRatioChange: (AspectRatioMode) -> Unit,
     onCastClick: () -> Unit,
@@ -961,7 +961,7 @@ private fun VideoControlsOverlay(
     playerState: VideoPlayerState,
     onPlayPause: () -> Unit,
     onSeek: (Long) -> Unit,
-    onQualityChange: (VideoQuality) -> Unit,
+    onQualityChange: (VideoQuality?) -> Unit,
     onPlaybackSpeedChange: (Float) -> Unit,
     onAspectRatioChange: (AspectRatioMode) -> Unit,
     onCastClick: () -> Unit,
@@ -1308,7 +1308,7 @@ private fun VideoControlsOverlay(
                                 }
                             },
                             onClick = {
-                                // TODO: Implement auto quality selection
+                                onQualityChange(null) // Null means "Auto" - adaptive bitrate streaming
                                 onShowQualityMenu(false)
                             },
                         )

@@ -54,6 +54,7 @@ class JellyfinAuthRepository @Inject constructor(
     companion object {
         private const val TAG = "JellyfinAuthRepository"
         private const val TOKEN_VALIDITY_DURATION_MS = 50 * 60 * 1000L // 50 minutes (10 min buffer)
+        private const val TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000L // Refresh 5 minutes before expiration
     }
 
     // TokenProvider implementation
@@ -192,6 +193,22 @@ class JellyfinAuthRepository @Inject constructor(
         val currentTime = timeProvider()
 
         return (currentTime - loginTimestamp) > TOKEN_VALIDITY_DURATION_MS
+    }
+
+    /**
+     * Checks if the token is approaching expiration and should be refreshed proactively.
+     * Returns true if the token is within the refresh threshold (5 minutes before expiration).
+     * This allows the interceptor to refresh tokens before they expire, reducing blocking.
+     */
+    fun shouldRefreshToken(): Boolean {
+        val server = _currentServer.value ?: return false
+        val loginTimestamp = server.loginTimestamp ?: return false
+        val currentTime = timeProvider()
+
+        val tokenAge = currentTime - loginTimestamp
+        val refreshThreshold = TOKEN_VALIDITY_DURATION_MS - TOKEN_REFRESH_BUFFER_MS
+
+        return tokenAge >= refreshThreshold
     }
 
     @VisibleForTesting

@@ -1,6 +1,8 @@
 # Jellyfin Android - Roadmap
 
-**Last Updated**: January 13, 2026
+**Last Updated**: January 23, 2026
+
+> **Quick Links**: [Feature Status](CURRENT_STATUS.md) | [Known Issues](KNOWN_ISSUES.md) | [Upgrade Path](UPGRADE_PATH.md)
 
 A clear, actionable improvement plan for the Jellyfin Android client.
 
@@ -26,6 +28,7 @@ A clear, actionable improvement plan for the Jellyfin Android client.
 ### Verified Complete
 - **Picture-in-Picture** - Full implementation with remote actions (play/pause, skip ±30s)
 - **Chromecast** - Full casting with seek bar, volume control, position tracking
+- **Auto-Play Next Episode** - Automatic continuation with countdown UI (added Jan 23, 2026)
 
 ### Not Implemented
 - Live TV & DVR
@@ -176,6 +179,8 @@ Target: 70%+ for ViewModels and Repositories
 ---
 
 ## Known Limitations
+
+> **Note**: For detailed bug tracking with workarounds, see [KNOWN_ISSUES.md](KNOWN_ISSUES.md)
 
 ### Material 3 Components
 - **Carousel**: Using custom implementation (official M3 Carousel disabled)

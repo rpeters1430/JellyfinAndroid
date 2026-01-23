@@ -11,8 +11,7 @@ import coil3.util.DebugLogger
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.utils.DevicePerformanceProfile.Companion.detect
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okio.Path.Companion.toOkioPath
 import java.io.File
@@ -25,22 +24,6 @@ object ImageLoadingOptimizer {
     private const val TAG = "ImageLoadingOptimizer"
     private const val BYTES_PER_MEGABYTE = 1024L * 1024L
 
-    fun initializeCoil(context: Context, okHttpClient: OkHttpClient) {
-        // Using GlobalScope for app-wide initialization that should complete independently
-        // This is called once at app startup and must complete even if the caller is destroyed
-        @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
-        GlobalScope.launch(Dispatchers.IO) {
-            runCatching {
-                val performanceProfile = detect(context)
-                val imageLoader = buildImageLoader(context, okHttpClient, performanceProfile)
-                SingletonImageLoader.setSafe { imageLoader }
-                SecureLogger.d(TAG, "Coil image loader initialized successfully")
-            }.onFailure { throwable ->
-                SecureLogger.e(TAG, "Failed to initialize Coil image loader", throwable)
-            }
-        }
-    }
-
     // Coil 3.x: Cache directory is now handled by resolve()
     // This function is no longer needed but kept for backward compatibility
     private fun getCacheDirectory(context: Context): File {
@@ -49,7 +32,7 @@ object ImageLoadingOptimizer {
         }
     }
 
-    fun clearImageCache(context: Context) {
+    suspend fun clearImageCache(context: Context) {
         clearImageCache(SingletonImageLoader.get(context))
     }
 
@@ -109,14 +92,10 @@ object ImageLoadingOptimizer {
     }
 
     @VisibleForTesting
-    internal fun clearImageCache(
+    internal suspend fun clearImageCache(
         imageLoader: ImageLoader,
-        dispatcher: kotlin.coroutines.CoroutineContext = Dispatchers.IO,
     ) {
-        // Using GlobalScope for fire-and-forget cache clearing operation
-        // This operation should complete even if the caller is destroyed
-        @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
-        GlobalScope.launch(dispatcher) {
+        withContext(Dispatchers.IO) {
             runCatching {
                 imageLoader.memoryCache?.clear()
                 imageLoader.diskCache?.clear()
