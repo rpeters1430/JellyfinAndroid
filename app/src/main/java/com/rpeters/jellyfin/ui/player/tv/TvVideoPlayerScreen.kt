@@ -66,10 +66,13 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+import com.rpeters.jellyfin.data.preferences.SubtitleAppearancePreferences
 import com.rpeters.jellyfin.ui.player.TrackInfo
 import com.rpeters.jellyfin.ui.player.VideoPlayerState
 import com.rpeters.jellyfin.ui.player.VideoPlayerViewModel
+import com.rpeters.jellyfin.ui.player.applySubtitleAppearance
 import com.rpeters.jellyfin.ui.tv.tvKeyboardHandler
+import com.rpeters.jellyfin.ui.viewmodel.SubtitleAppearancePreferencesViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.tv.material3.Button as TvButton
@@ -91,6 +94,7 @@ fun TvVideoPlayerRoute(
     onExit: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: VideoPlayerViewModel = hiltViewModel(),
+    subtitlePreferencesViewModel: SubtitleAppearancePreferencesViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val activity = remember(context) { context as? Activity }
@@ -100,6 +104,7 @@ fun TvVideoPlayerRoute(
     }
 
     val playerState by viewModel.playerState.collectAsStateWithLifecycle()
+    val subtitleAppearance by subtitlePreferencesViewModel.preferences.collectAsStateWithLifecycle()
     val pipState = rememberPictureInPictureState(supportsPip = supportsPip) {
         if (supportsPip && activity != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val params = PictureInPictureParams.Builder()
@@ -145,6 +150,7 @@ fun TvVideoPlayerRoute(
         modifier = modifier,
         state = playerState,
         exoPlayer = viewModel.exoPlayer,
+        subtitleAppearance = subtitleAppearance,
         pipState = pipState,
         onBack = onExit,
         onPlayPause = viewModel::togglePlayPause,
@@ -162,6 +168,7 @@ fun TvVideoPlayerRoute(
 fun TvVideoPlayerScreen(
     state: VideoPlayerState,
     exoPlayer: ExoPlayer?,
+    subtitleAppearance: SubtitleAppearancePreferences,
     pipState: TvPictureInPictureState,
     onBack: () -> Unit,
     onPlayPause: () -> Unit,
@@ -277,7 +284,10 @@ fun TvVideoPlayerScreen(
                     player = exoPlayer
                 }
             },
-            update = { it.player = exoPlayer },
+            update = { playerView ->
+                playerView.player = exoPlayer
+                applySubtitleAppearance(playerView, subtitleAppearance)
+            },
         )
 
         AnimatedVisibility(
@@ -691,6 +701,7 @@ private fun TvVideoPlayerScreenPreview() {
     TvVideoPlayerScreen(
         state = sampleState,
         exoPlayer = null,
+        subtitleAppearance = SubtitleAppearancePreferences.DEFAULT,
         pipState = TvPictureInPictureState(isSupported = true) {},
         onBack = {},
         onPlayPause = {},
