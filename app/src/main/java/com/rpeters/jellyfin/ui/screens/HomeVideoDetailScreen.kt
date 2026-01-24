@@ -21,7 +21,6 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -224,7 +223,7 @@ fun HomeVideoDetailScreen(
                 text = {
                     Text(
                         "Are you sure you want to delete \"${item.name}\"? " +
-                        "This action cannot be undone."
+                            "This action cannot be undone.",
                     )
                 },
                 confirmButton = {
@@ -232,10 +231,15 @@ fun HomeVideoDetailScreen(
                         onClick = {
                             showDeleteConfirmation = false
                             onDeleteClick(item)
+                            android.widget.Toast.makeText(
+                                context,
+                                "Delete requested. You may need to refresh to confirm removal.",
+                                android.widget.Toast.LENGTH_SHORT,
+                            ).show()
                         },
                         colors = ButtonDefaults.textButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
-                        )
+                            contentColor = MaterialTheme.colorScheme.error,
+                        ),
                     ) {
                         Text("Delete")
                     }
@@ -244,7 +248,7 @@ fun HomeVideoDetailScreen(
                     TextButton(onClick = { showDeleteConfirmation = false }) {
                         Text("Cancel")
                     }
-                }
+                },
             )
         }
     }

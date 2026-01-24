@@ -28,13 +28,13 @@ import androidx.navigation.navArgument
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
 import com.rpeters.jellyfin.ui.screens.AlbumDetailScreen
 import com.rpeters.jellyfin.ui.screens.ArtistDetailScreen
 import com.rpeters.jellyfin.ui.screens.HomeVideoDetailScreen
 import com.rpeters.jellyfin.ui.screens.ItemDetailViewModel
 import com.rpeters.jellyfin.ui.screens.MovieDetailScreen
 import com.rpeters.jellyfin.ui.screens.TVEpisodeDetailScreen
-import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
 import com.rpeters.jellyfin.ui.utils.MediaPlayerUtils
 import com.rpeters.jellyfin.ui.utils.ShareUtils
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
@@ -299,6 +299,23 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 },
                 onFavoriteClick = { mainViewModel.toggleFavorite(resolvedMovie) },
                 onShareClick = { ShareUtils.shareMedia(navController.context, resolvedMovie) },
+                onDeleteClick = { movieItem ->
+                    mainViewModel.deleteItem(movieItem) { success, message ->
+                        val toastMessage = if (success) {
+                            "Item deleted successfully"
+                        } else {
+                            message ?: "Failed to delete item"
+                        }
+                        android.widget.Toast.makeText(
+                            navController.context,
+                            toastMessage,
+                            android.widget.Toast.LENGTH_SHORT,
+                        ).show()
+                        if (success) {
+                            navController.popBackStack()
+                        }
+                    }
+                },
                 onRelatedMovieClick = { relatedMovieId ->
                     navController.navigate(Screen.MovieDetail.createRoute(relatedMovieId))
                 },
