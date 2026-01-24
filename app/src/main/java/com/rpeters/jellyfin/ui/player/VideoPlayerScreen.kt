@@ -96,6 +96,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import com.rpeters.jellyfin.data.preferences.SubtitleAppearancePreferences
 import com.rpeters.jellyfin.data.preferences.ThemePreferences
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.image.rememberScreenWidthHeight
@@ -109,6 +110,7 @@ import kotlin.math.roundToInt
 @Composable
 fun VideoPlayerScreen(
     playerState: VideoPlayerState,
+    subtitleAppearance: SubtitleAppearancePreferences,
     onPlayPause: () -> Unit,
     onSeek: (Long) -> Unit,
     onQualityChange: (VideoQuality?) -> Unit,
@@ -151,6 +153,7 @@ fun VideoPlayerScreen(
         com.rpeters.jellyfin.ui.player.tv.TvVideoPlayerScreen(
             state = playerState,
             exoPlayer = exoPlayer,
+            subtitleAppearance = subtitleAppearance,
             pipState = pipState,
             onBack = {
                 // Handle back navigation - finish activity
@@ -336,6 +339,7 @@ fun VideoPlayerScreen(
                     }
                 }
                 playerView.resizeMode = playerState.selectedAspectRatio.resizeMode
+                applySubtitleAppearance(playerView, subtitleAppearance)
             },
             modifier = Modifier
                 .fillMaxSize()
