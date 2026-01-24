@@ -29,10 +29,12 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.DeviceCapabilities
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
+import com.rpeters.jellyfin.ui.viewmodel.SubtitleAppearancePreferencesViewModel
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.NonCancellable
@@ -45,6 +47,7 @@ import javax.inject.Inject
 class VideoPlayerActivity : FragmentActivity() {
 
     private val playerViewModel: VideoPlayerViewModel by viewModels()
+    private val subtitlePreferencesViewModel: SubtitleAppearancePreferencesViewModel by viewModels()
     private var isInPipMode = false
     private var currentItemName: String = ""
     private var pipSourceRect: Rect? = null
@@ -183,6 +186,7 @@ class VideoPlayerActivity : FragmentActivity() {
                         color = MaterialTheme.colorScheme.background,
                     ) {
                         val playerState by playerViewModel.playerState.collectAsState()
+                        val subtitleAppearance by subtitlePreferencesViewModel.preferences.collectAsStateWithLifecycle()
 
                         // Auto-finish when video ends without next episode
                         androidx.compose.runtime.LaunchedEffect(playerState.hasEnded, playerState.nextEpisode) {
@@ -195,6 +199,7 @@ class VideoPlayerActivity : FragmentActivity() {
 
                         VideoPlayerScreen(
                             playerState = playerState,
+                            subtitleAppearance = subtitleAppearance,
                             onPlayPause = playerViewModel::togglePlayPause,
                             onSeek = playerViewModel::seekTo,
                             onQualityChange = playerViewModel::changeQuality,

@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -115,6 +116,7 @@ fun SettingsScreen(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
     onManagePinsClick: () -> Unit = {},
+    onSubtitleSettingsClick: () -> Unit = {},
     libraryActionsPreferencesViewModel: LibraryActionsPreferencesViewModel = hiltViewModel(),
     credentialSecurityPreferencesViewModel: CredentialSecurityPreferencesViewModel = hiltViewModel(),
 ) {
@@ -169,6 +171,15 @@ fun SettingsScreen(
             item {
                 SettingsHeader(
                     titleStyle = MaterialTheme.typography.headlineSmall,
+                )
+            }
+
+            item {
+                ExpressiveMediaListItem(
+                    title = stringResource(id = R.string.settings_subtitles_title),
+                    subtitle = stringResource(id = R.string.settings_subtitles_description),
+                    leadingIcon = Icons.Default.ClosedCaption,
+                    onClick = onSubtitleSettingsClick,
                 )
             }
 
