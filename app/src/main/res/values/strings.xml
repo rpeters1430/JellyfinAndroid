@@ -307,6 +307,22 @@
     <string name="settings_playback_subtitles">Subtitle language, style, and default on/off.</string>
     <string name="settings_playback_autoplay">Autoplay next episode and auto-skip credits/recaps.</string>
     <string name="settings_playback_skip_intro">Intro/credits skip length controls with fallback when metadata is missing.</string>
+    <string name="settings_subtitles_title">Subtitle appearance</string>
+    <string name="settings_subtitles_description">Adjust subtitle background, size, and font.</string>
+    <string name="settings_subtitles_text_size">Text size</string>
+    <string name="settings_subtitles_text_size_small">Small</string>
+    <string name="settings_subtitles_text_size_medium">Medium</string>
+    <string name="settings_subtitles_text_size_large">Large</string>
+    <string name="settings_subtitles_text_size_extra_large">Extra large</string>
+    <string name="settings_subtitles_font">Font</string>
+    <string name="settings_subtitles_font_default">Default</string>
+    <string name="settings_subtitles_font_sans_serif">Sans serif</string>
+    <string name="settings_subtitles_font_serif">Serif</string>
+    <string name="settings_subtitles_font_monospace">Monospace</string>
+    <string name="settings_subtitles_background">Background</string>
+    <string name="settings_subtitles_background_none">None</string>
+    <string name="settings_subtitles_background_black">Black</string>
+    <string name="settings_subtitles_background_semi">Semi-transparent</string>
 
     <string name="settings_downloads_title">Downloads &amp; storage</string>
     <string name="settings_downloads_description">Manage offline content to balance quality and free space.</string>

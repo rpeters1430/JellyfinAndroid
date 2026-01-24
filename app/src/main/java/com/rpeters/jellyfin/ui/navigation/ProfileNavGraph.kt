@@ -14,6 +14,7 @@ import com.rpeters.jellyfin.ui.screens.ProfileScreen
 import com.rpeters.jellyfin.ui.screens.SearchScreen
 import com.rpeters.jellyfin.ui.screens.SettingsScreen
 import com.rpeters.jellyfin.ui.screens.settings.PinningSettingsScreen
+import com.rpeters.jellyfin.ui.screens.settings.SubtitleSettingsScreen
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 
 /**
@@ -91,12 +92,19 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
         SettingsScreen(
             onBackClick = { navController.popBackStack() },
             onManagePinsClick = { navController.navigate(Screen.PinSettings.route) },
+            onSubtitleSettingsClick = { navController.navigate(Screen.SubtitleSettings.route) },
         )
     }
 
     composable(Screen.PinSettings.route) {
         PinningSettingsScreen(
             onBackClick = { navController.popBackStack() },
+        )
+    }
+
+    composable(Screen.SubtitleSettings.route) {
+        SubtitleSettingsScreen(
+            onNavigateBack = { navController.popBackStack() },
         )
     }
 }
