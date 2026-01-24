@@ -232,6 +232,11 @@ fun HomeVideoDetailScreen(
                         onClick = {
                             showDeleteConfirmation = false
                             onDeleteClick(item)
+                            android.widget.Toast.makeText(
+                                context,
+                                "Delete requested. You may need to refresh to confirm removal.",
+                                android.widget.Toast.LENGTH_SHORT,
+                            ).show()
                         },
                         colors = ButtonDefaults.textButtonColors(
                             contentColor = MaterialTheme.colorScheme.error
