@@ -299,6 +299,23 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 },
                 onFavoriteClick = { mainViewModel.toggleFavorite(resolvedMovie) },
                 onShareClick = { ShareUtils.shareMedia(navController.context, resolvedMovie) },
+                onDeleteClick = { movieItem ->
+                    mainViewModel.deleteItem(movieItem) { success, message ->
+                        val toastMessage = if (success) {
+                            "Item deleted successfully"
+                        } else {
+                            message ?: "Failed to delete item"
+                        }
+                        android.widget.Toast.makeText(
+                            navController.context,
+                            toastMessage,
+                            android.widget.Toast.LENGTH_SHORT,
+                        ).show()
+                        if (success) {
+                            navController.popBackStack()
+                        }
+                    }
+                },
                 onRelatedMovieClick = { relatedMovieId ->
                     navController.navigate(Screen.MovieDetail.createRoute(relatedMovieId))
                 },
