@@ -110,6 +110,7 @@ fun MovieDetailScreen(
     var isFavorite by remember { mutableStateOf(movie.userData?.isFavorite == true) }
     var isWatched by remember { mutableStateOf(movie.userData?.played == true) }
     var showMoreOptions by remember { mutableStateOf(false) }
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -344,7 +345,7 @@ fun MovieDetailScreen(
                             ActionButton(
                                 icon = Icons.Default.Delete,
                                 label = "Delete",
-                                onClick = { onDeleteClick(movie) },
+                                onClick = { showDeleteConfirmation = true },
                                 modifier = Modifier.weight(1f),
                             )
                         }
@@ -549,7 +550,7 @@ fun MovieDetailScreen(
                     DropdownMenuItem(
                         text = { Text("Delete") },
                         onClick = {
-                            onDeleteClick(movie)
+                            showDeleteConfirmation = true
                             showMoreOptions = false
                         },
                         leadingIcon = {
@@ -562,6 +563,37 @@ fun MovieDetailScreen(
                 }
             }
         }
+    }
+
+    if (showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmation = false },
+            title = { Text("Delete Movie?") },
+            text = {
+                Text(
+                    "Are you sure you want to delete \"${movie.name}\"? " +
+                        "This action cannot be undone.",
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteConfirmation = false
+                        onDeleteClick(movie)
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error,
+                    ),
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirmation = false }) {
+                    Text("Cancel")
+                }
+            },
+        )
     }
 }
 
