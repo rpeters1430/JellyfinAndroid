@@ -8,12 +8,16 @@ import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinUserRepository
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.jellyfin.sdk.api.client.exception.InvalidStatusException
+import retrofit2.HttpException
+import java.io.IOException
 import javax.inject.Inject
 
 data class AuthenticationState(
@@ -85,8 +89,19 @@ class AuthenticationViewModel @Inject constructor(
                     }
                     return@withContext false
                 }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: InvalidStatusException) {
+                SecureLogger.e("AuthenticationViewModel", "ensureValidTokenWithWait: Jellyfin API error during authentication", e)
+                return@withContext false
+            } catch (e: HttpException) {
+                SecureLogger.e("AuthenticationViewModel", "ensureValidTokenWithWait: HTTP error during authentication", e)
+                return@withContext false
+            } catch (e: IOException) {
+                SecureLogger.e("AuthenticationViewModel", "ensureValidTokenWithWait: Network error during authentication", e)
+                return@withContext false
             } catch (e: Exception) {
-                SecureLogger.e("AuthenticationViewModel", "ensureValidTokenWithWait: Exception during authentication", e)
+                SecureLogger.e("AuthenticationViewModel", "ensureValidTokenWithWait: Unexpected error during authentication", e)
                 return@withContext false
             }
         }
@@ -115,8 +130,31 @@ class AuthenticationViewModel @Inject constructor(
                 if (BuildConfig.DEBUG) {
                     SecureLogger.d("AuthenticationViewModel", "Authentication refresh completed: $success")
                 }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: InvalidStatusException) {
+                SecureLogger.e("AuthenticationViewModel", "Authentication refresh failed: Jellyfin API error", e)
+                _authState.value = _authState.value.copy(
+                    isAuthenticating = false,
+                    isAuthenticated = false,
+                    errorMessage = "Failed to refresh authentication: Server error",
+                )
+            } catch (e: HttpException) {
+                SecureLogger.e("AuthenticationViewModel", "Authentication refresh failed: HTTP error", e)
+                _authState.value = _authState.value.copy(
+                    isAuthenticating = false,
+                    isAuthenticated = false,
+                    errorMessage = "Failed to refresh authentication: Network error",
+                )
+            } catch (e: IOException) {
+                SecureLogger.e("AuthenticationViewModel", "Authentication refresh failed: Network error", e)
+                _authState.value = _authState.value.copy(
+                    isAuthenticating = false,
+                    isAuthenticated = false,
+                    errorMessage = "Failed to refresh authentication: Connection error",
+                )
             } catch (e: Exception) {
-                SecureLogger.e("AuthenticationViewModel", "Authentication refresh failed", e)
+                SecureLogger.e("AuthenticationViewModel", "Authentication refresh failed: Unexpected error", e)
                 _authState.value = _authState.value.copy(
                     isAuthenticating = false,
                     isAuthenticated = false,
@@ -144,8 +182,25 @@ class AuthenticationViewModel @Inject constructor(
                 if (BuildConfig.DEBUG) {
                     SecureLogger.d("AuthenticationViewModel", "User logged out successfully")
                 }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: InvalidStatusException) {
+                SecureLogger.e("AuthenticationViewModel", "Error during logout: Jellyfin API error", e)
+                _authState.value = _authState.value.copy(
+                    errorMessage = "Logout failed: Server error",
+                )
+            } catch (e: HttpException) {
+                SecureLogger.e("AuthenticationViewModel", "Error during logout: HTTP error", e)
+                _authState.value = _authState.value.copy(
+                    errorMessage = "Logout failed: Network error",
+                )
+            } catch (e: IOException) {
+                SecureLogger.e("AuthenticationViewModel", "Error during logout: Network error", e)
+                _authState.value = _authState.value.copy(
+                    errorMessage = "Logout failed: Connection error",
+                )
             } catch (e: Exception) {
-                SecureLogger.e("AuthenticationViewModel", "Error during logout", e)
+                SecureLogger.e("AuthenticationViewModel", "Error during logout: Unexpected error", e)
                 _authState.value = _authState.value.copy(
                     errorMessage = "Logout failed: ${e.message}",
                 )
