@@ -15,6 +15,7 @@ import androidx.core.net.toUri
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.storage.MediaStoreSaver
+import kotlinx.coroutines.CancellationException
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import java.io.IOException
@@ -85,6 +86,11 @@ object MediaDownloadManager {
                 Log.i(TAG, "Started download for ${item.name} with ID: $downloadId")
             }
             downloadId
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "I/O error starting download for ${item.name}", e)
+            null
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start download for ${item.name}: ${e.message}", e)
             null
@@ -108,6 +114,11 @@ object MediaDownloadManager {
             val subPath = generateSubPath(item, context.getString(R.string.unknown))
 
             queryDownloadEntry(context, fileName, subPath) != null
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "I/O error checking download status for ${item.name}", e)
+            false
         } catch (e: Exception) {
             Log.e(TAG, "Error checking download status for ${item.name}: ${e.message}", e)
             false
@@ -131,6 +142,11 @@ object MediaDownloadManager {
             val subPath = generateSubPath(item, context.getString(R.string.unknown))
 
             queryDownloadEntry(context, fileName, subPath)?.uri?.toString()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "I/O error getting local file path for ${item.name}", e)
+            null
         } catch (e: Exception) {
             Log.e(TAG, "Error getting local file path for ${item.name}: ${e.message}", e)
             null
@@ -166,6 +182,11 @@ object MediaDownloadManager {
                 }
                 true
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "I/O error deleting download for ${item.name}", e)
+            false
         } catch (e: Exception) {
             Log.e(TAG, "Error deleting download for ${item.name}: ${e.message}", e)
             false
@@ -208,6 +229,11 @@ object MediaDownloadManager {
                     null
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "I/O error getting download status for ID $downloadId", e)
+            null
         } catch (e: Exception) {
             Log.e(TAG, "Error getting download status for ID $downloadId: ${e.message}", e)
             null
@@ -223,6 +249,11 @@ object MediaDownloadManager {
     fun getTotalDownloadSize(context: Context): Long {
         return try {
             sumMediaStoreDownloads(context)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "I/O error calculating total download size", e)
+            0L
         } catch (e: Exception) {
             Log.e(TAG, "Error calculating total download size: ${e.message}", e)
             0L
@@ -238,6 +269,11 @@ object MediaDownloadManager {
     fun clearAllDownloads(context: Context): Boolean {
         return try {
             deleteMediaStoreDownloads(context)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "I/O error clearing all downloads", e)
+            false
         } catch (e: Exception) {
             Log.e(TAG, "Error clearing all downloads: ${e.message}", e)
             false
