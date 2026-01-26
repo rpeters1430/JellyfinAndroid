@@ -9,6 +9,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.R
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -146,6 +147,8 @@ class TrackSelectionManager(
             if (BuildConfig.DEBUG) {
                 Log.d("TrackSelectionManager", "Selected audio track: $trackId")
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e("TrackSelectionManager", "Failed to select audio track: $trackId", e)
         }
@@ -198,6 +201,8 @@ class TrackSelectionManager(
             }
 
             trackSelector.setParameters(parametersBuilder.build())
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e("TrackSelectionManager", "Failed to select subtitle track: $trackId", e)
         }

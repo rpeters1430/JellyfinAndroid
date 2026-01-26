@@ -12,6 +12,7 @@ import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
 import com.rpeters.jellyfin.ui.player.PlaybackProgressManager
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -244,6 +245,8 @@ class AudioServiceConnection @Inject constructor(
             try {
                 controller.removeListener(controllerListener)
                 controller.release()
+            } catch (e: CancellationException) {
+                throw e
             } catch (exception: Exception) {
                 Log.w(TAG, "Error releasing MediaController", exception)
             }
@@ -355,6 +358,8 @@ private suspend fun <T> ListenableFuture<T>.await(context: Context): T =
             {
                 try {
                     continuation.resume(get())
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (exception: Exception) {
                     continuation.resumeWithException(exception)
                 }
