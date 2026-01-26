@@ -1074,8 +1074,8 @@ class MainAppViewModel @Inject constructor(
         viewModelScope.launch {
             val paginationState = _appState.value.libraryPaginationState[libraryId]
             if (paginationState?.isLoadingMore == true || paginationState?.hasMore == false) {
-                val isLoadingMore = paginationState?.isLoadingMore == true
-                val hasMore = paginationState?.hasMore == true
+                val isLoadingMore = paginationState.isLoadingMore
+                val hasMore = paginationState.hasMore
                 SecureLogger.v("MainAppViewModel", "Skipping loadMore: isLoadingMore=$isLoadingMore, hasMore=$hasMore")
                 return@launch
             }

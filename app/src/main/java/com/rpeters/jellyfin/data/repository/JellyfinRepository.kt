@@ -997,10 +997,10 @@ class JellyfinRepository @Inject constructor(
             maxWidth = capabilities.maxResolution.first,
             maxHeight = capabilities.maxResolution.second,
         )
-        Log.d("JellyfinRepository", "DeviceProfile created with codecProfiles: ${deviceProfile.codecProfiles?.size ?: 0}")
+        Log.d("JellyfinRepository", "DeviceProfile created with codecProfiles: ${deviceProfile.codecProfiles.size}")
 
         // Log the actual codec profiles being sent
-        deviceProfile.codecProfiles?.forEachIndexed { index, codecProfile ->
+        deviceProfile.codecProfiles.forEachIndexed { index, codecProfile ->
             Log.d("JellyfinRepository", "  CodecProfile[$index]: type=${codecProfile.type}, codec=${codecProfile.codec}, conditions=${codecProfile.conditions.size}")
         }
 
@@ -1057,9 +1057,9 @@ class JellyfinRepository @Inject constructor(
             // Log the response from the server
             Log.d("JellyfinRepository", "Server response:")
             Log.d("JellyfinRepository", "  PlaySessionId: ${response.playSessionId}")
-            Log.d("JellyfinRepository", "  MediaSources: ${response.mediaSources?.size ?: 0}")
+            Log.d("JellyfinRepository", "  MediaSources: ${response.mediaSources.size}")
 
-            response.mediaSources?.forEachIndexed { index, mediaSource ->
+            response.mediaSources.forEachIndexed { index, mediaSource ->
                 Log.d("JellyfinRepository", "  MediaSource[$index]:")
                 Log.d("JellyfinRepository", "    Name: ${mediaSource.name}")
                 Log.d("JellyfinRepository", "    Container: ${mediaSource.container}")
