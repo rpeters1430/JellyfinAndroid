@@ -206,11 +206,11 @@ internal fun TVShowsContent(
                                 title = tvShow.name ?: stringResource(id = R.string.unknown),
                                 subtitle = tvShow.productionYear?.toString().orEmpty(),
                                 imageUrl = getImageUrl(tvShow) ?: "",
-                                rating = tvShow.communityRating?.toFloat(),
+                                rating = tvShow.communityRating,
                                 isFavorite = tvShow.userData?.isFavorite == true,
                                 isWatched = tvShow.userData?.played == true,
                                 watchProgress = ((tvShow.userData?.playedPercentage ?: 0.0) / 100.0).toFloat(),
-                                unwatchedEpisodeCount = tvShow.userData?.unplayedItemCount?.toInt(),
+                                unwatchedEpisodeCount = tvShow.userData?.unplayedItemCount,
                                 onCardClick = { onTVShowClick(tvShow.id.toString()) },
                                 onMoreClick = { onTVShowLongPress(tvShow) },
                             )

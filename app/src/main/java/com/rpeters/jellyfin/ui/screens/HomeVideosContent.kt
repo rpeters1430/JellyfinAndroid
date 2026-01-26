@@ -61,6 +61,7 @@ import com.rpeters.jellyfin.utils.getItemKey
 import org.jellyfin.sdk.model.api.BaseItemDto
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import kotlin.coroutines.cancellation.CancellationException
 
 @Composable
 internal fun HomeVideosLoadingContent(
@@ -225,7 +226,7 @@ internal fun HomeVideosGrid(
                 title = homeVideo.name ?: stringResource(R.string.unknown),
                 subtitle = homeVideo.productionYear?.toString() ?: "",
                 imageUrl = getImageUrl(homeVideo) ?: "",
-                rating = homeVideo.communityRating?.toFloat(),
+                rating = homeVideo.communityRating,
                 isFavorite = homeVideo.userData?.isFavorite == true,
                 isWatched = homeVideo.userData?.played == true,
                 watchProgress = ((homeVideo.userData?.playedPercentage ?: 0.0) / 100.0).toFloat(),
