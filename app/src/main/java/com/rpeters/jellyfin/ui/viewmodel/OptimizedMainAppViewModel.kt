@@ -15,14 +15,18 @@ import com.rpeters.jellyfin.data.repository.common.LibraryLoadingState
 import com.rpeters.jellyfin.data.repository.common.LibraryTypeLoadRequest
 import com.rpeters.jellyfin.ui.screens.LibraryType
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.CollectionType
+import retrofit2.HttpException
+import java.io.IOException
 import javax.inject.Inject
 
 /**
@@ -121,8 +125,25 @@ class OptimizedMainAppViewModel @Inject constructor(
                     }
                     else -> { /* Loading state handled by manager */ }
                 }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: InvalidStatusException) {
+                Log.e(TAG, "Jellyfin API error during initial data load", e)
+                _appState.value = _appState.value.copy(
+                    errorMessage = "Failed to load data: Server error",
+                )
+            } catch (e: HttpException) {
+                Log.e(TAG, "HTTP error during initial data load", e)
+                _appState.value = _appState.value.copy(
+                    errorMessage = "Failed to load data: Network error",
+                )
+            } catch (e: IOException) {
+                Log.e(TAG, "Network error during initial data load", e)
+                _appState.value = _appState.value.copy(
+                    errorMessage = "Failed to load data: Connection error",
+                )
             } catch (e: Exception) {
-                Log.e(TAG, "Exception during initial data load", e)
+                Log.e(TAG, "Unexpected error during initial data load", e)
                 _appState.value = _appState.value.copy(
                     errorMessage = "Failed to load data: ${e.message}",
                 )
@@ -355,8 +376,25 @@ class OptimizedMainAppViewModel @Inject constructor(
                     }
                     else -> { /* Loading handled by manager */ }
                 }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: InvalidStatusException) {
+                Log.e(TAG, "Jellyfin API error loading more ${libraryType.displayName}", e)
+                _appState.value = _appState.value.copy(
+                    errorMessage = "Failed to load more items: Server error",
+                )
+            } catch (e: HttpException) {
+                Log.e(TAG, "HTTP error loading more ${libraryType.displayName}", e)
+                _appState.value = _appState.value.copy(
+                    errorMessage = "Failed to load more items: Network error",
+                )
+            } catch (e: IOException) {
+                Log.e(TAG, "Network error loading more ${libraryType.displayName}", e)
+                _appState.value = _appState.value.copy(
+                    errorMessage = "Failed to load more items: Connection error",
+                )
             } catch (e: Exception) {
-                Log.e(TAG, "Exception loading more ${libraryType.displayName}", e)
+                Log.e(TAG, "Unexpected error loading more ${libraryType.displayName}", e)
                 _appState.value = _appState.value.copy(
                     errorMessage = "Failed to load more items: ${e.message}",
                 )
@@ -414,6 +452,8 @@ class OptimizedMainAppViewModel @Inject constructor(
                 credentialManager.clearCredentials()
                 libraryLoadingManager.cancelAllOperations()
                 _appState.value = OptimizedAppState()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Error during logout", e)
             }
