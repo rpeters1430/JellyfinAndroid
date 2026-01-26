@@ -4,11 +4,19 @@ import android.util.Log
 import com.rpeters.jellyfin.data.model.ApiResult
 import com.rpeters.jellyfin.data.model.JellyfinError
 import com.rpeters.jellyfin.data.session.JellyfinSessionManager
+import kotlinx.coroutines.CancellationException
 import org.jellyfin.sdk.api.client.ApiClient
+import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.api.client.extensions.systemApi
 import org.jellyfin.sdk.model.api.PublicSystemInfo
+import retrofit2.HttpException
+import java.io.IOException
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import javax.inject.Inject
 import javax.inject.Singleton
+import javax.net.ssl.SSLException
 
 /**
  * ✅ IMPROVEMENT: Simplified system repository for Phase 2
@@ -30,12 +38,14 @@ class JellyfinSystemRepository @Inject constructor(
     private fun <T> handleException(e: Exception, defaultMessage: String = "System error"): ApiResult.Error<T> {
         Log.e(TAG, "$defaultMessage: ${e.message}", e)
 
-        val error = when {
-            e.message?.contains("network", ignoreCase = true) == true -> JellyfinError.NetworkError
-            e.message?.contains("connection", ignoreCase = true) == true -> JellyfinError.NetworkError
-            e.message?.contains("timeout", ignoreCase = true) == true -> JellyfinError.TimeoutError
-            e.message?.contains("server", ignoreCase = true) == true -> JellyfinError.ServerError
-            e.message?.contains("host", ignoreCase = true) == true -> JellyfinError.NetworkError
+        val error = when (e) {
+            is InvalidStatusException -> JellyfinError.ServerError
+            is HttpException -> JellyfinError.ServerError
+            is UnknownHostException -> JellyfinError.NetworkError
+            is ConnectException -> JellyfinError.NetworkError
+            is SocketTimeoutException -> JellyfinError.TimeoutError
+            is SSLException -> JellyfinError.NetworkError
+            is IOException -> JellyfinError.NetworkError
             else -> JellyfinError.UnknownError(e.message ?: defaultMessage, e)
         }
 
@@ -50,6 +60,22 @@ class JellyfinSystemRepository @Inject constructor(
             val client = getClient(serverUrl)
             val response = client.systemApi.getPublicSystemInfo()
             ApiResult.Success(response.content)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: InvalidStatusException) {
+            handleException<PublicSystemInfo>(e, "Failed to connect to server")
+        } catch (e: HttpException) {
+            handleException<PublicSystemInfo>(e, "Failed to connect to server")
+        } catch (e: UnknownHostException) {
+            handleException<PublicSystemInfo>(e, "Failed to connect to server")
+        } catch (e: ConnectException) {
+            handleException<PublicSystemInfo>(e, "Failed to connect to server")
+        } catch (e: SocketTimeoutException) {
+            handleException<PublicSystemInfo>(e, "Failed to connect to server")
+        } catch (e: SSLException) {
+            handleException<PublicSystemInfo>(e, "Failed to connect to server")
+        } catch (e: IOException) {
+            handleException<PublicSystemInfo>(e, "Failed to connect to server")
         } catch (e: Exception) {
             handleException<PublicSystemInfo>(e, "Failed to connect to server")
         }
@@ -71,6 +97,22 @@ class JellyfinSystemRepository @Inject constructor(
                     url.host.isNotBlank()
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: InvalidStatusException) {
+            false
+        } catch (e: HttpException) {
+            false
+        } catch (e: UnknownHostException) {
+            false
+        } catch (e: ConnectException) {
+            false
+        } catch (e: SocketTimeoutException) {
+            false
+        } catch (e: SSLException) {
+            false
+        } catch (e: IOException) {
+            false
         } catch (e: Exception) {
             false
         }
