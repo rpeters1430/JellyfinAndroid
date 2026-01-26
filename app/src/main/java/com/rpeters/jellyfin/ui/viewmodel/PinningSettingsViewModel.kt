@@ -38,10 +38,7 @@ class PinningSettingsViewModel @Inject constructor(
                 certificatePinningManager.getPinnedCertificates().map { it.toUiModel() }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                _errorMessage.value = e.message
-                emptyList()
-            } finally {
+            }  finally {
                 _isLoading.value = false
             }
         }
@@ -54,8 +51,6 @@ class PinningSettingsViewModel @Inject constructor(
                 refreshPins()
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                _errorMessage.value = e.message
             }
         }
     }

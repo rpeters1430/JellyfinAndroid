@@ -71,22 +71,6 @@ class ConnectionOptimizer @Inject constructor(
                     }
                 } catch (e: CancellationException) {
                     throw e
-                } catch (e: InvalidStatusException) {
-                    logDebug("Failed to connect to ${prioritizedUrls[index]}: ${e.message}")
-                } catch (e: HttpException) {
-                    logDebug("Failed to connect to ${prioritizedUrls[index]}: ${e.message}")
-                } catch (e: UnknownHostException) {
-                    logDebug("Failed to connect to ${prioritizedUrls[index]}: ${e.message}")
-                } catch (e: ConnectException) {
-                    logDebug("Failed to connect to ${prioritizedUrls[index]}: ${e.message}")
-                } catch (e: SocketTimeoutException) {
-                    logDebug("Failed to connect to ${prioritizedUrls[index]}: ${e.message}")
-                } catch (e: SSLException) {
-                    logDebug("Failed to connect to ${prioritizedUrls[index]}: ${e.message}")
-                } catch (e: IOException) {
-                    logDebug("Failed to connect to ${prioritizedUrls[index]}: ${e.message}")
-                } catch (e: Exception) {
-                    logDebug("Failed to connect to ${prioritizedUrls[index]}: ${e.message}")
                 }
             }
 
@@ -140,8 +124,6 @@ class ConnectionOptimizer @Inject constructor(
                     }
                 } catch (e: CancellationException) {
                     throw e
-                } catch (e: Exception) {
-                    logDebug("Failed to parse URI for reverse proxy variations: ${e.message}")
                 }
             } else if (normalizedUrl.startsWith("http://")) {
                 urls.add(normalizedUrl.replace("http://", "https://"))
@@ -159,8 +141,6 @@ class ConnectionOptimizer @Inject constructor(
                     }
                 } catch (e: CancellationException) {
                     throw e
-                } catch (e: Exception) {
-                    logDebug("Failed to parse URI for reverse proxy variations: ${e.message}")
                 }
             } else {
                 // No protocol specified
@@ -246,22 +226,6 @@ class ConnectionOptimizer @Inject constructor(
             } ?: ApiResult.Error("Connection timeout for $url")
         } catch (e: CancellationException) {
             throw e
-        } catch (e: InvalidStatusException) {
-            ApiResult.Error("Connection failed for $url: ${e.message}")
-        } catch (e: HttpException) {
-            ApiResult.Error("Connection failed for $url: ${e.message}")
-        } catch (e: UnknownHostException) {
-            ApiResult.Error("Connection failed for $url: ${e.message}")
-        } catch (e: ConnectException) {
-            ApiResult.Error("Connection failed for $url: ${e.message}")
-        } catch (e: SocketTimeoutException) {
-            ApiResult.Error("Connection failed for $url: ${e.message}")
-        } catch (e: SSLException) {
-            ApiResult.Error("Connection failed for $url: ${e.message}")
-        } catch (e: IOException) {
-            ApiResult.Error("Connection failed for $url: ${e.message}")
-        } catch (e: Exception) {
-            ApiResult.Error("Connection failed for $url: ${e.message}")
         }
     }
 

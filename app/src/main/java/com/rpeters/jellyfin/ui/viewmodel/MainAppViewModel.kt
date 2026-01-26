@@ -165,8 +165,6 @@ class MainAppViewModel @Inject constructor(
                 return@withContext authRepository.reAuthenticate()
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                false
             }
         }
     }
@@ -314,26 +312,6 @@ class MainAppViewModel @Inject constructor(
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: InvalidStatusException) {
-                _appState.value = _appState.value.copy(
-                    isLoading = false,
-                    errorMessage = "Error loading data: Server error",
-                )
-            } catch (e: HttpException) {
-                _appState.value = _appState.value.copy(
-                    isLoading = false,
-                    errorMessage = "Error loading data: Network error",
-                )
-            } catch (e: IOException) {
-                _appState.value = _appState.value.copy(
-                    isLoading = false,
-                    errorMessage = "Error loading data: Connection error",
-                )
-            } catch (e: Exception) {
-                _appState.value = _appState.value.copy(
-                    isLoading = false,
-                    errorMessage = "Error loading data: ${e.message}",
-                )
             }
         }
     }
@@ -577,22 +555,6 @@ class MainAppViewModel @Inject constructor(
                 repository.validateAndRefreshTokenManually()
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: InvalidStatusException) {
-                _appState.value = _appState.value.copy(
-                    errorMessage = "Failed to refresh authentication: Server error",
-                )
-            } catch (e: HttpException) {
-                _appState.value = _appState.value.copy(
-                    errorMessage = "Failed to refresh authentication: Network error",
-                )
-            } catch (e: IOException) {
-                _appState.value = _appState.value.copy(
-                    errorMessage = "Failed to refresh authentication: Connection error",
-                )
-            } catch (e: Exception) {
-                _appState.value = _appState.value.copy(
-                    errorMessage = "Failed to refresh authentication: ${e.message}",
-                )
             }
         }
     }

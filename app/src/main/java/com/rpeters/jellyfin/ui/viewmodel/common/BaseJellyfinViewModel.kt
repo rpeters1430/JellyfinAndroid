@@ -109,39 +109,7 @@ abstract class BaseJellyfinViewModel : ViewModel() {
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: InvalidStatusException) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "Jellyfin API error in operation: $operationName", e)
-                }
-
-                val processedError = ErrorHandler.processError(e, operation = operationName)
-                _errorState.value = processedError
-                onError(processedError)
-            } catch (e: HttpException) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "HTTP error in operation: $operationName", e)
-                }
-
-                val processedError = ErrorHandler.processError(e, operation = operationName)
-                _errorState.value = processedError
-                onError(processedError)
-            } catch (e: IOException) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "Network error in operation: $operationName", e)
-                }
-
-                val processedError = ErrorHandler.processError(e, operation = operationName)
-                _errorState.value = processedError
-                onError(processedError)
-            } catch (e: Exception) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "Unexpected error in operation: $operationName", e)
-                }
-
-                val processedError = ErrorHandler.processError(e, operation = operationName)
-                _errorState.value = processedError
-                onError(processedError)
-            } finally {
+            }     finally {
                 if (showLoading) {
                     _isLoading.value = false
                 }
@@ -191,35 +159,7 @@ abstract class BaseJellyfinViewModel : ViewModel() {
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: InvalidStatusException) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "Jellyfin API error in refresh: $operationName", e)
-                }
-
-                val processedError = ErrorHandler.processError(e, operation = operationName)
-                onError(processedError)
-            } catch (e: HttpException) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "HTTP error in refresh: $operationName", e)
-                }
-
-                val processedError = ErrorHandler.processError(e, operation = operationName)
-                onError(processedError)
-            } catch (e: IOException) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "Network error in refresh: $operationName", e)
-                }
-
-                val processedError = ErrorHandler.processError(e, operation = operationName)
-                onError(processedError)
-            } catch (e: Exception) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "Unexpected error in refresh: $operationName", e)
-                }
-
-                val processedError = ErrorHandler.processError(e, operation = operationName)
-                onError(processedError)
-            } finally {
+            }     finally {
                 _isRefreshing.value = false
             }
         }
@@ -316,9 +256,6 @@ suspend fun <T> safeCall(
         operation()
     } catch (e: CancellationException) {
         throw e
-    } catch (e: Exception) {
-        onError(e)
-        null
     }
 }
 

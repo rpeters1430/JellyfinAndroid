@@ -95,47 +95,7 @@ class LibraryLoadingManager @Inject constructor(
                     result
                 } catch (e: CancellationException) {
                     throw e
-                } catch (e: InvalidStatusException) {
-                    val errorMsg = "Failed to load libraries: ${e.message}"
-                    updateLoadingState(operationKey, LibraryLoadingState.Error(errorMsg))
-                    Log.e(TAG, errorMsg, e)
-                    ApiResult.Error(errorMsg, e, RepositoryUtils.getErrorType(e))
-                } catch (e: HttpException) {
-                    val errorMsg = "Failed to load libraries: ${e.message}"
-                    updateLoadingState(operationKey, LibraryLoadingState.Error(errorMsg))
-                    Log.e(TAG, errorMsg, e)
-                    ApiResult.Error(errorMsg, e, RepositoryUtils.getErrorType(e))
-                } catch (e: UnknownHostException) {
-                    val errorMsg = "Failed to load libraries: ${e.message}"
-                    updateLoadingState(operationKey, LibraryLoadingState.Error(errorMsg))
-                    Log.e(TAG, errorMsg, e)
-                    ApiResult.Error(errorMsg, e, RepositoryUtils.getErrorType(e))
-                } catch (e: ConnectException) {
-                    val errorMsg = "Failed to load libraries: ${e.message}"
-                    updateLoadingState(operationKey, LibraryLoadingState.Error(errorMsg))
-                    Log.e(TAG, errorMsg, e)
-                    ApiResult.Error(errorMsg, e, RepositoryUtils.getErrorType(e))
-                } catch (e: SocketTimeoutException) {
-                    val errorMsg = "Failed to load libraries: ${e.message}"
-                    updateLoadingState(operationKey, LibraryLoadingState.Error(errorMsg))
-                    Log.e(TAG, errorMsg, e)
-                    ApiResult.Error(errorMsg, e, RepositoryUtils.getErrorType(e))
-                } catch (e: SSLException) {
-                    val errorMsg = "Failed to load libraries: ${e.message}"
-                    updateLoadingState(operationKey, LibraryLoadingState.Error(errorMsg))
-                    Log.e(TAG, errorMsg, e)
-                    ApiResult.Error(errorMsg, e, RepositoryUtils.getErrorType(e))
-                } catch (e: IOException) {
-                    val errorMsg = "Failed to load libraries: ${e.message}"
-                    updateLoadingState(operationKey, LibraryLoadingState.Error(errorMsg))
-                    Log.e(TAG, errorMsg, e)
-                    ApiResult.Error(errorMsg, e, RepositoryUtils.getErrorType(e))
-                } catch (e: Exception) {
-                    val errorMsg = "Failed to load libraries: ${e.message}"
-                    updateLoadingState(operationKey, LibraryLoadingState.Error(errorMsg))
-                    Log.e(TAG, errorMsg, e)
-                    ApiResult.Error(errorMsg, e, RepositoryUtils.getErrorType(e))
-                } finally {
+                }         finally {
                     operationsMutex.withLock {
                         ongoingOperations.remove(operationKey)
                     }
@@ -210,47 +170,7 @@ class LibraryLoadingManager @Inject constructor(
                     result
                 } catch (e: CancellationException) {
                     throw e
-                } catch (e: InvalidStatusException) {
-                    val errorMsg = "Failed to load library items: ${e.message}"
-                    updateLoadingState(operationKey, LibraryLoadingState.Error(errorMsg))
-                    Log.e(TAG, errorMsg, e)
-                    ApiResult.Error(errorMsg, e, RepositoryUtils.getErrorType(e))
-                } catch (e: HttpException) {
-                    val errorMsg = "Failed to load library items: ${e.message}"
-                    updateLoadingState(operationKey, LibraryLoadingState.Error(errorMsg))
-                    Log.e(TAG, errorMsg, e)
-                    ApiResult.Error(errorMsg, e, RepositoryUtils.getErrorType(e))
-                } catch (e: UnknownHostException) {
-                    val errorMsg = "Failed to load library items: ${e.message}"
-                    updateLoadingState(operationKey, LibraryLoadingState.Error(errorMsg))
-                    Log.e(TAG, errorMsg, e)
-                    ApiResult.Error(errorMsg, e, RepositoryUtils.getErrorType(e))
-                } catch (e: ConnectException) {
-                    val errorMsg = "Failed to load library items: ${e.message}"
-                    updateLoadingState(operationKey, LibraryLoadingState.Error(errorMsg))
-                    Log.e(TAG, errorMsg, e)
-                    ApiResult.Error(errorMsg, e, RepositoryUtils.getErrorType(e))
-                } catch (e: SocketTimeoutException) {
-                    val errorMsg = "Failed to load library items: ${e.message}"
-                    updateLoadingState(operationKey, LibraryLoadingState.Error(errorMsg))
-                    Log.e(TAG, errorMsg, e)
-                    ApiResult.Error(errorMsg, e, RepositoryUtils.getErrorType(e))
-                } catch (e: SSLException) {
-                    val errorMsg = "Failed to load library items: ${e.message}"
-                    updateLoadingState(operationKey, LibraryLoadingState.Error(errorMsg))
-                    Log.e(TAG, errorMsg, e)
-                    ApiResult.Error(errorMsg, e, RepositoryUtils.getErrorType(e))
-                } catch (e: IOException) {
-                    val errorMsg = "Failed to load library items: ${e.message}"
-                    updateLoadingState(operationKey, LibraryLoadingState.Error(errorMsg))
-                    Log.e(TAG, errorMsg, e)
-                    ApiResult.Error(errorMsg, e, RepositoryUtils.getErrorType(e))
-                } catch (e: Exception) {
-                    val errorMsg = "Failed to load library items: ${e.message}"
-                    updateLoadingState(operationKey, LibraryLoadingState.Error(errorMsg))
-                    Log.e(TAG, errorMsg, e)
-                    ApiResult.Error(errorMsg, e, RepositoryUtils.getErrorType(e))
-                } finally {
+                }         finally {
                     operationsMutex.withLock {
                         ongoingOperations.remove(operationKey)
                     }
@@ -371,9 +291,6 @@ class LibraryLoadingManager @Inject constructor(
             )
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            Log.e(TAG, "Parameter validation failed", e)
-            return null
         }
     }
 

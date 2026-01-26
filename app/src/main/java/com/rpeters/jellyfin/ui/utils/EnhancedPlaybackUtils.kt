@@ -104,26 +104,6 @@ class EnhancedPlaybackUtils @Inject constructor(
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: InvalidStatusException) {
-                Log.e(TAG, "Invalid status during enhanced playback", e)
-                withContext(Dispatchers.Main) {
-                    onPlaybackError("Invalid server response: ${e.message}")
-                }
-            } catch (e: HttpException) {
-                Log.e(TAG, "HTTP error during enhanced playback", e)
-                withContext(Dispatchers.Main) {
-                    onPlaybackError("HTTP error ${e.code()}: ${e.message()}")
-                }
-            } catch (e: IOException) {
-                Log.e(TAG, "Network error during enhanced playback", e)
-                withContext(Dispatchers.Main) {
-                    onPlaybackError("Network error: ${e.message}")
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to start enhanced playback", e)
-                withContext(Dispatchers.Main) {
-                    onPlaybackError("Failed to start playback: ${e.message}")
-                }
             }
         }
     }
@@ -202,54 +182,6 @@ class EnhancedPlaybackUtils @Inject constructor(
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: InvalidStatusException) {
-                Log.e(TAG, "Invalid status analyzing playback capabilities", e)
-                val unknownLabel = context.getString(R.string.unknown)
-                PlaybackCapabilityAnalysis(
-                    canPlay = false,
-                    preferredMethod = PlaybackMethod.UNAVAILABLE,
-                    expectedQuality = unknownLabel,
-                    details = "Invalid server response: ${e.message}",
-                    codecs = "N/A",
-                    container = "N/A",
-                    estimatedBandwidth = 0,
-                )
-            } catch (e: HttpException) {
-                Log.e(TAG, "HTTP error analyzing playback capabilities", e)
-                val unknownLabel = context.getString(R.string.unknown)
-                PlaybackCapabilityAnalysis(
-                    canPlay = false,
-                    preferredMethod = PlaybackMethod.UNAVAILABLE,
-                    expectedQuality = unknownLabel,
-                    details = "HTTP error ${e.code()}: ${e.message()}",
-                    codecs = "N/A",
-                    container = "N/A",
-                    estimatedBandwidth = 0,
-                )
-            } catch (e: IOException) {
-                Log.e(TAG, "Network error analyzing playback capabilities", e)
-                val unknownLabel = context.getString(R.string.unknown)
-                PlaybackCapabilityAnalysis(
-                    canPlay = false,
-                    preferredMethod = PlaybackMethod.UNAVAILABLE,
-                    expectedQuality = unknownLabel,
-                    details = "Network error: ${e.message}",
-                    codecs = "N/A",
-                    container = "N/A",
-                    estimatedBandwidth = 0,
-                )
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to analyze playback capabilities", e)
-                val unknownLabel = context.getString(R.string.unknown)
-                PlaybackCapabilityAnalysis(
-                    canPlay = false,
-                    preferredMethod = PlaybackMethod.UNAVAILABLE,
-                    expectedQuality = unknownLabel,
-                    details = "Analysis failed: ${e.message}",
-                    codecs = "N/A",
-                    container = "N/A",
-                    estimatedBandwidth = 0,
-                )
             }
         }
     }
@@ -310,15 +242,6 @@ class EnhancedPlaybackUtils @Inject constructor(
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to generate playback recommendations", e)
-                recommendations.add(
-                    PlaybackRecommendation(
-                        type = RecommendationType.ERROR,
-                        message = "Unable to analyze playback compatibility",
-                        details = "Please try again or contact support if the problem persists.",
-                    ),
-                )
             }
 
             recommendations

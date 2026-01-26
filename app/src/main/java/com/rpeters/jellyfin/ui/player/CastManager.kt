@@ -272,16 +272,6 @@ class CastManager @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            SecureLogger.e("CastManager", "Failed to initialize Cast", e)
-            _castState.update { state ->
-                state.copy(
-                    isInitialized = true,
-                    isAvailable = false,
-                    error = "Failed to initialize Cast: ${e.message}",
-                )
-            }
-            deferred.complete(false)
         }
     }
 
@@ -412,8 +402,6 @@ class CastManager @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            SecureLogger.e("CastManager", "Error during auto-reconnect", e)
         }
     }
 
@@ -540,26 +528,6 @@ class CastManager @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: InvalidStatusException) {
-            SecureLogger.e("CastManager", "Invalid status starting cast", e)
-            _castState.update { state ->
-                state.copy(error = "Cast failed: Invalid server response")
-            }
-        } catch (e: HttpException) {
-            SecureLogger.e("CastManager", "HTTP error starting cast", e)
-            _castState.update { state ->
-                state.copy(error = "Cast failed: HTTP error ${e.code()}")
-            }
-        } catch (e: IOException) {
-            SecureLogger.e("CastManager", "Network error starting cast", e)
-            _castState.update { state ->
-                state.copy(error = "Cast failed: Network error")
-            }
-        } catch (e: Exception) {
-            SecureLogger.e("CastManager", "Failed to start casting", e)
-            _castState.update { state ->
-                state.copy(error = "Failed to start casting: ${e.message}")
-            }
         }
     }
 
@@ -648,11 +616,6 @@ class CastManager @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            SecureLogger.e("CastManager", "loadPreview: Failed to send preview", e)
-            _castState.update { state ->
-                state.copy(error = "Failed to send preview: ${e.message}")
-            }
         }
     }
 
@@ -667,11 +630,6 @@ class CastManager @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            SecureLogger.e("CastManager", "Failed to stop casting", e)
-            _castState.update { state ->
-                state.copy(error = "Failed to stop casting: ${e.message}")
-            }
         }
     }
 
@@ -713,11 +671,6 @@ class CastManager @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            SecureLogger.e("CastManager", "Failed to disconnect cast session", e)
-            _castState.update { state ->
-                state.copy(error = "Failed to disconnect: ${e.message}")
-            }
         }
     }
 
@@ -729,11 +682,6 @@ class CastManager @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            SecureLogger.e("CastManager", "Failed to pause casting", e)
-            _castState.update { state ->
-                state.copy(error = "Failed to pause casting: ${e.message}")
-            }
         }
     }
 
@@ -745,11 +693,6 @@ class CastManager @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            SecureLogger.e("CastManager", "Failed to resume casting: ${e.message}", e)
-            _castState.update { state ->
-                state.copy(error = "Failed to resume casting: ${e.message}")
-            }
         }
     }
 
@@ -774,11 +717,6 @@ class CastManager @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            SecureLogger.e("CastManager", "Failed to seek: ${e.message}", e)
-            _castState.update { state ->
-                state.copy(error = "Failed to seek: ${e.message}")
-            }
         }
     }
 
@@ -800,11 +738,6 @@ class CastManager @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            SecureLogger.e("CastManager", "Failed to set volume: ${e.message}", e)
-            _castState.update { state ->
-                state.copy(error = "Failed to set volume: ${e.message}")
-            }
         }
     }
 
@@ -817,8 +750,6 @@ class CastManager @Inject constructor(
             castContext?.sessionManager?.currentCastSession?.volume?.toFloat() ?: 1.0f
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            1.0f
         }
     }
 
@@ -831,8 +762,6 @@ class CastManager @Inject constructor(
             castContext?.sessionManager?.currentCastSession?.remoteMediaClient?.approximateStreamPosition ?: 0L
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            0L
         }
     }
 
@@ -845,8 +774,6 @@ class CastManager @Inject constructor(
             castContext?.sessionManager?.currentCastSession?.remoteMediaClient?.mediaInfo?.streamDuration ?: 0L
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            0L
         }
     }
 
@@ -887,8 +814,6 @@ class CastManager @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            SecureLogger.e("CastManager", "Error releasing Cast manager", e)
         }
     }
 

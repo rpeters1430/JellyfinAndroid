@@ -89,8 +89,6 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            SecureLogger.e(TAG, "Failed to clear image caches", e)
         }
     }
 
@@ -108,29 +106,6 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
                 SecureLogger.i(TAG, "Performance optimizations initialized")
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                SecureLogger.e(TAG, "Failed to initialize performance optimizations", e)
-
-                // Fallback to basic StrictMode if optimizations fail
-                if (BuildConfig.DEBUG) {
-                    withContext(Dispatchers.Main) {
-                        StrictMode.setThreadPolicy(
-                            StrictMode.ThreadPolicy.Builder()
-                                .detectDiskReads()
-                                .detectDiskWrites()
-                                .detectNetwork()
-                                .penaltyLog()
-                                .build(),
-                        )
-                        StrictMode.setVmPolicy(
-                            StrictMode.VmPolicy.Builder()
-                                .detectLeakedClosableObjects()
-                                .detectUntaggedSockets()
-                                .penaltyLog()
-                                .build(),
-                        )
-                    }
-                }
             }
         }
     }
@@ -155,8 +130,6 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
             applicationJob.cancel()
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            SecureLogger.e(TAG, "Error during resource cleanup", e)
         }
     }
 

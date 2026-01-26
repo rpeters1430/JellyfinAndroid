@@ -247,8 +247,6 @@ class AudioServiceConnection @Inject constructor(
                 controller.release()
             } catch (e: CancellationException) {
                 throw e
-            } catch (exception: Exception) {
-                Log.w(TAG, "Error releasing MediaController", exception)
             }
         }
         mediaController = null
@@ -360,8 +358,6 @@ private suspend fun <T> ListenableFuture<T>.await(context: Context): T =
                     continuation.resume(get())
                 } catch (e: CancellationException) {
                     throw e
-                } catch (exception: Exception) {
-                    continuation.resumeWithException(exception)
                 }
             },
             ContextCompat.getMainExecutor(context),
