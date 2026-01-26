@@ -100,8 +100,10 @@ fun JellyfinAndroidTheme(
         isDark = darkTheme,
     )
 
+    val tunedColorScheme = applyLightModeTextContrast(adjustedColorScheme, darkTheme)
+
     MaterialTheme(
-        colorScheme = adjustedColorScheme,
+        colorScheme = tunedColorScheme,
         typography = Typography,
         shapes = JellyfinShapes,
         content = content,
@@ -389,5 +391,19 @@ internal fun adjustBrightness(
         green = (color.green * factor).coerceIn(0f, 1f),
         blue = (color.blue * factor).coerceIn(0f, 1f),
         alpha = color.alpha,
+    )
+}
+
+/**
+ * Nudge light-mode secondary text colors darker to improve readability.
+ */
+private fun applyLightModeTextContrast(
+    colorScheme: ColorScheme,
+    isDark: Boolean,
+): ColorScheme {
+    if (isDark) return colorScheme
+
+    return colorScheme.copy(
+        onSurfaceVariant = adjustBrightness(colorScheme.onSurfaceVariant, 0.85f),
     )
 }
