@@ -147,14 +147,6 @@ class PlaybackProgressManager @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: InvalidStatusException) {
-            Log.e("PlaybackProgressManager", "Invalid status marking as watched", e)
-        } catch (e: HttpException) {
-            Log.e("PlaybackProgressManager", "HTTP error marking as watched", e)
-        } catch (e: IOException) {
-            Log.e("PlaybackProgressManager", "Network error marking as watched", e)
-        } catch (e: Exception) {
-            Log.e("PlaybackProgressManager", "Error marking as watched", e)
         }
     }
 
@@ -179,14 +171,6 @@ class PlaybackProgressManager @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: InvalidStatusException) {
-            Log.e("PlaybackProgressManager", "Invalid status marking as unwatched", e)
-        } catch (e: HttpException) {
-            Log.e("PlaybackProgressManager", "HTTP error marking as unwatched", e)
-        } catch (e: IOException) {
-            Log.e("PlaybackProgressManager", "Network error marking as unwatched", e)
-        } catch (e: Exception) {
-            Log.e("PlaybackProgressManager", "Error marking as unwatched", e)
         }
     }
 
@@ -251,14 +235,6 @@ class PlaybackProgressManager @Inject constructor(
             getResumePosition(itemId)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: InvalidStatusException) {
-            Log.e("PlaybackProgressManager", "Invalid status loading progress", e)
-        } catch (e: HttpException) {
-            Log.e("PlaybackProgressManager", "HTTP error loading progress", e)
-        } catch (e: IOException) {
-            Log.e("PlaybackProgressManager", "Network error loading progress", e)
-        } catch (e: Exception) {
-            Log.e("PlaybackProgressManager", "Failed to load existing progress", e)
         }
     }
 
@@ -298,14 +274,6 @@ class PlaybackProgressManager @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: InvalidStatusException) {
-            Log.e("PlaybackProgressManager", "Invalid status reporting progress", e)
-        } catch (e: HttpException) {
-            Log.e("PlaybackProgressManager", "HTTP error reporting progress", e)
-        } catch (e: IOException) {
-            Log.e("PlaybackProgressManager", "Network error reporting progress", e)
-        } catch (e: Exception) {
-            Log.e("PlaybackProgressManager", "Failed to report progress", e)
         }
     }
 
@@ -330,14 +298,6 @@ class PlaybackProgressManager @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: InvalidStatusException) {
-            Log.e("PlaybackProgressManager", "Invalid status reporting playback start", e)
-        } catch (e: HttpException) {
-            Log.e("PlaybackProgressManager", "HTTP error reporting playback start", e)
-        } catch (e: IOException) {
-            Log.e("PlaybackProgressManager", "Network error reporting playback start", e)
-        } catch (e: Exception) {
-            Log.e("PlaybackProgressManager", "Failed to report playback start", e)
         }
     }
 
@@ -364,14 +324,6 @@ class PlaybackProgressManager @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: InvalidStatusException) {
-            Log.e("PlaybackProgressManager", "Invalid status reporting playback stop", e)
-        } catch (e: HttpException) {
-            Log.e("PlaybackProgressManager", "HTTP error reporting playback stop", e)
-        } catch (e: IOException) {
-            Log.e("PlaybackProgressManager", "Network error reporting playback stop", e)
-        } catch (e: Exception) {
-            Log.e("PlaybackProgressManager", "Failed to report playback stop", e)
         }
     }
 
@@ -410,18 +362,6 @@ class PlaybackProgressManager @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: InvalidStatusException) {
-            Log.e("PlaybackProgressManager", "Invalid status getting resume position", e)
-            0L
-        } catch (e: HttpException) {
-            Log.e("PlaybackProgressManager", "HTTP error getting resume position", e)
-            0L
-        } catch (e: IOException) {
-            Log.e("PlaybackProgressManager", "Network error getting resume position", e)
-            0L
-        } catch (e: Exception) {
-            Log.e("PlaybackProgressManager", "Failed to get resume position", e)
-            0L
         }
     }
 

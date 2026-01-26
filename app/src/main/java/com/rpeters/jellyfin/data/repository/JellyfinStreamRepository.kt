@@ -81,30 +81,6 @@ class JellyfinStreamRepository @Inject constructor(
             getIntelligentTranscodedUrl(itemId, server.url)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: InvalidStatusException) {
-            Log.e("JellyfinStreamRepository", "getStreamUrl: Invalid status for item $itemId: ${e.message}", e)
-            null
-        } catch (e: HttpException) {
-            Log.e("JellyfinStreamRepository", "getStreamUrl: HTTP error for item $itemId: ${e.message}", e)
-            null
-        } catch (e: UnknownHostException) {
-            Log.e("JellyfinStreamRepository", "getStreamUrl: DNS failure for item $itemId: ${e.message}", e)
-            null
-        } catch (e: ConnectException) {
-            Log.e("JellyfinStreamRepository", "getStreamUrl: Connection refused for item $itemId: ${e.message}", e)
-            null
-        } catch (e: SocketTimeoutException) {
-            Log.e("JellyfinStreamRepository", "getStreamUrl: Timeout for item $itemId: ${e.message}", e)
-            null
-        } catch (e: SSLException) {
-            Log.e("JellyfinStreamRepository", "getStreamUrl: SSL error for item $itemId: ${e.message}", e)
-            null
-        } catch (e: IOException) {
-            Log.e("JellyfinStreamRepository", "getStreamUrl: I/O error for item $itemId: ${e.message}", e)
-            null
-        } catch (e: Exception) {
-            Log.e("JellyfinStreamRepository", "getStreamUrl: Unexpected error for item $itemId", e)
-            null
         }
     }
 
@@ -144,30 +120,6 @@ class JellyfinStreamRepository @Inject constructor(
             null
         } catch (e: CancellationException) {
             throw e
-        } catch (e: InvalidStatusException) {
-            Log.w("JellyfinStreamRepository", "Enhanced direct play detection failed: invalid status", e)
-            null
-        } catch (e: HttpException) {
-            Log.w("JellyfinStreamRepository", "Enhanced direct play detection failed: HTTP error", e)
-            null
-        } catch (e: UnknownHostException) {
-            Log.w("JellyfinStreamRepository", "Enhanced direct play detection failed: DNS failure", e)
-            null
-        } catch (e: ConnectException) {
-            Log.w("JellyfinStreamRepository", "Enhanced direct play detection failed: connection refused", e)
-            null
-        } catch (e: SocketTimeoutException) {
-            Log.w("JellyfinStreamRepository", "Enhanced direct play detection failed: timeout", e)
-            null
-        } catch (e: SSLException) {
-            Log.w("JellyfinStreamRepository", "Enhanced direct play detection failed: SSL error", e)
-            null
-        } catch (e: IOException) {
-            Log.w("JellyfinStreamRepository", "Enhanced direct play detection failed: I/O error", e)
-            null
-        } catch (e: Exception) {
-            Log.w("JellyfinStreamRepository", "Enhanced direct play detection failed: unexpected error", e)
-            null
         }
     }
 
@@ -300,30 +252,6 @@ class JellyfinStreamRepository @Inject constructor(
             "${server.url}/Videos/$itemId/stream?${params.joinToString("&")}"
         } catch (e: CancellationException) {
             throw e
-        } catch (e: InvalidStatusException) {
-            Log.e("JellyfinStreamRepository", "getTranscodedStreamUrl: Invalid status for item $itemId", e)
-            null
-        } catch (e: HttpException) {
-            Log.e("JellyfinStreamRepository", "getTranscodedStreamUrl: HTTP error for item $itemId", e)
-            null
-        } catch (e: UnknownHostException) {
-            Log.e("JellyfinStreamRepository", "getTranscodedStreamUrl: DNS failure for item $itemId", e)
-            null
-        } catch (e: ConnectException) {
-            Log.e("JellyfinStreamRepository", "getTranscodedStreamUrl: Connection refused for item $itemId", e)
-            null
-        } catch (e: SocketTimeoutException) {
-            Log.e("JellyfinStreamRepository", "getTranscodedStreamUrl: Timeout for item $itemId", e)
-            null
-        } catch (e: SSLException) {
-            Log.e("JellyfinStreamRepository", "getTranscodedStreamUrl: SSL error for item $itemId", e)
-            null
-        } catch (e: IOException) {
-            Log.e("JellyfinStreamRepository", "getTranscodedStreamUrl: I/O error for item $itemId", e)
-            null
-        } catch (e: Exception) {
-            Log.e("JellyfinStreamRepository", "getTranscodedStreamUrl: Unexpected error for item $itemId", e)
-            null
         }
     }
 
@@ -393,30 +321,6 @@ class JellyfinStreamRepository @Inject constructor(
             null
         } catch (e: CancellationException) {
             throw e
-        } catch (e: InvalidStatusException) {
-            Log.w("JellyfinStreamRepository", "Failed to determine direct play URL: invalid status", e)
-            null
-        } catch (e: HttpException) {
-            Log.w("JellyfinStreamRepository", "Failed to determine direct play URL: HTTP error", e)
-            null
-        } catch (e: UnknownHostException) {
-            Log.w("JellyfinStreamRepository", "Failed to determine direct play URL: DNS failure", e)
-            null
-        } catch (e: ConnectException) {
-            Log.w("JellyfinStreamRepository", "Failed to determine direct play URL: connection refused", e)
-            null
-        } catch (e: SocketTimeoutException) {
-            Log.w("JellyfinStreamRepository", "Failed to determine direct play URL: timeout", e)
-            null
-        } catch (e: SSLException) {
-            Log.w("JellyfinStreamRepository", "Failed to determine direct play URL: SSL error", e)
-            null
-        } catch (e: IOException) {
-            Log.w("JellyfinStreamRepository", "Failed to determine direct play URL: I/O error", e)
-            null
-        } catch (e: Exception) {
-            Log.w("JellyfinStreamRepository", "Failed to determine direct play URL: unexpected error", e)
-            null
         }
     }
 
@@ -480,30 +384,6 @@ class JellyfinStreamRepository @Inject constructor(
             "${server.url}/Items/$itemId/Images/$imageType?maxHeight=$DEFAULT_IMAGE_MAX_HEIGHT&maxWidth=$DEFAULT_IMAGE_MAX_WIDTH$tagParam"
         } catch (e: CancellationException) {
             throw e
-        } catch (e: InvalidStatusException) {
-            Log.w("JellyfinStreamRepository", "getImageUrl: Failed to generate image URL for $itemId: invalid status", e)
-            null
-        } catch (e: HttpException) {
-            Log.w("JellyfinStreamRepository", "getImageUrl: Failed to generate image URL for $itemId: HTTP error", e)
-            null
-        } catch (e: UnknownHostException) {
-            Log.w("JellyfinStreamRepository", "getImageUrl: Failed to generate image URL for $itemId: DNS failure", e)
-            null
-        } catch (e: ConnectException) {
-            Log.w("JellyfinStreamRepository", "getImageUrl: Failed to generate image URL for $itemId: connection refused", e)
-            null
-        } catch (e: SocketTimeoutException) {
-            Log.w("JellyfinStreamRepository", "getImageUrl: Failed to generate image URL for $itemId: timeout", e)
-            null
-        } catch (e: SSLException) {
-            Log.w("JellyfinStreamRepository", "getImageUrl: Failed to generate image URL for $itemId: SSL error", e)
-            null
-        } catch (e: IOException) {
-            Log.w("JellyfinStreamRepository", "getImageUrl: Failed to generate image URL for $itemId: I/O error", e)
-            null
-        } catch (e: Exception) {
-            Log.w("JellyfinStreamRepository", "getImageUrl: Failed to generate image URL for $itemId: unexpected error", e)
-            null
         }
     }
 
@@ -527,30 +407,6 @@ class JellyfinStreamRepository @Inject constructor(
             "${server.url}/Items/$imageId/Images/Primary?maxHeight=$DEFAULT_IMAGE_MAX_HEIGHT&maxWidth=$DEFAULT_IMAGE_MAX_WIDTH"
         } catch (e: CancellationException) {
             throw e
-        } catch (e: InvalidStatusException) {
-            Log.w("JellyfinStreamRepository", "getSeriesImageUrl: Failed to generate series image URL for ${item.id}: invalid status", e)
-            null
-        } catch (e: HttpException) {
-            Log.w("JellyfinStreamRepository", "getSeriesImageUrl: Failed to generate series image URL for ${item.id}: HTTP error", e)
-            null
-        } catch (e: UnknownHostException) {
-            Log.w("JellyfinStreamRepository", "getSeriesImageUrl: Failed to generate series image URL for ${item.id}: DNS failure", e)
-            null
-        } catch (e: ConnectException) {
-            Log.w("JellyfinStreamRepository", "getSeriesImageUrl: Failed to generate series image URL for ${item.id}: connection refused", e)
-            null
-        } catch (e: SocketTimeoutException) {
-            Log.w("JellyfinStreamRepository", "getSeriesImageUrl: Failed to generate series image URL for ${item.id}: timeout", e)
-            null
-        } catch (e: SSLException) {
-            Log.w("JellyfinStreamRepository", "getSeriesImageUrl: Failed to generate series image URL for ${item.id}: SSL error", e)
-            null
-        } catch (e: IOException) {
-            Log.w("JellyfinStreamRepository", "getSeriesImageUrl: Failed to generate series image URL for ${item.id}: I/O error", e)
-            null
-        } catch (e: Exception) {
-            Log.w("JellyfinStreamRepository", "getSeriesImageUrl: Failed to generate series image URL for ${item.id}: unexpected error", e)
-            null
         }
     }
 
@@ -573,30 +429,6 @@ class JellyfinStreamRepository @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: InvalidStatusException) {
-            Log.w("JellyfinStreamRepository", "getBackdropUrl: Failed to generate backdrop URL for ${item.id}: invalid status", e)
-            null
-        } catch (e: HttpException) {
-            Log.w("JellyfinStreamRepository", "getBackdropUrl: Failed to generate backdrop URL for ${item.id}: HTTP error", e)
-            null
-        } catch (e: UnknownHostException) {
-            Log.w("JellyfinStreamRepository", "getBackdropUrl: Failed to generate backdrop URL for ${item.id}: DNS failure", e)
-            null
-        } catch (e: ConnectException) {
-            Log.w("JellyfinStreamRepository", "getBackdropUrl: Failed to generate backdrop URL for ${item.id}: connection refused", e)
-            null
-        } catch (e: SocketTimeoutException) {
-            Log.w("JellyfinStreamRepository", "getBackdropUrl: Failed to generate backdrop URL for ${item.id}: timeout", e)
-            null
-        } catch (e: SSLException) {
-            Log.w("JellyfinStreamRepository", "getBackdropUrl: Failed to generate backdrop URL for ${item.id}: SSL error", e)
-            null
-        } catch (e: IOException) {
-            Log.w("JellyfinStreamRepository", "getBackdropUrl: Failed to generate backdrop URL for ${item.id}: I/O error", e)
-            null
-        } catch (e: Exception) {
-            Log.w("JellyfinStreamRepository", "getBackdropUrl: Failed to generate backdrop URL for ${item.id}: unexpected error", e)
-            null
         }
     }
 
@@ -619,30 +451,6 @@ class JellyfinStreamRepository @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: InvalidStatusException) {
-            Log.w("JellyfinStreamRepository", "getLogoUrl: Failed to generate logo URL for ${item.id}: invalid status", e)
-            null
-        } catch (e: HttpException) {
-            Log.w("JellyfinStreamRepository", "getLogoUrl: Failed to generate logo URL for ${item.id}: HTTP error", e)
-            null
-        } catch (e: UnknownHostException) {
-            Log.w("JellyfinStreamRepository", "getLogoUrl: Failed to generate logo URL for ${item.id}: DNS failure", e)
-            null
-        } catch (e: ConnectException) {
-            Log.w("JellyfinStreamRepository", "getLogoUrl: Failed to generate logo URL for ${item.id}: connection refused", e)
-            null
-        } catch (e: SocketTimeoutException) {
-            Log.w("JellyfinStreamRepository", "getLogoUrl: Failed to generate logo URL for ${item.id}: timeout", e)
-            null
-        } catch (e: SSLException) {
-            Log.w("JellyfinStreamRepository", "getLogoUrl: Failed to generate logo URL for ${item.id}: SSL error", e)
-            null
-        } catch (e: IOException) {
-            Log.w("JellyfinStreamRepository", "getLogoUrl: Failed to generate logo URL for ${item.id}: I/O error", e)
-            null
-        } catch (e: Exception) {
-            Log.w("JellyfinStreamRepository", "getLogoUrl: Failed to generate logo URL for ${item.id}: unexpected error", e)
-            null
         }
     }
 
@@ -657,22 +465,6 @@ class JellyfinStreamRepository @Inject constructor(
             NetworkQuality.HIGH // Assume good network by default for better quality
         } catch (e: CancellationException) {
             throw e
-        } catch (e: InvalidStatusException) {
-            NetworkQuality.MEDIUM
-        } catch (e: HttpException) {
-            NetworkQuality.MEDIUM
-        } catch (e: UnknownHostException) {
-            NetworkQuality.MEDIUM
-        } catch (e: ConnectException) {
-            NetworkQuality.MEDIUM
-        } catch (e: SocketTimeoutException) {
-            NetworkQuality.MEDIUM
-        } catch (e: SSLException) {
-            NetworkQuality.MEDIUM
-        } catch (e: IOException) {
-            NetworkQuality.MEDIUM
-        } catch (e: Exception) {
-            NetworkQuality.MEDIUM
         }
     }
 

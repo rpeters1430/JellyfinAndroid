@@ -159,46 +159,6 @@ class SearchViewModel @Inject constructor(
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: InvalidStatusException) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "Search error: Jellyfin API error", e)
-                }
-
-                _searchState.value = _searchState.value.copy(
-                    searchResults = emptyList(),
-                    isSearching = false,
-                    errorMessage = "Search failed: Server error",
-                )
-            } catch (e: HttpException) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "Search error: HTTP error", e)
-                }
-
-                _searchState.value = _searchState.value.copy(
-                    searchResults = emptyList(),
-                    isSearching = false,
-                    errorMessage = "Search failed: Network error",
-                )
-            } catch (e: IOException) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "Search error: Network error", e)
-                }
-
-                _searchState.value = _searchState.value.copy(
-                    searchResults = emptyList(),
-                    isSearching = false,
-                    errorMessage = "Search failed: Connection error",
-                )
-            } catch (e: Exception) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "Search error: Unexpected error", e)
-                }
-
-                _searchState.value = _searchState.value.copy(
-                    searchResults = emptyList(),
-                    isSearching = false,
-                    errorMessage = "Search failed: ${e.message}",
-                )
             }
         }
     }

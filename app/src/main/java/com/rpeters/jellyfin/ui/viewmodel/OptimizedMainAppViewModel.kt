@@ -127,26 +127,6 @@ class OptimizedMainAppViewModel @Inject constructor(
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: InvalidStatusException) {
-                Log.e(TAG, "Jellyfin API error during initial data load", e)
-                _appState.value = _appState.value.copy(
-                    errorMessage = "Failed to load data: Server error",
-                )
-            } catch (e: HttpException) {
-                Log.e(TAG, "HTTP error during initial data load", e)
-                _appState.value = _appState.value.copy(
-                    errorMessage = "Failed to load data: Network error",
-                )
-            } catch (e: IOException) {
-                Log.e(TAG, "Network error during initial data load", e)
-                _appState.value = _appState.value.copy(
-                    errorMessage = "Failed to load data: Connection error",
-                )
-            } catch (e: Exception) {
-                Log.e(TAG, "Unexpected error during initial data load", e)
-                _appState.value = _appState.value.copy(
-                    errorMessage = "Failed to load data: ${e.message}",
-                )
             }
         }
     }
@@ -378,26 +358,6 @@ class OptimizedMainAppViewModel @Inject constructor(
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: InvalidStatusException) {
-                Log.e(TAG, "Jellyfin API error loading more ${libraryType.displayName}", e)
-                _appState.value = _appState.value.copy(
-                    errorMessage = "Failed to load more items: Server error",
-                )
-            } catch (e: HttpException) {
-                Log.e(TAG, "HTTP error loading more ${libraryType.displayName}", e)
-                _appState.value = _appState.value.copy(
-                    errorMessage = "Failed to load more items: Network error",
-                )
-            } catch (e: IOException) {
-                Log.e(TAG, "Network error loading more ${libraryType.displayName}", e)
-                _appState.value = _appState.value.copy(
-                    errorMessage = "Failed to load more items: Connection error",
-                )
-            } catch (e: Exception) {
-                Log.e(TAG, "Unexpected error loading more ${libraryType.displayName}", e)
-                _appState.value = _appState.value.copy(
-                    errorMessage = "Failed to load more items: ${e.message}",
-                )
             }
         }
     }
@@ -454,8 +414,6 @@ class OptimizedMainAppViewModel @Inject constructor(
                 _appState.value = OptimizedAppState()
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                Log.e(TAG, "Error during logout", e)
             }
         }
     }

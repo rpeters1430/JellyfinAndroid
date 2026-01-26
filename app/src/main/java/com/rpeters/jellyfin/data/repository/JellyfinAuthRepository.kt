@@ -85,29 +85,6 @@ class JellyfinAuthRepository @Inject constructor(
             Log.e(TAG, "Server returned error status: $serverUrl", e)
             val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Server error: ${e.message}", e, errorType)
-        } catch (e: HttpException) {
-            Log.e(TAG, "HTTP error connecting to server: $serverUrl", e)
-            val errorType = RepositoryUtils.getErrorType(e)
-            ApiResult.Error("HTTP error ${e.code()}: ${e.message()}", e, errorType)
-        } catch (e: UnknownHostException) {
-            Log.e(TAG, "DNS resolution failed for: $serverUrl", e)
-            ApiResult.Error("Cannot reach server. Check the URL and your network connection.", e, RepositoryUtils.getErrorType(e))
-        } catch (e: ConnectException) {
-            Log.e(TAG, "Connection refused by: $serverUrl", e)
-            ApiResult.Error("Cannot connect to server. Check if it's running.", e, RepositoryUtils.getErrorType(e))
-        } catch (e: SocketTimeoutException) {
-            Log.e(TAG, "Connection timeout to: $serverUrl", e)
-            ApiResult.Error("Connection timed out. Server may be slow or unreachable.", e, RepositoryUtils.getErrorType(e))
-        } catch (e: SSLException) {
-            Log.e(TAG, "SSL/TLS error connecting to: $serverUrl", e)
-            ApiResult.Error("Secure connection failed. Certificate may be invalid.", e, RepositoryUtils.getErrorType(e))
-        } catch (e: IOException) {
-            Log.e(TAG, "I/O error connecting to server: $serverUrl", e)
-            ApiResult.Error("Network error: ${e.message}", e, RepositoryUtils.getErrorType(e))
-        } catch (e: Exception) {
-            Log.e(TAG, "Unexpected error connecting to server: $serverUrl", e)
-            val errorType = RepositoryUtils.getErrorType(e)
-            ApiResult.Error("Unexpected error: ${e.message}", e, errorType)
         }
     }
 
@@ -155,19 +132,7 @@ class JellyfinAuthRepository @Inject constructor(
             Log.e(TAG, "authenticateUser: Server returned error status", e)
             val errorType = RepositoryUtils.getErrorType(e)
             return ApiResult.Error("Authentication failed: ${e.message}", e, errorType)
-        } catch (e: HttpException) {
-            Log.e(TAG, "authenticateUser: HTTP error during authentication (${e.code()})", e)
-            val errorType = RepositoryUtils.getErrorType(e)
-            return ApiResult.Error("Authentication failed: HTTP ${e.code()}", e, errorType)
-        } catch (e: IOException) {
-            Log.e(TAG, "authenticateUser: Network error during authentication", e)
-            val errorType = RepositoryUtils.getErrorType(e)
-            return ApiResult.Error("Network error: ${e.message}", e, errorType)
-        } catch (e: Exception) {
-            Log.e(TAG, "authenticateUser: Unexpected error during authentication", e)
-            val errorType = RepositoryUtils.getErrorType(e)
-            return ApiResult.Error("Unexpected error: ${e.message}", e, errorType)
-        } finally {
+        }    finally {
             _isAuthenticating.update { false }
         }
     }
@@ -221,9 +186,6 @@ class JellyfinAuthRepository @Inject constructor(
         } catch (e: IOException) {
             Log.e(TAG, "reAuthenticate: I/O error during re-authentication", e)
             return false
-        } catch (e: Exception) {
-            Log.e(TAG, "reAuthenticate: Unexpected error during re-authentication", e)
-            return false
         }
     }
 
@@ -270,8 +232,6 @@ class JellyfinAuthRepository @Inject constructor(
                     Log.d(TAG, "logout: Cleared saved credentials for user ${server.username}")
                 } catch (e: IOException) {
                     Log.w(TAG, "logout: I/O error clearing credentials", e)
-                } catch (e: Exception) {
-                    Log.w(TAG, "logout: Unexpected error clearing credentials", e)
                 }
             }
 
@@ -320,8 +280,6 @@ class JellyfinAuthRepository @Inject constructor(
                 Log.d(TAG, "persistAuthenticationState: Saved credentials for user '$resolvedUsername'")
             } catch (e: IOException) {
                 Log.w(TAG, "persistAuthenticationState: I/O error saving credentials", e)
-            } catch (e: Exception) {
-                Log.w(TAG, "persistAuthenticationState: Unexpected error saving credentials", e)
             }
         }
     }
@@ -335,18 +293,6 @@ class JellyfinAuthRepository @Inject constructor(
             Log.e(TAG, "initiateQuickConnect: Server returned error status", e)
             val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Quick Connect error: ${e.message}", e, errorType)
-        } catch (e: HttpException) {
-            Log.e(TAG, "initiateQuickConnect: HTTP error (${e.code()})", e)
-            val errorType = RepositoryUtils.getErrorType(e)
-            ApiResult.Error("HTTP error ${e.code()}: ${e.message()}", e, errorType)
-        } catch (e: IOException) {
-            Log.e(TAG, "initiateQuickConnect: Network error", e)
-            val errorType = RepositoryUtils.getErrorType(e)
-            ApiResult.Error("Network error: ${e.message}", e, errorType)
-        } catch (e: Exception) {
-            Log.e(TAG, "initiateQuickConnect: Unexpected error", e)
-            val errorType = RepositoryUtils.getErrorType(e)
-            ApiResult.Error("Unexpected error: ${e.message}", e, errorType)
         }
     }
 
@@ -396,19 +342,7 @@ class JellyfinAuthRepository @Inject constructor(
                 Log.e(TAG, "authenticateWithQuickConnect: Server returned error status", e)
                 val errorType = RepositoryUtils.getErrorType(e)
                 ApiResult.Error("Quick Connect authentication failed: ${e.message}", e, errorType)
-            } catch (e: HttpException) {
-                Log.e(TAG, "authenticateWithQuickConnect: HTTP error (${e.code()})", e)
-                val errorType = RepositoryUtils.getErrorType(e)
-                ApiResult.Error("HTTP error ${e.code()}: ${e.message()}", e, errorType)
-            } catch (e: IOException) {
-                Log.e(TAG, "authenticateWithQuickConnect: Network error", e)
-                val errorType = RepositoryUtils.getErrorType(e)
-                ApiResult.Error("Network error: ${e.message}", e, errorType)
-            } catch (e: Exception) {
-                Log.e(TAG, "authenticateWithQuickConnect: Unexpected error", e)
-                val errorType = RepositoryUtils.getErrorType(e)
-                ApiResult.Error("Unexpected error: ${e.message}", e, errorType)
-            } finally {
+            }    finally {
                 _isAuthenticating.update { false }
             }
         }

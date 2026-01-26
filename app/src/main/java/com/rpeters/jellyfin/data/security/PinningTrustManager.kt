@@ -142,31 +142,6 @@ class PinningTrustManager(
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: CertificateException) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "Certificate validation failed for $hostname: ${e.message}", e)
-                }
-                throw e
-            } catch (e: SSLException) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "SSL/TLS error during pinning validation for $hostname: ${e.message}", e)
-                }
-                throw CertificateException("SSL/TLS error: ${e.message}", e)
-            } catch (e: GeneralSecurityException) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "Security error during pinning validation for $hostname: ${e.message}", e)
-                }
-                throw CertificateException("Security error: ${e.message}", e)
-            } catch (e: IOException) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "I/O error during pinning validation for $hostname: ${e.message}", e)
-                }
-                throw CertificateException("I/O error: ${e.message}", e)
-            } catch (e: Exception) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "Unexpected error during pinning validation for $hostname: ${e.message}", e)
-                }
-                throw CertificateException("Certificate pinning failed: ${e.message}", e)
             }
         }
     }
@@ -219,15 +194,6 @@ class PinningTrustManager(
                 certPinningManager.computeCertificatePin(cert)
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: CertificateException) {
-                Log.e(TAG, "Certificate error computing pin for certificate in chain: ${e.message}", e)
-                null
-            } catch (e: GeneralSecurityException) {
-                Log.e(TAG, "Security error computing pin for certificate in chain: ${e.message}", e)
-                null
-            } catch (e: Exception) {
-                Log.e(TAG, "Unexpected error computing pin for certificate in chain: ${e.message}", e)
-                null
             }
         }
 

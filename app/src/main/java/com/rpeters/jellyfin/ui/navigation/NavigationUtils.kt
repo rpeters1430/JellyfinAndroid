@@ -25,8 +25,5 @@ fun libraryRouteFor(library: BaseItemDto): String? {
         }
     } catch (e: CancellationException) {
         throw e
-    } catch (e: Exception) {
-        SecureLogger.e("NavGraph", "Error determining library route for ${library.name}", e)
-        null
     }
 }

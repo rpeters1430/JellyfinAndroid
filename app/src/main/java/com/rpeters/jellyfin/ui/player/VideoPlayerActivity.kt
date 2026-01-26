@@ -168,18 +168,6 @@ class VideoPlayerActivity : FragmentActivity() {
                     playerViewModel.initializePlayer(itemId, itemName, startPosition)
                 } catch (e: CancellationException) {
                     throw e
-                } catch (e: InvalidStatusException) {
-                    android.util.Log.e("VideoPlayerActivity", "Invalid Jellyfin status", e)
-                    finish()
-                } catch (e: HttpException) {
-                    android.util.Log.e("VideoPlayerActivity", "HTTP error initializing player", e)
-                    finish()
-                } catch (e: IOException) {
-                    android.util.Log.e("VideoPlayerActivity", "Network error initializing player", e)
-                    finish()
-                } catch (e: Exception) {
-                    android.util.Log.e("VideoPlayerActivity", "Failed to initialize player", e)
-                    finish()
                 }
             }
 
@@ -385,8 +373,6 @@ class VideoPlayerActivity : FragmentActivity() {
                 SecureLogger.d("VideoPlayerActivity", "Entered PiP mode successfully")
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                SecureLogger.e("VideoPlayerActivity", "Failed to enter PiP mode", e)
             }
         }
     }
@@ -533,8 +519,6 @@ class VideoPlayerActivity : FragmentActivity() {
                 setPictureInPictureParams(params.build())
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                SecureLogger.w("VideoPlayerActivity", "Failed to update PiP params: ${e.message}")
             }
         }
     }

@@ -55,19 +55,7 @@ class PlaybackRecommendationViewModel @Inject constructor(
                 SecureLogger.d(TAG, "Found ${recommendations.size} playback recommendations")
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: InvalidStatusException) {
-                SecureLogger.e(TAG, "Failed to analyze playback recommendations: Jellyfin API error", e)
-                _recommendations.value = emptyList()
-            } catch (e: HttpException) {
-                SecureLogger.e(TAG, "Failed to analyze playback recommendations: HTTP error", e)
-                _recommendations.value = emptyList()
-            } catch (e: IOException) {
-                SecureLogger.e(TAG, "Failed to analyze playback recommendations: Network error", e)
-                _recommendations.value = emptyList()
-            } catch (e: Exception) {
-                SecureLogger.e(TAG, "Failed to analyze playback recommendations: Unexpected error", e)
-                _recommendations.value = emptyList()
-            } finally {
+            }     finally {
                 _isLoading.value = false
             }
         }

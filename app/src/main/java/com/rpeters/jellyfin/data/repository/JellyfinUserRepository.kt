@@ -212,22 +212,6 @@ class JellyfinUserRepository @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: InvalidStatusException) {
-            false
-        } catch (e: HttpException) {
-            false
-        } catch (e: UnknownHostException) {
-            false
-        } catch (e: ConnectException) {
-            false
-        } catch (e: SocketTimeoutException) {
-            false
-        } catch (e: SSLException) {
-            false
-        } catch (e: IOException) {
-            false
-        } catch (e: Exception) {
-            false
         }
     }
 }
