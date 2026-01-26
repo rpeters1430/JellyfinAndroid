@@ -22,6 +22,7 @@ import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import com.rpeters.jellyfin.utils.AppResources
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -32,8 +33,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.ImageType
+import retrofit2.HttpException
+import java.io.IOException
 import java.util.Locale
 import java.util.concurrent.Executors
 import javax.inject.Inject
@@ -266,6 +270,8 @@ class CastManager @Inject constructor(
                 }
                 deferred.complete(false)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             SecureLogger.e("CastManager", "Failed to initialize Cast", e)
             _castState.update { state ->
@@ -404,6 +410,8 @@ class CastManager @Inject constructor(
                     SecureLogger.d("CastManager", "Failed to find device for auto-reconnect: $deviceName")
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             SecureLogger.e("CastManager", "Error during auto-reconnect", e)
         }
@@ -530,6 +538,23 @@ class CastManager @Inject constructor(
                     state.copy(error = "No active Cast session")
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: InvalidStatusException) {
+            SecureLogger.e("CastManager", "Invalid status starting cast", e)
+            _castState.update { state ->
+                state.copy(error = "Cast failed: Invalid server response")
+            }
+        } catch (e: HttpException) {
+            SecureLogger.e("CastManager", "HTTP error starting cast", e)
+            _castState.update { state ->
+                state.copy(error = "Cast failed: HTTP error ${e.code()}")
+            }
+        } catch (e: IOException) {
+            SecureLogger.e("CastManager", "Network error starting cast", e)
+            _castState.update { state ->
+                state.copy(error = "Cast failed: Network error")
+            }
         } catch (e: Exception) {
             SecureLogger.e("CastManager", "Failed to start casting", e)
             _castState.update { state ->
@@ -621,6 +646,8 @@ class CastManager @Inject constructor(
             _castState.update { state ->
                 state.copy(isCasting = true, isRemotePlaying = false, error = null)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             SecureLogger.e("CastManager", "loadPreview: Failed to send preview", e)
             _castState.update { state ->
@@ -638,6 +665,8 @@ class CastManager @Inject constructor(
             _castState.update { state ->
                 state.copy(isRemotePlaying = false, isCasting = false, error = null)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             SecureLogger.e("CastManager", "Failed to stop casting", e)
             _castState.update { state ->
@@ -682,6 +711,8 @@ class CastManager @Inject constructor(
             managerScope.launch {
                 castPreferencesRepository.clearLastCastSession()
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             SecureLogger.e("CastManager", "Failed to disconnect cast session", e)
             _castState.update { state ->
@@ -696,6 +727,8 @@ class CastManager @Inject constructor(
             _castState.update { state ->
                 state.copy(isRemotePlaying = false, error = null)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             SecureLogger.e("CastManager", "Failed to pause casting", e)
             _castState.update { state ->
@@ -710,6 +743,8 @@ class CastManager @Inject constructor(
             _castState.update { state ->
                 state.copy(isRemotePlaying = true, error = null)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             SecureLogger.e("CastManager", "Failed to resume casting: ${e.message}", e)
             _castState.update { state ->
@@ -737,6 +772,8 @@ class CastManager @Inject constructor(
                     SecureLogger.d("CastManager", "Seeking to: ${positionMs}ms")
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             SecureLogger.e("CastManager", "Failed to seek: ${e.message}", e)
             _castState.update { state ->
@@ -761,6 +798,8 @@ class CastManager @Inject constructor(
                     SecureLogger.d("CastManager", "Volume set to: $volume")
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             SecureLogger.e("CastManager", "Failed to set volume: ${e.message}", e)
             _castState.update { state ->
@@ -776,6 +815,8 @@ class CastManager @Inject constructor(
     fun getVolume(): Float {
         return try {
             castContext?.sessionManager?.currentCastSession?.volume?.toFloat() ?: 1.0f
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             1.0f
         }
@@ -788,6 +829,8 @@ class CastManager @Inject constructor(
     fun getCurrentPosition(): Long {
         return try {
             castContext?.sessionManager?.currentCastSession?.remoteMediaClient?.approximateStreamPosition ?: 0L
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             0L
         }
@@ -800,6 +843,8 @@ class CastManager @Inject constructor(
     fun getDuration(): Long {
         return try {
             castContext?.sessionManager?.currentCastSession?.remoteMediaClient?.mediaInfo?.streamDuration ?: 0L
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             0L
         }
@@ -840,6 +885,8 @@ class CastManager @Inject constructor(
             if (BuildConfig.DEBUG) {
                 SecureLogger.d("CastManager", "Cast manager released")
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             SecureLogger.e("CastManager", "Error releasing Cast manager", e)
         }

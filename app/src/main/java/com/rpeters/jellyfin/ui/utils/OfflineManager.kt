@@ -7,6 +7,7 @@ import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -139,6 +140,8 @@ class OfflineManager(private val context: Context) {
             if (BuildConfig.DEBUG) {
                 Log.d(TAG, "Refreshed offline content: ${offlineItems.size} items available")
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to refresh offline content", e)
         }
@@ -178,6 +181,8 @@ class OfflineManager(private val context: Context) {
                 }
             }
             cleared
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to clear offline content", e)
             false
@@ -247,6 +252,8 @@ class OfflineManager(private val context: Context) {
             if (BuildConfig.DEBUG) {
                 Log.d(TAG, "Cleanup completed")
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Error during cleanup", e)
         }

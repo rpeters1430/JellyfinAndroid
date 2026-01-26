@@ -7,6 +7,7 @@ import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -63,6 +64,8 @@ class TVEpisodeDetailViewModel @Inject constructor(
         viewModelScope.launch {
             val analysis = try {
                 enhancedPlaybackUtils.analyzePlaybackCapabilities(episode)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 android.util.Log.e("TVEpisodeDetailVM", "Failed to analyze playback capabilities for episode ${episode.id}", e)
                 null

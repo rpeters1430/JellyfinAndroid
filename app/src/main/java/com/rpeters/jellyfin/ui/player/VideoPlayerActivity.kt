@@ -37,9 +37,13 @@ import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
 import com.rpeters.jellyfin.ui.viewmodel.SubtitleAppearancePreferencesViewModel
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.jellyfin.sdk.api.client.exception.InvalidStatusException
+import retrofit2.HttpException
+import java.io.IOException
 import javax.inject.Inject
 
 @androidx.media3.common.util.UnstableApi
@@ -162,6 +166,17 @@ class VideoPlayerActivity : FragmentActivity() {
             lifecycleScope.launch {
                 try {
                     playerViewModel.initializePlayer(itemId, itemName, startPosition)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: InvalidStatusException) {
+                    android.util.Log.e("VideoPlayerActivity", "Invalid Jellyfin status", e)
+                    finish()
+                } catch (e: HttpException) {
+                    android.util.Log.e("VideoPlayerActivity", "HTTP error initializing player", e)
+                    finish()
+                } catch (e: IOException) {
+                    android.util.Log.e("VideoPlayerActivity", "Network error initializing player", e)
+                    finish()
                 } catch (e: Exception) {
                     android.util.Log.e("VideoPlayerActivity", "Failed to initialize player", e)
                     finish()
@@ -368,6 +383,8 @@ class VideoPlayerActivity : FragmentActivity() {
             try {
                 enterPictureInPictureMode(params)
                 SecureLogger.d("VideoPlayerActivity", "Entered PiP mode successfully")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 SecureLogger.e("VideoPlayerActivity", "Failed to enter PiP mode", e)
             }
@@ -514,6 +531,8 @@ class VideoPlayerActivity : FragmentActivity() {
                 pipSourceRect?.let { params.setSourceRectHint(it) }
 
                 setPictureInPictureParams(params.build())
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 SecureLogger.w("VideoPlayerActivity", "Failed to update PiP params: ${e.message}")
             }

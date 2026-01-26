@@ -8,6 +8,7 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.data.repository.JellyfinSearchRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,8 +19,11 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
+import retrofit2.HttpException
+import java.io.IOException
 import javax.inject.Inject
 
 /**
@@ -153,9 +157,41 @@ class SearchViewModel @Inject constructor(
                         // Already handled by isSearching state
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: InvalidStatusException) {
+                if (BuildConfig.DEBUG) {
+                    Log.e(TAG, "Search error: Jellyfin API error", e)
+                }
+
+                _searchState.value = _searchState.value.copy(
+                    searchResults = emptyList(),
+                    isSearching = false,
+                    errorMessage = "Search failed: Server error",
+                )
+            } catch (e: HttpException) {
+                if (BuildConfig.DEBUG) {
+                    Log.e(TAG, "Search error: HTTP error", e)
+                }
+
+                _searchState.value = _searchState.value.copy(
+                    searchResults = emptyList(),
+                    isSearching = false,
+                    errorMessage = "Search failed: Network error",
+                )
+            } catch (e: IOException) {
+                if (BuildConfig.DEBUG) {
+                    Log.e(TAG, "Search error: Network error", e)
+                }
+
+                _searchState.value = _searchState.value.copy(
+                    searchResults = emptyList(),
+                    isSearching = false,
+                    errorMessage = "Search failed: Connection error",
+                )
             } catch (e: Exception) {
                 if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "Search error", e)
+                    Log.e(TAG, "Search error: Unexpected error", e)
                 }
 
                 _searchState.value = _searchState.value.copy(

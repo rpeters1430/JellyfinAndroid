@@ -5,6 +5,7 @@ import android.content.Intent
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.R
+import kotlinx.coroutines.CancellationException
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 object ShareUtils {
@@ -30,6 +31,8 @@ object ShareUtils {
             if (BuildConfig.DEBUG) {
                 Log.d("ShareUtils", "Successfully shared: ${item.name}")
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e("ShareUtils", "Failed to share media: ${e.message}", e)
         }

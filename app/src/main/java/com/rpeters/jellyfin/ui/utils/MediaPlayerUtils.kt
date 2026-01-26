@@ -18,6 +18,7 @@ import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CancellationException
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
@@ -55,6 +56,8 @@ object MediaPlayerUtils {
             if (BuildConfig.DEBUG) {
                 Log.d("MediaPlayerUtils", "Successfully launched internal video player")
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e("MediaPlayerUtils", "Failed to launch internal player, trying external: ${e.message}", e)
 
@@ -127,6 +130,8 @@ object MediaPlayerUtils {
             if (BuildConfig.DEBUG) {
                 Log.d("MediaPlayerUtils", "Successfully launched external media player")
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e("MediaPlayerUtils", "Failed to launch external player: ${e.message}", e)
 
@@ -139,6 +144,8 @@ object MediaPlayerUtils {
                 if (BuildConfig.DEBUG) {
                     Log.d("MediaPlayerUtils", "Successfully launched fallback intent")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (fallbackException: Exception) {
                 Log.e("MediaPlayerUtils", "All playback methods failed: ${fallbackException.message}", fallbackException)
                 throw MediaPlayerException("Unable to play media. No compatible media player found.")
@@ -172,6 +179,8 @@ object MediaPlayerUtils {
             if (BuildConfig.DEBUG) {
                 Log.d("MediaPlayerUtils", "Successfully launched video player with quality settings")
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e("MediaPlayerUtils", "Failed to launch video player with quality: ${e.message}", e)
             // Fallback to regular playback
@@ -189,6 +198,8 @@ object MediaPlayerUtils {
             }
             val activities = context.packageManager.queryIntentActivities(intent, 0)
             activities.isNotEmpty()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.w("MediaPlayerUtils", "Error checking for media player availability: ${e.message}")
             false
@@ -224,6 +235,8 @@ object MediaPlayerUtils {
                 append("MaxHeight=$targetHeight&")
                 append("MaxStreamingBitrate=$bitrate")
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.w("MediaPlayerUtils", "Failed to compute optimal stream URL: ${e.message}", e)
             baseStreamUrl

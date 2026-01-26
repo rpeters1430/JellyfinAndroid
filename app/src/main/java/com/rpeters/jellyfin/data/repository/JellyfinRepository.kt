@@ -22,8 +22,10 @@ import com.rpeters.jellyfin.ui.utils.OfflineManager
 import com.rpeters.jellyfin.utils.AppResources
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.api.client.ApiClient
+import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.api.client.extensions.mediaInfoApi
@@ -40,8 +42,14 @@ import org.jellyfin.sdk.model.api.PlaybackInfoDto
 import org.jellyfin.sdk.model.api.PlaybackInfoResponse
 import org.jellyfin.sdk.model.api.PublicSystemInfo
 import org.jellyfin.sdk.model.api.SortOrder
+import retrofit2.HttpException
+import java.io.IOException
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import javax.inject.Inject
 import javax.inject.Singleton
+import javax.net.ssl.SSLException
 
 @Singleton
 class JellyfinRepository @Inject constructor(
@@ -137,6 +145,29 @@ class JellyfinRepository @Inject constructor(
                 block(server, client)
             }
             ApiResult.Success(result)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: InvalidStatusException) {
+            val error = RepositoryUtils.getErrorType(e)
+            ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
+        } catch (e: HttpException) {
+            val error = RepositoryUtils.getErrorType(e)
+            ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
+        } catch (e: UnknownHostException) {
+            val error = RepositoryUtils.getErrorType(e)
+            ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
+        } catch (e: ConnectException) {
+            val error = RepositoryUtils.getErrorType(e)
+            ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
+        } catch (e: SocketTimeoutException) {
+            val error = RepositoryUtils.getErrorType(e)
+            ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
+        } catch (e: SSLException) {
+            val error = RepositoryUtils.getErrorType(e)
+            ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
+        } catch (e: IOException) {
+            val error = RepositoryUtils.getErrorType(e)
+            ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
         } catch (e: Exception) {
             val error = RepositoryUtils.getErrorType(e)
             ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
@@ -341,12 +372,37 @@ class JellyfinRepository @Inject constructor(
             }
 
             ApiResult.Success(items)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: InvalidStatusException) {
+            Log.e("JellyfinRepository", "getRecentlyAdded: Failed to load items: invalid status", e)
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load recently added items: ${e.message}", e, errorType)
+        } catch (e: HttpException) {
+            Log.e("JellyfinRepository", "getRecentlyAdded: Failed to load items: HTTP error", e)
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load recently added items: ${e.message}", e, errorType)
+        } catch (e: UnknownHostException) {
+            Log.e("JellyfinRepository", "getRecentlyAdded: Failed to load items: DNS failure", e)
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load recently added items: ${e.message}", e, errorType)
+        } catch (e: ConnectException) {
+            Log.e("JellyfinRepository", "getRecentlyAdded: Failed to load items: connection refused", e)
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load recently added items: ${e.message}", e, errorType)
+        } catch (e: SocketTimeoutException) {
+            Log.e("JellyfinRepository", "getRecentlyAdded: Failed to load items: timeout", e)
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load recently added items: ${e.message}", e, errorType)
+        } catch (e: SSLException) {
+            Log.e("JellyfinRepository", "getRecentlyAdded: Failed to load items: SSL error", e)
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load recently added items: ${e.message}", e, errorType)
+        } catch (e: IOException) {
+            Log.e("JellyfinRepository", "getRecentlyAdded: Failed to load items: I/O error", e)
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load recently added items: ${e.message}", e, errorType)
         } catch (e: Exception) {
-            // ✅ FIX: Let cancellation exceptions bubble up instead of converting to ApiResult.Error
-            if (e is java.util.concurrent.CancellationException || e is kotlinx.coroutines.CancellationException) {
-                throw e
-            }
-
             Log.e("JellyfinRepository", "getRecentlyAdded: Failed to load items", e)
             val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Failed to load recently added items: ${e.message}", e, errorType)
@@ -384,16 +440,13 @@ class JellyfinRepository @Inject constructor(
         for (attempt in 0..maxRetries) {
             try {
                 return operation()
-            } catch (e: Exception) {
-                lastException = e
-
-                // ✅ FIX: Don't retry if the job was cancelled (navigation/lifecycle cancellation)
-                if (e is java.util.concurrent.CancellationException || e is kotlinx.coroutines.CancellationException) {
-                    if (BuildConfig.DEBUG) {
-                        Log.d("JellyfinRepository", "Operation was cancelled, not retrying")
-                    }
-                    throw e
+            } catch (e: CancellationException) {
+                if (BuildConfig.DEBUG) {
+                    Log.d("JellyfinRepository", "Operation was cancelled, not retrying")
                 }
+                throw e
+            } catch (e: InvalidStatusException) {
+                lastException = e
 
                 // If it's a 401 error and we have saved credentials, try to re-authenticate
                 val is401Error = RepositoryUtils.is401Error(e)
@@ -409,15 +462,66 @@ class JellyfinRepository @Inject constructor(
                         kotlinx.coroutines.delay(RE_AUTH_DELAY_MS)
                         continue
                     } else {
-                        Log.w("JellyfinRepository", "Force re-authentication failed, will not retry")
+                        Log.w("JellyfinRepository", "Force re-authentication failed")
                         throw e
                     }
                 }
 
-                // For other errors or if we've exhausted retries, throw the exception
-                if (attempt == maxRetries) {
-                    throw e
+                // For other errors or final attempt, throw the exception
+                throw e
+            } catch (e: HttpException) {
+                lastException = e
+                val is401Error = RepositoryUtils.is401Error(e)
+                if (is401Error && attempt < maxRetries) {
+                    Log.w("JellyfinRepository", "Got 401 error on attempt ${attempt + 1}, attempting force re-authentication")
+                    if (forceReAuthenticate()) {
+                        if (BuildConfig.DEBUG) {
+                            Log.d("JellyfinRepository", "Force re-authentication successful, retrying operation")
+                        }
+                        kotlinx.coroutines.delay(RE_AUTH_DELAY_MS)
+                        continue
+                    }
                 }
+                throw e
+            } catch (e: UnknownHostException) {
+                lastException = e
+                throw e
+            } catch (e: ConnectException) {
+                lastException = e
+                throw e
+            } catch (e: SocketTimeoutException) {
+                lastException = e
+                throw e
+            } catch (e: SSLException) {
+                lastException = e
+                throw e
+            } catch (e: IOException) {
+                lastException = e
+                throw e
+            } catch (e: Exception) {
+                lastException = e
+
+                // If it's a 401 error and we have saved credentials, try to re-authenticate
+                val is401Error = RepositoryUtils.is401Error(e)
+                if (is401Error && attempt < maxRetries) {
+                    Log.w("JellyfinRepository", "Got 401 error on attempt ${attempt + 1}, attempting force re-authentication")
+
+                    // Use force re-authentication for 401 errors since server reported token invalid
+                    if (forceReAuthenticate()) {
+                        if (BuildConfig.DEBUG) {
+                            Log.d("JellyfinRepository", "Force re-authentication successful, retrying operation")
+                        }
+                        // Additional delay to ensure token propagation
+                        kotlinx.coroutines.delay(RE_AUTH_DELAY_MS)
+                        continue
+                    } else {
+                        Log.w("JellyfinRepository", "Force re-authentication failed")
+                        throw e
+                    }
+                }
+
+                // For other errors or final attempt, throw the exception
+                throw e
             }
         }
 
@@ -476,15 +580,72 @@ class JellyfinRepository @Inject constructor(
                         }
                     }
                 }
-            } catch (e: Exception) {
-                // Handle direct exceptions from the operation
-                if (e is java.util.concurrent.CancellationException || e is kotlinx.coroutines.CancellationException) {
-                    if (BuildConfig.DEBUG) {
-                        Log.d("JellyfinRepository", "$operationName: Operation cancelled on attempt ${attempt + 1}")
-                    }
-                    throw e
+            } catch (e: CancellationException) {
+                if (BuildConfig.DEBUG) {
+                    Log.d("JellyfinRepository", "$operationName: Operation cancelled on attempt ${attempt + 1}")
                 }
+                throw e
+            } catch (e: InvalidStatusException) {
+                val errorType = RepositoryUtils.getErrorType(e)
+                Log.w("JellyfinRepository", "$operationName: Invalid status on attempt ${attempt + 1}: ${e.message}")
 
+                // Check for 401 in exception and retry with re-authentication
+                if (errorType == ErrorType.UNAUTHORIZED && attempt < maxRetries) {
+                    Log.w("JellyfinRepository", "$operationName: Got 401 exception, attempting force re-authentication")
+
+                    if (forceReAuthenticate()) {
+                        if (BuildConfig.DEBUG) {
+                            Log.d("JellyfinRepository", "$operationName: Force re-authentication successful, retrying")
+                        }
+                        // Additional delay for token propagation
+                        kotlinx.coroutines.delay(RE_AUTH_DELAY_MS)
+                        continue
+                    } else {
+                        Log.w("JellyfinRepository", "$operationName: Force re-authentication failed")
+                        return handleExceptionSafely(e, operationName)
+                    }
+                } else {
+                    if (BuildConfig.DEBUG) {
+                        Log.d("JellyfinRepository", "$operationName: Exception type $errorType not retryable or max attempts reached")
+                    }
+                    return handleExceptionSafely(e, operationName)
+                }
+            } catch (e: HttpException) {
+                val errorType = RepositoryUtils.getErrorType(e)
+                Log.w("JellyfinRepository", "$operationName: HTTP error on attempt ${attempt + 1}: ${e.message}")
+
+                if (errorType == ErrorType.UNAUTHORIZED && attempt < maxRetries) {
+                    Log.w("JellyfinRepository", "$operationName: Got 401 exception, attempting force re-authentication")
+
+                    if (forceReAuthenticate()) {
+                        if (BuildConfig.DEBUG) {
+                            Log.d("JellyfinRepository", "$operationName: Force re-authentication successful, retrying")
+                        }
+                        kotlinx.coroutines.delay(RE_AUTH_DELAY_MS)
+                        continue
+                    } else {
+                        Log.w("JellyfinRepository", "$operationName: Force re-authentication failed")
+                        return handleExceptionSafely(e, operationName)
+                    }
+                } else {
+                    return handleExceptionSafely(e, operationName)
+                }
+            } catch (e: UnknownHostException) {
+                Log.w("JellyfinRepository", "$operationName: DNS failure on attempt ${attempt + 1}")
+                return handleExceptionSafely(e, operationName)
+            } catch (e: ConnectException) {
+                Log.w("JellyfinRepository", "$operationName: Connection refused on attempt ${attempt + 1}")
+                return handleExceptionSafely(e, operationName)
+            } catch (e: SocketTimeoutException) {
+                Log.w("JellyfinRepository", "$operationName: Timeout on attempt ${attempt + 1}")
+                return handleExceptionSafely(e, operationName)
+            } catch (e: SSLException) {
+                Log.w("JellyfinRepository", "$operationName: SSL error on attempt ${attempt + 1}")
+                return handleExceptionSafely(e, operationName)
+            } catch (e: IOException) {
+                Log.w("JellyfinRepository", "$operationName: I/O error on attempt ${attempt + 1}")
+                return handleExceptionSafely(e, operationName)
+            } catch (e: Exception) {
                 val errorType = RepositoryUtils.getErrorType(e)
                 Log.w("JellyfinRepository", "$operationName: Exception on attempt ${attempt + 1}: ${e.message} (type: $errorType)")
 
@@ -593,6 +754,22 @@ class JellyfinRepository @Inject constructor(
                 limit = limit,
             )
             ApiResult.Success(response.content.items)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: InvalidStatusException) {
+            handleException(e, "Failed to load recently added items from library")
+        } catch (e: HttpException) {
+            handleException(e, "Failed to load recently added items from library")
+        } catch (e: UnknownHostException) {
+            handleException(e, "Failed to load recently added items from library")
+        } catch (e: ConnectException) {
+            handleException(e, "Failed to load recently added items from library")
+        } catch (e: SocketTimeoutException) {
+            handleException(e, "Failed to load recently added items from library")
+        } catch (e: SSLException) {
+            handleException(e, "Failed to load recently added items from library")
+        } catch (e: IOException) {
+            handleException(e, "Failed to load recently added items from library")
         } catch (e: Exception) {
             handleException(e, "Failed to load recently added items from library")
         }
@@ -680,6 +857,29 @@ class JellyfinRepository @Inject constructor(
                 filters = listOf(ItemFilter.IS_FAVORITE),
             )
             ApiResult.Success(response.content.items)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: InvalidStatusException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load favorites: ${e.message}", e, errorType)
+        } catch (e: HttpException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load favorites: ${e.message}", e, errorType)
+        } catch (e: UnknownHostException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load favorites: ${e.message}", e, errorType)
+        } catch (e: ConnectException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load favorites: ${e.message}", e, errorType)
+        } catch (e: SocketTimeoutException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load favorites: ${e.message}", e, errorType)
+        } catch (e: SSLException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load favorites: ${e.message}", e, errorType)
+        } catch (e: IOException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load favorites: ${e.message}", e, errorType)
         } catch (e: Exception) {
             val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Failed to load favorites: ${e.message}", e, errorType)
@@ -715,6 +915,36 @@ class JellyfinRepository @Inject constructor(
                 Log.d("JellyfinRepository", "getSeasonsForSeries: Successfully fetched ${response.content.items.size} seasons for seriesId=$seriesId")
             }
             ApiResult.Success(response.content.items)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: InvalidStatusException) {
+            Log.e("JellyfinRepository", "getSeasonsForSeries: Invalid status for seriesId=$seriesId", e)
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load seasons: ${e.message}", e, errorType)
+        } catch (e: HttpException) {
+            Log.e("JellyfinRepository", "getSeasonsForSeries: HTTP error for seriesId=$seriesId", e)
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load seasons: ${e.message}", e, errorType)
+        } catch (e: UnknownHostException) {
+            Log.e("JellyfinRepository", "getSeasonsForSeries: DNS failure for seriesId=$seriesId", e)
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load seasons: ${e.message}", e, errorType)
+        } catch (e: ConnectException) {
+            Log.e("JellyfinRepository", "getSeasonsForSeries: Connection refused for seriesId=$seriesId", e)
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load seasons: ${e.message}", e, errorType)
+        } catch (e: SocketTimeoutException) {
+            Log.e("JellyfinRepository", "getSeasonsForSeries: Timeout for seriesId=$seriesId", e)
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load seasons: ${e.message}", e, errorType)
+        } catch (e: SSLException) {
+            Log.e("JellyfinRepository", "getSeasonsForSeries: SSL error for seriesId=$seriesId", e)
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load seasons: ${e.message}", e, errorType)
+        } catch (e: IOException) {
+            Log.e("JellyfinRepository", "getSeasonsForSeries: I/O error for seriesId=$seriesId", e)
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load seasons: ${e.message}", e, errorType)
         } catch (e: Exception) {
             Log.e("JellyfinRepository", "getSeasonsForSeries: Failed to fetch seasons for seriesId=$seriesId", e)
             val errorType = RepositoryUtils.getErrorType(e)
@@ -751,6 +981,36 @@ class JellyfinRepository @Inject constructor(
                 Log.d("JellyfinRepository", "getEpisodesForSeason: Successfully fetched ${response.content.items.size} episodes for seasonId=$seasonId")
             }
             ApiResult.Success(response.content.items)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: InvalidStatusException) {
+            Log.e("JellyfinRepository", "getEpisodesForSeason: Invalid status for seasonId=$seasonId", e)
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load episodes: ${e.message}", e, errorType)
+        } catch (e: HttpException) {
+            Log.e("JellyfinRepository", "getEpisodesForSeason: HTTP error for seasonId=$seasonId", e)
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load episodes: ${e.message}", e, errorType)
+        } catch (e: UnknownHostException) {
+            Log.e("JellyfinRepository", "getEpisodesForSeason: DNS failure for seasonId=$seasonId", e)
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load episodes: ${e.message}", e, errorType)
+        } catch (e: ConnectException) {
+            Log.e("JellyfinRepository", "getEpisodesForSeason: Connection refused for seasonId=$seasonId", e)
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load episodes: ${e.message}", e, errorType)
+        } catch (e: SocketTimeoutException) {
+            Log.e("JellyfinRepository", "getEpisodesForSeason: Timeout for seasonId=$seasonId", e)
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load episodes: ${e.message}", e, errorType)
+        } catch (e: SSLException) {
+            Log.e("JellyfinRepository", "getEpisodesForSeason: SSL error for seasonId=$seasonId", e)
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load episodes: ${e.message}", e, errorType)
+        } catch (e: IOException) {
+            Log.e("JellyfinRepository", "getEpisodesForSeason: I/O error for seasonId=$seasonId", e)
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load episodes: ${e.message}", e, errorType)
         } catch (e: Exception) {
             Log.e("JellyfinRepository", "getEpisodesForSeason: Failed to fetch episodes for seasonId=$seasonId", e)
             val errorType = RepositoryUtils.getErrorType(e)
@@ -798,6 +1058,29 @@ class JellyfinRepository @Inject constructor(
             } else {
                 ApiResult.Error("$itemTypeName not found", errorType = ErrorType.NOT_FOUND)
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: InvalidStatusException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load $itemTypeName details: ${e.message}", e, errorType)
+        } catch (e: HttpException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load $itemTypeName details: ${e.message}", e, errorType)
+        } catch (e: UnknownHostException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load $itemTypeName details: ${e.message}", e, errorType)
+        } catch (e: ConnectException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load $itemTypeName details: ${e.message}", e, errorType)
+        } catch (e: SocketTimeoutException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load $itemTypeName details: ${e.message}", e, errorType)
+        } catch (e: SSLException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load $itemTypeName details: ${e.message}", e, errorType)
+        } catch (e: IOException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to load $itemTypeName details: ${e.message}", e, errorType)
         } catch (e: Exception) {
             val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Failed to load $itemTypeName details: ${e.message}", e, errorType)
@@ -864,6 +1147,29 @@ class JellyfinRepository @Inject constructor(
                 limit = limit,
             )
             ApiResult.Success(response.content.items)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: InvalidStatusException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Search failed: ${e.message}", e, errorType)
+        } catch (e: HttpException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Search failed: ${e.message}", e, errorType)
+        } catch (e: UnknownHostException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Search failed: ${e.message}", e, errorType)
+        } catch (e: ConnectException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Search failed: ${e.message}", e, errorType)
+        } catch (e: SocketTimeoutException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Search failed: ${e.message}", e, errorType)
+        } catch (e: SSLException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Search failed: ${e.message}", e, errorType)
+        } catch (e: IOException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Search failed: ${e.message}", e, errorType)
         } catch (e: Exception) {
             val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Search failed: ${e.message}", e, errorType)
@@ -947,6 +1253,29 @@ class JellyfinRepository @Inject constructor(
                 client.userLibraryApi.unmarkFavoriteItem(itemId = itemUuid, userId = userUuid)
             }
             ApiResult.Success(!isFavorite) // Return the new state
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: InvalidStatusException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to toggle favorite: ${e.message}", e, errorType)
+        } catch (e: HttpException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to toggle favorite: ${e.message}", e, errorType)
+        } catch (e: UnknownHostException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to toggle favorite: ${e.message}", e, errorType)
+        } catch (e: ConnectException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to toggle favorite: ${e.message}", e, errorType)
+        } catch (e: SocketTimeoutException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to toggle favorite: ${e.message}", e, errorType)
+        } catch (e: SSLException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to toggle favorite: ${e.message}", e, errorType)
+        } catch (e: IOException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to toggle favorite: ${e.message}", e, errorType)
         } catch (e: Exception) {
             val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Failed to toggle favorite: ${e.message}", e, errorType)
@@ -968,6 +1297,29 @@ class JellyfinRepository @Inject constructor(
             val client = getClient(server.url, server.accessToken)
             client.libraryApi.deleteItem(itemId = itemUuid)
             ApiResult.Success(true)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: InvalidStatusException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to delete item: ${e.message}", e, errorType)
+        } catch (e: HttpException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to delete item: ${e.message}", e, errorType)
+        } catch (e: UnknownHostException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to delete item: ${e.message}", e, errorType)
+        } catch (e: ConnectException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to delete item: ${e.message}", e, errorType)
+        } catch (e: SocketTimeoutException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to delete item: ${e.message}", e, errorType)
+        } catch (e: SSLException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to delete item: ${e.message}", e, errorType)
+        } catch (e: IOException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to delete item: ${e.message}", e, errorType)
         } catch (e: Exception) {
             val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Failed to delete item: ${e.message}", e, errorType)
@@ -985,6 +1337,29 @@ class JellyfinRepository @Inject constructor(
             val client = getClient(server.url, server.accessToken)
             val user = client.userApi.getCurrentUser().content
             ApiResult.Success(user.policy?.isAdministrator == true || user.policy?.enableContentDeletion == true)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: InvalidStatusException) {
+            Log.e("JellyfinRepository", "Failed to verify admin permissions: invalid status", e)
+            ApiResult.Error("Failed to verify admin permissions: ${e.message}", e, RepositoryUtils.getErrorType(e))
+        } catch (e: HttpException) {
+            Log.e("JellyfinRepository", "Failed to verify admin permissions: HTTP error", e)
+            ApiResult.Error("Failed to verify admin permissions: ${e.message}", e, RepositoryUtils.getErrorType(e))
+        } catch (e: UnknownHostException) {
+            Log.e("JellyfinRepository", "Failed to verify admin permissions: DNS failure", e)
+            ApiResult.Error("Failed to verify admin permissions: ${e.message}", e, RepositoryUtils.getErrorType(e))
+        } catch (e: ConnectException) {
+            Log.e("JellyfinRepository", "Failed to verify admin permissions: connection refused", e)
+            ApiResult.Error("Failed to verify admin permissions: ${e.message}", e, RepositoryUtils.getErrorType(e))
+        } catch (e: SocketTimeoutException) {
+            Log.e("JellyfinRepository", "Failed to verify admin permissions: timeout", e)
+            ApiResult.Error("Failed to verify admin permissions: ${e.message}", e, RepositoryUtils.getErrorType(e))
+        } catch (e: SSLException) {
+            Log.e("JellyfinRepository", "Failed to verify admin permissions: SSL error", e)
+            ApiResult.Error("Failed to verify admin permissions: ${e.message}", e, RepositoryUtils.getErrorType(e))
+        } catch (e: IOException) {
+            Log.e("JellyfinRepository", "Failed to verify admin permissions: I/O error", e)
+            ApiResult.Error("Failed to verify admin permissions: ${e.message}", e, RepositoryUtils.getErrorType(e))
         } catch (e: Exception) {
             Log.e("JellyfinRepository", "Failed to verify admin permissions: ${e.message}", e)
             ApiResult.Error("Failed to verify admin permissions: ${e.message}", e, RepositoryUtils.getErrorType(e))
@@ -1017,6 +1392,29 @@ class JellyfinRepository @Inject constructor(
             val client = getClient(server.url, server.accessToken)
             client.libraryApi.deleteItem(itemId = itemUuid)
             ApiResult.Success(true)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: InvalidStatusException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to delete item: ${e.message}", e, errorType)
+        } catch (e: HttpException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to delete item: ${e.message}", e, errorType)
+        } catch (e: UnknownHostException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to delete item: ${e.message}", e, errorType)
+        } catch (e: ConnectException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to delete item: ${e.message}", e, errorType)
+        } catch (e: SocketTimeoutException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to delete item: ${e.message}", e, errorType)
+        } catch (e: SSLException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to delete item: ${e.message}", e, errorType)
+        } catch (e: IOException) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to delete item: ${e.message}", e, errorType)
         } catch (e: Exception) {
             val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Failed to delete item: ${e.message}", e, errorType)
