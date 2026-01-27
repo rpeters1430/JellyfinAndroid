@@ -159,7 +159,7 @@ class TVSeasonViewModelTest {
         dispatcher.scheduler.advanceUntilIdle()
 
         val state = viewModel.state.value
-        assertEquals(null, state.nextEpisode)
+        assertNull(state.nextEpisode)
     }
 
     @Test
@@ -175,7 +175,7 @@ class TVSeasonViewModelTest {
         dispatcher.scheduler.advanceUntilIdle()
 
         val state = viewModel.state.value
-        assertEquals(null, state.nextEpisode)
+        assertNull(state.nextEpisode)
     }
 
     @Test
