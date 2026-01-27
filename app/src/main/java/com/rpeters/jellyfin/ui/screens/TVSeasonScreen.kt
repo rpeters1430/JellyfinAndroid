@@ -338,12 +338,12 @@ private fun TVSeasonContent(
 private fun getWatchButtonText(series: BaseItemDto): String {
     val totalCount = series.childCount ?: 0
     val unwatchedCount = series.userData?.unplayedItemCount
-    
+
     // If explicitly marked as played, show rewatch
     if (series.userData?.played == true) {
         return "Rewatch Series"
     }
-    
+
     // If we have unplayed count information
     if (unwatchedCount != null) {
         return when {
@@ -352,7 +352,7 @@ private fun getWatchButtonText(series: BaseItemDto): String {
             else -> "Watch Next Episode"
         }
     }
-    
+
     // Fallback when we don't have user data: assume unwatched if series has episodes
     return if (totalCount > 0) {
         "Start Watching Episode 1"
