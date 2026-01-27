@@ -347,9 +347,12 @@ private fun getWatchButtonText(series: BaseItemDto): String {
     // If we have unplayed count information
     if (unwatchedCount != null) {
         return when {
-            unwatchedCount == 0 -> "Rewatch Series"
+            // Only show "Rewatch" if unplayedCount is 0 AND series has episodes
+            // This ensures we don't show "Rewatch" for series that haven't been started
+            unwatchedCount == 0 && totalCount > 0 -> "Rewatch Series"
             unwatchedCount == totalCount && totalCount > 0 -> "Start Watching Episode 1"
-            else -> "Watch Next Episode"
+            unwatchedCount > 0 -> "Watch Next Episode"
+            else -> "Browse Series" // Fallback for series with 0 episodes
         }
     }
 
