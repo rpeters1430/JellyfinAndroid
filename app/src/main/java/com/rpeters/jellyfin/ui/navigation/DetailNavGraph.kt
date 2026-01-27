@@ -267,6 +267,9 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
             lifecycle = lifecycleOwner.lifecycle,
             minActiveState = androidx.lifecycle.Lifecycle.State.STARTED,
         )
+        val currentServer by mainViewModel.currentServer.collectAsStateWithLifecycle(
+            lifecycle = lifecycleOwner.lifecycle,
+        )
 
         val movie = appState.allItems.find { it.id.toString() == movieId }
         val detailState by detailViewModel.state.collectAsStateWithLifecycle(lifecycle = lifecycleOwner.lifecycle)
@@ -327,6 +330,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 getBackdropUrl = { item -> mainViewModel.getBackdropUrl(item) },
                 getLogoUrl = { item -> mainViewModel.getLogoUrl(item) },
                 getPersonImageUrl = { person -> mainViewModel.getPersonImageUrl(person) },
+                serverUrl = currentServer?.url,
             )
         } else if (detailState.isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

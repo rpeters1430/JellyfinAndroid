@@ -108,6 +108,7 @@ fun MovieDetailScreen(
     relatedItems: List<BaseItemDto> = emptyList(),
     playbackAnalysis: PlaybackCapabilityAnalysis? = null,
     isRefreshing: Boolean = false,
+    serverUrl: String? = null,
     modifier: Modifier = Modifier,
 ) {
     var isFavorite by remember { mutableStateOf(movie.userData?.isFavorite == true) }
@@ -515,24 +516,34 @@ fun MovieDetailScreen(
                     onDismissRequest = { showMoreOptions = false },
                 ) {
                     // Open in Browser
-                    val movieId = movie.id.toString()
-                    DropdownMenuItem(
-                        text = { Text("Open in Browser") },
-                        onClick = {
-                            val intent = android.content.Intent(
-                                android.content.Intent.ACTION_VIEW,
-                                android.net.Uri.parse("${movie.serverId}/web/index.html#!/details?id=$movieId"),
-                            )
-                            context.startActivity(intent)
-                            showMoreOptions = false
-                        },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.OpenInBrowser,
-                                contentDescription = null,
-                            )
-                        },
-                    )
+                    if (!serverUrl.isNullOrBlank()) {
+                        val movieId = movie.id.toString()
+                        DropdownMenuItem(
+                            text = { Text("Open in Browser") },
+                            onClick = {
+                                try {
+                                    val intent = android.content.Intent(
+                                        android.content.Intent.ACTION_VIEW,
+                                        android.net.Uri.parse("$serverUrl/web/index.html#!/details?id=$movieId"),
+                                    )
+                                    context.startActivity(intent)
+                                } catch (e: android.content.ActivityNotFoundException) {
+                                    android.widget.Toast.makeText(
+                                        context,
+                                        "No browser found to open the URL",
+                                        android.widget.Toast.LENGTH_SHORT,
+                                    ).show()
+                                }
+                                showMoreOptions = false
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.OpenInBrowser,
+                                    contentDescription = null,
+                                )
+                            },
+                        )
+                    }
 
                     // Share
                     DropdownMenuItem(
