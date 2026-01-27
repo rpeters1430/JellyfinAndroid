@@ -141,7 +141,7 @@ class TVSeasonViewModelTest {
     }
 
     @Test
-    fun `findNextUnwatchedEpisode returns null when all episodes are watched`() = runTest {
+    fun `findNextUnwatchedEpisode returns first episode when all episodes are watched for rewatch`() = runTest {
         val seriesId = randomSeriesId()
         val series = series(id = seriesId, name = "Test Series", childCount = 2, completelyWatched = true)
         val season1 = season(name = "Season 1", indexNumber = 1)
@@ -159,7 +159,8 @@ class TVSeasonViewModelTest {
         dispatcher.scheduler.advanceUntilIdle()
 
         val state = viewModel.state.value
-        assertNull(state.nextEpisode)
+        assertNotNull(state.nextEpisode)
+        assertEquals(episode1.id, state.nextEpisode?.id) // Returns first episode for rewatch
     }
 
     @Test
@@ -289,6 +290,32 @@ class TVSeasonViewModelTest {
         val secondState = viewModel.state.value
         assertNotNull(secondState.nextEpisode)
         assertEquals(episode1.id, secondState.nextEpisode?.id)
+    }
+
+    @Test
+    fun `findNextUnwatchedEpisode works when childCount is null`() = runTest {
+        val seriesId = randomSeriesId()
+        // childCount is null (common when not explicitly requested via Fields parameter)
+        val series = series(id = seriesId, name = "Test Series", childCount = null)
+        val season1 = season(name = "Season 1", indexNumber = 1)
+        val episode1 = episode(name = "Episode 1", indexNumber = 1, watched = true)
+        val episode2 = episode(name = "Episode 2", indexNumber = 2, watched = false)
+
+        coEvery { repository.getSeriesDetails(seriesId) } returns ApiResult.Success(series)
+        coEvery { mediaRepository.getSeasonsForSeries(seriesId) } returns ApiResult.Success(listOf(season1))
+        coEvery { mediaRepository.getEpisodesForSeason(season1.id.toString()) } returns ApiResult.Success(
+            listOf(episode1, episode2),
+        )
+        coEvery { mediaRepository.getSimilarSeries(seriesId) } returns ApiResult.Success(emptyList())
+
+        viewModel.loadSeriesData(seriesId)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.state.value
+        // Should find next episode even when childCount is null
+        assertNotNull(state.nextEpisode)
+        assertEquals(episode2.id, state.nextEpisode?.id)
+        assertEquals("Episode 2", state.nextEpisode?.name)
     }
 
     private fun randomSeriesId(): String = UUID.randomUUID().toString()
