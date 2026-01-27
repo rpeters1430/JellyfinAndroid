@@ -132,6 +132,7 @@ class TVSeasonViewModel @Inject constructor(
         series: BaseItemDto,
         seasons: List<BaseItemDto>,
     ): BaseItemDto? {
+        // If completely watched, return first episode for "Rewatch Series"
         if (series.isCompletelyWatched()) {
             return findFirstEpisode(seasons)
         }
