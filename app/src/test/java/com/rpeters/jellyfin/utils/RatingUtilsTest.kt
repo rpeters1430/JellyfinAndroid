@@ -25,7 +25,7 @@ class RatingUtilsTest {
         assertEquals("PG-13", normalizeOfficialRating("PG-13"))
         assertEquals("R", normalizeOfficialRating("R"))
         assertEquals("NC-17", normalizeOfficialRating("NC-17"))
-        
+
         // TV ratings
         assertEquals("TV-Y", normalizeOfficialRating("TV-Y"))
         assertEquals("TV-Y7", normalizeOfficialRating("TV-Y7"))
@@ -33,7 +33,7 @@ class RatingUtilsTest {
         assertEquals("TV-PG", normalizeOfficialRating("TV-PG"))
         assertEquals("TV-14", normalizeOfficialRating("TV-14"))
         assertEquals("TV-MA", normalizeOfficialRating("TV-MA"))
-        
+
         // Not Rated
         assertEquals("NR", normalizeOfficialRating("NR"))
         assertEquals("NR", normalizeOfficialRating("UR"))
@@ -61,18 +61,18 @@ class RatingUtilsTest {
         // US prefix
         assertEquals("TV-MA", normalizeOfficialRating("US-TV-MA"))
         assertEquals("PG-13", normalizeOfficialRating("US-PG-13"))
-        
+
         // German ratings
         assertEquals("16+", normalizeOfficialRating("DE-16"))
         assertEquals("12+", normalizeOfficialRating("DE-12"))
-        
+
         // UK ratings
         assertEquals("15+", normalizeOfficialRating("UK-15"))
         assertEquals("18+", normalizeOfficialRating("GB-18"))
-        
+
         // French ratings
         assertEquals("12+", normalizeOfficialRating("FR-12"))
-        
+
         // Other countries
         assertEquals("16+", normalizeOfficialRating("ES-16"))
         assertEquals("16+", normalizeOfficialRating("IT-16"))
@@ -88,12 +88,12 @@ class RatingUtilsTest {
         assertEquals("12+", normalizeOfficialRating("FSK-12"))
         assertEquals("18+", normalizeOfficialRating("FSK-18"))
         assertEquals("6+", normalizeOfficialRating("FSK 6"))
-        
+
         // PEGI (European game rating system)
         assertEquals("16+", normalizeOfficialRating("PEGI 16"))
         assertEquals("18+", normalizeOfficialRating("PEGI-18"))
         assertEquals("12+", normalizeOfficialRating("PEGI 12"))
-        
+
         // BBFC (British film rating)
         assertEquals("15+", normalizeOfficialRating("BBFC-15"))
         assertEquals("18+", normalizeOfficialRating("BBFC 18"))
@@ -105,14 +105,14 @@ class RatingUtilsTest {
         assertEquals("16+", normalizeOfficialRating("-16"))
         assertEquals("18+", normalizeOfficialRating("-18"))
         assertEquals("12+", normalizeOfficialRating("-12"))
-        
+
         // Plain numeric ratings
         assertEquals("16+", normalizeOfficialRating("16"))
         assertEquals("18+", normalizeOfficialRating("18"))
         assertEquals("12+", normalizeOfficialRating("12"))
         assertEquals("6+", normalizeOfficialRating("6"))
         assertEquals("0+", normalizeOfficialRating("0"))
-        
+
         // Numeric ratings already with plus sign
         assertEquals("16+", normalizeOfficialRating("16+"))
         assertEquals("18+", normalizeOfficialRating("18+"))
@@ -122,7 +122,7 @@ class RatingUtilsTest {
     fun `normalizeOfficialRating handles complex rating formats`() {
         // Multiple prefix combinations
         assertEquals("16+", normalizeOfficialRating("DE-FSK-16"))
-        
+
         // Numeric with spaces
         assertEquals("16+", normalizeOfficialRating("  16  "))
         assertEquals("16+", normalizeOfficialRating("  -16  "))
@@ -133,10 +133,10 @@ class RatingUtilsTest {
         // Single digit ages
         assertEquals("7+", normalizeOfficialRating("7"))
         assertEquals("0+", normalizeOfficialRating("0"))
-        
+
         // Two-digit ages
         assertEquals("99+", normalizeOfficialRating("99"))
-        
+
         // Unknown ratings (should be preserved as-is after cleanup)
         assertEquals("XXX", normalizeOfficialRating("XXX"))
         assertEquals("APPROVED", normalizeOfficialRating("APPROVED"))
