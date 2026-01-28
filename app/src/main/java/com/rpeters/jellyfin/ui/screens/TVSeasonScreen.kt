@@ -343,24 +343,37 @@ private fun TVSeasonContent(
  * Helper function to determine the watch button text based on series watch status
  */
 private fun getWatchButtonText(series: BaseItemDto, nextEpisode: BaseItemDto?): String {
-    val totalCount = series.childCount ?: 0
     val playedPercentage = series.userData?.playedPercentage ?: 0.0
     val unwatchedCount = series.getUnwatchedEpisodeCount()
 
+    // If completely watched, show "Rewatch Series"
     if (series.isCompletelyWatched()) {
         return "Rewatch Series"
     }
 
+    // If no next episode is available, show "Browse Series"
     if (nextEpisode == null) {
         return "Browse Series"
     }
 
-    val hasNotStarted = totalCount > 0 && unwatchedCount == totalCount && playedPercentage == 0.0
+    // Check if not started - use reliable indicators since childCount may be null
+    // If unplayedItemCount exists, use it to calculate total episodes; otherwise rely on unwatchedCount
+    val hasNotStarted = if (series.userData?.unplayedItemCount != null) {
+        // Most reliable: unplayedItemCount is set by server
+        val totalEpisodes = (series.userData?.unplayedItemCount ?: 0) + (series.userData?.playCount ?: 0)
+        totalEpisodes > 0 && series.userData?.playCount == 0 && playedPercentage == 0.0
+    } else {
+        // Fallback: use unwatchedCount (which may be 0 if childCount is null)
+        unwatchedCount > 0 &&
+            (series.userData?.playCount ?: 0) == 0 &&
+            playedPercentage == 0.0
+    }
     if (hasNotStarted) {
         return "Start Watching Series"
     }
 
-    return if (nextEpisode?.indexNumber != null) {
+    // Otherwise show specific episode or continue watching
+    return if (nextEpisode.indexNumber != null) {
         "Watch Episode ${nextEpisode.indexNumber} Next"
     } else {
         "Continue Watching Series"
@@ -542,7 +555,7 @@ private fun SeriesDetailsHeader(
             onClick = {
                 nextEpisode?.let { onPlayEpisode(it) }
             },
-            enabled = nextEpisode != null,
+            enabled = nextEpisode != null, // Enable button whenever we have an episode to play
             modifier = Modifier.fillMaxWidth(),
         ) {
             Icon(
