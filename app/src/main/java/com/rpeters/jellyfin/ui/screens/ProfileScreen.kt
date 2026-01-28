@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
@@ -93,12 +95,16 @@ fun ProfileScreen(
         modifier = modifier,
     ) { paddingValues ->
         val displayName = currentUser?.name?.takeIf(String::isNotBlank) ?: stringResource(R.string.default_username)
+        val serverVersion = serverInfo?.version ?: currentServer?.version ?: stringResource(id = R.string.unknown)
+        val serverName = currentServer?.name ?: stringResource(id = R.string.unknown)
+        val scrollState = rememberScrollState()
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp),
+                .padding(16.dp)
+                .verticalScroll(scrollState),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             // Profile Header
@@ -136,7 +142,7 @@ fun ProfileScreen(
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     Text(
-                        currentServer?.version ?: stringResource(id = R.string.unknown),
+                        serverVersion,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
                     )
@@ -151,7 +157,7 @@ fun ProfileScreen(
 
             ServerStatusCard(
                 isConnected = currentServer?.isConnected == true,
-                version = currentServer?.version,
+                version = serverVersion,
                 operatingSystem = serverInfo?.operatingSystem,
                 productName = serverInfo?.productName,
             )
@@ -181,16 +187,19 @@ fun ProfileScreen(
                             style = MaterialTheme.typography.bodyMedium,
                         )
                         Text(
-                            currentServer?.name ?: stringResource(id = R.string.unknown),
+                            serverName,
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
                         )
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
 
                     currentServer?.let { server ->
-                        ProfileInfoRow(stringResource(id = R.string.server_name_label), server.name)
+                        ProfileInfoRow(stringResource(id = R.string.server_name_label), serverName)
                         ProfileInfoRow(
                             label = stringResource(id = R.string.server_url_label),
                             value = server.url,
@@ -236,7 +245,7 @@ fun ProfileScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Logout Button
             Button(
