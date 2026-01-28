@@ -118,12 +118,45 @@ fun SettingsScreen(
     onManagePinsClick: () -> Unit = {},
     onSubtitleSettingsClick: () -> Unit = {},
     onPrivacyPolicyClick: () -> Unit = {},
+    onAppearanceSettingsClick: () -> Unit = {},
+    onPlaybackSettingsClick: () -> Unit = {},
+    onDownloadsSettingsClick: () -> Unit = {},
+    onNotificationsSettingsClick: () -> Unit = {},
+    onPrivacySettingsClick: () -> Unit = {},
+    onAccessibilitySettingsClick: () -> Unit = {},
     libraryActionsPreferencesViewModel: LibraryActionsPreferencesViewModel = hiltViewModel(),
     credentialSecurityPreferencesViewModel: CredentialSecurityPreferencesViewModel = hiltViewModel(),
 ) {
     val libraryActionPrefs by libraryActionsPreferencesViewModel.preferences.collectAsStateWithLifecycle()
     val credentialSecurityPrefs by credentialSecurityPreferencesViewModel.preferences.collectAsStateWithLifecycle()
     val isCredentialSecurityUpdating by credentialSecurityPreferencesViewModel.isUpdating.collectAsStateWithLifecycle()
+    val recommendationOptionActions = mapOf(
+        R.string.settings_appearance_theme to onAppearanceSettingsClick,
+        R.string.settings_appearance_dynamic_color to onAppearanceSettingsClick,
+        R.string.settings_appearance_language to onAppearanceSettingsClick,
+        R.string.settings_appearance_layout to onAppearanceSettingsClick,
+        R.string.settings_playback_quality to onPlaybackSettingsClick,
+        R.string.settings_playback_subtitles to onPlaybackSettingsClick,
+        R.string.settings_playback_autoplay to onPlaybackSettingsClick,
+        R.string.settings_playback_skip_intro to onPlaybackSettingsClick,
+        R.string.settings_downloads_quality to onDownloadsSettingsClick,
+        R.string.settings_downloads_location to onDownloadsSettingsClick,
+        R.string.settings_downloads_wifi_only to onDownloadsSettingsClick,
+        R.string.settings_downloads_cleanup to onDownloadsSettingsClick,
+        R.string.settings_notifications_library to onNotificationsSettingsClick,
+        R.string.settings_notifications_downloads to onNotificationsSettingsClick,
+        R.string.settings_notifications_playback to onNotificationsSettingsClick,
+        R.string.settings_privacy_biometric to onPrivacySettingsClick,
+        R.string.settings_privacy_cache to onPrivacySettingsClick,
+        R.string.settings_privacy_diagnostics to onPrivacySettingsClick,
+        R.string.settings_privacy_sensitive to onPrivacySettingsClick,
+        R.string.settings_accessibility_text to onAccessibilitySettingsClick,
+        R.string.settings_accessibility_motion to onAccessibilitySettingsClick,
+        R.string.settings_accessibility_haptics to onAccessibilitySettingsClick,
+    )
+    val onRecommendationOptionClick: (Int) -> Unit = { optionRes ->
+        recommendationOptionActions[optionRes]?.invoke()
+    }
 
     Scaffold(
         topBar = {
@@ -198,7 +231,10 @@ fun SettingsScreen(
                 key = { it.titleRes },
                 contentType = { "settings_recommendation" },
             ) { recommendation ->
-                SettingsRecommendationCard(recommendation = recommendation)
+                SettingsRecommendationCard(
+                    recommendation = recommendation,
+                    onOptionClick = onRecommendationOptionClick,
+                )
             }
 
             item {
@@ -328,6 +364,7 @@ private fun PinningManagementCard(
 @Composable
 private fun SettingsRecommendationCard(
     recommendation: SettingRecommendation,
+    onOptionClick: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -358,6 +395,7 @@ private fun SettingsRecommendationCard(
                     ExpressiveMediaListItem(
                         title = stringResource(id = optionRes),
                         leadingIcon = Icons.Default.Settings,
+                        onClick = { onOptionClick(optionRes) },
                     )
                 }
             }
