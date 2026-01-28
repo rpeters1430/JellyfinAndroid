@@ -106,7 +106,7 @@ fun ProfileScreen(
         val serverVersion = serverInfo?.version ?: currentServer?.version ?: stringResource(id = R.string.unknown)
         val serverName = currentServer?.name ?: stringResource(id = R.string.unknown)
         val appVersion = BuildConfig.VERSION_NAME.ifBlank { unknownLabel }
-        val appUpdatedDate = remember { 
+        val appUpdatedDate = remember {
             runCatching {
                 val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     context.packageManager.getPackageInfo(
