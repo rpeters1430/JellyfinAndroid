@@ -280,7 +280,7 @@ private fun MediaCardContent(
                                 modifier = Modifier.size(14.dp),
                             )
                             Text(
-                                text = rating.toString(),
+                                text = String.format(java.util.Locale.ROOT, "%.1f", rating),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.padding(start = 2.dp),
