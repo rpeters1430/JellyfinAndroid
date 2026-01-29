@@ -514,6 +514,16 @@ class CastManager @Inject constructor(
         }
     }
 
+    private fun String?.isAdaptiveStream(): Boolean {
+        val lowered = this?.lowercase(Locale.ROOT) ?: return false
+        return lowered.contains(".m3u8") ||
+            lowered.contains("format=m3u8") ||
+            lowered.contains("manifest=m3u8") ||
+            lowered.contains("master.m3u8") ||
+            lowered.contains(".mpd") ||
+            lowered.contains("format=mpd")
+    }
+
     /**
      * Append access token to URL for Cast receiver authentication.
      * Chromecast receivers cannot use custom headers, so we need to include
@@ -559,7 +569,14 @@ class CastManager @Inject constructor(
         return builder.build()
     }
 
-    fun startCasting(mediaItem: MediaItem, item: BaseItemDto, sideLoadedSubs: List<SubtitleSpec> = emptyList(), startPositionMs: Long = 0L) {
+    fun startCasting(
+        mediaItem: MediaItem,
+        item: BaseItemDto,
+        sideLoadedSubs: List<SubtitleSpec> = emptyList(),
+        startPositionMs: Long = 0L,
+        playSessionId: String? = null,
+        mediaSourceId: String? = null,
+    ) {
         try {
             val castSession = castContext?.sessionManager?.currentCastSession
             if (castSession?.isConnected == true) {
@@ -574,11 +591,11 @@ class CastManager @Inject constructor(
                     }
                 }
 
-                val originalUrl = mediaItem.localConfiguration?.uri.toString()
+                val originalUrl = mediaItem.localConfiguration?.uri?.toString()
                 val itemId = item.id?.toString()
 
-                // For Cast: Prefer transcoded direct stream over HLS due to auth issues with Default Media Receiver
-                // HLS segments don't inherit the api_key parameter from the master manifest
+                // For Cast: Prefer progressive transcoding over HLS due to auth issues with the default receiver.
+                // HLS segments don't inherit the api_key parameter from the master manifest.
                 val transcodedUrl = itemId?.let {
                     streamRepository.getTranscodedStreamUrl(
                         itemId = it,
@@ -587,24 +604,46 @@ class CastManager @Inject constructor(
                         maxHeight = 1080,
                         videoCodec = "h264",
                         audioCodec = "aac",
-                        container = "ts", // Use TS container for better Cast compatibility
+                        container = "mp4", // Progressive MP4 is the most compatible Cast target
+                        mediaSourceId = mediaSourceId,
+                        playSessionId = playSessionId,
+                        allowAudioStreamCopy = false, // Force AAC for Cast compatibility
                     )
                 }
-                val hlsUrl = itemId?.let { streamRepository.getHlsStreamUrl(it) }
+                val directUrl = itemId?.let { streamRepository.getDirectStreamUrl(it, "mp4") }
 
-                // Prioritize transcoded TS stream for better Cast compatibility
-                val useTranscoded = !transcodedUrl.isNullOrBlank()
-                val useHls = !useTranscoded && !hlsUrl.isNullOrBlank()
-                val sourceUrl = when {
-                    useTranscoded -> transcodedUrl
-                    useHls -> hlsUrl
+                val baseUrl = when {
+                    !transcodedUrl.isNullOrBlank() -> transcodedUrl
+                    !directUrl.isNullOrBlank() -> directUrl
                     else -> originalUrl
                 }
+                val sourceUrl = if (baseUrl.isAdaptiveStream() && !directUrl.isNullOrBlank()) {
+                    if (BuildConfig.DEBUG) {
+                        SecureLogger.d(
+                            "CastManager",
+                            "Avoiding adaptive playlist for Cast. Using direct stream instead.",
+                        )
+                    }
+                    directUrl
+                } else {
+                    baseUrl
+                }
+                val resolvedSourceUrl = sourceUrl?.takeIf { it.isNotBlank() }
+                if (resolvedSourceUrl == null) {
+                    SecureLogger.e("CastManager", "Unable to build Cast stream URL for item ${item.id}")
+                    _castState.update { state ->
+                        state.copy(error = "Unable to build Cast stream URL")
+                    }
+                    return
+                }
+
                 // Add authentication token to URL for Cast receiver
-                val mediaUrl = addAuthTokenToUrl(sourceUrl)
+                val mediaUrl = addAuthTokenToUrl(resolvedSourceUrl)
 
                 // Determine if content is Live (TV or indeterminate duration)
                 val isLive = item.type == BaseItemKind.TV_CHANNEL || (item.runTimeTicks ?: 0L) <= 0L
+                val useTranscoded = !transcodedUrl.isNullOrBlank() && sourceUrl == transcodedUrl
+                val useHls = sourceUrl.isAdaptiveStream()
                 val (contentType, streamType) = guessCastTypes(mediaUrl, useTranscoded, isLive)
 
                 // Build Cast media metadata
@@ -701,7 +740,10 @@ class CastManager @Inject constructor(
                         "CastManager",
                         "Started casting: ${item.name} ($contentType) with ${tracks.size} subtitle tracks",
                     )
-                    SecureLogger.d("CastManager", "Cast stream URL: $mediaUrl (type=$contentType, streamType=$streamType, transcoded=$useTranscoded)")
+                    SecureLogger.d(
+                        "CastManager",
+                        "Cast stream URL: $mediaUrl (type=$contentType, streamType=$streamType, transcoded=$useTranscoded, hls=$useHls)",
+                    )
                 }
 
                 _castState.update { state ->

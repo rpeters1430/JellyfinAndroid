@@ -164,6 +164,7 @@ class VideoPlayerViewModel @Inject constructor(
     private var currentMediaItem: MediaItem? = null
     private var currentItemMetadata: BaseItemDto? = null
     private var currentSubtitleSpecs: List<com.rpeters.jellyfin.ui.player.SubtitleSpec> = emptyList()
+    private var currentMediaSourceId: String? = null
     private var wasPlayingBeforeCast: Boolean = false
     private var hasSentCastLoad: Boolean = false
     private var lastCastState: CastState? = null
@@ -342,6 +343,7 @@ class VideoPlayerViewModel @Inject constructor(
         currentMediaItem = null
         currentItemMetadata = null
         currentSubtitleSpecs = emptyList()
+        currentMediaSourceId = null
         hasSentCastLoad = false
         wasPlayingBeforeCast = false
 
@@ -384,6 +386,7 @@ class VideoPlayerViewModel @Inject constructor(
                 } catch (e: Exception) {
                     null
                 }
+                currentMediaSourceId = playbackInfo?.mediaSources?.firstOrNull()?.id
 
                 // Extract subtitle specs from metadata and playback info for casting support
                 currentSubtitleSpecs = extractSubtitleSpecs(currentItemMetadata, playbackInfo)
@@ -830,7 +833,14 @@ class VideoPlayerViewModel @Inject constructor(
 
         // Start casting from current position
         // Default to no subtitles for now to simplify troubleshooting
-        castManager.startCasting(mediaItem, metadata, emptyList(), position)
+        castManager.startCasting(
+            mediaItem = mediaItem,
+            item = metadata,
+            sideLoadedSubs = emptyList(),
+            startPositionMs = position,
+            playSessionId = playbackSessionId,
+            mediaSourceId = currentMediaSourceId,
+        )
         return true
     }
 
