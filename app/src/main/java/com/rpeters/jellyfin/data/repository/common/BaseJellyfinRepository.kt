@@ -109,14 +109,14 @@ open class BaseJellyfinRepository @Inject constructor(
     private fun <T> handleRepositoryException(e: Exception, operationName: String): ApiResult.Error<T> {
         val errorType = RepositoryUtils.getErrorType(e)
         Logger.w(LogCategory.NETWORK, javaClass.simpleName, "$operationName failed: ${e.message}", e)
-        
+
         // Provide specific default message based on error type
         val defaultMessage = when {
             errorType == ErrorType.AUTHENTICATION -> "Authentication required"
             e is IllegalStateException -> "Invalid application state"
             else -> "Operation failed"
         }
-        
+
         return ApiResult.Error(e.message ?: defaultMessage, e, errorType)
     }
 
