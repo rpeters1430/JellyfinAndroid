@@ -23,8 +23,8 @@ import com.rpeters.jellyfin.ui.components.ConnectionPhase
 import com.rpeters.jellyfin.ui.components.ConnectionState
 import com.rpeters.jellyfin.ui.components.PinningAlertReason
 import com.rpeters.jellyfin.ui.components.PinningAlertState
-import com.rpeters.jellyfin.utils.ServerUrlValidator
 import com.rpeters.jellyfin.utils.SecureLogger
+import com.rpeters.jellyfin.utils.ServerUrlValidator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
