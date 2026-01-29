@@ -187,6 +187,7 @@ class JellyfinStreamRepository @Inject constructor(
     /**
      * Get transcoded stream URL with specific quality parameters.
      * Uses progressive streaming endpoint for better compatibility and immediate playback.
+     * @param allowAudioStreamCopy When false, forces audio transcoding for compatibility.
      */
     fun getTranscodedStreamUrl(
         itemId: String,
@@ -198,6 +199,7 @@ class JellyfinStreamRepository @Inject constructor(
         container: String = DEFAULT_CONTAINER,
         mediaSourceId: String? = null,
         playSessionId: String? = null,
+        allowAudioStreamCopy: Boolean = true,
     ): String? {
         val server = authRepository.getCurrentServer() ?: return null
 
@@ -231,9 +233,9 @@ class JellyfinStreamRepository @Inject constructor(
             params.add("Container=$container")
             params.add("TranscodingMaxAudioChannels=$DEFAULT_MAX_AUDIO_CHANNELS")
             params.add("BreakOnNonKeyFrames=true")
-            // Force transcoding - don't allow stream copy when we explicitly need transcoding
+            // Force video transcoding for compatibility, optionally allow audio stream copy.
             params.add("AllowVideoStreamCopy=false")
-            params.add("AllowAudioStreamCopy=true")
+            params.add("AllowAudioStreamCopy=$allowAudioStreamCopy")
             // Add playback identifiers when available so the server can apply session-specific settings.
             mediaSourceId?.let { params.add("MediaSourceId=$it") }
             playSessionId?.let { params.add("PlaySessionId=$it") }
