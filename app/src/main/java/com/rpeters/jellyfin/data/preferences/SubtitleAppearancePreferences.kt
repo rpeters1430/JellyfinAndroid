@@ -18,6 +18,10 @@ enum class SubtitleFont {
     SANS_SERIF,
     SERIF,
     MONOSPACE,
+    ROBOTO,
+    ROBOTO_FLEX,
+    ROBOTO_SERIF,
+    ROBOTO_MONO,
 }
 
 /**

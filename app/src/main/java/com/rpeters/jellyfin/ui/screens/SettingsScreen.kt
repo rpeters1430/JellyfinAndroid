@@ -15,7 +15,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Accessibility
 import androidx.compose.material.icons.filled.ClosedCaption
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -46,45 +52,6 @@ import com.rpeters.jellyfin.ui.components.ExpressiveSwitchListItem
 import com.rpeters.jellyfin.ui.viewmodel.CredentialSecurityPreferencesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.LibraryActionsPreferencesViewModel
 
-private data class SettingRecommendation(
-    @StringRes val titleRes: Int,
-    @StringRes val descriptionRes: Int,
-    val options: List<Int>,
-)
-
-private val settingRecommendations = listOf(
-    SettingRecommendation(
-        titleRes = R.string.settings_appearance_title,
-        descriptionRes = R.string.settings_appearance_description,
-        options = SettingsRecommendationOptions.appearance,
-    ),
-    SettingRecommendation(
-        titleRes = R.string.settings_playback_title,
-        descriptionRes = R.string.settings_playback_description,
-        options = SettingsRecommendationOptions.playback,
-    ),
-    SettingRecommendation(
-        titleRes = R.string.settings_downloads_title,
-        descriptionRes = R.string.settings_downloads_description,
-        options = SettingsRecommendationOptions.downloads,
-    ),
-    SettingRecommendation(
-        titleRes = R.string.settings_notifications_title,
-        descriptionRes = R.string.settings_notifications_description,
-        options = SettingsRecommendationOptions.notifications,
-    ),
-    SettingRecommendation(
-        titleRes = R.string.settings_privacy_title,
-        descriptionRes = R.string.settings_privacy_description,
-        options = SettingsRecommendationOptions.privacy,
-    ),
-    SettingRecommendation(
-        titleRes = R.string.settings_accessibility_title,
-        descriptionRes = R.string.settings_accessibility_description,
-        options = SettingsRecommendationOptions.accessibility,
-    ),
-)
-
 @OptInAppExperimentalApis
 @Composable
 fun SettingsScreen(
@@ -100,52 +67,8 @@ fun SettingsScreen(
     onPrivacySettingsClick: () -> Unit = {},
     onAccessibilitySettingsClick: () -> Unit = {},
     libraryActionsPreferencesViewModel: LibraryActionsPreferencesViewModel = hiltViewModel(),
-    credentialSecurityPreferencesViewModel: CredentialSecurityPreferencesViewModel = hiltViewModel(),
 ) {
     val libraryActionPrefs by libraryActionsPreferencesViewModel.preferences.collectAsStateWithLifecycle()
-    val credentialSecurityPrefs by credentialSecurityPreferencesViewModel.preferences.collectAsStateWithLifecycle()
-    val isCredentialSecurityUpdating by credentialSecurityPreferencesViewModel.isUpdating.collectAsStateWithLifecycle()
-    val recommendationOptionActions = remember(
-        onAppearanceSettingsClick,
-        onPlaybackSettingsClick,
-        onDownloadsSettingsClick,
-        onNotificationsSettingsClick,
-        onPrivacySettingsClick,
-        onAccessibilitySettingsClick,
-    ) {
-        mapOf(
-            R.string.settings_appearance_theme to onAppearanceSettingsClick,
-            R.string.settings_appearance_dynamic_color to onAppearanceSettingsClick,
-            R.string.settings_appearance_language to onAppearanceSettingsClick,
-            R.string.settings_appearance_layout to onAppearanceSettingsClick,
-            R.string.settings_playback_quality to onPlaybackSettingsClick,
-            R.string.settings_playback_subtitles to onPlaybackSettingsClick,
-            R.string.settings_playback_autoplay to onPlaybackSettingsClick,
-            R.string.settings_playback_skip_intro to onPlaybackSettingsClick,
-            R.string.settings_downloads_quality to onDownloadsSettingsClick,
-            R.string.settings_downloads_location to onDownloadsSettingsClick,
-            R.string.settings_downloads_wifi_only to onDownloadsSettingsClick,
-            R.string.settings_downloads_cleanup to onDownloadsSettingsClick,
-            R.string.settings_notifications_library to onNotificationsSettingsClick,
-            R.string.settings_notifications_downloads to onNotificationsSettingsClick,
-            R.string.settings_notifications_playback to onNotificationsSettingsClick,
-            R.string.settings_privacy_biometric to onPrivacySettingsClick,
-            R.string.settings_privacy_cache to onPrivacySettingsClick,
-            R.string.settings_privacy_diagnostics to onPrivacySettingsClick,
-            R.string.settings_privacy_sensitive to onPrivacySettingsClick,
-            R.string.settings_accessibility_text to onAccessibilitySettingsClick,
-            R.string.settings_accessibility_motion to onAccessibilitySettingsClick,
-            R.string.settings_accessibility_haptics to onAccessibilitySettingsClick,
-        )
-    }
-    val onRecommendationOptionClick: (Int) -> Unit = { optionRes ->
-        val action = recommendationOptionActions[optionRes]
-        if (action == null) {
-            Log.w(TAG, "Unhandled settings recommendation option: $optionRes")
-        } else {
-            action()
-        }
-    }
 
     Scaffold(
         topBar = {
@@ -184,20 +107,39 @@ fun SettingsScreen(
             }
 
             item {
-                CredentialSecurityCard(
-                    enabled = credentialSecurityPrefs.requireStrongAuthForCredentials,
-                    onToggle = credentialSecurityPreferencesViewModel::setStrongAuthRequired,
-                    updating = isCredentialSecurityUpdating,
-                )
-            }
-
-            item {
                 PinningManagementCard(onManagePinsClick = onManagePinsClick)
             }
 
             item {
                 SettingsHeader(
                     titleStyle = MaterialTheme.typography.headlineSmall,
+                )
+            }
+
+            item {
+                ExpressiveMediaListItem(
+                    title = stringResource(id = R.string.settings_appearance_title),
+                    subtitle = stringResource(id = R.string.settings_appearance_description),
+                    leadingIcon = Icons.Default.Palette,
+                    onClick = onAppearanceSettingsClick,
+                )
+            }
+
+            item {
+                ExpressiveMediaListItem(
+                    title = stringResource(id = R.string.settings_playback_title),
+                    subtitle = stringResource(id = R.string.settings_playback_description),
+                    leadingIcon = Icons.Default.PlayCircle,
+                    onClick = onPlaybackSettingsClick,
+                )
+            }
+
+            item {
+                ExpressiveMediaListItem(
+                    title = stringResource(id = R.string.settings_downloads_title),
+                    subtitle = stringResource(id = R.string.settings_downloads_description),
+                    leadingIcon = Icons.Default.Download,
+                    onClick = onDownloadsSettingsClick,
                 )
             }
 
@@ -212,21 +154,37 @@ fun SettingsScreen(
 
             item {
                 ExpressiveMediaListItem(
+                    title = stringResource(id = R.string.settings_notifications_title),
+                    subtitle = stringResource(id = R.string.settings_notifications_description),
+                    leadingIcon = Icons.Default.Notifications,
+                    onClick = onNotificationsSettingsClick,
+                )
+            }
+
+            item {
+                ExpressiveMediaListItem(
+                    title = stringResource(id = R.string.settings_privacy_title),
+                    subtitle = stringResource(id = R.string.settings_privacy_description),
+                    leadingIcon = Icons.Default.Security,
+                    onClick = onPrivacySettingsClick,
+                )
+            }
+
+            item {
+                ExpressiveMediaListItem(
+                    title = stringResource(id = R.string.settings_accessibility_title),
+                    subtitle = stringResource(id = R.string.settings_accessibility_description),
+                    leadingIcon = Icons.Default.Accessibility,
+                    onClick = onAccessibilitySettingsClick,
+                )
+            }
+
+            item {
+                ExpressiveMediaListItem(
                     title = stringResource(id = R.string.privacy_policy_title),
                     subtitle = stringResource(id = R.string.privacy_policy_description),
                     leadingIcon = Icons.Default.Settings,
                     onClick = onPrivacyPolicyClick,
-                )
-            }
-
-            items(
-                items = settingRecommendations,
-                key = { it.titleRes },
-                contentType = { "settings_recommendation" },
-            ) { recommendation ->
-                SettingsRecommendationCard(
-                    recommendation = recommendation,
-                    onOptionClick = onRecommendationOptionClick,
                 )
             }
 
@@ -256,48 +214,6 @@ private fun LibraryManagementCard(
             onCheckedChange = onToggle,
             leadingIcon = Icons.Default.Settings,
         )
-    }
-}
-
-@Composable
-private fun CredentialSecurityCard(
-    enabled: Boolean,
-    updating: Boolean,
-    onToggle: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    SettingsSectionCard(modifier = modifier) {
-        Text(
-            text = stringResource(id = R.string.settings_credential_security_title),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Text(
-            text = stringResource(id = R.string.settings_credential_security_description),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = stringResource(id = R.string.settings_credential_security_tradeoff),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                text = stringResource(id = R.string.settings_credential_security_toggle),
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            Switch(
-                checked = enabled,
-                onCheckedChange = onToggle,
-                enabled = !updating,
-            )
-        }
     }
 }
 
@@ -342,38 +258,6 @@ private fun SettingsSectionContainer(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             content = content,
         )
-    }
-}
-
-@Composable
-private fun SettingsRecommendationCard(
-    recommendation: SettingRecommendation,
-    onOptionClick: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    SettingsSectionCard(modifier = modifier) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                text = stringResource(id = recommendation.titleRes),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = stringResource(id = recommendation.descriptionRes),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            recommendation.options.forEach { optionRes ->
-                ExpressiveMediaListItem(
-                    title = stringResource(id = optionRes),
-                    leadingIcon = Icons.Default.Settings,
-                    onClick = { onOptionClick(optionRes) },
-                )
-            }
-        }
     }
 }
 

@@ -71,16 +71,12 @@ class ServerConnectionViewModel @Inject constructor(
             val savedServerUrl = preferences[PreferencesKeys.SERVER_URL] ?: ""
             val savedUsername = preferences[PreferencesKeys.USERNAME] ?: ""
             val rememberPreference = preferences[PreferencesKeys.REMEMBER_LOGIN]
-            var rememberLogin = rememberPreference ?: true
+            var rememberLogin = rememberPreference ?: false
             val biometricPreference = preferences[PreferencesKeys.BIOMETRIC_AUTH_ENABLED]
             val isBiometricAuthEnabled = biometricPreference ?: false
             val requireStrongBiometric = preferences[PreferencesKeys.BIOMETRIC_REQUIRE_STRONG] ?: false
             val biometricCapability = secureCredentialManager.getBiometricCapability(requireStrongBiometric)
 
-            // Persist default remember login preference for first-time users
-            if (rememberPreference == null) {
-                updateRememberLoginPreference(true)
-            }
             // ✅ FIX: Handle suspend function calls properly
             val hasSavedPassword = if (savedServerUrl.isNotBlank() && savedUsername.isNotBlank()) {
                 secureCredentialManager.getPassword(savedServerUrl, savedUsername) != null
@@ -89,6 +85,7 @@ class ServerConnectionViewModel @Inject constructor(
             }
 
             // If credentials exist but the toggle was never persisted, opt the user back in
+            // This handles migration for existing users who expect "Remember Login" to be on
             if (hasSavedPassword && rememberPreference == null) {
                 updateRememberLoginPreference(true)
                 rememberLogin = true

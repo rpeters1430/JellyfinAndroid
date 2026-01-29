@@ -162,7 +162,7 @@ fun PrivacyPolicyScreen(
 
             Button(
                 onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(Constants.AppInfo.PRIVACY_POLICY_URL))
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://rpeters1430.github.io/JellyfinAndroid/privacy-policy.html"))
                     context.startActivity(intent)
                 },
                 modifier = Modifier.fillMaxWidth(),

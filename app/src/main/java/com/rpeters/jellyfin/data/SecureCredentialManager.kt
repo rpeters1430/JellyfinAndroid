@@ -104,56 +104,69 @@ class SecureCredentialManager @Inject constructor(
     }
 
     /**
-     * Generates a unique key alias that includes a version and timestamp to support key rotation
+     * Generates a stable key alias.
+     * We no longer use timestamps for rotation to prevent data loss.
      */
-    private fun getKeyAlias(timestamp: Long = System.currentTimeMillis()): String {
-        return "${Constants.Security.KEY_ALIAS}_${KEY_VERSION}_${timestamp / KEY_ROTATION_INTERVAL_MS}"
+    private fun getKeyAlias(): String {
+        return "${Constants.Security.KEY_ALIAS}_${KEY_VERSION}"
     }
 
     private fun getRotatedKeyAlias(): String {
         return "${getKeyAlias()}_${System.currentTimeMillis()}"
     }
 
-    private fun getBuggyKeyAlias(timestamp: Long = System.currentTimeMillis()): String {
-        return "${Constants.Security.KEY_ALIAS}_$KEY_VERSION}_${timestamp / KEY_ROTATION_INTERVAL_MS}"
-    }
-
     /**
-     * Gets or creates a secret key with an expiration timestamp for key rotation.
+     * Gets or creates a secret key.
+     * Prioritizes stable alias, but falls back to legacy timestamped aliases to preserve existing logins.
      * Performs keystore operations on background thread.
      */
     private suspend fun getOrCreateSecretKey(forceNew: Boolean = false): SecretKey = withContext(Dispatchers.IO) {
-        val currentAlias = getKeyAlias()
-        val buggyAlias = getBuggyKeyAlias()
+        val stableAlias = getKeyAlias()
+        
+        // Find any existing legacy keys (timestamped or buggy)
+        // This is crucial for migrating users who have keys generated with the old rotation logic
+        var existingKeyAlias: String? = null
+        val aliases = keyStore.aliases()
+        while (aliases.hasMoreElements()) {
+            val alias = aliases.nextElement()
+            // Check for our key prefix
+            if (alias.startsWith(Constants.Security.KEY_ALIAS)) {
+                // If it's the stable alias, prefer it
+                if (alias == stableAlias) {
+                    existingKeyAlias = alias
+                    break // Found best match
+                }
+                // If we haven't found a stable alias yet, track this as a candidate
+                // This catches ..._v1_0, ..._v1_1, and the buggy ..._v1}_0
+                if (existingKeyAlias == null) {
+                    existingKeyAlias = alias
+                }
+            }
+        }
 
-        // Check if key exists (try both current and buggy formats for backward compatibility)
-        val keyExists = keyStore.containsAlias(currentAlias) || keyStore.containsAlias(buggyAlias)
-
-        // Check if we should rotate the key (force new key or key doesn't exist)
-        if (forceNew || !keyExists) {
-            // Remove old keys (keep only the most recent ones)
-            val aliases = keyStore.aliases()
-            while (aliases.hasMoreElements()) {
-                val alias = aliases.nextElement()
-                if (alias.startsWith(Constants.Security.KEY_ALIAS) && alias != currentAlias) {
-                    try {
-                        keyStore.deleteEntry(alias)
-                    } catch (e: CancellationException) {
-                        throw e
+        if (forceNew) {
+            // Delete all our keys to start fresh
+            val cleanupAliases = keyStore.aliases()
+            while (cleanupAliases.hasMoreElements()) {
+                val alias = cleanupAliases.nextElement()
+                if (alias.startsWith(Constants.Security.KEY_ALIAS)) {
+                    try { keyStore.deleteEntry(alias) } catch (e: Exception) { 
+                        Log.w(TAG, "Failed to delete old key: $alias", e)
                     }
                 }
             }
-
-            return@withContext generateKey(currentAlias, userAuthenticationRequired())
+            return@withContext generateKey(stableAlias, userAuthenticationRequired())
         }
 
-        // Try to get the key using the current alias first, then fall back to buggy alias
-        // This provides backward compatibility for passwords encrypted with the old buggy key format
-        return@withContext when {
-            keyStore.containsAlias(currentAlias) -> keyStore.getKey(currentAlias, null) as SecretKey
-            keyStore.containsAlias(buggyAlias) -> keyStore.getKey(buggyAlias, null) as SecretKey
-            else -> throw IllegalStateException("No encryption key found")
+        // Return existing key if found
+        if (existingKeyAlias != null) {
+            logDebug { "Using existing key alias: $existingKeyAlias" }
+            return@withContext keyStore.getKey(existingKeyAlias, null) as SecretKey
         }
+
+        // No key found, generate stable one
+        logDebug { "No existing key found, generating new stable key: $stableAlias" }
+        return@withContext generateKey(stableAlias, userAuthenticationRequired())
     }
 
     private fun deleteAliasIfExists(alias: String) {
