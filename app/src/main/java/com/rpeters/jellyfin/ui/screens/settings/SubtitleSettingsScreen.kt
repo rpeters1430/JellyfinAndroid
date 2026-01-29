@@ -170,6 +170,10 @@ private fun subtitleFontLabel(font: SubtitleFont): String {
         SubtitleFont.SANS_SERIF -> stringResource(R.string.settings_subtitles_font_sans_serif)
         SubtitleFont.SERIF -> stringResource(R.string.settings_subtitles_font_serif)
         SubtitleFont.MONOSPACE -> stringResource(R.string.settings_subtitles_font_monospace)
+        SubtitleFont.ROBOTO -> stringResource(R.string.settings_subtitles_font_roboto)
+        SubtitleFont.ROBOTO_FLEX -> stringResource(R.string.settings_subtitles_font_roboto_flex)
+        SubtitleFont.ROBOTO_SERIF -> stringResource(R.string.settings_subtitles_font_roboto_serif)
+        SubtitleFont.ROBOTO_MONO -> stringResource(R.string.settings_subtitles_font_roboto_mono)
     }
 }
 
