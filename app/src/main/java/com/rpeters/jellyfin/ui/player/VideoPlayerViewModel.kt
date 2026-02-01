@@ -170,6 +170,7 @@ class VideoPlayerViewModel @Inject constructor(
     private var lastCastState: CastState? = null
     private var playbackSessionId: String? = null
     private var countdownJob: kotlinx.coroutines.Job? = null
+    private var requestedSubtitleIndex: Int? = null
 
     private val playerListener = object : Player.Listener {
         override fun onPlaybackStateChanged(playbackState: Int) {
@@ -268,7 +269,7 @@ class VideoPlayerViewModel @Inject constructor(
                 isHdrContent = isHdr,
             )
 
-            // Apply one-time defaults: English audio if available; subtitles off
+            // Apply one-time defaults: English audio if available; subtitles off OR requested
             if (!defaultsApplied) {
                 defaultsApplied = true
                 val player = exoPlayer ?: return
@@ -290,8 +291,44 @@ class VideoPlayerViewModel @Inject constructor(
                     builder.addOverride(override)
                 }
 
-                // Disable text tracks by default
-                builder.setTrackTypeDisabled(androidx.media3.common.C.TRACK_TYPE_TEXT, true)
+                // Subtitle logic
+                var subtitleSelected = false
+                if (requestedSubtitleIndex != null) {
+                    val requestedStream = currentItemMetadata?.mediaSources?.firstOrNull()?.mediaStreams
+                        ?.find { it.index == requestedSubtitleIndex && it.type == org.jellyfin.sdk.model.api.MediaStreamType.SUBTITLE }
+
+                    if (requestedStream != null) {
+                        // Find matching track in 'text' list based on language
+                        val matchingTrack = text.firstOrNull { info ->
+                            // Basic matching by language code
+                            val trackLang = info.format.language
+                            val streamLang = requestedStream.language
+                            trackLang != null && streamLang != null && trackLang.equals(streamLang, ignoreCase = true)
+                        }
+
+                        if (matchingTrack != null) {
+                            val group = tracks.groups.getOrNull(matchingTrack.groupIndex)
+                            if (group != null) {
+                                val override = androidx.media3.common.TrackSelectionOverride(
+                                    group.mediaTrackGroup,
+                                    listOf(matchingTrack.trackIndex),
+                                )
+                                builder.clearOverridesOfType(androidx.media3.common.C.TRACK_TYPE_TEXT)
+                                builder.setTrackTypeDisabled(androidx.media3.common.C.TRACK_TYPE_TEXT, false)
+                                builder.addOverride(override)
+                                subtitleSelected = true
+                                SecureLogger.d("VideoPlayer", "Selected requested subtitle: ${matchingTrack.displayName}")
+                            }
+                        } else {
+                            SecureLogger.w("VideoPlayer", "Could not find track for requested subtitle index: $requestedSubtitleIndex")
+                        }
+                    }
+                }
+
+                if (!subtitleSelected) {
+                    // Disable text tracks by default
+                    builder.setTrackTypeDisabled(androidx.media3.common.C.TRACK_TYPE_TEXT, true)
+                }
                 player.trackSelectionParameters = builder.build()
             }
 
@@ -316,8 +353,8 @@ class VideoPlayerViewModel @Inject constructor(
         repository.getPlaybackInfo(itemId)
     }
 
-    suspend fun initializePlayer(itemId: String, itemName: String, startPosition: Long) {
-        SecureLogger.d("VideoPlayer", "Initializing player for: $itemName")
+    suspend fun initializePlayer(itemId: String, itemName: String, startPosition: Long, subtitleIndex: Int? = null) {
+        SecureLogger.d("VideoPlayer", "Initializing player for: $itemName, requestedSubtitle: $subtitleIndex")
 
         // If player already exists for the same item, just seek to position instead of recreating
         if (exoPlayer != null && currentItemId == itemId) {
@@ -346,6 +383,7 @@ class VideoPlayerViewModel @Inject constructor(
         currentMediaSourceId = null
         hasSentCastLoad = false
         wasPlayingBeforeCast = false
+        requestedSubtitleIndex = subtitleIndex
 
         // Note: We'll set the sessionId from PlaybackResult later to use server's playSessionId
         playbackSessionId = null

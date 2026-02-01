@@ -1,7 +1,7 @@
 package com.rpeters.jellyfin.ui.navigation
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
@@ -15,11 +15,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 enum class AppDestinations(
     val label: String,
     val icon: ImageVector,
-    val showInNavigation: Boolean = true,
+    val isBottomNavItem: Boolean = true,
 ) {
     CONNECT("Connect", Icons.Default.Home, false), // Hidden from navigation
     HOME("Home", Icons.Default.Home),
-    LIBRARY("Library", Icons.AutoMirrored.Filled.List),
+    LIBRARY("Library", Icons.AutoMirrored.Filled.LibraryBooks),
     MOVIES("Movies", Icons.Default.Movie, false), // Hidden from bottom nav
     TV_SHOWS("TV Shows", Icons.Default.Tv, false), // Hidden from bottom nav
     TV_EPISODES("Episodes", Icons.Default.Tv, false), // Hidden from bottom nav

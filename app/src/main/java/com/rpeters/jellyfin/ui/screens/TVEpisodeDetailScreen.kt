@@ -12,6 +12,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,21 +33,23 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -125,7 +128,7 @@ fun TVEpisodeDetailScreen(
     onNextEpisodeClick: (String) -> Unit = {},
     onEpisodeClick: (BaseItemDto) -> Unit = {},
     onViewSeriesClick: () -> Unit = {},
-    onPlayClick: (BaseItemDto) -> Unit = {},
+    onPlayClick: (BaseItemDto, Int?) -> Unit = { item, _ -> },
     onDownloadClick: (BaseItemDto) -> Unit = {},
     onDeleteClick: (BaseItemDto) -> Unit = {},
     onMarkWatchedClick: (BaseItemDto) -> Unit = {},
@@ -135,6 +138,7 @@ fun TVEpisodeDetailScreen(
     modifier: Modifier = Modifier,
 ) {
     var isLoading by remember { mutableStateOf(false) }
+    var selectedSubtitleIndex by remember { mutableStateOf<Int?>(null) }
     val context = LocalContext.current
     val mainAppViewModel: MainAppViewModel = hiltViewModel()
 
@@ -208,6 +212,8 @@ fun TVEpisodeDetailScreen(
                         item {
                             ExpressiveEpisodeInfoCard(
                                 episode = episode,
+                                selectedSubtitleIndex = selectedSubtitleIndex,
+                                onSubtitleSelect = { selectedSubtitleIndex = it },
                                 modifier = Modifier.padding(horizontal = 16.dp),
                             )
                         }
@@ -267,7 +273,7 @@ fun TVEpisodeDetailScreen(
                     // Add ExpressiveFloatingToolbar for episode details
                     ExpressiveFloatingToolbar(
                         isVisible = true,
-                        onPlayClick = { onPlayClick(episode) },
+                        onPlayClick = { onPlayClick(episode, selectedSubtitleIndex) },
                         onQueueClick = {},
                         onDownloadClick = { onDownloadClick(episode) },
                         onCastClick = { mainAppViewModel.sendCastPreview(episode) },
@@ -525,6 +531,8 @@ private fun ExpressiveEpisodeHero(
 @Composable
 private fun ExpressiveEpisodeInfoCard(
     episode: BaseItemDto,
+    selectedSubtitleIndex: Int?,
+    onSubtitleSelect: (Int?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val cardScale by animateFloatAsState(
@@ -536,6 +544,7 @@ private fun ExpressiveEpisodeInfoCard(
     val mediaStreams = episode.mediaSources?.firstOrNull()?.mediaStreams
     val videoStream = mediaStreams.findDefaultVideoStream()
     val audioStream = mediaStreams?.firstOrNull { it.type == MediaStreamType.AUDIO }
+    val subtitleStreams = mediaStreams?.filter { it.type == MediaStreamType.SUBTITLE } ?: emptyList()
 
     ElevatedCard(
         modifier = modifier
@@ -600,13 +609,12 @@ private fun ExpressiveEpisodeInfoCard(
                     }
 
                     // Video information
-                    val videoResolution = getEpisodeResolution(episode)
                     videoStream?.let { stream ->
+                        val icon = getResolutionIcon(stream.width, stream.height)
                         ExpressiveVideoInfoRow(
                             label = stringResource(id = R.string.video),
-                            resolution = videoResolution,
                             codec = stream.codec?.uppercase(),
-                            icon = Icons.Default.HighQuality,
+                            icon = icon,
                         )
                     }
 
@@ -615,7 +623,16 @@ private fun ExpressiveEpisodeInfoCard(
                         ExpressiveInfoRow(
                             label = stringResource(id = R.string.audio),
                             value = codec.uppercase(),
-                            icon = Icons.Default.Audiotrack,
+                            icon = Icons.Rounded.MusicNote,
+                        )
+                    }
+
+                    // Subtitles
+                    if (subtitleStreams.isNotEmpty()) {
+                        ExpressiveSubtitleRow(
+                            subtitles = subtitleStreams,
+                            selectedSubtitleIndex = selectedSubtitleIndex,
+                            onSubtitleSelect = onSubtitleSelect,
                         )
                     }
                 }
@@ -735,7 +752,6 @@ private fun formatDate(date: Any): String {
 @Composable
 private fun ExpressiveVideoInfoRow(
     label: String,
-    resolution: Pair<String, Color>?,
     codec: String?,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     modifier: Modifier = Modifier,
@@ -770,38 +786,103 @@ private fun ExpressiveVideoInfoRow(
                 fontWeight = FontWeight.Medium,
             )
 
+            codec?.let { codecText ->
+                Text(
+                    text = codecText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            } ?: run {
+                Text(
+                    text = stringResource(id = R.string.unknown),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExpressiveSubtitleRow(
+    subtitles: List<org.jellyfin.sdk.model.api.MediaStream>,
+    selectedSubtitleIndex: Int?,
+    onSubtitleSelect: (Int?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    // Default logic: find index matching selected, OR default stream, OR first stream
+    val currentSubtitle = if (selectedSubtitleIndex != null) {
+        subtitles.find { it.index == selectedSubtitleIndex }
+    } else {
+        subtitles.firstOrNull { it.isDefault == true } ?: subtitles.firstOrNull()
+    }
+    
+    val labelText = currentSubtitle?.let { 
+        val lang = it.language?.uppercase(java.util.Locale.ROOT) ?: "UNK"
+        val title = it.title ?: it.displayTitle
+        if (title != null && title != lang) "$lang - $title" else lang
+    } ?: "None"
+
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+         Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            modifier = Modifier.size(24.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.ClosedCaption,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.size(16.dp).padding(4.dp),
+            )
+        }
+        
+        Box {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.clickable { expanded = true }
             ) {
-                resolution?.let { (labelText, color) ->
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = color,
-                    ) {
-                        Text(
-                            text = labelText,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
-                }
-                codec?.let { codecText ->
+                 Column(
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
                     Text(
-                        text = codecText,
+                        text = "Subtitles",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Medium,
+                    )
+                    Text(
+                        text = labelText,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
-                if (resolution == null && codec == null) {
-                    Text(
-                        text = stringResource(id = R.string.unknown),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface,
+                Icon(Icons.Default.ExpandMore, contentDescription = null, modifier = Modifier.size(16.dp))
+            }
+            
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                subtitles.forEach { stream ->
+                    DropdownMenuItem(
+                        text = { 
+                             val lang = stream.language?.uppercase(java.util.Locale.ROOT) ?: "UNK"
+                             val title = stream.title ?: stream.displayTitle
+                             Text(if (title != null && title != lang) "$lang - $title" else lang)
+                        },
+                        onClick = {
+                            onSubtitleSelect(stream.index)
+                            expanded = false
+                        }
                     )
                 }
             }
@@ -809,34 +890,26 @@ private fun ExpressiveVideoInfoRow(
     }
 }
 
-/**
- * Get episode resolution label and color based on video height
- * Requirements:
- * - 4K -> 4K
- * - 1440p -> 1440p
- * - 1080p -> 1080p
- * - 720p -> 720p
- * - SD -> SD
- */
+private fun getResolutionIcon(width: Int?, height: Int?): androidx.compose.ui.graphics.vector.ImageVector {
+    // Using generic TV icon as Material Icons doesn't include specific resolution icons
+    return Icons.Default.Tv
+}
+
 private fun getEpisodeResolution(episode: BaseItemDto): Pair<String, Color>? {
-    val mediaSource = episode.mediaSources?.firstOrNull() ?: return null
-    val videoStream = mediaSource.mediaStreams.findDefaultVideoStream() ?: return null
+    val videoStream = episode.mediaStreams?.find { it.type == MediaStreamType.VIDEO }
+    val width = videoStream?.width
+    val height = videoStream?.height
 
-    val height = videoStream.height
-    val width = videoStream.width
-    val maxHeight = height ?: 0
-    val maxWidth = width ?: 0
-
-    if (maxHeight == 0 && maxWidth == 0) {
-        return null
-    }
+    val w = width ?: 0
+    val h = height ?: 0
 
     return when {
-        maxHeight >= 2160 || maxWidth >= 3840 -> "4K" to Quality4K
-        maxHeight >= 1440 || maxWidth >= 2560 -> "1440p" to Quality1440
-        maxHeight >= 1080 || maxWidth >= 1920 -> "1080p" to QualityHD
-        maxHeight >= 720 || maxWidth >= 1280 -> "720p" to QualityHD
-        else -> "SD" to QualitySD
+        h >= 2160 || w >= 3840 -> "4K" to Color(0xFF9C27B0) // Purple
+        h >= 1440 || w >= 2560 -> "1440p" to Color(0xFF3F51B5) // Indigo
+        h >= 1080 || w >= 1920 -> "1080p" to Color(0xFF2196F3) // Blue
+        h >= 720 || w >= 1280 -> "720p" to Color(0xFF4CAF50) // Green
+        h > 0 -> "SD" to Color(0xFFFF9800) // Orange
+        else -> null
     }
 }
 

@@ -31,7 +31,7 @@ object MediaPlayerUtils {
     /**
      * Launches the internal video player with enhanced features
      */
-    fun playMedia(context: Context, streamUrl: String, item: BaseItemDto) {
+    fun playMedia(context: Context, streamUrl: String, item: BaseItemDto, subtitleIndex: Int? = null) {
         if (item.type == BaseItemKind.AUDIO || item.type == BaseItemKind.MUSIC_ALBUM) {
             playAudio(context, streamUrl, item)
             return
@@ -50,6 +50,7 @@ object MediaPlayerUtils {
                 itemId = itemId,
                 itemName = item.name ?: context.getString(R.string.unknown),
                 startPosition = resumePosition,
+                subtitleIndex = subtitleIndex,
             )
 
             context.startActivity(intent)

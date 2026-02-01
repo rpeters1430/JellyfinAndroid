@@ -81,6 +81,7 @@ class VideoPlayerActivity : FragmentActivity() {
         private const val EXTRA_ITEM_ID = "extra_item_id"
         private const val EXTRA_ITEM_NAME = "extra_item_name"
         private const val EXTRA_START_POSITION = "extra_start_position"
+        private const val EXTRA_SUBTITLE_INDEX = "extra_subtitle_index"
 
         @JvmStatic
         @VisibleForTesting
@@ -110,11 +111,15 @@ class VideoPlayerActivity : FragmentActivity() {
             itemId: String,
             itemName: String,
             startPosition: Long = 0L,
+            subtitleIndex: Int? = null,
         ): Intent {
             return Intent(context, VideoPlayerActivity::class.java).apply {
                 putExtra(EXTRA_ITEM_ID, itemId)
                 putExtra(EXTRA_ITEM_NAME, itemName)
                 putExtra(EXTRA_START_POSITION, startPosition)
+                if (subtitleIndex != null) {
+                    putExtra(EXTRA_SUBTITLE_INDEX, subtitleIndex)
+                }
             }
         }
     }
@@ -140,6 +145,11 @@ class VideoPlayerActivity : FragmentActivity() {
             }
             val itemName = intent.getStringExtra(EXTRA_ITEM_NAME) ?: ""
             val startPosition = intent.getLongExtra(EXTRA_START_POSITION, 0L)
+            val subtitleIndex = if (intent.hasExtra(EXTRA_SUBTITLE_INDEX)) {
+                intent.getIntExtra(EXTRA_SUBTITLE_INDEX, -1)
+            } else {
+                null
+            }
 
             // Store item name for PiP title
             currentItemName = itemName
@@ -162,7 +172,7 @@ class VideoPlayerActivity : FragmentActivity() {
             // Initialize player with error handling
             lifecycleScope.launch {
                 try {
-                    playerViewModel.initializePlayer(itemId, itemName, startPosition)
+                    playerViewModel.initializePlayer(itemId, itemName, startPosition, subtitleIndex)
                 } catch (e: CancellationException) {
                     throw e
                 }

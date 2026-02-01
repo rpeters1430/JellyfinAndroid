@@ -19,11 +19,14 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.rounded.Dns
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
@@ -152,8 +155,6 @@ fun ServerConnectionScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            Spacer(modifier = Modifier.height(32.dp))
-
             LoginHeaderCard(modifier = Modifier.fillMaxWidth())
 
             // Auto-login button if we have saved credentials
@@ -295,7 +296,7 @@ private fun LoginHeaderCard(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.padding(vertical = 16.dp),
+        modifier = modifier.padding(bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -304,7 +305,7 @@ private fun LoginHeaderCard(
             painter = painterResource(id = R.drawable.ic_launcher_fg),
             contentDescription = stringResource(id = R.string.app_name),
             tint = Color.Unspecified, // Don't tint - preserve original colors
-            modifier = Modifier.size(100.dp),
+            modifier = Modifier.size(85.dp),
         )
         Text(
             text = stringResource(id = R.string.app_name),
@@ -422,7 +423,7 @@ private fun LoginFormCard(
             onValueChange = onServerUrlChange,
             label = { Text(stringResource(id = R.string.server_url_label)) },
             placeholder = { Text(stringResource(id = R.string.server_url_placeholder)) },
-            leadingIcon = { Icon(Icons.Default.Storage, contentDescription = null) },
+            leadingIcon = { Icon(Icons.Rounded.Dns, contentDescription = null) },
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Uri,
                 imeAction = ImeAction.Next,
@@ -439,7 +440,7 @@ private fun LoginFormCard(
             value = username,
             onValueChange = onUsernameChange,
             label = { Text(stringResource(id = R.string.username_label)) },
-            leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+            leadingIcon = { Icon(Icons.Rounded.Person, contentDescription = null) },
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Text,
                 imeAction = ImeAction.Next,
@@ -453,7 +454,7 @@ private fun LoginFormCard(
         OutlinedSecureTextField(
             state = passwordState,
             label = { Text(stringResource(id = R.string.password_label)) },
-            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+            leadingIcon = { Icon(Icons.Rounded.Lock, contentDescription = null) },
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Password,
                 imeAction = ImeAction.Done,
@@ -480,7 +481,7 @@ private fun LoginFormCard(
             Spacer(modifier = Modifier.width(16.dp))
             Text(
                 stringResource(id = R.string.remember_login),
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyMediumEmphasized,
             )
         }
     }
@@ -529,7 +530,7 @@ private fun ConnectionErrorCard(
             containerColor = MaterialTheme.colorScheme.errorContainer,
         ),
         elevation = CardDefaults.elevatedCardElevation(
-            defaultElevation = 2.dp,
+            defaultElevation = 4.dp,
         ),
         shape = MaterialTheme.shapes.large,
         modifier = modifier,
@@ -865,7 +866,7 @@ fun QuickConnectScreen(
                 },
                 label = { Text(stringResource(id = R.string.quick_connect_server_url_label)) },
                 placeholder = { Text(stringResource(id = R.string.quick_connect_server_url_placeholder)) },
-                leadingIcon = { Icon(Icons.Default.Storage, contentDescription = null) },
+                leadingIcon = { Icon(Icons.Default.Dns, contentDescription = null) },
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Uri,
                     imeAction = ImeAction.Done,
