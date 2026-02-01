@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.media3.common.util.UnstableApi
 import com.rpeters.jellyfin.data.playback.EnhancedPlaybackManager
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
-import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -22,7 +21,7 @@ import org.junit.Test
 
 /**
  * Test for VideoPlayerViewModel initialization race condition fix.
- * 
+ *
  * This test validates that _playerState is initialized before the init block
  * can call handleCastState(), preventing the NullPointerException that occurred
  * when CastManager emitted a state immediately (e.g., existing Cast session).
@@ -57,7 +56,7 @@ class VideoPlayerViewModelInitTest {
                 itemId = "",
                 positionMs = 0L,
                 isPlaying = false,
-            )
+            ),
         )
 
         // Mock the flows
@@ -80,7 +79,7 @@ class VideoPlayerViewModelInitTest {
             isInitialized = true,
             isAvailable = true,
             isConnected = true,
-            deviceName = "Test Cast Device"
+            deviceName = "Test Cast Device",
         )
 
         // Emit state before ViewModel is created to simulate race condition
@@ -92,7 +91,7 @@ class VideoPlayerViewModelInitTest {
             repository = mockRepository,
             castManager = mockCastManager,
             playbackProgressManager = mockPlaybackProgressManager,
-            enhancedPlaybackManager = mockEnhancedPlaybackManager
+            enhancedPlaybackManager = mockEnhancedPlaybackManager,
         )
 
         // Allow coroutines to process
@@ -101,7 +100,7 @@ class VideoPlayerViewModelInitTest {
         // Then - ViewModel should be initialized successfully without NPE
         assertNotNull("playerState should not be null", viewModel.playerState)
         assertNotNull("playerState value should not be null", viewModel.playerState.value)
-        
+
         // Verify Cast state was propagated to player state
         val playerState = viewModel.playerState.value
         assertNotNull("Player state should contain Cast information", playerState)
@@ -118,7 +117,7 @@ class VideoPlayerViewModelInitTest {
             repository = mockRepository,
             castManager = mockCastManager,
             playbackProgressManager = mockPlaybackProgressManager,
-            enhancedPlaybackManager = mockEnhancedPlaybackManager
+            enhancedPlaybackManager = mockEnhancedPlaybackManager,
         )
 
         advanceUntilIdle()
@@ -127,7 +126,7 @@ class VideoPlayerViewModelInitTest {
         assertNotNull(viewModel.playerState)
         val playerState = viewModel.playerState.value
         assertNotNull(playerState)
-        
+
         // Default state should not be casting
         assert(!playerState.isCasting) { "Should not be casting initially" }
         assert(!playerState.isCastConnected) { "Should not be connected to Cast initially" }
@@ -141,7 +140,7 @@ class VideoPlayerViewModelInitTest {
             repository = mockRepository,
             castManager = mockCastManager,
             playbackProgressManager = mockPlaybackProgressManager,
-            enhancedPlaybackManager = mockEnhancedPlaybackManager
+            enhancedPlaybackManager = mockEnhancedPlaybackManager,
         )
 
         advanceUntilIdle()
@@ -152,7 +151,7 @@ class VideoPlayerViewModelInitTest {
             isAvailable = true,
             isConnected = true,
             deviceName = "New Cast Device",
-            isCasting = true
+            isCasting = true,
         )
 
         advanceUntilIdle()
