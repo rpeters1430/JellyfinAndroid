@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.ui.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,12 +23,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Person
@@ -38,6 +39,23 @@ import androidx.compose.material.icons.outlined.Movie
 import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.RateReview
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.ClosedCaption
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FavoriteBorder
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Movie
+import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material.icons.rounded.OpenInBrowser
+import androidx.compose.material.icons.rounded.People
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Public
+import androidx.compose.material.icons.rounded.RadioButtonUnchecked
+import androidx.compose.material.icons.rounded.RateReview
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
@@ -91,6 +109,7 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.MediaStreamType
 import java.util.Locale
 import kotlin.math.roundToInt
+import androidx.core.net.toUri
 
 private val GENRE_BADGE_MAX_WIDTH = 100.dp
 
@@ -104,7 +123,7 @@ fun MovieDetailScreen(
     getLogoUrl: (BaseItemDto) -> String? = { null },
     getPersonImageUrl: (org.jellyfin.sdk.model.api.BaseItemPerson) -> String? = { null },
     onBackClick: () -> Unit,
-    onPlayClick: (BaseItemDto) -> Unit = {},
+    onPlayClick: (BaseItemDto, Int?) -> Unit = { item, _ -> },
     onFavoriteClick: (BaseItemDto) -> Unit = {},
     onShareClick: (BaseItemDto) -> Unit = {},
     onDeleteClick: (BaseItemDto) -> Unit = {},
@@ -119,6 +138,7 @@ fun MovieDetailScreen(
 ) {
     var isFavorite by remember { mutableStateOf(movie.userData?.isFavorite == true) }
     var isWatched by remember { mutableStateOf(movie.userData?.played == true) }
+    var selectedSubtitleIndex by remember { mutableStateOf<Int?>(null) }
     var showMoreOptions by remember { mutableStateOf(false) }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -254,7 +274,7 @@ fun MovieDetailScreen(
                                     text = overview,
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
-                                    maxLines = 6,
+                                    maxLines = 3,
                                     overflow = TextOverflow.Ellipsis,
                                     lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.3,
                                 )
@@ -280,7 +300,7 @@ fun MovieDetailScreen(
                     ) {
                         // Primary Play Button
                         Surface(
-                            onClick = { onPlayClick(movie) },
+                            onClick = { onPlayClick(movie, selectedSubtitleIndex) },
                             shape = RoundedCornerShape(12.dp),
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.fillMaxWidth(),
@@ -291,7 +311,7 @@ fun MovieDetailScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.PlayArrow,
+                                    imageVector = Icons.Rounded.PlayArrow,
                                     contentDescription = "Play",
                                     tint = MaterialTheme.colorScheme.onPrimary,
                                     modifier = Modifier.size(28.dp),
@@ -312,7 +332,7 @@ fun MovieDetailScreen(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             ActionButton(
-                                icon = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                icon = if (isFavorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                                 label = if (isFavorite) "Favorited" else "Favorite",
                                 onClick = {
                                     isFavorite = !isFavorite
@@ -321,7 +341,7 @@ fun MovieDetailScreen(
                                 modifier = Modifier.weight(1f),
                             )
                             ActionButton(
-                                icon = if (isWatched) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                                icon = if (isWatched) Icons.Rounded.CheckCircle else Icons.Rounded.RadioButtonUnchecked,
                                 label = if (isWatched) "Watched" else "Mark Watched",
                                 onClick = {
                                     isWatched = !isWatched
@@ -337,13 +357,13 @@ fun MovieDetailScreen(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             ActionButton(
-                                icon = Icons.Default.Share,
+                                icon = Icons.Rounded.Share,
                                 label = "Share",
                                 onClick = { onShareClick(movie) },
                                 modifier = Modifier.weight(1f),
                             )
                             ActionButton(
-                                icon = Icons.Default.Delete,
+                                icon = Icons.Rounded.Delete,
                                 label = "Delete",
                                 onClick = { showDeleteConfirmation = true },
                                 modifier = Modifier.weight(1f),
@@ -357,6 +377,8 @@ fun MovieDetailScreen(
                     ExpressiveMovieInfoCard(
                         movie = movie,
                         getImageUrl = getImageUrl,
+                        selectedSubtitleIndex = selectedSubtitleIndex,
+                        onSubtitleSelect = { selectedSubtitleIndex = it },
                     )
                 }
 
@@ -500,7 +522,7 @@ fun MovieDetailScreen(
                     color = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
                 ) {
                     Icon(
-                        imageVector = Icons.Default.MoreVert,
+                        imageVector = Icons.Rounded.MoreVert,
                         contentDescription = "More options",
                         tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(12.dp).size(24.dp),
@@ -520,7 +542,7 @@ fun MovieDetailScreen(
                                 try {
                                     val intent = android.content.Intent(
                                         android.content.Intent.ACTION_VIEW,
-                                        android.net.Uri.parse("$serverUrl/web/index.html#!/details?id=$movieId"),
+                                        "$serverUrl/web/index.html#!/details?id=$movieId".toUri(),
                                     )
                                     context.startActivity(intent)
                                 } catch (e: android.content.ActivityNotFoundException) {
@@ -534,7 +556,7 @@ fun MovieDetailScreen(
                             },
                             leadingIcon = {
                                 Icon(
-                                    imageVector = Icons.Default.OpenInBrowser,
+                                    imageVector = Icons.Rounded.OpenInBrowser,
                                     contentDescription = null,
                                 )
                             },
@@ -550,7 +572,7 @@ fun MovieDetailScreen(
                         },
                         leadingIcon = {
                             Icon(
-                                imageVector = Icons.Default.Share,
+                                imageVector = Icons.Rounded.Share,
                                 contentDescription = null,
                             )
                         },
@@ -565,7 +587,7 @@ fun MovieDetailScreen(
                         },
                         leadingIcon = {
                             Icon(
-                                imageVector = Icons.Default.Delete,
+                                imageVector = Icons.Rounded.Delete,
                                 contentDescription = null,
                             )
                         },
@@ -611,10 +633,10 @@ private enum class RatingSource(
     val icon: ImageVector,
     val contentDescription: String,
 ) {
-    Community(Icons.Outlined.People, "Community rating"),
-    Critics(Icons.Outlined.RateReview, "Critic rating"),
-    ImdbLink(Icons.Outlined.Movie, "IMDb link available"),
-    TmdbLink(Icons.Outlined.Public, "TMDB link available"),
+    Community(Icons.Rounded.People, "Community rating"),
+    Critics(Icons.Rounded.RateReview, "Critic rating"),
+    ImdbLink(Icons.Rounded.Movie, "IMDb link available"),
+    TmdbLink(Icons.Rounded.Public, "TMDB link available"),
 }
 
 private data class ExternalRating(
@@ -730,8 +752,13 @@ private fun ActionButton(
 private fun ExpressiveMovieInfoCard(
     movie: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
+    selectedSubtitleIndex: Int?,
+    onSubtitleSelect: (Int?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val mediaStreams = movie.mediaSources?.firstOrNull()?.mediaStreams
+    val subtitleStreams = mediaStreams?.filter { it.type == MediaStreamType.SUBTITLE } ?: emptyList()
+
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -782,15 +809,14 @@ private fun ExpressiveMovieInfoCard(
             movie.mediaSources?.firstOrNull()?.mediaStreams?.let { streams ->
                 val videoStream = streams.findDefaultVideoStream()
                 val audioStream = streams.firstOrNull { it.type == MediaStreamType.AUDIO }
-                val resolution = getMovieResolution(videoStream)
 
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     videoStream?.let { stream ->
+                        val icon = getResolutionIcon(stream.width, stream.height)
                         ExpressiveVideoInfoRow(
                             label = stringResource(id = R.string.video),
-                            resolution = resolution,
                             codec = stream.codec?.uppercase(),
-                            icon = Icons.Default.HighQuality,
+                            icon = icon,
                         )
                     }
 
@@ -798,7 +824,16 @@ private fun ExpressiveMovieInfoCard(
                         ExpressiveInfoRow(
                             label = stringResource(id = R.string.audio),
                             value = codec.uppercase(),
-                            icon = Icons.Default.Audiotrack,
+                            icon = Icons.Rounded.MusicNote,
+                        )
+                    }
+
+                    // Subtitles
+                    if (subtitleStreams.isNotEmpty()) {
+                        ExpressiveSubtitleRow(
+                            subtitles = subtitleStreams,
+                            selectedSubtitleIndex = selectedSubtitleIndex,
+                            onSubtitleSelect = onSubtitleSelect,
                         )
                     }
                 }
@@ -939,7 +974,7 @@ private fun CastMemberCard(
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Person,
+                                imageVector = Icons.Rounded.Person,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
                                 modifier = Modifier.size(48.dp),
@@ -952,7 +987,7 @@ private fun CastMemberCard(
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Person,
+                                imageVector = Icons.Rounded.Person,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
                                 modifier = Modifier.size(48.dp),
@@ -968,7 +1003,7 @@ private fun CastMemberCard(
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Person,
+                        imageVector = Icons.Rounded.Person,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
                         modifier = Modifier.size(48.dp),
@@ -1119,7 +1154,6 @@ private fun CrewInfoRow(
 @Composable
 private fun ExpressiveVideoInfoRow(
     label: String,
-    resolution: Pair<String, Color>?,
     codec: String?,
     icon: ImageVector,
     modifier: Modifier = Modifier,
@@ -1155,20 +1189,6 @@ private fun ExpressiveVideoInfoRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                resolution?.let { (labelText, color) ->
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = color,
-                    ) {
-                        Text(
-                            text = labelText,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
-                }
                 codec?.let { codecText ->
                     Text(
                         text = codecText,
@@ -1176,8 +1196,7 @@ private fun ExpressiveVideoInfoRow(
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
-                }
-                if (resolution == null && codec == null) {
+                } ?: run {
                     Text(
                         text = stringResource(id = R.string.unknown),
                         style = MaterialTheme.typography.bodyLarge,
@@ -1190,24 +1209,92 @@ private fun ExpressiveVideoInfoRow(
     }
 }
 
-// Helper function for movie resolution detection
-private fun getMovieResolution(
-    videoStream: org.jellyfin.sdk.model.api.MediaStream?,
-): Pair<String, Color>? {
-    val height = videoStream?.height
-    val width = videoStream?.width
-    val maxHeight = height ?: 0
-    val maxWidth = width ?: 0
-
-    if (maxHeight == 0 && maxWidth == 0) {
-        return null
+@Composable
+private fun ExpressiveSubtitleRow(
+    subtitles: List<org.jellyfin.sdk.model.api.MediaStream>,
+    selectedSubtitleIndex: Int?,
+    onSubtitleSelect: (Int?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    // Default logic: find index matching selected, OR default stream, OR first stream
+    val currentSubtitle = if (selectedSubtitleIndex != null) {
+        subtitles.find { it.index == selectedSubtitleIndex }
+    } else {
+        subtitles.firstOrNull { it.isDefault == true } ?: subtitles.firstOrNull()
     }
+    
+    val labelText = currentSubtitle?.let { 
+        val lang = it.language?.uppercase(java.util.Locale.ROOT) ?: "UNK"
+        val title = it.title ?: it.displayTitle
+        if (title != null && title != lang) "$lang - $title" else lang
+    } ?: "None"
 
-    return when {
-        maxHeight >= 2160 || maxWidth >= 3840 -> "4K" to Quality4K
-        maxHeight >= 1440 || maxWidth >= 2560 -> "1440p" to Quality1440
-        maxHeight >= 1080 || maxWidth >= 1920 -> "1080p" to QualityHD
-        maxHeight >= 720 || maxWidth >= 1280 -> "720p" to QualityHD
-        else -> "SD" to QualitySD
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+         Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            modifier = Modifier.size(40.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.ClosedCaption,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.padding(10.dp),
+            )
+        }
+        
+        Box {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.clickable { expanded = true }
+            ) {
+                 Column(
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(
+                        text = "Subtitles",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Medium,
+                    )
+                    Text(
+                        text = labelText,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Icon(Icons.Rounded.ExpandMore, contentDescription = null, modifier = Modifier.size(16.dp))
+            }
+            
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                subtitles.forEach { stream ->
+                    DropdownMenuItem(
+                        text = { 
+                             val lang = stream.language?.uppercase(java.util.Locale.ROOT) ?: "UNK"
+                             val title = stream.title ?: stream.displayTitle
+                             Text(if (title != null && title != lang) "$lang - $title" else lang)
+                        },
+                        onClick = {
+                            onSubtitleSelect(stream.index)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
     }
+}
+
+private fun getResolutionIcon(width: Int?, height: Int?): ImageVector {
+    // Using generic video icon as Material Icons doesn't include specific resolution icons
+    return Icons.Outlined.Movie
 }

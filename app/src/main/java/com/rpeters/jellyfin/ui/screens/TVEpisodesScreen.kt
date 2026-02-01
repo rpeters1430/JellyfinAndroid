@@ -2,6 +2,7 @@
 
 package com.rpeters.jellyfin.ui.screens
 
+import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -50,6 +51,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.util.UnstableApi
 import coil3.compose.SubcomposeAsyncImage
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
@@ -78,6 +80,7 @@ import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import java.util.Locale
 
+@OptIn(UnstableApi::class)
 @Composable
 fun TVEpisodesScreen(
     seasonId: String,

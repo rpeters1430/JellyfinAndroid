@@ -425,7 +425,7 @@ fun HomeContent(
 
     LaunchedEffect(surfaceCoordinatorViewModel, contentLists.continueWatching) {
         snapshotFlow {
-            contentLists.continueWatching.mapNotNull { item ->
+            contentLists.continueWatching.map { item ->
                 val id = item.id.toString()
                 Triple(id, item.name, item.seriesName)
             } to contentLists.continueWatching
@@ -968,9 +968,7 @@ fun SearchResultsContent(
 }
 
 private fun getContinueWatchingItems(appState: MainAppState, maxItems: Int = 8): List<BaseItemDto> {
-    val sourceItems = if (appState.continueWatching.isNotEmpty()) {
-        appState.continueWatching
-    } else {
+    val sourceItems = appState.continueWatching.ifEmpty {
         appState.allItems
     }
 

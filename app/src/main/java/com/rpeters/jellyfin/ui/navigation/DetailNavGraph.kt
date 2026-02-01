@@ -296,13 +296,14 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 movie = resolvedMovie,
                 relatedItems = detailState.similarMovies,
                 onBackClick = { navController.popBackStack() },
-                onPlayClick = {
-                    val streamUrl = mainViewModel.getStreamUrl(resolvedMovie)
+                onPlayClick = { movieItem, subtitleIndex ->
+                    val streamUrl = mainViewModel.getStreamUrl(movieItem)
                     if (streamUrl != null) {
                         MediaPlayerUtils.playMedia(
                             context = navController.context,
                             streamUrl = streamUrl,
-                            item = resolvedMovie,
+                            item = movieItem,
+                            subtitleIndex = subtitleIndex,
                         )
                     }
                 },
@@ -435,7 +436,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                             }
                         }
                     },
-                    onPlayClick = { episodeItem ->
+                    onPlayClick = { episodeItem, subtitleIndex ->
                         try {
                             val streamUrl = mainViewModel.getStreamUrl(episodeItem)
                             if (streamUrl != null) {
@@ -443,6 +444,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                                     context = navController.context,
                                     streamUrl = streamUrl,
                                     item = episodeItem,
+                                    subtitleIndex = subtitleIndex,
                                 )
                             } else {
                                 SecureLogger.e(

@@ -35,6 +35,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -42,6 +43,7 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaListItem
 import com.rpeters.jellyfin.ui.components.ExpressiveSwitchListItem
+import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
 import com.rpeters.jellyfin.ui.viewmodel.LibraryActionsPreferencesViewModel
 
 @OptInAppExperimentalApis
@@ -62,6 +64,40 @@ fun SettingsScreen(
 ) {
     val libraryActionPrefs by libraryActionsPreferencesViewModel.preferences.collectAsStateWithLifecycle()
 
+    SettingsScreenContent(
+        enableManagementActions = libraryActionPrefs.enableManagementActions,
+        onToggleManagementActions = libraryActionsPreferencesViewModel::setManagementActionsEnabled,
+        onBackClick = onBackClick,
+        modifier = modifier,
+        onManagePinsClick = onManagePinsClick,
+        onSubtitleSettingsClick = onSubtitleSettingsClick,
+        onPrivacyPolicyClick = onPrivacyPolicyClick,
+        onAppearanceSettingsClick = onAppearanceSettingsClick,
+        onPlaybackSettingsClick = onPlaybackSettingsClick,
+        onDownloadsSettingsClick = onDownloadsSettingsClick,
+        onNotificationsSettingsClick = onNotificationsSettingsClick,
+        onPrivacySettingsClick = onPrivacySettingsClick,
+        onAccessibilitySettingsClick = onAccessibilitySettingsClick,
+    )
+}
+
+@OptInAppExperimentalApis
+@Composable
+private fun SettingsScreenContent(
+    enableManagementActions: Boolean,
+    onToggleManagementActions: (Boolean) -> Unit,
+    onBackClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    onManagePinsClick: () -> Unit = {},
+    onSubtitleSettingsClick: () -> Unit = {},
+    onPrivacyPolicyClick: () -> Unit = {},
+    onAppearanceSettingsClick: () -> Unit = {},
+    onPlaybackSettingsClick: () -> Unit = {},
+    onDownloadsSettingsClick: () -> Unit = {},
+    onNotificationsSettingsClick: () -> Unit = {},
+    onPrivacySettingsClick: () -> Unit = {},
+    onAccessibilitySettingsClick: () -> Unit = {},
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -93,8 +129,8 @@ fun SettingsScreen(
         ) {
             item {
                 LibraryManagementCard(
-                    enabled = libraryActionPrefs.enableManagementActions,
-                    onToggle = libraryActionsPreferencesViewModel::setManagementActionsEnabled,
+                    enabled = enableManagementActions,
+                    onToggle = onToggleManagementActions,
                 )
             }
 
@@ -268,6 +304,19 @@ private fun SettingsSectionCard(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             content = content,
+        )
+    }
+}
+
+@OptInAppExperimentalApis
+@Preview(showBackground = true)
+@Composable
+private fun SettingsScreenPreview() {
+    JellyfinAndroidTheme {
+        SettingsScreenContent(
+            enableManagementActions = true,
+            onToggleManagementActions = {},
+            onBackClick = {},
         )
     }
 }
