@@ -21,8 +21,8 @@ android {
         applicationId = "com.rpeters.jellyfin"
         minSdk = 26
         targetSdk = 35
-        versionCode = 30
-        versionName = "13.98"
+        versionCode = 31
+        versionName = "13.99"
 
         testInstrumentationRunner = "com.rpeters.jellyfin.testing.HiltTestRunner"
 
@@ -215,7 +215,7 @@ dependencies {
 
     // Hilt testing
     testImplementation(libs.dagger.hilt.android.testing)
-    kspTest("com.google.dagger:hilt-compiler:${libs.versions.hilt.get()}")
+    kspTest("com.google.dagger:hilt-compiler:2.59")
     kspTest(libs.kotlinx.metadata.jvm)
 
     testImplementation(libs.turbine)
@@ -235,7 +235,7 @@ dependencies {
     androidTestImplementation(libs.kotlinx.coroutines.test)
 
     androidTestImplementation(libs.dagger.hilt.android.testing)
-    kspAndroidTest("com.google.dagger:hilt-compiler:${libs.versions.hilt.get()}")
+    kspAndroidTest("com.google.dagger:hilt-compiler:2.59")
     kspAndroidTest(libs.kotlinx.metadata.jvm)
 
     // Debug Tools
@@ -246,17 +246,16 @@ dependencies {
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 }
 
-// Force all core Compose artifacts to 1.7.6 to prevent "Franken-Compose" crashes on API 30
-// This ensures ui, foundation, and animation are all in sync.
+// Let the Compose BOM manage versions - it provides a curated set of compatible versions
+// Only force Material3 to ensure consistency across adaptive/expressive components
 configurations.all {
     resolutionStrategy.eachDependency {
         val group = requested.group
-        if (group == "androidx.compose.ui" ||
-            group == "androidx.compose.foundation" ||
-            group == "androidx.compose.animation"
-        ) {
-            useVersion("1.7.6")
-            because("Force consistent core Compose version to fix NoSuchFieldError on API 30")
+
+        // Force Material3 to use a consistent version across all dependencies
+        if (group == "androidx.compose.material3") {
+            useVersion("1.5.0-alpha13")
+            because("Force consistent Material3 version across all adaptive and expressive components")
         }
     }
 }
