@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.data.repository
 import android.util.Log
 import androidx.annotation.VisibleForTesting
 import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.core.constants.Constants
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.model.QuickConnectResult
@@ -88,7 +89,7 @@ class JellyfinAuthRepository @Inject constructor(
             Log.e(TAG, "I/O error while testing server connection", e)
             val errorType = RepositoryUtils.getErrorType(e)
             val message = if (errorType == ErrorType.DNS_RESOLUTION) {
-                "Could not resolve server hostname. Please check the server address for typos, or try using an IP address (e.g., 192.168.1.100)"
+                Constants.ErrorMessages.DNS_RESOLUTION_ERROR
             } else {
                 "Network error: ${e.message}"
             }
@@ -143,7 +144,7 @@ class JellyfinAuthRepository @Inject constructor(
             Log.e(TAG, "authenticateUser: I/O error during authentication", e)
             val errorType = RepositoryUtils.getErrorType(e)
             val message = if (errorType == ErrorType.DNS_RESOLUTION) {
-                "Could not resolve server hostname. Please check the server address for typos, or try using an IP address (e.g., 192.168.1.100)"
+                Constants.ErrorMessages.DNS_RESOLUTION_ERROR
             } else {
                 "Network error during authentication: ${e.message}"
             }
