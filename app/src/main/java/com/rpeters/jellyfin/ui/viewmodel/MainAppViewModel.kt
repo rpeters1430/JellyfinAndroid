@@ -75,6 +75,10 @@ data class MainAppState(
     val favorites: List<BaseItemDto> = emptyList(),
     val currentUser: CurrentUserDetails? = null,
 
+    // AI features
+    val viewingMood: String? = null,
+    val isLoadingViewingMood: Boolean = false,
+
     // Pagination (legacy)
     val isLoadingMore: Boolean = false,
     val hasMoreItems: Boolean = false,
@@ -118,6 +122,7 @@ class MainAppViewModel @Inject constructor(
     private val credentialManager: SecureCredentialManager,
     @UnstableApi private val castManager: CastManager,
     private val dispatchers: DispatcherProvider,
+    private val generativeAiRepository: com.rpeters.jellyfin.data.repository.GenerativeAiRepository,
 ) : ViewModel() {
     companion object {
         // Pagination constants
@@ -1301,6 +1306,42 @@ class MainAppViewModel @Inject constructor(
     // Helper methods
     fun clearLoadedLibraryTypes() {
         // Simplified - just clear state
+    }
+
+    /**
+     * Generate AI-powered viewing mood analysis based on recent watch history
+     */
+    fun generateViewingMood() {
+        viewModelScope.launch {
+            _appState.value = _appState.value.copy(isLoadingViewingMood = true)
+
+            try {
+                // Use continue watching + recently added as proxy for recent viewing
+                val recentItems = _appState.value.continueWatching +
+                    _appState.value.recentlyAdded.take(10)
+
+                if (recentItems.isEmpty()) {
+                    _appState.value = _appState.value.copy(
+                        viewingMood = "Start watching to get personalized insights!",
+                        isLoadingViewingMood = false,
+                    )
+                    return@launch
+                }
+
+                val mood = generativeAiRepository.analyzeViewingHabits(recentItems)
+                _appState.value = _appState.value.copy(
+                    viewingMood = mood,
+                    isLoadingViewingMood = false,
+                )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _appState.value = _appState.value.copy(
+                    viewingMood = null,
+                    isLoadingViewingMood = false,
+                )
+            }
+        }
     }
 
     override fun onCleared() {

@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rpeters.jellyfin.data.repository.GenerativeAiRepository
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
@@ -23,6 +24,8 @@ data class MovieDetailState(
     val isLoading: Boolean = false,
     val isSimilarMoviesLoading: Boolean = false,
     val errorMessage: String? = null,
+    val aiSummary: String? = null,
+    val isLoadingAiSummary: Boolean = false,
 )
 
 @HiltViewModel
@@ -30,6 +33,7 @@ class MovieDetailViewModel @Inject constructor(
     private val repository: JellyfinRepository,
     private val mediaRepository: JellyfinMediaRepository,
     private val enhancedPlaybackUtils: EnhancedPlaybackUtils,
+    private val generativeAiRepository: GenerativeAiRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MovieDetailState())
@@ -94,6 +98,34 @@ class MovieDetailViewModel @Inject constructor(
 
     fun clearError() {
         _state.value = _state.value.copy(errorMessage = null)
+    }
+
+    /**
+     * Generate AI summary of the movie overview
+     */
+    fun generateAiSummary() {
+        val movie = _state.value.movie ?: return
+        val overview = movie.overview ?: return
+        val title = movie.name ?: "Unknown"
+
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoadingAiSummary = true)
+
+            try {
+                val summary = generativeAiRepository.generateSummary(title, overview)
+                _state.value = _state.value.copy(
+                    aiSummary = summary,
+                    isLoadingAiSummary = false,
+                )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    aiSummary = "Unable to generate summary",
+                    isLoadingAiSummary = false,
+                )
+            }
+        }
     }
 
     override fun onCleared() {

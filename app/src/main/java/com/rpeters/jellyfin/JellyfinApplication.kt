@@ -39,6 +39,9 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
     @Inject
     lateinit var authRepository: JellyfinAuthRepository
 
+    @Inject
+    lateinit var generativeAiRepository: com.rpeters.jellyfin.data.repository.GenerativeAiRepository
+
     private val applicationJob = SupervisorJob()
     private val applicationScope = CoroutineScope(applicationJob + Dispatchers.Default)
     private val authRecoveryLock = Any()
@@ -67,6 +70,9 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
         initializePerformanceOptimizations()
 
         modernSurfaceCoordinator.initialize()
+
+        // Initialize AI in background to check Nano availability early
+        initializeAiBackend()
 
         setupUncaughtExceptionHandler()
         SecureLogger.i(TAG, "Application started")
@@ -167,6 +173,22 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
         }
     }
 
+    private fun initializeAiBackend() {
+        applicationScope.launch {
+            try {
+                // Trigger AI initialization by checking backend status
+                // This will start Nano download if available or fallback to cloud
+                SecureLogger.i(TAG, "Initializing AI backend in background")
+                val isOnDevice = generativeAiRepository.isUsingOnDeviceAI()
+                SecureLogger.i(TAG, "AI backend initialized: ${if (isOnDevice) "On-Device (Nano)" else "Cloud (API)"}")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                SecureLogger.w(TAG, "AI initialization failed (non-fatal): ${e.message}")
+            }
+        }
+    }
+
     private fun setupUncaughtExceptionHandler() {
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, exception ->
@@ -174,6 +196,13 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
                 SecureLogger.w(TAG, "Suppressed fatal 401 auth exception on thread ${thread.name}", exception)
                 scheduleAuthRecovery()
                 return@setDefaultUncaughtExceptionHandler
+            }
+            // Handle NoSuchFieldError for fontWeightAdjustment field (Compose compatibility issue)
+            // This occurs on certain devices where Configuration.fontWeightAdjustment doesn't exist
+            if (isFontWeightAdjustmentError(exception)) {
+                SecureLogger.e(TAG, "Compose fontWeightAdjustment compatibility error detected", exception)
+                SecureLogger.e(TAG, "This is a known Compose issue on certain devices. Please update the app.")
+                // Still crash, but with better logging for Firebase
             }
             SecureLogger.e(TAG, "Uncaught exception in thread ${thread.name}", exception)
             cleanupResources()
@@ -200,6 +229,22 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
         while (current != null) {
             if (current is CancellationException) return false
             if (current is Exception && RepositoryUtils.is401Error(current)) return true
+            current = current.cause
+        }
+        return false
+    }
+
+    /**
+     * Checks if the exception is the known Compose fontWeightAdjustment NoSuchFieldError
+     * This occurs on devices where Configuration.fontWeightAdjustment doesn't exist
+     */
+    private fun isFontWeightAdjustmentError(exception: Throwable): Boolean {
+        var current: Throwable? = exception
+        while (current != null) {
+            if (current is NoSuchFieldError &&
+                current.message?.contains("fontWeightAdjustment") == true) {
+                return true
+            }
             current = current.cause
         }
         return false

@@ -33,6 +33,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Delete
@@ -135,6 +136,9 @@ fun TVEpisodeDetailScreen(
     onMarkUnwatchedClick: (BaseItemDto) -> Unit = {},
     onFavoriteClick: (BaseItemDto) -> Unit = {},
     playbackAnalysis: PlaybackCapabilityAnalysis? = null,
+    onGenerateAiSummary: () -> Unit = {},
+    aiSummary: String? = null,
+    isLoadingAiSummary: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     var isLoading by remember { mutableStateOf(false) }
@@ -249,6 +253,9 @@ fun TVEpisodeDetailScreen(
                         item {
                             ExpressiveEpisodeOverview(
                                 episode = episode,
+                                onGenerateAiSummary = onGenerateAiSummary,
+                                aiSummary = aiSummary,
+                                isLoadingAiSummary = isLoadingAiSummary,
                                 modifier = Modifier.padding(horizontal = 16.dp),
                             )
                         }
@@ -813,14 +820,14 @@ private fun ExpressiveSubtitleRow(
     modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    // Default logic: find index matching selected, OR default stream, OR first stream
+    // Default to None unless a subtitle is explicitly selected
     val currentSubtitle = if (selectedSubtitleIndex != null) {
         subtitles.find { it.index == selectedSubtitleIndex }
     } else {
-        subtitles.firstOrNull { it.isDefault == true } ?: subtitles.firstOrNull()
+        null
     }
-    
-    val labelText = currentSubtitle?.let { 
+
+    val labelText = currentSubtitle?.let {
         val lang = it.language?.uppercase(java.util.Locale.ROOT) ?: "UNK"
         val title = it.title ?: it.displayTitle
         if (title != null && title != lang) "$lang - $title" else lang
@@ -872,9 +879,18 @@ private fun ExpressiveSubtitleRow(
             }
             
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                // None option
+                DropdownMenuItem(
+                    text = { Text("None") },
+                    onClick = {
+                        onSubtitleSelect(null)
+                        expanded = false
+                    }
+                )
+
                 subtitles.forEach { stream ->
                     DropdownMenuItem(
-                        text = { 
+                        text = {
                              val lang = stream.language?.uppercase(java.util.Locale.ROOT) ?: "UNK"
                              val title = stream.title ?: stream.displayTitle
                              Text(if (title != null && title != lang) "$lang - $title" else lang)
@@ -904,11 +920,11 @@ private fun getEpisodeResolution(episode: BaseItemDto): Pair<String, Color>? {
     val h = height ?: 0
 
     return when {
-        h >= 2160 || w >= 3840 -> "4K" to Color(0xFF9C27B0) // Purple
-        h >= 1440 || w >= 2560 -> "1440p" to Color(0xFF3F51B5) // Indigo
-        h >= 1080 || w >= 1920 -> "1080p" to Color(0xFF2196F3) // Blue
-        h >= 720 || w >= 1280 -> "720p" to Color(0xFF4CAF50) // Green
-        h > 0 -> "SD" to Color(0xFFFF9800) // Orange
+        h >= 2160 || w >= 3840 -> "4K" to Quality4K
+        h >= 1440 || w >= 2560 -> "1440p" to Quality1440
+        h >= 1080 || w >= 1920 -> "FHD" to QualityHD
+        h >= 720 || w >= 1280 -> "HD" to QualityHD
+        h > 0 -> "SD" to QualitySD
         else -> null
     }
 }
@@ -1074,6 +1090,9 @@ private fun ExpressiveEpisodeActions(
 @Composable
 private fun ExpressiveEpisodeOverview(
     episode: BaseItemDto,
+    onGenerateAiSummary: () -> Unit = {},
+    aiSummary: String? = null,
+    isLoadingAiSummary: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     episode.overview?.takeIf { it.isNotBlank() }?.let { overview ->
@@ -1125,6 +1144,30 @@ private fun ExpressiveEpisodeOverview(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    // AI Summary Button
+                    androidx.compose.material3.TextButton(
+                        onClick = onGenerateAiSummary,
+                        enabled = !isLoadingAiSummary,
+                    ) {
+                        if (isLoadingAiSummary) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                        } else {
+                            Icon(
+                                imageVector = androidx.compose.material.icons.Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                        }
+                        Text(if (aiSummary != null) "AI Summary" else "Generate AI Summary")
+                    }
                 }
 
                 Text(
@@ -1133,6 +1176,34 @@ private fun ExpressiveEpisodeOverview(
                     lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
+
+                // AI Summary Display
+                aiSummary?.let { summary ->
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Icon(
+                                imageVector = androidx.compose.material.icons.Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp),
+                            )
+                            Text(
+                                text = summary,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    }
+                }
             }
         }
     }

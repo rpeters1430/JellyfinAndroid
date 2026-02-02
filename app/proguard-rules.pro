@@ -204,6 +204,15 @@
     @androidx.compose.runtime.Composable <methods>;
 }
 
+# Fix for fontWeightAdjustment NoSuchFieldError on some devices
+# Keep Configuration class and all its fields for Compose compatibility
+-keep class android.content.res.Configuration {
+    *;
+}
+-keepclassmembers class android.content.res.Configuration {
+    public <fields>;
+}
+
 # ================================
 # ANDROIDX & ANDROID CORE
 # ================================

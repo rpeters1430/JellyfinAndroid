@@ -95,22 +95,35 @@ class AiAssistantViewModel @Inject constructor(
                 val chatResponse = chatResponseDeferred.await()
                 val searchKeywords = searchKeywordsDeferred.await()
 
-                // Perform search if keywords are valid and different from original query (or just search anyway)
-                val searchResults = if (searchKeywords.isNotEmpty()) {
-                    // Search for the first/best keyword or combine them
-                    val searchTerm = searchKeywords.joinToString(" ")
-                    when (val result = jellyfinRepository.searchItems(searchTerm)) {
-                        is ApiResult.Success -> result.data
-                        else -> emptyList()
+                // Search original query plus AI-generated terms, then merge unique results.
+                val searchTerms = buildList {
+                    add(query)
+                    addAll(searchKeywords)
+                }.map { it.trim() }
+                    .filter { it.isNotBlank() }
+                    .distinct()
+                    .take(5)
+
+                val mergedResults = mutableListOf<BaseItemDto>()
+                val seenIds = mutableSetOf<String>()
+                searchTerms.forEach { term ->
+                    when (val result = jellyfinRepository.searchItems(term)) {
+                        is ApiResult.Success -> {
+                            result.data.forEach { item ->
+                                val id = item.id.toString()
+                                if (seenIds.add(id)) {
+                                    mergedResults += item
+                                }
+                            }
+                        }
+                        else -> Unit
                     }
-                } else {
-                    emptyList()
                 }
 
                 val aiMessage = AiMessage(
                     content = chatResponse,
                     isUser = false,
-                    recommendedItems = searchResults.take(10),
+                    recommendedItems = mergedResults.take(10),
                 )
 
                 _uiState.value = _uiState.value.copy(

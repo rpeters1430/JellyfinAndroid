@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.data.repository.GenerativeAiRepository
 import com.rpeters.jellyfin.data.repository.JellyfinSearchRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -41,14 +42,23 @@ data class SearchState(
     val hasSearched: Boolean = false,
 )
 
+data class SearchAiState(
+    val isProcessing: Boolean = false,
+    val lastEnhancedQuery: String? = null,
+)
+
 @OptInAppExperimentalApis
 @HiltViewModel
 class SearchViewModel @Inject constructor(
     private val searchRepository: JellyfinSearchRepository,
+    private val generativeAiRepository: GenerativeAiRepository,
 ) : ViewModel() {
 
     private val _searchState = MutableStateFlow(SearchState())
     val searchState: StateFlow<SearchState> = _searchState.asStateFlow()
+
+    private val _aiState = MutableStateFlow(SearchAiState())
+    val aiState: StateFlow<SearchAiState> = _aiState.asStateFlow()
 
     private var searchJob: Job? = null
 
@@ -264,6 +274,40 @@ class SearchViewModel @Inject constructor(
      */
     fun clearError() {
         _searchState.value = _searchState.value.copy(errorMessage = null)
+    }
+
+    /**
+     * Enhances a natural language search query into better search terms using AI.
+     * Example: "funny movies from the 90s" -> "comedy 1990"
+     */
+    suspend fun enhanceSearchQuery(query: String): String {
+        if (query.length <= 3) return query
+
+        _aiState.value = _aiState.value.copy(isProcessing = true)
+
+        return try {
+            val keywords = generativeAiRepository.smartSearchQuery(query)
+            val enhancedQuery = if (keywords.isNotEmpty()) {
+                keywords.joinToString(" ")
+            } else {
+                query
+            }
+
+            _aiState.value = _aiState.value.copy(
+                isProcessing = false,
+                lastEnhancedQuery = enhancedQuery,
+            )
+
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "AI enhanced query: '$query' -> '$enhancedQuery'")
+            }
+
+            enhancedQuery
+        } catch (e: Exception) {
+            Log.w(TAG, "AI query enhancement failed: ${e.message}")
+            _aiState.value = _aiState.value.copy(isProcessing = false)
+            query // Fallback to original query
+        }
     }
 
     /**

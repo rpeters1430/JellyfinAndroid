@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -23,6 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Delete
@@ -58,6 +60,7 @@ import androidx.compose.material.icons.rounded.RateReview
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -90,12 +93,15 @@ import androidx.compose.ui.zIndex
 import coil3.compose.SubcomposeAsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.data.repository.GenerativeAiRepository
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
 import com.rpeters.jellyfin.ui.components.HeroImageWithLogo
 import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
 import com.rpeters.jellyfin.ui.components.ShimmerBox
+import kotlinx.coroutines.launch
 import com.rpeters.jellyfin.ui.theme.JellyfinBlue80
 import com.rpeters.jellyfin.ui.theme.JellyfinTeal80
 import com.rpeters.jellyfin.ui.theme.Quality1440
@@ -130,6 +136,9 @@ fun MovieDetailScreen(
     onMarkWatchedClick: (BaseItemDto) -> Unit = {},
     onRelatedMovieClick: (String) -> Unit = {},
     onRefresh: () -> Unit = {},
+    onGenerateAiSummary: () -> Unit = {},
+    aiSummary: String? = null,
+    isLoadingAiSummary: Boolean = false,
     relatedItems: List<BaseItemDto> = emptyList(),
     playbackAnalysis: PlaybackCapabilityAnalysis? = null,
     isRefreshing: Boolean = false,
@@ -270,14 +279,54 @@ fun MovieDetailScreen(
                         // Overview
                         movie.overview?.let { overview ->
                             if (overview.isNotBlank()) {
-                                Text(
-                                    text = overview,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
-                                    maxLines = 3,
-                                    overflow = TextOverflow.Ellipsis,
-                                    lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.3,
-                                )
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text(
+                                        text = overview,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
+                                        maxLines = 3,
+                                        overflow = TextOverflow.Ellipsis,
+                                        lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.3,
+                                    )
+
+                                    // AI Summary button and result
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        TextButton(
+                                            onClick = onGenerateAiSummary,
+                                            enabled = !isLoadingAiSummary,
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.AutoAwesome,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(16.dp),
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(if (aiSummary != null) "AI Summary" else "Generate AI Summary")
+                                        }
+
+                                        if (isLoadingAiSummary) {
+                                            CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                                        }
+                                    }
+
+                                    // Show AI summary if available
+                                    aiSummary?.let { summary ->
+                                        Surface(
+                                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                                            shape = RoundedCornerShape(12.dp),
+                                        ) {
+                                            Text(
+                                                text = summary,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                modifier = Modifier.padding(12.dp),
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
 
@@ -813,10 +862,12 @@ private fun ExpressiveMovieInfoCard(
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     videoStream?.let { stream ->
                         val icon = getResolutionIcon(stream.width, stream.height)
+                        val resolutionBadge = getResolutionBadge(stream.width, stream.height)
                         ExpressiveVideoInfoRow(
                             label = stringResource(id = R.string.video),
                             codec = stream.codec?.uppercase(),
                             icon = icon,
+                            resolutionBadge = resolutionBadge,
                         )
                     }
 
@@ -1156,6 +1207,7 @@ private fun ExpressiveVideoInfoRow(
     label: String,
     codec: String?,
     icon: ImageVector,
+    resolutionBadge: Pair<String, Color>? = null,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -1204,6 +1256,23 @@ private fun ExpressiveVideoInfoRow(
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
+
+                // Quality badge (4K, FHD, HD, SD)
+                resolutionBadge?.let { (text, color) ->
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = color,
+                        modifier = Modifier,
+                    ) {
+                        Text(
+                            text = text,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        )
+                    }
+                }
             }
         }
     }
@@ -1217,14 +1286,14 @@ private fun ExpressiveSubtitleRow(
     modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    // Default logic: find index matching selected, OR default stream, OR first stream
+    // Default to None unless a subtitle is explicitly selected
     val currentSubtitle = if (selectedSubtitleIndex != null) {
         subtitles.find { it.index == selectedSubtitleIndex }
     } else {
-        subtitles.firstOrNull { it.isDefault == true } ?: subtitles.firstOrNull()
+        null
     }
-    
-    val labelText = currentSubtitle?.let { 
+
+    val labelText = currentSubtitle?.let {
         val lang = it.language?.uppercase(java.util.Locale.ROOT) ?: "UNK"
         val title = it.title ?: it.displayTitle
         if (title != null && title != lang) "$lang - $title" else lang
@@ -1276,9 +1345,18 @@ private fun ExpressiveSubtitleRow(
             }
             
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                // None option
+                DropdownMenuItem(
+                    text = { Text("None") },
+                    onClick = {
+                        onSubtitleSelect(null)
+                        expanded = false
+                    }
+                )
+
                 subtitles.forEach { stream ->
                     DropdownMenuItem(
-                        text = { 
+                        text = {
                              val lang = stream.language?.uppercase(java.util.Locale.ROOT) ?: "UNK"
                              val title = stream.title ?: stream.displayTitle
                              Text(if (title != null && title != lang) "$lang - $title" else lang)
@@ -1297,4 +1375,18 @@ private fun ExpressiveSubtitleRow(
 private fun getResolutionIcon(width: Int?, height: Int?): ImageVector {
     // Using generic video icon as Material Icons doesn't include specific resolution icons
     return Icons.Outlined.Movie
+}
+
+private fun getResolutionBadge(width: Int?, height: Int?): Pair<String, Color>? {
+    val w = width ?: 0
+    val h = height ?: 0
+
+    return when {
+        h >= 2160 || w >= 3840 -> "4K" to Quality4K
+        h >= 1440 || w >= 2560 -> "1440p" to Quality1440
+        h >= 1080 || w >= 1920 -> "FHD" to QualityHD
+        h >= 720 || w >= 1280 -> "HD" to QualityHD
+        h > 0 -> "SD" to QualitySD
+        else -> null
+    }
 }

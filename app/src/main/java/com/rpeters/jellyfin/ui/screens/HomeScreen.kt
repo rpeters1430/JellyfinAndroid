@@ -122,6 +122,7 @@ fun HomeScreen(
     onSettingsClick: () -> Unit = {},
     onBackClick: () -> Unit = {},
     onNowPlayingClick: () -> Unit = {},
+    onGenerateViewingMood: () -> Unit = {},
     modifier: Modifier = Modifier,
     showBackButton: Boolean = false,
     viewModel: MainAppViewModel = hiltViewModel(),
@@ -230,6 +231,16 @@ fun HomeScreen(
             enabled = com.rpeters.jellyfin.BuildConfig.DEBUG,
             intervalMs = 30000, // 30 seconds
         )
+
+        // Auto-generate viewing mood when data is available
+        LaunchedEffect(appState.continueWatching.size, appState.recentlyAdded.size) {
+            if (appState.viewingMood == null &&
+                !appState.isLoadingViewingMood &&
+                (appState.continueWatching.isNotEmpty() || appState.recentlyAdded.isNotEmpty())
+            ) {
+                viewModel.generateViewingMood()
+            }
+        }
 
         Box(modifier = Modifier.padding(paddingValues)) {
             HomeContent(
@@ -451,6 +462,7 @@ fun HomeContent(
     val unknownText = stringResource(id = R.string.unknown)
     val stableOnItemClick = remember(onItemClick) { onItemClick }
     val stableOnItemLongPress = remember(onItemLongPress) { onItemLongPress }
+    val viewingMood = appState.viewingMood
 
     val listState = rememberLazyListState()
 
@@ -470,6 +482,7 @@ fun HomeContent(
                 onItemClick = stableOnItemClick,
                 onItemLongPress = stableOnItemLongPress,
                 unknownText = unknownText,
+                viewingMood = viewingMood,
             )
         } else {
             // Phone layout: Use carousel-based vertical scrolling
@@ -505,6 +518,49 @@ fun HomeContent(
                             horizontalPadding = adaptiveConfig.heroHorizontalPadding,
                             pageSpacing = adaptiveConfig.heroPageSpacing,
                         )
+                    }
+                }
+
+                // Viewing Mood Widget (AI-powered) - Phone Layout
+                if (viewingMood != null) {
+                    item(key = "viewing_mood", contentType = "ai_widget") {
+                        ElevatedCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            colors = CardDefaults.elevatedCardColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            ),
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.AutoAwesome,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(32.dp),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Your Viewing Vibe",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = viewingMood,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f),
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -583,6 +639,7 @@ private fun TabletHomeLayout(
     onItemClick: (BaseItemDto) -> Unit,
     onItemLongPress: (BaseItemDto) -> Unit,
     unknownText: String,
+    viewingMood: String?,
 ) {
     // Use adaptive grid columns that considers window size, orientation, and posture
     val gridColumns = adaptiveConfig.gridColumns
@@ -621,6 +678,49 @@ private fun TabletHomeLayout(
                     horizontalPadding = adaptiveConfig.heroHorizontalPadding,
                     pageSpacing = adaptiveConfig.heroPageSpacing,
                 )
+            }
+        }
+
+        // Viewing Mood Widget (AI-powered)
+        if (viewingMood != null) {
+            item(key = "viewing_mood", contentType = "ai_widget") {
+                ElevatedCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    colors = CardDefaults.elevatedCardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    ),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            modifier = Modifier.size(32.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Your Viewing Vibe",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = viewingMood,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f),
+                            )
+                        }
+                    }
+                }
             }
         }
 
