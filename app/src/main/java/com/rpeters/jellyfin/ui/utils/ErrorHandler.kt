@@ -21,6 +21,10 @@ import javax.net.ssl.SSLException
 object ErrorHandler {
 
     private const val TAG = "ErrorHandler"
+    
+    // Standard DNS error messages for consistency
+    private const val DNS_ERROR_SHORT = "Could not find an IP address for the server. Please check the server address for typos, or ensure the server's DNS records are correctly configured."
+    private const val DNS_ERROR_SUGGESTION = "Verify server address or try using an IP address (e.g., 192.168.1.100) instead of a hostname"
 
     /**
      * Processes an exception and returns a user-friendly error result.
@@ -49,10 +53,10 @@ object ErrorHandler {
 
         return when (e) {
             is UnknownHostException -> ProcessedError(
-                userMessage = "Could not find an IP address for the server. Please check the server address for typos, or ensure the server's DNS records are correctly configured.",
+                userMessage = DNS_ERROR_SHORT,
                 errorType = ErrorType.DNS_RESOLUTION,
                 isRetryable = false, // DNS errors require user action (fix hostname or use IP)
-                suggestedAction = "Verify server address or try using an IP address (e.g., 192.168.1.100) instead of a hostname",
+                suggestedAction = DNS_ERROR_SUGGESTION,
             )
 
             is ConnectException -> ProcessedError(
@@ -212,7 +216,7 @@ object ErrorHandler {
     fun getRetryDelay(errorType: ErrorType, attemptNumber: Int): Long {
         val baseDelay = when (errorType) {
             ErrorType.NETWORK -> 1000L // 1 second for network errors
-            ErrorType.DNS_RESOLUTION -> 2000L // 2 seconds for DNS errors (may need DNS cache refresh)
+            // DNS_RESOLUTION errors are not retried (see shouldRetry), so no delay needed
             ErrorType.SERVER_ERROR -> 2000L // 2 seconds for server errors
             ErrorType.AUTHENTICATION -> 5000L // 5 seconds for auth errors
             ErrorType.UNKNOWN -> 1500L // 1.5 seconds for unknown errors
