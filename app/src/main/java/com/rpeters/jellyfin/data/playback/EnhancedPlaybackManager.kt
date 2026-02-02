@@ -86,6 +86,34 @@ class EnhancedPlaybackManager @Inject constructor(
     }
 
     /**
+     * Force transcoding for the given item. Used when direct play fails due to codec issues.
+     * Converts audio to AAC for maximum compatibility.
+     */
+    suspend fun getTranscodingUrl(item: BaseItemDto): PlaybackResult {
+        return withContext(Dispatchers.IO) {
+            try {
+                val itemId = item.id.toString()
+                
+                SecureLogger.d(TAG, "Forcing transcoding for: ${item.name} (${item.type})")
+                
+                // Get playback info from server
+                val playbackInfo = getPlaybackInfo(itemId)
+                if (playbackInfo == null) {
+                    return@withContext PlaybackResult.Error("Failed to get playback info")
+                }
+                
+                // Use optimal transcoding URL method but ensure we get transcoding
+                return@withContext getOptimalTranscodingUrl(item, playbackInfo)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                SecureLogger.e(TAG, "Error getting transcoding URL", e)
+                PlaybackResult.Error("Failed to generate transcoding URL: ${e.message}")
+            }
+        }
+    }
+
+    /**
      * Use server playback decision (PlaybackInfo) to select direct play vs transcoding.
      */
     private fun getServerDirectedPlaybackUrl(
