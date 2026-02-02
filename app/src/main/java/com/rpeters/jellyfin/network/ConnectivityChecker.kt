@@ -16,7 +16,7 @@ import javax.inject.Singleton
 
 /**
  * Enhanced connectivity checker with network state monitoring.
- * 
+ *
  * Provides:
  * - Current network connectivity status
  * - Real-time network state changes via Flow
@@ -92,7 +92,7 @@ class ConnectivityChecker @Inject constructor(
             .build()
 
         connectivityManager.registerNetworkCallback(request, callback)
-        
+
         // Emit initial state
         trySend(isOnline())
 
@@ -127,7 +127,7 @@ class ConnectivityChecker @Inject constructor(
             .build()
 
         connectivityManager.registerNetworkCallback(request, callback)
-        
+
         // Emit initial state
         trySend(getNetworkType())
 
@@ -145,5 +145,5 @@ enum class NetworkType {
     CELLULAR,
     ETHERNET,
     OTHER,
-    NONE
+    NONE,
 }
