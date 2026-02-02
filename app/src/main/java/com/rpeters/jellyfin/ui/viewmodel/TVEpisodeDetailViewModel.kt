@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rpeters.jellyfin.data.repository.GenerativeAiRepository
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
@@ -23,12 +24,15 @@ data class TVEpisodeDetailState(
     val seasonEpisodes: List<BaseItemDto> = emptyList(),
     val playbackAnalysis: PlaybackCapabilityAnalysis? = null,
     val isLoading: Boolean = false,
+    val aiSummary: String? = null,
+    val isLoadingAiSummary: Boolean = false,
 )
 
 @HiltViewModel
 class TVEpisodeDetailViewModel @Inject constructor(
     private val mediaRepository: JellyfinMediaRepository,
     private val enhancedPlaybackUtils: EnhancedPlaybackUtils,
+    private val generativeAiRepository: GenerativeAiRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(TVEpisodeDetailState())
@@ -115,6 +119,34 @@ class TVEpisodeDetailViewModel @Inject constructor(
             }
             is ApiResult.Loading -> {
                 // no-op
+            }
+        }
+    }
+
+    /**
+     * Generate AI summary of the episode overview
+     */
+    fun generateAiSummary() {
+        val episode = _state.value.episode ?: return
+        val overview = episode.overview ?: return
+        val title = episode.name ?: "Unknown"
+
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoadingAiSummary = true)
+
+            try {
+                val summary = generativeAiRepository.generateSummary(title, overview)
+                _state.value = _state.value.copy(
+                    aiSummary = summary,
+                    isLoadingAiSummary = false,
+                )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    aiSummary = "Unable to generate summary",
+                    isLoadingAiSummary = false,
+                )
             }
         }
     }

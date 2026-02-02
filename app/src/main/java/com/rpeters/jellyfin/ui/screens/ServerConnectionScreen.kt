@@ -74,7 +74,9 @@ import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
 import com.rpeters.jellyfin.ui.components.ExpressiveWavyCircularLoading
 import com.rpeters.jellyfin.ui.components.PinningAlertReason
 import com.rpeters.jellyfin.ui.components.PinningAlertState
+import com.rpeters.jellyfin.ui.components.ExpressiveIconButton
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
+import com.rpeters.jellyfin.ui.theme.ShapeTokens
 import java.text.DateFormat
 import java.util.Date
 
@@ -139,9 +141,9 @@ fun ServerConnectionScreen(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
                         MaterialTheme.colorScheme.surface,
-                        MaterialTheme.colorScheme.surface,
+                        MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.15f),
                     ),
                 ),
             ),
@@ -149,11 +151,11 @@ fun ServerConnectionScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp, vertical = 24.dp)
+                .padding(horizontal = 24.dp, vertical = 32.dp)
                 .imePadding()
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(24.dp),
+            verticalArrangement = Arrangement.spacedBy(32.dp),
         ) {
             LoginHeaderCard(modifier = Modifier.fillMaxWidth())
 
@@ -246,8 +248,8 @@ fun ServerConnectionScreen(
                 enabled = canSubmit && !connectionState.isConnecting,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
-                shape = MaterialTheme.shapes.large,
+                    .height(64.dp),
+                shape = ShapeTokens.ExtraLarge,
             ) {
                 if (connectionState.isConnecting) {
                     ExpressiveWavyCircularLoading(
@@ -277,8 +279,8 @@ fun ServerConnectionScreen(
                 enabled = !connectionState.isConnecting,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
-                shape = MaterialTheme.shapes.large,
+                    .height(64.dp),
+                shape = ShapeTokens.ExtraLarge,
             ) {
                 Text(
                     stringResource(id = R.string.quick_connect_title),
@@ -296,32 +298,46 @@ private fun LoginHeaderCard(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.padding(bottom = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = modifier.padding(bottom = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // App logo - using launcher foreground icon
-        Icon(
-            painter = painterResource(id = R.drawable.ic_launcher_fg),
-            contentDescription = stringResource(id = R.string.app_name),
-            tint = Color.Unspecified, // Don't tint - preserve original colors
-            modifier = Modifier.size(85.dp),
-        )
-        Text(
-            text = stringResource(id = R.string.app_name),
-            style = MaterialTheme.typography.displayMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Text(
-            text = stringResource(id = R.string.sign_in_to_server),
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        // App logo - wrapped in an expressive surface
+        androidx.compose.material3.Surface(
+            shape = ShapeTokens.ExtraLarge,
+            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+            modifier = Modifier.size(120.dp),
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_launcher_fg),
+                    contentDescription = stringResource(id = R.string.app_name),
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(90.dp),
+                )
+            }
+        }
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = stringResource(id = R.string.app_name),
+                style = MaterialTheme.typography.displayMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Text(
+                text = stringResource(id = R.string.sign_in_to_server),
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }
 
@@ -339,12 +355,12 @@ private fun AutoLoginCard(
 ) {
     ElevatedCard(
         colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
         ),
         elevation = CardDefaults.elevatedCardElevation(
-            defaultElevation = 0.dp,
+            defaultElevation = 6.dp,
         ),
-        shape = MaterialTheme.shapes.extraLarge,
+        shape = ShapeTokens.ExtraLarge,
         modifier = modifier,
     ) {
         Column(
@@ -374,23 +390,19 @@ private fun AutoLoginCard(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 if (isBiometricAuthEnabled && isBiometricAuthAvailable) {
-                    ExpressiveTonalButton(
+                    ExpressiveIconButton(
+                        text = stringResource(id = R.string.login_with_biometric),
+                        icon = Icons.Default.Security,
                         onClick = onBiometricLogin,
-                        enabled = !isConnecting,
-                        modifier = Modifier.fillMaxWidth().height(52.dp),
-                        shape = MaterialTheme.shapes.large,
-                    ) {
-                        Icon(Icons.Default.Security, contentDescription = null)
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(stringResource(id = R.string.login_with_biometric))
-                    }
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                    )
                 }
 
                 ExpressiveTonalButton(
                     onClick = onAutoLogin,
                     enabled = !isConnecting,
-                    modifier = Modifier.fillMaxWidth().height(52.dp),
-                    shape = MaterialTheme.shapes.large,
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    shape = ShapeTokens.ExtraLarge,
                 ) {
                     Text(stringResource(id = R.string.auto_login))
                 }
@@ -433,7 +445,7 @@ private fun LoginFormCard(
                 .fillMaxWidth()
                 .focusRequester(focusRequester),
             enabled = !isConnecting,
-            shape = MaterialTheme.shapes.large,
+            shape = ShapeTokens.ExtraLarge,
         )
 
         OutlinedTextField(
@@ -448,7 +460,7 @@ private fun LoginFormCard(
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             enabled = !isConnecting,
-            shape = MaterialTheme.shapes.large,
+            shape = ShapeTokens.ExtraLarge,
         )
 
         OutlinedSecureTextField(
@@ -465,6 +477,7 @@ private fun LoginFormCard(
             },
             modifier = Modifier.fillMaxWidth(),
             enabled = !isConnecting,
+            shape = ShapeTokens.ExtraLarge,
         )
 
         Row(
@@ -496,9 +509,9 @@ private fun SavedCredentialsHintCard(
             containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
         ),
         elevation = CardDefaults.elevatedCardElevation(
-            defaultElevation = 0.dp,
+            defaultElevation = 4.dp,
         ),
-        shape = MaterialTheme.shapes.large,
+        shape = ShapeTokens.ExtraLarge,
         modifier = modifier,
     ) {
         Row(
@@ -530,9 +543,9 @@ private fun ConnectionErrorCard(
             containerColor = MaterialTheme.colorScheme.errorContainer,
         ),
         elevation = CardDefaults.elevatedCardElevation(
-            defaultElevation = 4.dp,
+            defaultElevation = 8.dp,
         ),
-        shape = MaterialTheme.shapes.large,
+        shape = ShapeTokens.ExtraLarge,
         modifier = modifier,
     ) {
         Text(

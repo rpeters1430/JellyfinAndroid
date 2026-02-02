@@ -48,11 +48,24 @@ class GenerativeAiRepository @Inject constructor(
      */
     suspend fun generateResponse(prompt: String): String = withContext(Dispatchers.IO) {
         logModelUsage("generateResponse", usesPrimaryModel = true)
+        val concisePrompt = """
+            You are Jellyfin AI Assistant.
+            Answer the user's request clearly and briefly (max 120 words).
+            If recommending media, suggest at most 5 titles.
+            
+            User request: $prompt
+        """.trimIndent()
+
         try {
-            val response = primaryModel.generateText(prompt)
+            val response = primaryModel.generateText(concisePrompt)
             response.ifBlank { "No response generated." }
         } catch (e: Exception) {
-            "Sorry, I encountered an error: ${e.message}"
+            val message = e.message.orEmpty()
+            if (message.contains("MAX_TOKENS", ignoreCase = true)) {
+                "I hit a response length limit. Try asking for a shorter answer, like: \"5 movies like Ballerina\"."
+            } else {
+                "Sorry, I couldn't generate a response right now. Please try again."
+            }
         }
     }
 
@@ -94,6 +107,32 @@ class GenerativeAiRepository @Inject constructor(
     }
 
     /**
+     * Generates a concise TL;DR summary of content overview.
+     * Uses the primary model (Nano if available, cloud otherwise)
+     */
+    suspend fun generateSummary(title: String, overview: String): String = withContext(Dispatchers.IO) {
+        if (overview.isBlank()) return@withContext "No overview available."
+        logModelUsage("generateSummary", usesPrimaryModel = true)
+
+        val prompt = """
+            Rewrite this into a fresh, spoiler-free summary in exactly 2 short sentences (max 55 words total).
+            Do not copy phrases directly from the overview.
+
+            Title: $title
+            Overview: $overview
+
+            Focus on the core premise only. Do not reveal twists or endings.
+        """.trimIndent()
+
+        try {
+            val response = primaryModel.generateText(prompt)
+            response.ifBlank { "Unable to generate summary." }
+        } catch (e: Exception) {
+            "Unable to generate summary right now."
+        }
+    }
+
+    /**
      * Smart Search: Translates a natural language query into potential Jellyfin search terms.
      * Returns a list of keywords to search for.
      * Uses the Pro model for better instruction following.
@@ -115,7 +154,14 @@ class GenerativeAiRepository @Inject constructor(
 
             // Simple cleanup to extract the array if the model adds markdown code blocks
             val jsonString = text.replace("```json", "").replace("```", "").trim()
-            jsonString.trim('[', ']').split(",").map { it.trim().trim('"') }
+            val keywords = jsonString.trim('[', ']')
+                .split(",")
+                .map { it.trim().trim('"') }
+                .filter { it.isNotBlank() }
+                .distinct()
+                .take(5)
+
+            if (keywords.isEmpty()) listOf(userQuery) else keywords
         } catch (e: Exception) {
             listOf(userQuery)
         }

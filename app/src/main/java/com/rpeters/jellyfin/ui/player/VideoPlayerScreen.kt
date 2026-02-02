@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.player
 
+import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -487,8 +488,8 @@ fun VideoPlayerScreen(
                     colors = CardDefaults.cardColors(
                         containerColor = playerColors.overlayScrim,
                     ),
-                    shape = CircleShape,
-                    modifier = Modifier.size(100.dp),
+                    shape = MaterialTheme.shapes.extraLarge,
+                    modifier = Modifier.size(120.dp),
                 ) {
                     Column(
                         modifier = Modifier.fillMaxSize(),
@@ -527,9 +528,13 @@ fun VideoPlayerScreen(
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(16.dp),
+                        .padding(top = 80.dp, end = 16.dp),
                 ) {
-                    Surface(color = playerColors.overlayScrim, shape = CircleShape) {
+                    Surface(
+                        color = playerColors.overlayScrim,
+                        shape = MaterialTheme.shapes.medium,
+                        tonalElevation = 4.dp,
+                    ) {
                         Text(
                             text = "Skip Intro",
                             color = playerColors.overlayContent,
@@ -547,9 +552,13 @@ fun VideoPlayerScreen(
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(top = 64.dp, end = 16.dp),
+                        .padding(top = 130.dp, end = 16.dp),
                 ) {
-                    Surface(color = playerColors.overlayScrim, shape = CircleShape) {
+                    Surface(
+                        color = playerColors.overlayScrim,
+                        shape = MaterialTheme.shapes.medium,
+                        tonalElevation = 4.dp,
+                    ) {
                         Text(
                             text = "Skip Credits",
                             color = playerColors.overlayContent,
@@ -565,21 +574,20 @@ fun VideoPlayerScreen(
                 }
             }
 
-            // Next Episode Countdown Overlay
             AnimatedVisibility(
                 visible = playerState.showNextEpisodeCountdown,
-                enter = fadeIn(),
-                exit = fadeOut(),
+                enter = fadeIn(animationSpec = MotionTokens.expressiveEnter),
+                exit = fadeOut(animationSpec = MotionTokens.expressiveExit),
                 modifier = Modifier.align(Alignment.BottomCenter),
             ) {
                 Card(
                     colors = CardDefaults.cardColors(
                         containerColor = playerColors.overlayScrim,
                     ),
-                    shape = MaterialTheme.shapes.large,
+                    shape = MaterialTheme.shapes.extraLarge,
                     modifier = Modifier
-                        .padding(bottom = 80.dp)
-                        .fillMaxWidth(0.9f),
+                        .padding(bottom = 100.dp)
+                        .fillMaxWidth(0.85f),
                 ) {
                     Column(
                         modifier = Modifier.padding(24.dp),
@@ -634,35 +642,24 @@ fun VideoPlayerScreen(
             }
 
             // Video Controls Overlay
-            AnimatedVisibility(
-                visible = controlsVisible,
-                enter = fadeIn(),
-                exit = fadeOut(),
-            ) {
-                VideoControlsOverlay(
-                    playerState = playerState,
-                    onPlayPause = onPlayPause,
-                    onSeek = onSeek,
-                    onQualityChange = onQualityChange,
-                    onPlaybackSpeedChange = onPlaybackSpeedChange,
-                    onAspectRatioChange = onAspectRatioChange,
-                    onCastClick = onCastClick,
-                    onAudioTracksClick = { showAudioDialog = true },
-                    onSubtitlesClick = { showSubtitleDialog = true },
-                    onPictureInPictureClick = onPictureInPictureClick,
-                    onOrientationToggle = onOrientationToggle,
-                    onClose = onClose,
-                    showQualityMenu = showQualityMenu,
-                    onShowQualityMenu = { showQualityMenu = it },
-                    showAspectRatioMenu = showAspectRatioMenu,
-                    onShowAspectRatioMenu = { showAspectRatioMenu = it },
-                    showSpeedMenu = showSpeedMenu,
-                    onShowSpeedMenu = { showSpeedMenu = it },
-                    supportsPip = supportsPip,
-                    playerColors = playerColors,
-                    showCastButton = isCastAvailable,
-                )
-            }
+            ExpressiveVideoControls(
+                playerState = playerState,
+                onPlayPause = onPlayPause,
+                onSeek = onSeek,
+                onSeekBy = { delta ->
+                    val newPos = (playerState.currentPosition + delta).coerceIn(0L, playerState.duration)
+                    onSeek(newPos)
+                },
+                onQualityClick = { showQualityMenu = true },
+                onAudioClick = { showAudioDialog = true },
+                onCastClick = onCastClick,
+                onSubtitlesClick = { showSubtitleDialog = true },
+                onAspectRatioChange = onAspectRatioChange,
+                onPlaybackSpeedChange = onPlaybackSpeedChange,
+                onBackClick = onClose,
+                onFullscreenToggle = onOrientationToggle,
+                isVisible = controlsVisible,
+            )
         }
 
         // Error message
@@ -839,6 +836,7 @@ fun VideoPlayerScreen(
     }
 }
 
+@OptIn(UnstableApi::class)
 @Composable
 private fun CastRemoteScreen(
     playerState: VideoPlayerState,
@@ -1071,6 +1069,7 @@ private fun CastRemoteScreen(
     }
 }
 
+@OptIn(UnstableApi::class)
 @Composable
 private fun CastNowPlayingOverlay(
     playerState: VideoPlayerState,
@@ -1157,14 +1156,12 @@ private fun CastNowPlayingOverlay(
                             contentDescription = if (playerState.isCastPlaying) "Pause cast playback" else "Resume cast playback",
                             onClick = if (playerState.isCastPlaying) onPauseCast else onResumeCast,
                             isActive = playerState.isCastPlaying,
-                            colors = playerColors,
                         )
                         ExpressiveIconButton(
                             icon = Icons.Default.Stop,
                             contentDescription = "Stop casting",
                             onClick = onStopCast,
                             modifier = Modifier.padding(end = 4.dp),
-                            colors = playerColors,
                         )
                     }
                 }
@@ -1281,574 +1278,6 @@ private fun formatDuration(millis: Long): String {
 }
 
 @UnstableApi
-@Composable
-private fun VideoControlsOverlay(
-    playerState: VideoPlayerState,
-    onPlayPause: () -> Unit,
-    onSeek: (Long) -> Unit,
-    onQualityChange: (VideoQuality?) -> Unit,
-    onPlaybackSpeedChange: (Float) -> Unit,
-    onAspectRatioChange: (AspectRatioMode) -> Unit,
-    onCastClick: () -> Unit,
-    onAudioTracksClick: () -> Unit,
-    onSubtitlesClick: () -> Unit,
-    onPictureInPictureClick: () -> Unit,
-    onOrientationToggle: () -> Unit,
-    onClose: () -> Unit,
-    showQualityMenu: Boolean,
-    onShowQualityMenu: (Boolean) -> Unit,
-    showAspectRatioMenu: Boolean,
-    onShowAspectRatioMenu: (Boolean) -> Unit,
-    showSpeedMenu: Boolean,
-    onShowSpeedMenu: (Boolean) -> Unit,
-    supportsPip: Boolean,
-    playerColors: VideoPlayerColors,
-    showCastButton: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        playerColors.overlayScrim,
-                        playerColors.overlayScrim.copy(alpha = 0.4f),
-                        Color.Transparent,
-                        playerColors.overlayScrim,
-                    ),
-                    startY = 0f,
-                    endY = Float.POSITIVE_INFINITY,
-                ),
-            ),
-    ) {
-        // Top bar with close button, item name, and casting button
-        Row(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // Close/Back button - top left
-            ExpressiveIconButton(
-                icon = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Close player",
-                onClick = onClose,
-                modifier = Modifier.padding(end = 8.dp),
-                colors = playerColors,
-            )
-
-            // Item name with expressive styling
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 16.dp),
-            ) {
-                Text(
-                    text = playerState.itemName,
-                    color = playerColors.overlayContent,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-
-                // Transcoding info
-                if (playerState.isTranscoding || playerState.isDirectPlaying) {
-                    val (icon, color, text) = when {
-                        playerState.isDirectPlaying -> Triple(
-                            Icons.Default.PlayArrow,
-                            androidx.compose.ui.graphics.Color.Green,
-                            "Direct Play",
-                        )
-                        playerState.isTranscoding -> Triple(
-                            Icons.Default.Settings,
-                            androidx.compose.ui.graphics.Color(0xFFFF9800), // Orange color
-                            "Transcoding",
-                        )
-                        else -> Triple(
-                            Icons.Default.Info,
-                            androidx.compose.ui.graphics.Color.Gray,
-                            "Unknown",
-                        )
-                    }
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = text,
-                            tint = color,
-                            modifier = Modifier.size(12.dp),
-                        )
-                        Text(
-                            text = text,
-                            color = color,
-                            style = MaterialTheme.typography.bodySmall,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-
-                        playerState.transcodingReason?.let { reason ->
-                            Text(
-                                text = "• $reason",
-                                color = playerColors.overlayContent.copy(alpha = 0.7f),
-                                style = MaterialTheme.typography.bodySmall,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f, fill = false),
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Casting button - top right
-            // Using custom button instead of MediaRouteButton to prevent unintended navigation
-            if (showCastButton) {
-                ExpressiveIconButton(
-                    icon = if (playerState.isCastConnected) Icons.Default.CastConnected else Icons.Default.Cast,
-                    contentDescription = if (playerState.isCastConnected) "Disconnect Cast" else "Cast to Device",
-                    onClick = onCastClick,
-                    isActive = playerState.isCastConnected,
-                    modifier = Modifier.padding(start = 8.dp),
-                    colors = playerColors,
-                )
-            } else {
-                Spacer(modifier = Modifier.size(48.dp))
-            }
-        }
-
-        // Main playback controls at the bottom with expressive styling
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .padding(16.dp),
-        ) {
-            // Progress bar with time indicators
-            if (playerState.duration > 0) {
-                val duration = playerState.duration.toFloat()
-                val progress = playerState.currentPosition.toFloat() / duration
-                val buffered = playerState.bufferedPosition.toFloat() / duration
-
-                // Local state for tracking slider position during drag
-                var sliderPosition by remember { mutableStateOf(progress) }
-                var isSeeking by remember { mutableStateOf(false) }
-
-                // Update slider position from player state when not seeking
-                LaunchedEffect(playerState.currentPosition) {
-                    if (!isSeeking) {
-                        sliderPosition = progress
-                    }
-                }
-
-                // Time indicators above progress bar
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text(
-                        text = formatTime(if (isSeeking) (sliderPosition * playerState.duration).toLong() else playerState.currentPosition),
-                        color = playerColors.overlayContent,
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                    Text(
-                        text = formatTime(playerState.duration),
-                        color = playerColors.overlayContent,
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
-
-                // Progress bar with buffering indicator and expressive styling
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(32.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    // Main progress slider with expressive styling
-                    Slider(
-                        value = sliderPosition,
-                        onValueChange = { newProgress ->
-                            isSeeking = true
-                            sliderPosition = newProgress
-                        },
-                        onValueChangeFinished = {
-                            val newPosition = (sliderPosition * playerState.duration).toLong()
-                            onSeek(newPosition)
-                            isSeeking = false
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = SliderDefaults.colors(
-                            thumbColor = MaterialTheme.colorScheme.primary,
-                            activeTrackColor = MaterialTheme.colorScheme.primary,
-                            inactiveTrackColor = playerColors.inactiveTrack,
-                        ),
-                    )
-                }
-            }
-
-            // Main control bar with the requested layout:
-            // Play/Pause | Stop | Progress Bar | Subtitles | Audio Format | Quality | Fullscreen
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                // Play/Pause button (left) with expressive styling
-                ExpressivePlayButton(
-                    icon = if (playerState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = if (playerState.isPlaying) "Pause" else "Play",
-                    onClick = onPlayPause,
-                    isLoading = playerState.isLoading,
-                    modifier = Modifier.size(48.dp),
-                )
-
-                // Stop button - stops playback and closes player
-                ExpressiveIconButton(
-                    icon = Icons.Default.Close,
-                    contentDescription = "Stop and close player",
-                    onClick = onClose,
-                    modifier = Modifier.padding(start = 8.dp),
-                    colors = playerColors,
-                )
-
-                // Spacer to push buttons to the right
-                Spacer(modifier = Modifier.weight(1f))
-
-                // Subtitles button with expressive styling
-                if (playerState.availableSubtitleTracks.isNotEmpty()) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        ExpressiveIconButton(
-                            icon = Icons.Default.ClosedCaption,
-                            contentDescription = "Subtitles",
-                            onClick = onSubtitlesClick,
-                            modifier = Modifier
-                                .padding(horizontal = 4.dp)
-                                .testTag(VideoPlayerTestTags.SubtitlesButton),
-                            colors = playerColors,
-                        )
-                        val subLabel = playerState.selectedSubtitleTrack?.format?.language?.take(2)
-                            ?.uppercase()
-                            ?: "Off"
-                        Surface(
-                            color = playerColors.chipBackground,
-                            shape = CircleShape,
-                        ) {
-                            Text(
-                                text = subLabel,
-                                color = playerColors.chipContent,
-                                style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            )
-                        }
-                    }
-                }
-
-                // Audio format selection button with expressive styling
-                if (playerState.availableAudioTracks.size > 1 || playerState.availableAudioTracks.any {
-                        it.displayName.contains(
-                            "AD",
-                            true,
-                        ) || it.displayName.contains("Commentary", true)
-                    }
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        ExpressiveIconButton(
-                            icon = Icons.Default.Audiotrack,
-                            contentDescription = "Audio Tracks",
-                            onClick = onAudioTracksClick,
-                            modifier = Modifier
-                                .padding(horizontal = 4.dp)
-                                .testTag(VideoPlayerTestTags.AudioTracksButton),
-                            colors = playerColors,
-                        )
-                        val a = playerState.selectedAudioTrack?.format
-                        val lang = a?.language?.take(2)?.uppercase() ?: "--"
-                        val ch = when (val c = a?.channelCount ?: 0) {
-                            in 6..8 -> "5.1"
-                            2 -> "2.0"
-                            else -> if (c > 0) "$c" else ""
-                        }
-                        val audioLabel = if (ch.isNotEmpty()) "$lang $ch" else lang
-                        Surface(
-                            color = playerColors.chipBackground,
-                            shape = CircleShape,
-                        ) {
-                            Text(
-                                text = audioLabel,
-                                color = playerColors.chipContent,
-                                style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            )
-                        }
-                    }
-                }
-
-                // Quality selection button with dynamic icon and expressive styling
-                Box {
-                    ExpressiveIconButton(
-                        icon = getQualityIcon(playerState.selectedQuality?.label),
-                        contentDescription = "Quality: ${playerState.selectedQuality?.label ?: "Auto"}",
-                        onClick = { onShowQualityMenu(true) },
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                        colors = playerColors,
-                    )
-
-                    // Enhanced quality selection dropdown with all options
-                    DropdownMenu(
-                        expanded = showQualityMenu,
-                        onDismissRequest = { onShowQualityMenu(false) },
-                    ) {
-                        // Auto option
-                        DropdownMenuItem(
-                            text = {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Text(
-                                        text = "Auto",
-                                        fontWeight = if (playerState.selectedQuality == null) {
-                                            FontWeight.Bold
-                                        } else {
-                                            FontWeight.Normal
-                                        },
-                                    )
-                                    if (playerState.selectedQuality == null) {
-                                        Icon(
-                                            imageVector = Icons.Default.Check,
-                                            contentDescription = "Selected",
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(16.dp),
-                                        )
-                                    }
-                                }
-                            },
-                            onClick = {
-                                onQualityChange(null) // Null means "Auto" - adaptive bitrate streaming
-                                onShowQualityMenu(false)
-                            },
-                        )
-
-                        // Available qualities from player state
-                        playerState.availableQualities.forEach { quality ->
-                            DropdownMenuItem(
-                                text = {
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        Text(
-                                            text = quality.label,
-                                            fontWeight = if (quality == playerState.selectedQuality) {
-                                                FontWeight.Bold
-                                            } else {
-                                                FontWeight.Normal
-                                            },
-                                        )
-                                        if (quality == playerState.selectedQuality) {
-                                            Icon(
-                                                imageVector = Icons.Default.Check,
-                                                contentDescription = "Selected",
-                                                tint = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(16.dp),
-                                            )
-                                        }
-                                    }
-                                },
-                                onClick = {
-                                    onQualityChange(quality)
-                                    onShowQualityMenu(false)
-                                },
-                            )
-                        }
-                    }
-                }
-
-                // Aspect Ratio control (chip with dropdown)
-                Box {
-                    Surface(
-                        modifier = Modifier
-                            .padding(horizontal = 4.dp)
-                            .clip(CircleShape)
-                            .clickable { onShowAspectRatioMenu(true) },
-                        color = playerColors.chipBackground,
-                        shape = CircleShape,
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AspectRatio,
-                                contentDescription = "Aspect ratio",
-                                tint = playerColors.chipContent,
-                                modifier = Modifier.size(20.dp),
-                            )
-                            Spacer(modifier = Modifier.size(6.dp))
-                            Text(
-                                text = playerState.selectedAspectRatio.label,
-                                color = playerColors.chipContent,
-                                style = MaterialTheme.typography.labelLarge,
-                            )
-                        }
-                    }
-
-                    DropdownMenu(
-                        expanded = showAspectRatioMenu,
-                        onDismissRequest = { onShowAspectRatioMenu(false) },
-                    ) {
-                        AspectRatioMode.entries.forEach { mode ->
-                            DropdownMenuItem(
-                                text = {
-                                    Column(
-                                        modifier = Modifier.fillMaxWidth(),
-                                    ) {
-                                        Row(
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                        ) {
-                                            Text(
-                                                text = mode.label,
-                                                fontWeight = if (mode == playerState.selectedAspectRatio) {
-                                                    FontWeight.Bold
-                                                } else {
-                                                    FontWeight.Normal
-                                                },
-                                            )
-                                            if (mode == playerState.selectedAspectRatio) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Check,
-                                                    contentDescription = "Selected",
-                                                    tint = MaterialTheme.colorScheme.primary,
-                                                    modifier = Modifier.size(16.dp),
-                                                )
-                                            }
-                                        }
-                                        Text(
-                                            text = mode.description,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.padding(top = 2.dp),
-                                        )
-                                    }
-                                },
-                                onClick = {
-                                    onAspectRatioChange(mode)
-                                    onShowAspectRatioMenu(false)
-                                },
-                            )
-                        }
-                    }
-                }
-
-                if (playerState.isHdrContent) {
-                    Surface(
-                        color = playerColors.chipBackground,
-                        shape = CircleShape,
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                    ) {
-                        Text(
-                            text = "HDR",
-                            color = playerColors.chipContent,
-                            style = MaterialTheme.typography.labelLarge,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        )
-                    }
-                }
-
-                // Playback Speed control (chip with dropdown)
-                Box {
-                    Surface(
-                        modifier = Modifier
-                            .padding(horizontal = 4.dp)
-                            .clip(CircleShape)
-                            .clickable { onShowSpeedMenu(true) },
-                        color = playerColors.chipBackground,
-                        shape = CircleShape,
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Speed,
-                                contentDescription = "Playback speed",
-                                tint = playerColors.chipContent,
-                            )
-                            Spacer(modifier = Modifier.size(6.dp))
-                            Text(
-                                text = String.format("%.2fx", playerState.playbackSpeed),
-                                color = playerColors.chipContent,
-                                style = MaterialTheme.typography.labelLarge,
-                            )
-                        }
-                    }
-
-                    DropdownMenu(
-                        expanded = showSpeedMenu,
-                        onDismissRequest = { onShowSpeedMenu(false) },
-                    ) {
-                        VideoPlayerGestureConstants.PLAYBACK_SPEEDS.forEach { s ->
-                            DropdownMenuItem(
-                                text = {
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        Text(
-                                            text = String.format("%.2fx", s),
-                                            fontWeight = if (s == playerState.playbackSpeed) FontWeight.Bold else FontWeight.Normal,
-                                        )
-                                        if (s == playerState.playbackSpeed) {
-                                            Icon(
-                                                imageVector = Icons.Default.Check,
-                                                contentDescription = "Selected",
-                                            )
-                                        }
-                                    }
-                                },
-                                onClick = {
-                                    onPlaybackSpeedChange(s)
-                                    onShowSpeedMenu(false)
-                                },
-                            )
-                        }
-                    }
-                }
-
-                // Fullscreen button (right) - triggers PiP if not fullscreen with expressive styling
-                Surface(
-                    modifier = Modifier
-                        .padding(start = 4.dp)
-                        .clip(CircleShape)
-                        .testTag(VideoPlayerTestTags.PipButton),
-                    color = if (supportsPip) playerColors.controlContainer else playerColors.disabledControlContainer,
-                    shape = CircleShape,
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Fullscreen,
-                        contentDescription = "Fullscreen / Picture in Picture",
-                        tint = if (supportsPip) playerColors.overlayContent else playerColors.disabledIcon,
-                        modifier = Modifier
-                            .padding(12.dp)
-                            .size(24.dp)
-                            .let { mod -> if (supportsPip) mod.clickable { onPictureInPictureClick() } else mod },
-                    )
-                }
-            }
-        }
-    }
-}
-
 private data class VideoPlayerColors(
     val background: Color,
     val overlayContent: Color,
@@ -1873,6 +1302,7 @@ private object VideoPlayerGestureConstants {
     val PLAYBACK_SPEEDS = listOf(0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f)
 }
 
+@OptIn(UnstableApi::class)
 @Composable
 private fun rememberVideoPlayerColors(): VideoPlayerColors {
     val scheme = MaterialTheme.colorScheme
@@ -1897,193 +1327,8 @@ private fun rememberVideoPlayerColors(): VideoPlayerColors {
     }
 }
 
-// Expressive Icon Button component
-@Composable
-private fun ExpressiveIconButton(
-    icon: ImageVector,
-    contentDescription: String?,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    isActive: Boolean = false,
-    colors: VideoPlayerColors,
-) {
-    val scale by animateFloatAsState(
-        targetValue = if (isActive) 1.1f else 1f,
-        animationSpec = MotionTokens.expressiveEnter,
-        label = "icon_button_scale",
-    )
 
-    Surface(
-        modifier = modifier
-            .scale(scale)
-            .clip(CircleShape)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onClick,
-            ),
-        color = if (isActive) {
-            MaterialTheme.colorScheme.primaryContainer
-        } else {
-            colors.controlContainer
-        },
-        shape = CircleShape,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer else colors.overlayContent,
-            modifier = Modifier.padding(12.dp),
-        )
-    }
-}
-
-@Preview(name = "Video Player Controls", showBackground = true, backgroundColor = 0xFF111111)
-@Composable
-private fun VideoPlayerControlsPreview() {
-    JellyfinAndroidTheme(themePreferences = ThemePreferences.DEFAULT) {
-        val playerColors = rememberVideoPlayerColors()
-        val format = androidx.media3.common.Format.Builder()
-            .setLanguage("en")
-            .setChannelCount(6)
-            .build()
-        val audioTrack = TrackInfo(0, 0, format, true, "English 5.1")
-        val subtitleTrack = TrackInfo(0, 0, format, true, "English")
-        val previewState = VideoPlayerState(
-            isPlaying = true,
-            currentPosition = 2 * 60 * 1000L,
-            duration = 90 * 60 * 1000L,
-            bufferedPosition = 8 * 60 * 1000L,
-            itemName = "Interstellar (2014)",
-            availableQualities = listOf(
-                VideoQuality("auto", "Auto", 0, 0, 0),
-                VideoQuality("1080p", "1080p", 8000, 1920, 1080),
-            ),
-            selectedQuality = VideoQuality("1080p", "1080p", 8000, 1920, 1080),
-            availableAudioTracks = listOf(audioTrack),
-            selectedAudioTrack = audioTrack,
-            availableSubtitleTracks = listOf(subtitleTrack),
-            selectedSubtitleTrack = subtitleTrack,
-            playbackSpeed = 1.25f,
-        )
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surface),
-        ) {
-            VideoControlsOverlay(
-                playerState = previewState,
-                onPlayPause = {},
-                onSeek = {},
-                onQualityChange = {},
-                onPlaybackSpeedChange = {},
-                onAspectRatioChange = {},
-                onCastClick = {},
-                onAudioTracksClick = {},
-                onSubtitlesClick = {},
-                onPictureInPictureClick = {},
-                onOrientationToggle = {},
-                onClose = {},
-                showQualityMenu = false,
-                onShowQualityMenu = {},
-                showAspectRatioMenu = false,
-                onShowAspectRatioMenu = {},
-                showSpeedMenu = false,
-                onShowSpeedMenu = {},
-                supportsPip = true,
-                playerColors = playerColors,
-                showCastButton = false,
-            )
-        }
-    }
-}
-
-@Preview(name = "Cast Overlay", showBackground = true, backgroundColor = 0xFF111111)
-@Composable
-private fun CastOverlayPreview() {
-    JellyfinAndroidTheme(themePreferences = ThemePreferences.DEFAULT) {
-        CastNowPlayingOverlay(
-            playerState = VideoPlayerState(
-                itemName = "The Bear",
-                castDeviceName = "Living Room TV",
-                castOverview = "Carmen brings fine dining back home while the kitchen finds its rhythm.",
-                isCastPlaying = true,
-                castPosition = 1234567L, // ~20 minutes
-                castDuration = 3600000L, // 1 hour
-                castVolume = 0.75f,
-            ),
-            onPauseCast = {},
-            onResumeCast = {},
-            onStopCast = {},
-            onSeekCast = {},
-            onVolumeChange = {},
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-        )
-    }
-}
-
-// Expressive Play Button component
-@Composable
-private fun ExpressivePlayButton(
-    icon: ImageVector,
-    contentDescription: String?,
-    onClick: () -> Unit,
-    isLoading: Boolean = false,
-    modifier: Modifier = Modifier,
-) {
-    val scale by animateFloatAsState(
-        targetValue = if (isLoading) 0.9f else 1f,
-        animationSpec = MotionTokens.mediaPlayEasing,
-        label = "play_button_scale",
-    )
-
-    FilledIconButton(
-        onClick = onClick,
-        modifier = modifier
-            .size(48.dp)
-            .scale(scale),
-        colors = IconButtonDefaults.filledIconButtonColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
-        ),
-    ) {
-        AnimatedContent(
-            targetState = isLoading,
-            label = "play_button_content",
-        ) { loading ->
-            if (loading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    strokeWidth = 2.dp,
-                )
-            } else {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = contentDescription,
-                    modifier = Modifier.size(24.dp),
-                )
-            }
-        }
-    }
-}
-
-// Helper function to get quality icon based on quality text
-private fun getQualityIcon(qualityLabel: String?): ImageVector {
-    return when {
-        qualityLabel?.contains("4K", ignoreCase = true) == true -> Icons.Default.HighQuality
-        qualityLabel?.contains("HD", ignoreCase = true) == true -> Icons.Default.Hd
-        qualityLabel?.contains("SD", ignoreCase = true) == true -> Icons.Default.Sd
-        qualityLabel?.contains("1080", ignoreCase = true) == true -> Icons.Default.Hd
-        qualityLabel?.contains("720", ignoreCase = true) == true -> Icons.Default.Hd
-        qualityLabel?.contains("480", ignoreCase = true) == true -> Icons.Default.Sd
-        else -> Icons.Default.Movie // Default fallback icon
-    }
-}
-
+@OptIn(UnstableApi::class)
 @Composable
 private fun CastButton(
     isCasting: Boolean,
@@ -2097,7 +1342,6 @@ private fun CastButton(
         onClick = onClick,
         isActive = isCasting,
         modifier = modifier,
-        colors = colors,
     )
 }
 

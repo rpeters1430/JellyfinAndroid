@@ -337,6 +337,9 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 getLogoUrl = { item -> mainViewModel.getLogoUrl(item) },
                 getPersonImageUrl = { person -> mainViewModel.getPersonImageUrl(person) },
                 serverUrl = currentServer?.url,
+                onGenerateAiSummary = { detailViewModel.generateAiSummary() },
+                aiSummary = detailState.aiSummary,
+                isLoadingAiSummary = detailState.isLoadingAiSummary,
             )
         } else if (detailState.isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -513,6 +516,9 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                         mainViewModel.toggleFavorite(episodeItem)
                     },
                     playbackAnalysis = detailState.playbackAnalysis,
+                    onGenerateAiSummary = { viewModel.generateAiSummary() },
+                    aiSummary = detailState.aiSummary,
+                    isLoadingAiSummary = detailState.isLoadingAiSummary,
                 )
 
                 LaunchedEffect(episode.id) {

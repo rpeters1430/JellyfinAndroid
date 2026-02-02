@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
@@ -35,6 +36,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,6 +47,8 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.constants.Constants
@@ -52,7 +56,9 @@ import com.rpeters.jellyfin.ui.adaptive.rememberAdaptiveLayoutConfig
 import com.rpeters.jellyfin.ui.components.MiniPlayer
 import com.rpeters.jellyfin.ui.theme.Dimens
 import com.rpeters.jellyfin.ui.viewmodel.MainAppState
+import com.rpeters.jellyfin.ui.viewmodel.SearchViewModel
 import com.rpeters.jellyfin.utils.rememberDebouncedState
+import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
@@ -67,6 +73,7 @@ fun SearchScreen(
     onNowPlayingClick: () -> Unit = {},
     onItemClick: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
+    viewModel: SearchViewModel = hiltViewModel(),
 ) {
     // Calculate adaptive layout config
     val context = LocalContext.current
@@ -93,6 +100,10 @@ fun SearchScreen(
 
     val focusManager = LocalFocusManager.current
     val focusRequester = remember { FocusRequester() }
+    val coroutineScope = rememberCoroutineScope()
+    val aiState by viewModel.aiState.collectAsStateWithLifecycle()
+
+    var aiSearchEnabled by remember { mutableStateOf(false) }
 
     // Recent search suggestions
     val recentSearches = remember {
@@ -123,11 +134,19 @@ fun SearchScreen(
         focusRequester.requestFocus()
     }
 
-    LaunchedEffect(debouncedQuery) {
+    LaunchedEffect(debouncedQuery, aiSearchEnabled) {
         if (debouncedQuery.isBlank()) {
             onClearSearch()
         } else {
-            onSearch(debouncedQuery)
+            // Use AI to enhance query if enabled
+            if (aiSearchEnabled && debouncedQuery.length > 3) {
+                coroutineScope.launch {
+                    val enhancedQuery = viewModel.enhanceSearchQuery(debouncedQuery)
+                    onSearch(enhancedQuery)
+                }
+            } else {
+                onSearch(debouncedQuery)
+            }
         }
     }
 
@@ -147,6 +166,14 @@ fun SearchScreen(
                     }
                 },
                 actions = {
+                    // AI Search toggle
+                    IconButton(onClick = { aiSearchEnabled = !aiSearchEnabled }) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = "AI Search",
+                            tint = if (aiSearchEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     IconButton(onClick = { isFilterExpanded = !isFilterExpanded }) {
                         Icon(
                             imageVector = Icons.Default.Tune,

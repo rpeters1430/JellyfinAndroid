@@ -32,10 +32,18 @@ import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Hd
 import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.AspectRatio
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Sd
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material3.CircularWavyProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
@@ -61,6 +69,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import com.rpeters.jellyfin.ui.theme.MotionTokens
@@ -76,8 +85,11 @@ fun ExpressiveVideoControls(
     onAudioClick: () -> Unit, // New audio selection callback
     onCastClick: () -> Unit,
     onSubtitlesClick: () -> Unit,
+    onAspectRatioChange: (AspectRatioMode) -> Unit,
+    onPlaybackSpeedChange: (Float) -> Unit,
     onBackClick: () -> Unit,
     onFullscreenToggle: () -> Unit,
+
     isVisible: Boolean,
     modifier: Modifier = Modifier,
 ) {
@@ -124,7 +136,25 @@ fun ExpressiveVideoControls(
                     onAudioClick = onAudioClick,
                     onQualityClick = onQualityClick,
                     onSubtitlesClick = onSubtitlesClick,
+                    onAspectRatioChange = onAspectRatioChange,
+                    onPlaybackSpeedChange = onPlaybackSpeedChange,
                     onFullscreenToggle = onFullscreenToggle,
+                )
+            }
+
+            // Wavy Status Bar at the very bottom (visible when controls are hidden)
+            if (!isVisible && playerState.duration > 0) {
+                LinearWavyProgressIndicator(
+                    progress = { playerState.currentPosition.toFloat() / playerState.duration.toFloat() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.BottomCenter)
+                        .height(2.dp),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                    trackColor = Color.Transparent,
+                    amplitude = { 0.1f },
+                    wavelength = 40.dp,
+                    waveSpeed = 20.dp,
                 )
             }
         }
@@ -173,8 +203,59 @@ private fun ExpressiveTopControls(
                             color = MaterialTheme.colorScheme.onSurface,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
-                        if (playerState.selectedQuality != null) {
+                        
+                        // Transcoding Information Display
+                        if (playerState.isTranscoding || playerState.isDirectPlaying) {
+                            val (icon, color, text) = when {
+                                playerState.isDirectPlaying -> Triple(
+                                    Icons.Default.PlayArrow,
+                                    Color.Green,
+                                    "Direct Play",
+                                )
+                                playerState.isTranscoding -> Triple(
+                                    Icons.Default.Settings,
+                                    Color(0xFFFF9800), // Orange color
+                                    "Transcoding",
+                                )
+                                else -> Triple(
+                                    Icons.Default.Info,
+                                    Color.Gray,
+                                    "Unknown",
+                                )
+                            }
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = text,
+                                    tint = color.copy(alpha = 0.8f),
+                                    modifier = Modifier.size(10.dp),
+                                )
+                                Text(
+                                    text = text,
+                                    color = color.copy(alpha = 0.8f),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+
+                                playerState.transcodingReason?.let { reason ->
+                                    Text(
+                                        text = "• $reason",
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                        } else if (playerState.selectedQuality != null) {
                             Text(
                                 text = playerState.selectedQuality.label,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -210,7 +291,10 @@ private fun ExpressiveBottomControls(
     onAudioClick: () -> Unit,
     onQualityClick: () -> Unit,
     onSubtitlesClick: () -> Unit,
+    onAspectRatioChange: (AspectRatioMode) -> Unit,
+    onPlaybackSpeedChange: (Float) -> Unit,
     onFullscreenToggle: () -> Unit,
+
     modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
@@ -307,6 +391,66 @@ private fun ExpressiveBottomControls(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
+                        // Aspect Ratio button
+                        var showAspectRatioMenu by remember { mutableStateOf(false) }
+                        Box {
+                            ExpressiveIconButton(
+                                icon = Icons.Default.AspectRatio,
+                                contentDescription = "Aspect Ratio",
+                                onClick = { showAspectRatioMenu = true },
+                            )
+                            
+                            DropdownMenu(
+                                expanded = showAspectRatioMenu,
+                                onDismissRequest = { showAspectRatioMenu = false },
+                            ) {
+                                playerState.availableAspectRatios.forEach { mode ->
+                                    DropdownMenuItem(
+                                        text = { Text(mode.label) },
+                                        onClick = {
+                                            onAspectRatioChange(mode)
+                                            showAspectRatioMenu = false
+                                        },
+                                        leadingIcon = {
+                                            if (mode == playerState.selectedAspectRatio) {
+                                                Icon(Icons.Default.Check, contentDescription = null)
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                        }
+
+                        // Playback Speed button
+                        var showSpeedMenu by remember { mutableStateOf(false) }
+                        Box {
+                            ExpressiveIconButton(
+                                icon = Icons.Default.Speed,
+                                contentDescription = "Playback Speed",
+                                onClick = { showSpeedMenu = true },
+                            )
+                            
+                            DropdownMenu(
+                                expanded = showSpeedMenu,
+                                onDismissRequest = { showSpeedMenu = false },
+                            ) {
+                                listOf(0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f).forEach { speed ->
+                                    DropdownMenuItem(
+                                        text = { Text("${speed}x") },
+                                        onClick = {
+                                            onPlaybackSpeedChange(speed)
+                                            showSpeedMenu = false
+                                        },
+                                        leadingIcon = {
+                                            if (speed == playerState.playbackSpeed) {
+                                                Icon(Icons.Default.Check, contentDescription = null)
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                        }
+
                         // Audio selection button
                         ExpressiveIconButton(
                             icon = Icons.Default.MusicNote,
@@ -379,7 +523,7 @@ private fun getQualityIcon(qualityLabel: String?): ImageVector {
 }
 
 @Composable
-private fun ExpressiveIconButton(
+internal fun ExpressiveIconButton(
     icon: ImageVector,
     contentDescription: String?,
     onClick: () -> Unit,
@@ -418,7 +562,7 @@ private fun ExpressiveIconButton(
 }
 
 @Composable
-private fun ExpressivePlayButton(
+internal fun ExpressivePlayButton(
     icon: ImageVector,
     contentDescription: String?,
     onClick: () -> Unit,
@@ -446,10 +590,11 @@ private fun ExpressivePlayButton(
             label = "play_button_content",
         ) { loading ->
             if (loading) {
-                androidx.compose.material3.CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
+                CircularWavyProgressIndicator(
+                    modifier = Modifier.size(32.dp),
                     color = MaterialTheme.colorScheme.onPrimary,
-                    strokeWidth = 2.dp,
+                    amplitude = 0.15f,
+                    wavelength = 24.dp,
                 )
             } else {
                 Icon(

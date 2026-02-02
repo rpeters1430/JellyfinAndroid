@@ -21,8 +21,8 @@ android {
         applicationId = "com.rpeters.jellyfin"
         minSdk = 31
         targetSdk = 35
-        versionCode = 28
-        versionName = "13.96"
+        versionCode = 30
+        versionName = "13.98"
 
         testInstrumentationRunner = "com.rpeters.jellyfin.testing.HiltTestRunner"
 
@@ -109,6 +109,11 @@ android {
         resources {
             excludes += "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
         }
+        jniLibs {
+            // Tell Play Console we don't have unstripped libraries
+            // This suppresses the warning for third-party .so files
+            useLegacyPackaging = false
+        }
     }
 }
 
@@ -125,6 +130,13 @@ dependencies {
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
+
+    // Force specific Compose UI Text version with fontWeightAdjustment fix
+    // This overrides the BOM version to ensure compatibility with devices
+    // that don't have Configuration.fontWeightAdjustment field
+    implementation("androidx.compose.ui:ui-text:1.7.6") {
+        because("Fixes NoSuchFieldError: fontWeightAdjustment on some API 31+ devices")
+    }
 
     // Material 3
     implementation(libs.androidx.material3)
@@ -278,3 +290,27 @@ tasks.register<JacocoReport>("jacocoTestReport") {
 }
 
 apply(plugin = "jacoco")
+
+// Task to create native debug symbols archive for Play Console
+// This creates a zip file containing .so files with debug symbols
+// Upload this to Play Console: Release > App bundle explorer > Downloads > Native debug symbols
+tasks.register<Zip>("packageNativeSymbols") {
+    dependsOn("bundleRelease")
+
+    description = "Package native debug symbols for Google Play Console upload"
+    group = "publishing"
+
+    archiveFileName.set("native-debug-symbols.zip")
+    destinationDirectory.set(layout.buildDirectory.dir("outputs/native-debug-symbols"))
+
+    // Include all .so files from the merged native libs (correct path with mergeReleaseNativeLibs)
+    from(layout.buildDirectory.dir("intermediates/merged_native_libs/release/mergeReleaseNativeLibs/out/lib")) {
+        include("**/*.so")
+    }
+
+    doLast {
+        println("✓ Native symbols packaged at: ${archiveFile.get().asFile.absolutePath}")
+        println("  Upload this file to Play Console:")
+        println("  → Release > App bundle explorer > Downloads > Upload debug symbols")
+    }
+}
