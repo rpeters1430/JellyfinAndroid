@@ -1,28 +1,22 @@
 package com.rpeters.jellyfin.ui.player
 
 import android.content.Context
-import androidx.media3.common.PlaybackException
 import androidx.media3.common.util.UnstableApi
 import com.rpeters.jellyfin.data.playback.EnhancedPlaybackManager
 import com.rpeters.jellyfin.data.playback.PlaybackResult
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import io.mockk.coEvery
-import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.junit.After
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -143,7 +137,7 @@ class VideoPlayerErrorHandlingTest {
         // - Server errors (404, 500, etc.)
         // - Video codec errors (handled by setEnableDecoderFallback)
         // - Authentication errors
-        
+
         // Expected: Error is shown to user in UI without automatic retry
         assertTrue("Test documents expected behavior", true)
     }
@@ -155,7 +149,7 @@ class VideoPlayerErrorHandlingTest {
         // 1. isRetryingWithTranscoding flag prevents second retry
         // 2. Error is shown to user
         // 3. No further automatic retry attempts
-        
+
         assertTrue("Test documents expected behavior", true)
     }
 }
