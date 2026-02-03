@@ -70,13 +70,13 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
         isCoreLibraryDesugaringEnabled = true
     }
 
     kotlin {
-        jvmToolchain(21)
+        // jvmToolchain(21)
         compilerOptions {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
             freeCompilerArgs.addAll(
@@ -215,7 +215,7 @@ dependencies {
 
     // Hilt testing
     testImplementation(libs.dagger.hilt.android.testing)
-    kspTest("com.google.dagger:hilt-compiler:2.59")
+    kspTest(libs.dagger.hilt.compiler)
     kspTest(libs.kotlinx.metadata.jvm)
 
     testImplementation(libs.turbine)
@@ -235,7 +235,7 @@ dependencies {
     androidTestImplementation(libs.kotlinx.coroutines.test)
 
     androidTestImplementation(libs.dagger.hilt.android.testing)
-    kspAndroidTest("com.google.dagger:hilt-compiler:2.59")
+    kspAndroidTest(libs.dagger.hilt.compiler)
     kspAndroidTest(libs.kotlinx.metadata.jvm)
 
     // Debug Tools

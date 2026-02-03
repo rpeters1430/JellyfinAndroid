@@ -8,6 +8,7 @@ import com.rpeters.jellyfin.data.utils.RepositoryUtils
 import com.rpeters.jellyfin.utils.AppResources
 import retrofit2.HttpException
 import java.net.ConnectException
+import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import javax.net.ssl.SSLException
@@ -21,6 +22,10 @@ import javax.net.ssl.SSLException
 object ErrorHandler {
 
     private const val TAG = "ErrorHandler"
+
+    // Standard DNS error messages for consistency
+    private const val DNS_ERROR_SHORT = "Could not find an IP address for the server. Please check the server address for typos, or ensure the server's DNS records are correctly configured."
+    private const val DNS_ERROR_SUGGESTION = "Verify server address or try using an IP address (e.g., 192.168.1.100) instead of a hostname"
 
     /**
      * Processes an exception and returns a user-friendly error result.
@@ -37,12 +42,22 @@ object ErrorHandler {
     ): ProcessedError {
         Log.e(TAG, "$operation failed", e)
 
+        // Check for DNS resolution errors (including GaiException)
+        if (isDnsResolutionError(e)) {
+            return ProcessedError(
+                userMessage = getDnsErrorMessage(e),
+                errorType = ErrorType.DNS_RESOLUTION,
+                isRetryable = false, // DNS errors require user action (fix hostname or use IP)
+                suggestedAction = "Check server address for typos or try using an IP address instead",
+            )
+        }
+
         return when (e) {
             is UnknownHostException -> ProcessedError(
-                userMessage = "Unable to connect to server. Please check your internet connection.",
-                errorType = ErrorType.NETWORK,
-                isRetryable = true,
-                suggestedAction = "Check internet connection and server URL",
+                userMessage = DNS_ERROR_SHORT,
+                errorType = ErrorType.DNS_RESOLUTION,
+                isRetryable = false, // DNS errors require user action (fix hostname or use IP)
+                suggestedAction = DNS_ERROR_SUGGESTION,
             )
 
             is ConnectException -> ProcessedError(
@@ -52,6 +67,25 @@ object ErrorHandler {
                 suggestedAction = "Verify server URL and network connectivity",
             )
 
+            is SocketException -> {
+                // Handle "Software caused connection abort" and similar network issues
+                val isConnectionAbort = e.message?.contains("connection abort", ignoreCase = true) == true
+                ProcessedError(
+                    userMessage = if (isConnectionAbort) {
+                        "Network connection was interrupted. This may be due to switching between WiFi and mobile data, or an unstable connection."
+                    } else {
+                        "Network error occurred: ${e.message ?: "Connection failed"}. Please check your connection."
+                    },
+                    errorType = ErrorType.NETWORK,
+                    isRetryable = true,
+                    suggestedAction = if (isConnectionAbort) {
+                        "Ensure stable network connection and try again"
+                    } else {
+                        "Check network stability and retry"
+                    },
+                )
+            }
+
             is SocketTimeoutException -> ProcessedError(
                 userMessage = "Request timed out. The server may be overloaded.",
                 errorType = ErrorType.NETWORK,
@@ -59,12 +93,30 @@ object ErrorHandler {
                 suggestedAction = "Try again in a few moments",
             )
 
-            is SSLException -> ProcessedError(
-                userMessage = "Secure connection failed. Please check your server's SSL configuration.",
-                errorType = ErrorType.NETWORK,
-                isRetryable = false,
-                suggestedAction = "Contact administrator about SSL certificate",
-            )
+            is SSLException -> {
+                // Distinguish between different SSL/TLS errors
+                val message = e.message ?: ""
+                when {
+                    message.contains("handshake", ignoreCase = true) -> ProcessedError(
+                        userMessage = "SSL/TLS handshake failed. The server's security configuration may be incompatible.",
+                        errorType = ErrorType.NETWORK,
+                        isRetryable = true,
+                        suggestedAction = "Contact administrator about TLS configuration, or try again",
+                    )
+                    message.contains("certificate", ignoreCase = true) -> ProcessedError(
+                        userMessage = "SSL certificate validation failed. Please check your server's SSL certificate.",
+                        errorType = ErrorType.NETWORK,
+                        isRetryable = false,
+                        suggestedAction = "Contact administrator about SSL certificate",
+                    )
+                    else -> ProcessedError(
+                        userMessage = "Secure connection failed: $message",
+                        errorType = ErrorType.NETWORK,
+                        isRetryable = false,
+                        suggestedAction = "Contact administrator about SSL configuration",
+                    )
+                }
+            }
 
             is HttpException -> processHttpException(e)
 
@@ -202,6 +254,7 @@ object ErrorHandler {
     fun getRetryDelay(errorType: ErrorType, attemptNumber: Int): Long {
         val baseDelay = when (errorType) {
             ErrorType.NETWORK -> 1000L // 1 second for network errors
+            // DNS_RESOLUTION errors are not retried (see shouldRetry), so no delay needed
             ErrorType.SERVER_ERROR -> 2000L // 2 seconds for server errors
             ErrorType.AUTHENTICATION -> 5000L // 5 seconds for auth errors
             ErrorType.UNKNOWN -> 1500L // 1.5 seconds for unknown errors
@@ -232,6 +285,7 @@ object ErrorHandler {
 
         return when (errorType) {
             ErrorType.NETWORK -> true
+            ErrorType.DNS_RESOLUTION -> false // DNS errors require user action (fix hostname or use IP)
             ErrorType.SERVER_ERROR -> true
             ErrorType.UNKNOWN -> attemptNumber < 2 // Only retry once for unknown errors
             ErrorType.AUTHENTICATION -> false // Don't auto-retry auth errors
@@ -243,6 +297,63 @@ object ErrorHandler {
             ErrorType.TIMEOUT -> true // Retry timeout errors
             ErrorType.VALIDATION -> false // Don't retry validation errors
             ErrorType.PINNING -> false // Don't retry certificate pinning errors - requires user action
+        }
+    }
+
+    /**
+     * Checks if an exception is related to DNS resolution failure.
+     * Handles android.system.GaiException which can be thrown by OkHttp's DNS resolver.
+     */
+    private fun isDnsResolutionError(e: Throwable): Boolean {
+        var current: Throwable? = e
+        while (current != null) {
+            val className = current.javaClass.name
+            val message = current.message ?: ""
+
+            // Check for GaiException by class name
+            if (className.contains("GaiException")) {
+                return true
+            }
+
+            // Check for specific DNS error messages
+            if (message.contains("EAI_NODATA", ignoreCase = true) ||
+                message.contains("EAI_NONAME", ignoreCase = true) ||
+                message.contains("No address associated with hostname", ignoreCase = true) ||
+                message.contains("Unable to resolve host", ignoreCase = true)
+            ) {
+                return true
+            }
+
+            current = current.cause
+        }
+        return false
+    }
+
+    /**
+     * Generates a user-friendly error message for DNS resolution failures.
+     * Provides specific guidance based on the type of DNS error.
+     */
+    private fun getDnsErrorMessage(e: Throwable): String {
+        val message = e.message ?: ""
+
+        return when {
+            message.contains("EAI_NODATA", ignoreCase = true) -> {
+                "Could not find an IP address for the server hostname. " +
+                    "The hostname exists but has no DNS records. " +
+                    "Please verify the server address or try using an IP address directly " +
+                    "(e.g., 192.168.1.100)."
+            }
+            message.contains("EAI_NONAME", ignoreCase = true) -> {
+                "The server hostname does not exist. " +
+                    "Please check for typos in the server address. " +
+                    "You can also try using an IP address directly instead."
+            }
+            else -> {
+                "Could not resolve server hostname. " +
+                    "Please check your server address for typos, " +
+                    "verify your DNS settings, or try using an IP address directly " +
+                    "(e.g., 192.168.1.100 or [fe80::1] for IPv6)."
+            }
         }
     }
 

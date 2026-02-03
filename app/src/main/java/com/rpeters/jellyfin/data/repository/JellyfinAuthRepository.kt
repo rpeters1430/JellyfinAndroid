@@ -10,6 +10,7 @@ import com.rpeters.jellyfin.data.model.QuickConnectState
 import com.rpeters.jellyfin.data.network.TokenProvider
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.utils.RepositoryUtils
+import com.rpeters.jellyfin.utils.SecureLogger
 import com.rpeters.jellyfin.utils.normalizeServerUrl
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -73,11 +74,13 @@ class JellyfinAuthRepository @Inject constructor(
 
     suspend fun testServerConnection(serverUrl: String): ApiResult<PublicSystemInfo> {
         return try {
+            SecureLogger.d(TAG, "testServerConnection: Attempting to connect to server")
             val client = createApiClient(serverUrl)
             val response = client.systemApi.getPublicSystemInfo()
+            SecureLogger.d(TAG, "testServerConnection: Successfully connected to server")
             ApiResult.Success(response.content)
         } catch (e: InvalidStatusException) {
-            Log.e(TAG, "Server returned error status: $serverUrl", e)
+            Log.e(TAG, "Server returned error status", e)
             val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Server error: ${e.message}", e, errorType)
         }
@@ -100,7 +103,7 @@ class JellyfinAuthRepository @Inject constructor(
     ): ApiResult<AuthenticationResult> {
         _isAuthenticating.update { true }
         try {
-            Log.d(TAG, "authenticateUser: Attempting authentication")
+            SecureLogger.d(TAG, "authenticateUser: Attempting authentication")
             val normalizedServerUrl = normalizeServerUrl(serverUrl)
 
             val client = createApiClient(serverUrl)
@@ -112,7 +115,7 @@ class JellyfinAuthRepository @Inject constructor(
             )
 
             val authResult = response.content
-            Log.d(TAG, "authenticateUser: Authentication successful")
+            SecureLogger.d(TAG, "authenticateUser: Authentication successful")
 
             persistAuthenticationState(
                 serverUrl = serverUrl,
