@@ -1,0 +1,61 @@
+name: "✅ Gemini Apply + PR"
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  apply:
+    if: >
+      contains(github.event.comment.body, '@gemini-cli /apply') &&
+      (github.event.comment.author_association == 'OWNER' ||
+       github.event.comment.author_association == 'MEMBER' ||
+       github.event.comment.author_association == 'COLLABORATOR')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Option 1 (simpler): re-run Gemini in "apply" mode and let it edit workspace with apply_patch
+      - name: Run Gemini (apply)
+        uses: google-github-actions/run-gemini-cli@v0.1.20
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        with:
+          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          workflow_name: gemini-apply
+          settings: |
+            {
+              "model": { "maxSessionTurns": 80 },
+              "tools": { "core": [
+                "run_shell_command(cat)",
+                "run_shell_command(grep)",
+                "run_shell_command(find)",
+                "run_shell_command(apply_patch)"
+              ]}
+            }
+          prompt: |
+            Apply the fix for issue #${ISSUE_NUMBER}.
+            Make minimal changes, then summarize what changed.
+
+      - name: Create PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          branch="gemini/fix-issue-${ISSUE_NUMBER}"
+          git checkout -b "$branch"
+          git status --porcelain
+          git add -A
+          git commit -m "Fix: issue #${ISSUE_NUMBER}" || exit 0
+          git push -u origin "$branch"
+          gh pr create \
+            --title "Fix issue #${ISSUE_NUMBER}" \
+            --body "Fixes #${ISSUE_NUMBER}" \
+            --base main \
+            --head "$branch"
