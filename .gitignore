@@ -99,3 +99,6 @@ Desktop.ini
 *.kt.class
 .kotlin/
 .aider*
+
+.gemini/
+gha-creds-*.json
