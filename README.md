@@ -6,8 +6,8 @@
   <img src="docs/assets/cinefin-featured-icon.svg" alt="Cinefin featured icon" width="220" />
 </p>
 
-[![Android CI](https://github.com/rpeters1430/JellyfinAndroid/actions/workflows/android-ci.yml/badge.svg)](https://github.com/rpeters1430/JellyfinAndroid/actions/workflows/android-ci.yml)
-[![Dependency Check](https://github.com/rpeters1430/JellyfinAndroid/actions/workflows/dependency-check.yml/badge.svg)](https://github.com/rpeters1430/JellyfinAndroid/actions/workflows/dependency-check.yml)
+[![Android CI](https://github.com/rpeters1430/Cinefin/actions/workflows/android-ci.yml/badge.svg)](https://github.com/rpeters1430/Cinefin/actions/workflows/android-ci.yml)
+[![Dependency Check](https://github.com/rpeters1430/Cinefin/actions/workflows/dependency-check.yml/badge.svg)](https://github.com/rpeters1430/Cinefin/actions/workflows/dependency-check.yml)
 [![API Level](https://img.shields.io/badge/API-26%2B-brightgreen.svg?style=flat)](https://android-arsenal.com/api?level=26)
 
 A modern, beautiful Android client for Jellyfin media servers built with Material 3 design principles and the latest Android development technologies.
