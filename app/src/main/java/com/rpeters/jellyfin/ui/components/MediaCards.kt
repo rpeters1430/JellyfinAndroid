@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -167,32 +166,17 @@ fun MediaCard(
                     )
                 }
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    // Favorite indicator
-                    if (item.userData?.isFavorite == true) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = "Favorite",
-                            tint = Color.Yellow,
-                            modifier = Modifier.size(20.dp),
-                        )
-                    }
+                // Watch status badges
+                Box {
+                    UnwatchedEpisodeCountBadge(
+                        item = item,
+                        modifier = Modifier.align(Alignment.TopEnd),
+                    )
 
-                    // Watch status badges
-                    Box {
-                        UnwatchedEpisodeCountBadge(
-                            item = item,
-                            modifier = Modifier.align(Alignment.TopEnd),
-                        )
-
-                        WatchedIndicatorBadge(
-                            item = item,
-                            modifier = Modifier.align(Alignment.BottomEnd),
-                        )
-                    }
+                    WatchedIndicatorBadge(
+                        item = item,
+                        modifier = Modifier.align(Alignment.BottomEnd),
+                    )
                 }
             }
 
@@ -430,32 +414,17 @@ fun PosterMediaCard(
                         )
                     }
 
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        // Favorite indicator
-                        if (item.userData?.isFavorite == true) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = "Favorite",
-                                tint = Color.Yellow,
-                                modifier = Modifier.size(16.dp),
-                            )
-                        }
+                    // Watch status badges
+                    Box {
+                        UnwatchedEpisodeCountBadge(
+                            item = item,
+                            modifier = Modifier.align(Alignment.TopEnd),
+                        )
 
-                        // Watch status badges
-                        Box {
-                            UnwatchedEpisodeCountBadge(
-                                item = item,
-                                modifier = Modifier.align(Alignment.TopEnd),
-                            )
-
-                            WatchedIndicatorBadge(
-                                item = item,
-                                modifier = Modifier.align(Alignment.BottomEnd),
-                            )
-                        }
+                        WatchedIndicatorBadge(
+                            item = item,
+                            modifier = Modifier.align(Alignment.BottomEnd),
+                        )
                     }
                 }
 

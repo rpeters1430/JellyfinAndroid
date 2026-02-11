@@ -16,7 +16,6 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +33,7 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.EmptyStateComposable
 import com.rpeters.jellyfin.ui.components.EmptyStateType
+import com.rpeters.jellyfin.ui.components.ExpressiveWavyCircularLoading
 import com.rpeters.jellyfin.ui.components.MediaCard
 import com.rpeters.jellyfin.ui.components.MiniPlayer
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -95,7 +95,9 @@ fun FavoritesScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center,
                     ) {
-                        CircularProgressIndicator()
+                        ExpressiveWavyCircularLoading(
+                            modifier = Modifier.size(64.dp),
+                        )
                     }
                 }
                 errorMessage != null -> {
