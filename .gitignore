@@ -106,3 +106,5 @@ Desktop.ini
 !.gemini/commands/**
 .gemini/telemetry.log
 gha-creds-*.json
+
+.gemini/
