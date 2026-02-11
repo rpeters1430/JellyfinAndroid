@@ -1,3 +1,11 @@
+# 🔧 Gemini Apply Fix Workflow
+#
+# Triggered by: Comment "/approve" on an issue with gemini:awaiting-approval label
+# Generates code changes, creates a branch, and opens a PR with the fix.
+# The PR will have "gemini:awaiting-merge" label for final approval.
+#
+# Documentation: .github/GEMINI_WORKFLOWS.md
+
 name: Gemini Apply Fix (Issue -> PR)
 
 on:

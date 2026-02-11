@@ -1,3 +1,11 @@
+# 📋 Gemini Fix Plan Workflow
+#
+# Triggered by: Comment "/fix" on an issue
+# Creates a detailed plan for fixing the issue with implementation steps.
+# Adds "gemini:awaiting-approval" label and waits for /approve or /deny.
+#
+# Documentation: .github/GEMINI_WORKFLOWS.md
+
 name: Gemini Fix Plan (Issue)
 
 on:

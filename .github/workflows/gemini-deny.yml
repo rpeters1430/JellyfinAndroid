@@ -1,3 +1,11 @@
+# 🛑 Gemini Deny Workflow
+#
+# Triggered by: Comment "/deny" on an issue or PR
+# Removes Gemini labels and closes the issue/PR as "not planned".
+# Preserves any non-Gemini labels that were applied.
+#
+# Documentation: .github/GEMINI_WORKFLOWS.md
+
 name: Gemini Deny (Cancel)
 
 on:

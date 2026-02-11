@@ -1,3 +1,11 @@
+# ✅ Gemini Merge PR Workflow
+#
+# Triggered by: Comment "/approve" on a PR with gemini:awaiting-merge label
+# Squash merges the PR and comments on both the PR and original issue.
+# This is the final step in the automated fix workflow.
+#
+# Documentation: .github/GEMINI_WORKFLOWS.md
+
 name: Gemini Merge PR (Approve)
 
 on:
