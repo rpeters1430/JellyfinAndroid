@@ -27,6 +27,9 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+        
+      - name: Add Android SDK to Path
+        run: echo "${ANDROID_HOME}/cmdline-tools/latest/bin" >> $GITHUB_PATH
 
       - name: Install Android SDK components
         shell: bash
