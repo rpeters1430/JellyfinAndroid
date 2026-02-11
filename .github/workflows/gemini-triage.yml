@@ -28,23 +28,24 @@ jobs:
           upload_artifacts: false
           prompt: |
             You are an issue triage assistant.
-            Output ONLY valid JSON with schema:
+            Output ONLY valid JSON with this schema:
 
             {"labels":["type:bug","area:docs","priority:medium"]}
 
-            Allowed families (prefer):
-            - type:bug | type:feature | type:chore | type:question
-            - area:android | area:ui | area:backend | area:build | area:docs
-            - priority:low | priority:medium | priority:high
-
-            Output ONLY JSON (no markdown).
+            Rules:
+            - Prefer these families:
+              - type:bug | type:feature | type:chore | type:question
+              - area:android | area:ui | area:backend | area:build | area:docs
+              - priority:low | priority:medium | priority:high
+            - If unsure, output fewer labels.
+            - Output ONLY JSON. No markdown.
 
             Issue title: ${{ github.event.issue.title }}
 
             Issue body:
             ${{ github.event.issue.body }}
 
-      - name: Apply labels
+      - name: Parse + apply labels
         uses: actions/github-script@v7
         env:
           GEMINI_JSON: ${{ steps.gemini.outputs.summary }}
@@ -57,14 +58,14 @@ jobs:
 
             const raw = (process.env.GEMINI_JSON || '').trim();
             if (!raw) {
-              core.warning('Empty Gemini output; skipping labels.');
+              core.warning('Gemini returned empty output; skipping labels.');
               return;
             }
 
             let data;
             try { data = JSON.parse(raw); }
             catch (e) {
-              core.warning('Gemini output not valid JSON:\n' + raw);
+              core.warning('Gemini output was not valid JSON:\n' + raw);
               return;
             }
 
@@ -74,11 +75,12 @@ jobs:
               return;
             }
 
-            // Best effort: create missing labels
+            // Best effort: create missing labels (optional)
             for (const name of labels) {
               try {
                 await github.rest.issues.createLabel({
-                  owner, repo, name,
+                  owner, repo,
+                  name,
                   color: 'ededed',
                   description: 'Auto-added by Gemini triage'
                 });
