@@ -29,7 +29,7 @@ jobs:
               core.setFailed(`Not allowed: author_association=${assoc}`);
             }
 
-      - name: Remove labels + close
+      - name: Remove all labels + close
         uses: actions/github-script@v7
         with:
           script: |
@@ -38,27 +38,27 @@ jobs:
             const number = context.payload.issue.number;
             const isPr = !!context.payload.issue.pull_request;
 
-            // remove gemini state labels (best effort)
-            const labelsToRemove = [
-              'gemini:awaiting-accept',
-              'gemini:awaiting-merge',
-              'gemini:pr-open',
-              'gemini:working',
-            ];
+            // Remove ALL labels (this is your "remove tags" requirement)
+            await github.rest.issues.setLabels({
+              owner, repo,
+              issue_number: number,
+              labels: []
+            });
 
-            for (const name of labelsToRemove) {
-              try { await github.rest.issues.removeLabel({ owner, repo, issue_number: number, name }); } catch (e) {}
-            }
-
-            // close (can't delete)
+            // Close (GitHub does not support "delete issue" via API)
             await github.rest.issues.update({
               owner, repo,
               issue_number: number,
               state: 'closed'
             });
 
+            // Optional: lock conversation to reduce noise
+            // try {
+            //   await github.rest.issues.lock({ owner, repo, issue_number: number, lock_reason: 'resolved' });
+            // } catch (e) {}
+
             await github.rest.issues.createComment({
               owner, repo,
               issue_number: number,
-              body: isPr ? '🛑 Cancelled and closed. PR will not be merged.' : '🛑 Cancelled and closed.'
+              body: isPr ? '🛑 Denied. Labels removed and PR closed (not merged).' : '🛑 Denied. Labels removed and issue closed.'
             });
