@@ -859,11 +859,13 @@ private fun ExpressiveMovieInfoCard(
                     videoStream?.let { stream ->
                         val icon = getResolutionIcon(stream.width, stream.height)
                         val resolutionBadge = getResolutionBadge(stream.width, stream.height)
+                        // TODO: Add 3D detection when SDK property is available
                         ExpressiveVideoInfoRow(
                             label = stringResource(id = R.string.video),
                             codec = stream.codec?.uppercase(),
                             icon = icon,
                             resolutionBadge = resolutionBadge,
+                            is3D = false, // Placeholder until SDK supports it
                         )
                     }
 
@@ -1204,6 +1206,7 @@ private fun ExpressiveVideoInfoRow(
     codec: String?,
     icon: ImageVector,
     resolutionBadge: Pair<String, Color>? = null,
+    is3D: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -1262,6 +1265,23 @@ private fun ExpressiveVideoInfoRow(
                     ) {
                         Text(
                             text = text,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        )
+                    }
+                }
+
+                // 3D badge
+                if (is3D) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier,
+                    ) {
+                        Text(
+                            text = "3D",
                             style = MaterialTheme.typography.labelSmall,
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
