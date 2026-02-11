@@ -1,3 +1,10 @@
+# 🏷️ Gemini Auto-Triage Workflow
+#
+# Automatically analyzes and labels issues when they are opened or reopened.
+# Uses Google Gemini AI to categorize issues by type, area, and priority.
+#
+# Documentation: .github/GEMINI_WORKFLOWS.md
+
 name: "🏷️ Gemini Triage (Label Issues)"
 
 on:
