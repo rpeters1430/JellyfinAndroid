@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularProgressIndicator
+import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
@@ -48,9 +48,9 @@ fun PaginationFooter(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.FilterChipSpacing),
             ) {
-                CircularProgressIndicator(
+                ExpressiveCircularLoading(
                     color = libraryType.color,
-                    modifier = Modifier.size(LibraryScreenDefaults.ViewModeIconSize),
+                    size = LibraryScreenDefaults.ViewModeIconSize,
                 )
                 Text(
                     text = stringResource(id = R.string.library_actions_loading_more),
