@@ -11,7 +11,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.rpeters.jellyfin.BuildConfig
-import com.rpeters.jellyfin.core.FeatureFlags
 import com.rpeters.jellyfin.ui.screens.ImmersiveHomeScreen
 import com.rpeters.jellyfin.ui.screens.ImmersiveLibraryScreen
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel

@@ -9,9 +9,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
-import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.R
-import com.rpeters.jellyfin.core.FeatureFlags
 import com.rpeters.jellyfin.ui.screens.ImmersiveFavoritesScreen
 import com.rpeters.jellyfin.ui.screens.ImmersiveSearchScreen
 import com.rpeters.jellyfin.ui.screens.ProfileScreen
@@ -24,7 +22,6 @@ import com.rpeters.jellyfin.ui.screens.settings.PrivacySettingsScreen
 import com.rpeters.jellyfin.ui.screens.settings.SettingsSectionScreen
 import com.rpeters.jellyfin.ui.screens.settings.SubtitleSettingsScreen
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
-import com.rpeters.jellyfin.utils.SecureLogger
 
 /**
  * Profile, search, favorites, and settings routes.
