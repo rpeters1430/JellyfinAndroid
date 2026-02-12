@@ -11,7 +11,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
+import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -164,7 +164,7 @@ private fun MediaCardPlaceholder() {
                 .padding(16.dp),
             contentAlignment = Alignment.Center,
         ) {
-            CircularProgressIndicator()
+            ExpressiveCircularLoading()
         }
     }
 }
@@ -177,7 +177,7 @@ private fun LoadingIndicator() {
             .padding(16.dp),
         contentAlignment = Alignment.Center,
     ) {
-        CircularProgressIndicator()
+        ExpressiveCircularLoading()
     }
 }
 
@@ -190,7 +190,7 @@ private fun InitialLoadingIndicator() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        CircularProgressIndicator()
+        ExpressiveCircularLoading()
         Text(
             text = "Loading library...",
             style = MaterialTheme.typography.bodyMedium,

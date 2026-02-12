@@ -20,7 +20,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Badge
@@ -272,16 +271,6 @@ private fun ImmersiveCardContent(
                     )
                 }
             }
-
-            // Favorite indicator
-            if (isFavorite) {
-                Icon(
-                    imageVector = Icons.Default.Favorite,
-                    contentDescription = "Favorite",
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(24.dp),
-                )
-            }
         }
 
         // Watch progress bar
@@ -344,27 +333,6 @@ private fun ImmersiveCardContent(
                         contentDescription = "Play",
                         tint = Color.White,
                         modifier = Modifier.fillMaxSize(),
-                    )
-                }
-
-                // Favorite button
-                val favoriteColor by animateColorAsState(
-                    targetValue = if (isFavorite) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        Color.White.copy(alpha = 0.7f)
-                    },
-                    label = "favorite_color",
-                )
-
-                IconButton(
-                    onClick = onFavoriteClick,
-                    modifier = Modifier.size(32.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Favorite,
-                        contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
-                        tint = favoriteColor,
                     )
                 }
             }

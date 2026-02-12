@@ -20,7 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.CircularProgressIndicator
+import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -252,10 +252,9 @@ fun TvServerConnectionScreen(
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
+                            ExpressiveCircularLoading(
+                                size = 20.dp,
                                 color = TvMaterialTheme.colorScheme.onPrimary,
-                                strokeWidth = 2.dp,
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Connecting...", style = TvMaterialTheme.typography.labelLarge)

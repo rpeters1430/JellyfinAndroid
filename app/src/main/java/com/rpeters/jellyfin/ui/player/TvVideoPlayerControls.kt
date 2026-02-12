@@ -58,6 +58,7 @@ import androidx.tv.material3.Button
 import androidx.tv.material3.ButtonDefaults
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
+import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import androidx.tv.material3.Icon
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.tv.tvKeyboardHandler
@@ -196,10 +197,9 @@ private fun TvCenterControls(
     modifier: Modifier = Modifier,
 ) {
     if (isLoading) {
-        androidx.compose.material3.CircularProgressIndicator(
-            modifier = modifier.size(64.dp),
+        ExpressiveCircularLoading(
+            size = 64.dp,
             color = TvMaterialTheme.colorScheme.onSurface,
-            strokeWidth = 6.dp,
         )
     }
 }
