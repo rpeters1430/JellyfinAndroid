@@ -81,8 +81,8 @@ import coil3.request.crossfade
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
-import com.rpeters.jellyfin.ui.components.PerformanceOptimizedLazyRow
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
+import com.rpeters.jellyfin.ui.components.PerformanceOptimizedLazyRow
 import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveMediaCard
@@ -903,7 +903,7 @@ private fun ImmersiveMovieInfoCard(
                             (stream.height ?: 0) >= 720 -> "720p"
                             else -> resolutionBadge?.second ?: ""
                         }
-                        
+
                         ImmersiveVideoInfoRow(
                             label = stringResource(id = R.string.video),
                             codec = "${stream.codec?.uppercase() ?: ""} $qualityText".trim(),

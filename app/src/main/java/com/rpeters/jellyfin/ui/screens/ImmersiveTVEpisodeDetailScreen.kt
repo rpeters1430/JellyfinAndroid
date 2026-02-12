@@ -434,11 +434,11 @@ private fun EpisodeOverviewSection(
         Surface(
             shape = RoundedCornerShape(12.dp),
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 // Quality and Video Info
                 episode.mediaSources?.firstOrNull()?.mediaStreams?.find { it.type == org.jellyfin.sdk.model.api.MediaStreamType.VIDEO }?.let { stream ->
@@ -463,7 +463,7 @@ private fun EpisodeOverviewSection(
                     val formattedDate = date.toString().substringBefore('T')
                     DetailInfoRow(label = "Air Date", value = formattedDate)
                 }
-                
+
                 // Audio
                 episode.mediaSources?.firstOrNull()?.mediaStreams?.find { it.type == org.jellyfin.sdk.model.api.MediaStreamType.AUDIO }?.let { stream ->
                     DetailInfoRow(label = "Audio", value = stream.codec?.uppercase() ?: "Unknown")
@@ -477,18 +477,18 @@ private fun EpisodeOverviewSection(
 private fun DetailInfoRow(label: String, value: String) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
             text = value,
             style = MaterialTheme.typography.bodySmall,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
         )
     }
 }

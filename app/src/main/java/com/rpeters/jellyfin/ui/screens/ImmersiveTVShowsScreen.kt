@@ -224,19 +224,19 @@ private data class TVShowSection(
  */
 private fun organizeTVShowsIntoDiscoverySections(tvShows: List<BaseItemDto>): List<TVShowSection> {
     if (tvShows.isEmpty()) return emptyList()
-    
+
     // Sort by name or other criteria
     val sortedShows = tvShows.sortedBy { it.name }
     val sections = mutableListOf<TVShowSection>()
-    
+
     // Chunk into discovery rows
     val chunkSize = 15
     val chunks = sortedShows.chunked(chunkSize)
-    
+
     if (chunks.isNotEmpty()) {
         sections.add(TVShowSection("More TV Shows", chunks[0]))
     }
-    
+
     for (i in 1 until chunks.size) {
         if (i > 4) break // Limit to 4 discovery sections
         sections.add(TVShowSection("Discover More ${i + 1}", chunks[i]))

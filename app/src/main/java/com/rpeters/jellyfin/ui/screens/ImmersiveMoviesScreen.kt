@@ -65,9 +65,9 @@ fun ImmersiveMoviesScreen(
     )
 
     // Organize movies into sections for immersive browsing
-    val featuredMovies = remember(movies) { 
+    val featuredMovies = remember(movies) {
         // ✅ Hero carousel uses Recently Added Movies
-        movies.sortedByDescending { it.dateCreated }.take(5) 
+        movies.sortedByDescending { it.dateCreated }.take(5)
     }
     val movieSections = remember(movies) { organizeMoviesIntoDiscoverySections(movies) }
 
@@ -216,19 +216,19 @@ private data class MovieSection(
  */
 private fun organizeMoviesIntoDiscoverySections(movies: List<BaseItemDto>): List<MovieSection> {
     if (movies.isEmpty()) return emptyList()
-    
+
     // Sort by name or other criteria for generic sections
     val sortedMovies = movies.sortedBy { it.name }
     val sections = mutableListOf<MovieSection>()
-    
+
     // Chunk movies into discovery rows (approx 15 items per row)
     val chunkSize = 15
     val chunks = sortedMovies.chunked(chunkSize)
-    
+
     if (chunks.isNotEmpty()) {
         sections.add(MovieSection("More Movies", chunks[0]))
     }
-    
+
     for (i in 1 until chunks.size) {
         if (i > 4) break // Limit to 4 discovery sections as requested
         sections.add(MovieSection("Discover More ${i + 1}", chunks[i]))
