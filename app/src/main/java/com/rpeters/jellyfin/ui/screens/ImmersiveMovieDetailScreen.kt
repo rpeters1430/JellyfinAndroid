@@ -941,12 +941,13 @@ private fun ImmersiveMovieInfoCard(
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     // New Enhanced Video Info Row
                     videoStream?.let { stream ->
+                        val width = stream.width ?: 0
                         val height = stream.height ?: 0
                         val resolutionText = when {
-                            height >= 4320 -> "8K"
-                            height >= 2160 -> "4K"
-                            height >= 1080 -> "FHD"
-                            height >= 720 -> "HD"
+                            height >= 4320 || width >= 7680 -> "8K"
+                            height >= 2160 || width >= 3840 -> "4K"
+                            height >= 1080 || width >= 1920 -> "FHD"
+                            height >= 720 || width >= 1280 -> "HD"
                             else -> "SD"
                         }
 
@@ -969,13 +970,13 @@ private fun ImmersiveMovieInfoCard(
                                 Surface(
                                     shape = CircleShape,
                                     color = MaterialTheme.colorScheme.secondaryContainer,
-                                    modifier = Modifier.size(36.dp),
+                                    modifier = Modifier.size(40.dp),
                                 ) {
                                     Icon(
                                         imageVector = Icons.Outlined.VideoFile,
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                        modifier = Modifier.padding(8.dp),
+                                        modifier = Modifier.padding(6.dp),
                                     )
                                 }
                                 Column {
@@ -985,9 +986,19 @@ private fun ImmersiveMovieInfoCard(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        MetadataTag(text = resolutionText, icon = Icons.Outlined.HighQuality)
+                                        MetadataTag(
+                                            text = resolutionText,
+                                            icon = Icons.Outlined.HighQuality,
+                                            iconSize = 20.dp,
+                                        )
                                         MetadataTag(text = codecText)
-                                        if (isHdr) MetadataTag(text = "HDR", icon = Icons.Outlined.HdrOn)
+                                        if (isHdr) {
+                                            MetadataTag(
+                                                text = "HDR",
+                                                icon = Icons.Outlined.HdrOn,
+                                                iconSize = 20.dp,
+                                            )
+                                        }
                                         stream.bitDepth?.let { MetadataTag(text = "${it}-bit") }
                                         stream.averageFrameRate?.let { MetadataTag(text = "${it.roundToInt()} FPS") }
                                     }
@@ -1024,13 +1035,13 @@ private fun ImmersiveMovieInfoCard(
                             Surface(
                                 shape = CircleShape,
                                 color = MaterialTheme.colorScheme.secondaryContainer,
-                                modifier = Modifier.size(36.dp),
+                                modifier = Modifier.size(40.dp),
                             ) {
                                 Icon(
                                     imageVector = Icons.Outlined.Speaker,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    modifier = Modifier.padding(8.dp),
+                                    modifier = Modifier.padding(6.dp),
                                 )
                             }
                             Column {
@@ -1040,7 +1051,13 @@ private fun ImmersiveMovieInfoCard(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    if (channelText.isNotEmpty()) MetadataTag(text = channelText, icon = Icons.Outlined.SurroundSound)
+                                    if (channelText.isNotEmpty()) {
+                                        MetadataTag(
+                                            text = channelText,
+                                            icon = Icons.Outlined.SurroundSound,
+                                            iconSize = 20.dp,
+                                        )
+                                    }
                                     MetadataTag(text = codecText)
                                     if (isAtmos) MetadataTag(text = "ATMOS")
                                 }
@@ -1589,6 +1606,7 @@ private fun ImmersiveSubtitleRow(
 private fun MetadataTag(
     text: String,
     icon: ImageVector? = null,
+    iconSize: androidx.compose.ui.unit.Dp = 16.dp,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -1599,20 +1617,20 @@ private fun MetadataTag(
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+            horizontalArrangement = Arrangement.spacedBy(5.dp)
         ) {
             if (icon != null) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    modifier = Modifier.size(14.dp),
+                    modifier = Modifier.size(iconSize),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Text(
                 text = text,
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

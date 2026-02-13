@@ -470,12 +470,13 @@ private fun EpisodeOverviewSection(
             ) {
                 // Video Info
                 episode.mediaSources?.firstOrNull()?.mediaStreams?.find { it.type == org.jellyfin.sdk.model.api.MediaStreamType.VIDEO }?.let { stream ->
+                    val width = stream.width ?: 0
                     val height = stream.height ?: 0
                     val resolutionText = when {
-                        height >= 4320 -> "8K"
-                        height >= 2160 -> "4K"
-                        height >= 1080 -> "FHD"
-                        height >= 720 -> "HD"
+                        height >= 4320 || width >= 7680 -> "8K"
+                        height >= 2160 || width >= 3840 -> "4K"
+                        height >= 1080 || width >= 1920 -> "FHD"
+                        height >= 720 || width >= 1280 -> "HD"
                         else -> "SD"
                     }
                     val codecText = when (stream.codec) {
@@ -495,19 +496,29 @@ private fun EpisodeOverviewSection(
                         Surface(
                             shape = CircleShape,
                             color = MaterialTheme.colorScheme.secondaryContainer,
-                            modifier = Modifier.size(36.dp),
+                            modifier = Modifier.size(40.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.VideoFile,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                modifier = Modifier.padding(8.dp),
+                                modifier = Modifier.padding(6.dp),
                             )
                         }
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            MetadataTag(text = resolutionText, icon = Icons.Outlined.HighQuality)
+                            MetadataTag(
+                                text = resolutionText,
+                                icon = Icons.Outlined.HighQuality,
+                                iconSize = 20.dp,
+                            )
                             MetadataTag(text = codecText)
-                            if (isHdr) MetadataTag(text = "HDR", icon = Icons.Outlined.HdrOn)
+                            if (isHdr) {
+                                MetadataTag(
+                                    text = "HDR",
+                                    icon = Icons.Outlined.HdrOn,
+                                    iconSize = 20.dp,
+                                )
+                            }
                             stream.bitDepth?.let { MetadataTag(text = "${it}-bit") }
                             stream.averageFrameRate?.let { MetadataTag(text = "${it.roundToInt()} FPS") }
                         }
@@ -542,17 +553,23 @@ private fun EpisodeOverviewSection(
                         Surface(
                             shape = CircleShape,
                             color = MaterialTheme.colorScheme.secondaryContainer,
-                            modifier = Modifier.size(36.dp),
+                            modifier = Modifier.size(40.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Speaker,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                modifier = Modifier.padding(8.dp),
+                                modifier = Modifier.padding(6.dp),
                             )
                         }
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            if (channelText.isNotEmpty()) MetadataTag(text = channelText, icon = Icons.Outlined.SurroundSound)
+                            if (channelText.isNotEmpty()) {
+                                MetadataTag(
+                                    text = channelText,
+                                    icon = Icons.Outlined.SurroundSound,
+                                    iconSize = 20.dp,
+                                )
+                            }
                             MetadataTag(text = codecText)
                             if (isAtmos) MetadataTag(text = "ATMOS")
                         }
@@ -562,7 +579,7 @@ private fun EpisodeOverviewSection(
                 // Air Date & Runtime (MM - DD - YYYY)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     episode.premiereDate?.let { date ->
@@ -571,13 +588,21 @@ private fun EpisodeOverviewSection(
                         val parts = dateStr.split("-")
                         if (parts.size == 3) {
                             val formattedDate = "${parts[1]} - ${parts[2]} - ${parts[0]}" // MM - DD - YYYY
-                            DetailInfoRow(label = "Aired", value = formattedDate)
+                            DetailInfoRow(
+                                label = "Aired",
+                                value = formattedDate,
+                                modifier = Modifier.weight(1f),
+                            )
                         }
                     }
                     
                     episode.runTimeTicks?.let { ticks ->
                         val minutes = (ticks / 10_000_000 / 60).toInt()
-                        DetailInfoRow(label = "Duration", value = "${minutes}m")
+                        DetailInfoRow(
+                            label = "Duration",
+                            value = "${minutes}m",
+                            modifier = Modifier.weight(1f),
+                        )
                     }
                 }
             }
@@ -589,6 +614,7 @@ private fun EpisodeOverviewSection(
 private fun MetadataTag(
     text: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    iconSize: androidx.compose.ui.unit.Dp = 16.dp,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -599,20 +625,20 @@ private fun MetadataTag(
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+            horizontalArrangement = Arrangement.spacedBy(5.dp)
         ) {
             if (icon != null) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    modifier = Modifier.size(14.dp),
+                    modifier = Modifier.size(iconSize),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Text(
                 text = text,
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -621,21 +647,30 @@ private fun MetadataTag(
 }
 
 @Composable
-private fun DetailInfoRow(label: String, value: String) {
+private fun DetailInfoRow(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
         Text(
             text = value,
             style = MaterialTheme.typography.bodySmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.End,
         )
     }
 }
