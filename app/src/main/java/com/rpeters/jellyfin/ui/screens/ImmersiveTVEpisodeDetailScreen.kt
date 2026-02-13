@@ -3,7 +3,21 @@ package com.rpeters.jellyfin.ui.screens
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
@@ -13,6 +27,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.HdrOn
+import androidx.compose.material.icons.outlined.HighQuality
+import androidx.compose.material.icons.outlined.Speaker
+import androidx.compose.material.icons.outlined.SurroundSound
+import androidx.compose.material.icons.outlined.VideoFile
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -43,6 +62,7 @@ import com.rpeters.jellyfin.ui.theme.SeriesBlue
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.utils.isWatched
+import kotlin.math.roundToInt
 import org.jellyfin.sdk.model.api.BaseItemDto
 import java.util.Locale
 
@@ -93,10 +113,13 @@ fun ImmersiveTVEpisodeDetailScreen(
         ?: getImageUrl(episode).orEmpty()
 
     Box(modifier = modifier.fillMaxSize()) {
-        // Static Hero Background (Fixed - doesn't scroll)
+        // Static Hero Background (Fixed - doesn't scroll) - Extended to edges
         StaticHeroSection(
             imageUrl = heroImage.takeIf { it.isNotBlank() },
-            height = ImmersiveDimens.HeroHeightPhone,
+            height = ImmersiveDimens.HeroHeightPhone + 60.dp, // ✅ Increased height
+            modifier = Modifier
+                .fillMaxWidth()
+                .offset(y = (-60).dp), // ✅ Top bleed
             contentScale = ContentScale.Crop,
             content = {}, // Content moved to LazyColumn
         )
@@ -376,6 +399,7 @@ private fun EpisodeOverviewSection(
     Column(
         modifier = Modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally, // ✅ Centered horizontally
     ) {
         // Synopsis Header with AI Button
         Row(
@@ -403,6 +427,9 @@ private fun EpisodeOverviewSection(
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
                 lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.4,
+                maxLines = 3, // ✅ Limit to 3 lines
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center, // ✅ Centered
             )
         }
 
@@ -422,6 +449,7 @@ private fun EpisodeOverviewSection(
                         text = aiSummary ?: "",
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(16.dp),
+                        textAlign = TextAlign.Center, // ✅ Centered
                     )
                 }
             }
@@ -430,7 +458,7 @@ private fun EpisodeOverviewSection(
         // Playback Capability
         playbackAnalysis?.let { PlaybackStatusBadge(analysis = it) }
 
-        // ✅ Add Episode Details (Quality, Runtime, Air Date)
+        // ✅ Enhanced Metadata Section (Grid-like tagging)
         Surface(
             shape = RoundedCornerShape(12.dp),
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
@@ -438,37 +466,156 @@ private fun EpisodeOverviewSection(
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                // Quality and Video Info
+                // Video Info
                 episode.mediaSources?.firstOrNull()?.mediaStreams?.find { it.type == org.jellyfin.sdk.model.api.MediaStreamType.VIDEO }?.let { stream ->
-                    val quality = when {
-                        (stream.height ?: 0) >= 2160 -> "4K"
-                        (stream.height ?: 0) >= 1080 -> "1080p"
-                        (stream.height ?: 0) >= 720 -> "720p"
+                    val height = stream.height ?: 0
+                    val resolutionText = when {
+                        height >= 4320 -> "8K"
+                        height >= 2160 -> "4K"
+                        height >= 1080 -> "FHD"
+                        height >= 720 -> "HD"
                         else -> "SD"
                     }
-                    DetailInfoRow(label = "Quality", value = quality)
-                    DetailInfoRow(label = "Video", value = "${stream.codec?.uppercase() ?: ""} ${stream.width}x${stream.height}")
+                    val codecText = when (stream.codec) {
+                        "hevc", "h265" -> "H265 HEVC"
+                        "h264", "avc" -> "H264 AVC"
+                        "av1" -> "AV1"
+                        "vp9" -> "VP9"
+                        else -> stream.codec ?: ""
+                    }
+                    val isHdr = stream.videoRange?.toString()?.contains("hdr", ignoreCase = true) == true ||
+                        stream.videoRangeType?.toString()?.contains("hdr", ignoreCase = true) == true
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            modifier = Modifier.size(36.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.VideoFile,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.padding(8.dp),
+                            )
+                        }
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            MetadataTag(text = resolutionText, icon = Icons.Outlined.HighQuality)
+                            MetadataTag(text = codecText)
+                            if (isHdr) MetadataTag(text = "HDR", icon = Icons.Outlined.HdrOn)
+                            stream.bitDepth?.let { MetadataTag(text = "${it}-bit") }
+                            stream.averageFrameRate?.let { MetadataTag(text = "${it.roundToInt()} FPS") }
+                        }
+                    }
                 }
 
-                // Runtime
-                episode.runTimeTicks?.let { ticks ->
-                    val minutes = (ticks / 10_000_000 / 60).toInt()
-                    DetailInfoRow(label = "Runtime", value = "${minutes}m")
-                }
-
-                // Air Date
-                episode.premiereDate?.let { date ->
-                    val formattedDate = date.toString().substringBefore('T')
-                    DetailInfoRow(label = "Air Date", value = formattedDate)
-                }
-
-                // Audio
+                // Audio Info
                 episode.mediaSources?.firstOrNull()?.mediaStreams?.find { it.type == org.jellyfin.sdk.model.api.MediaStreamType.AUDIO }?.let { stream ->
-                    DetailInfoRow(label = "Audio", value = stream.codec?.uppercase() ?: "Unknown")
+                    val channelText = when (stream.channels) {
+                        8 -> "7.1"
+                        6 -> "5.1"
+                        2 -> "2.0"
+                        else -> stream.channels?.toString() ?: ""
+                    }
+
+                    val codecText = when (stream.codec) {
+                        "truehd" -> "TRUEHD"
+                        "eac3" -> "EAC3"
+                        "aac" -> "AAC"
+                        "ac3" -> "DD"
+                        "dca", "dts" -> "DTS"
+                        else -> stream.codec ?: ""
+                    }
+
+                    val isAtmos = stream.title?.contains("atmos", ignoreCase = true) == true ||
+                        stream.codec?.contains("atmos", ignoreCase = true) == true
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            modifier = Modifier.size(36.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Speaker,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.padding(8.dp),
+                            )
+                        }
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (channelText.isNotEmpty()) MetadataTag(text = channelText, icon = Icons.Outlined.SurroundSound)
+                            MetadataTag(text = codecText)
+                            if (isAtmos) MetadataTag(text = "ATMOS")
+                        }
+                    }
+                }
+
+                // Air Date & Runtime (MM - DD - YYYY)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    episode.premiereDate?.let { date ->
+                        // Input format is typically 2024-01-23T00:00:00Z
+                        val dateStr = date.toString().substringBefore('T')
+                        val parts = dateStr.split("-")
+                        if (parts.size == 3) {
+                            val formattedDate = "${parts[1]} - ${parts[2]} - ${parts[0]}" // MM - DD - YYYY
+                            DetailInfoRow(label = "Aired", value = formattedDate)
+                        }
+                    }
+                    
+                    episode.runTimeTicks?.let { ticks ->
+                        val minutes = (ticks / 10_000_000 / 60).toInt()
+                        DetailInfoRow(label = "Duration", value = "${minutes}m")
+                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun MetadataTag(
+    text: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        shape = RoundedCornerShape(4.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+        modifier = modifier
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
@@ -639,7 +786,7 @@ private fun ImmersiveCastSection(
     modifier: Modifier = Modifier,
 ) {
     val perfConfig = rememberImmersivePerformanceConfig()
-    val cast = people.filter { it.type.toString().lowercase() in listOf("actor", "gueststar") }.take(perfConfig.maxRowItems)
+    val cast = people.filter { it.type.toString() in listOf("actor", "gueststar") }.take(perfConfig.maxRowItems)
     if (cast.isEmpty()) return
 
     Column(modifier = modifier) {

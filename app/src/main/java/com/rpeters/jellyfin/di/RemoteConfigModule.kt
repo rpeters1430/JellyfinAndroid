@@ -31,31 +31,7 @@ object RemoteConfigModule {
         remoteConfig.setConfigSettingsAsync(configSettings)
 
         // Set default values for feature flags
-        // All immersive UI elements are now enabled by default
         val defaults = mapOf(
-            // Immersive UI feature flags
-            "enable_immersive_ui" to true,
-
-            // Home & Main Screens
-            "immersive_home_screen" to true,
-            "immersive_library_screen" to true,
-            "immersive_search_screen" to true,
-            "immersive_favorites_screen" to true,
-
-            // Detail Screens
-            "immersive_movie_detail" to true,
-            "immersive_tv_show_detail" to true,
-            "immersive_tv_season" to true,
-            "immersive_tv_episode_detail" to true,
-            "immersive_album_detail" to true,
-            "immersive_home_video_detail" to true,
-
-            // Browse Screens
-            "immersive_movies_browse" to true,
-            "immersive_tv_browse" to true,
-            "immersive_home_videos_browse" to true,
-            "immersive_music_browse" to true,
-
             // AI Feature Flags
             "enable_ai_features" to true,
             "ai_force_pro_model" to false,
@@ -73,10 +49,6 @@ object RemoteConfigModule {
             "video_player_seek_interval_ms" to 10000L,
             "show_transcoding_diagnostics" to true,
             "experimental_player_buffer_ms" to 5000L,
-
-            // Legacy grouped flags
-            "immersive_detail_screens" to true,
-            "immersive_browse_screens" to true,
         )
         remoteConfig.setDefaultsAsync(defaults)
 

@@ -27,12 +27,15 @@ data class TVSeasonState(
     val seasonEpisodeErrors: Map<String, String> = emptyMap(),
     val isSimilarSeriesLoading: Boolean = false,
     val errorMessage: String? = null,
+    val aiSummary: String? = null,
+    val isLoadingAiSummary: Boolean = false,
 )
 
 @HiltViewModel
 class TVSeasonViewModel @Inject constructor(
     private val repository: JellyfinRepository,
     private val mediaRepository: JellyfinMediaRepository,
+    private val generativeAiRepository: com.rpeters.jellyfin.data.repository.GenerativeAiRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(TVSeasonState())
@@ -143,6 +146,29 @@ class TVSeasonViewModel @Inject constructor(
         val seriesId = _state.value.seriesDetails?.id?.toString()
         if (seriesId != null) {
             loadSeriesData(seriesId)
+        }
+    }
+
+    /**
+     * Generate AI summary of the series overview
+     */
+    fun generateAiSummary() {
+        val series = _state.value.seriesDetails ?: return
+        val overview = series.overview ?: return
+        val title = series.name ?: "Unknown"
+
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoadingAiSummary = true)
+
+            try {
+                val summary = generativeAiRepository.generateSummary(title, overview)
+                _state.value = _state.value.copy(
+                    aiSummary = summary,
+                    isLoadingAiSummary = false,
+                )
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            }
         }
     }
 

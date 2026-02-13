@@ -129,7 +129,7 @@ fun ImmersiveLibraryScreen(
                 contentPadding = PaddingValues(
                     start = 16.dp,
                     end = 16.dp,
-                    top = 80.dp, // ✅ Increased top padding to prevent title clipping
+                    top = 32.dp, // ✅ Reduced top padding to move cards up
                     bottom = 120.dp, // Extra space for MiniPlayer + FABs
                 ),
                 verticalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
@@ -259,7 +259,7 @@ fun ImmersiveLibraryScreen(
             exit = scaleOut() + fadeOut(),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = 16.dp, bottom = 96.dp), // Above MiniPlayer
+                .padding(end = 16.dp, bottom = 64.dp), // ✅ Moved lower (was 96dp)
         ) {
             FloatingActionButton(
                 onClick = onSearchClick,

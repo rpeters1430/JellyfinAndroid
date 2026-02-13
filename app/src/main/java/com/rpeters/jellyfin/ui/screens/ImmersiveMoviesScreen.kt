@@ -93,7 +93,7 @@ fun ImmersiveMoviesScreen(
                     )
                 } else {
                     LazyVerticalGrid(
-                        columns = GridCells.Adaptive(ImmersiveDimens.CardWidthSmall),
+                        columns = GridCells.Adaptive(minSize = 160.dp), // ✅ Adaptive columns: more columns on wider screens
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(
                             top = 0.dp,
@@ -121,7 +121,9 @@ fun ImmersiveMoviesScreen(
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(ImmersiveDimens.HeroHeightPhone)
+                                        .offset(x = -ImmersiveDimens.SpacingRowTight) // ✅ Pull to left edge
+                                        .width(androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp.dp) // ✅ Full width
+                                        .height(ImmersiveDimens.HeroHeightPhone + 60.dp) // ✅ Increase height to go all the way up
                                         .clipToBounds(),
                                 ) {
                                     ImmersiveHeroCarousel(

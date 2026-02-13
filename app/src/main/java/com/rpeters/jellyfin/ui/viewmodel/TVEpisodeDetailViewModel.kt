@@ -143,7 +143,15 @@ class TVEpisodeDetailViewModel @Inject constructor(
                     isLoadingAiSummary = false,
                 )
             } catch (e: CancellationException) {
+                // Coroutine was cancelled, reset loading state
+                _state.value = _state.value.copy(isLoadingAiSummary = false)
                 throw e
+            } catch (e: Exception) {
+                // Any other error (should be rare since generateSummary catches exceptions)
+                _state.value = _state.value.copy(
+                    aiSummary = "Error generating summary: ${e.message}",
+                    isLoadingAiSummary = false,
+                )
             }
         }
     }

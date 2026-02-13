@@ -332,10 +332,11 @@ private fun ImmersiveHomeContent(
     val stableOnItemLongPress = remember(onItemLongPress) { onItemLongPress }
     val viewingMood = appState.viewingMood
 
-    PullToRefreshBox(
+    ExpressivePullToRefreshBox(
         isRefreshing = appState.isLoading,
         onRefresh = onRefresh,
         modifier = modifier,
+        indicatorSize = 48.dp, // Standard expressive size
     ) {
         LazyColumn(
             state = listState,

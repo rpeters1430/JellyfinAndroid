@@ -361,10 +361,18 @@ object AiModule {
         private val stateHolder: AiBackendStateHolder,
         private val nanoClient: MlKitGenerativeModel,
     ) : AiTextModel {
+        @Volatile
+        private var lastNanoCheckTime: Long = 0L
+        private val nanoRecheckIntervalMs = 5 * 60 * 1000L // 5 minutes
+
         override suspend fun generateText(prompt: String): String {
             val state = stateHolder.state.value
-            if (!state.isUsingNano && !state.isDownloading) {
-                // Re-check availability in case Nano became available
+            val now = System.currentTimeMillis()
+
+            // Only re-check Nano availability every 5 minutes to avoid latency on every request
+            if (!state.isUsingNano && !state.isDownloading &&
+                (now - lastNanoCheckTime) >= nanoRecheckIntervalMs) {
+                lastNanoCheckTime = now
                 val result = checkNanoAvailability(nanoClient, stateHolder)
                 stateHolder.update(
                     isUsingNano = result.isAvailable,
@@ -372,16 +380,13 @@ object AiModule {
                     canRetryDownload = result.canRetry,
                     errorCode = result.errorCode,
                 )
-                if (!result.isAvailable) {
-                    return cloud.generateText(prompt)
-                }
             }
 
-            // Use cloud if currently downloading
-            return if (state.isDownloading) {
-                cloud.generateText(prompt)
-            } else {
+            // Use cloud if Nano not ready or currently downloading
+            return if (state.isUsingNano && !state.isDownloading) {
                 nano.generateText(prompt)
+            } else {
+                cloud.generateText(prompt)
             }
         }
 

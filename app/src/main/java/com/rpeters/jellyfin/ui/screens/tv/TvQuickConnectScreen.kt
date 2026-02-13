@@ -24,11 +24,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Sync
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -317,10 +317,9 @@ fun TvQuickConnectScreen(
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            CircularProgressIndicator(
+                            ExpressiveCircularLoading(
                                 modifier = Modifier.size(24.dp),
                                 color = TvMaterialTheme.colorScheme.onPrimary,
-                                strokeWidth = 2.dp,
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
@@ -333,10 +332,9 @@ fun TvQuickConnectScreen(
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            CircularProgressIndicator(
+                            ExpressiveCircularLoading(
                                 modifier = Modifier.size(24.dp),
                                 color = TvMaterialTheme.colorScheme.onPrimary,
-                                strokeWidth = 2.dp,
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
