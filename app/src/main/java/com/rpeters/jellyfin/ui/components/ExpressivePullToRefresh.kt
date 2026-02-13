@@ -8,6 +8,7 @@ import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -66,7 +67,9 @@ fun ExpressivePullToRefreshBox(
                     isRefreshing = isRefreshing,
                     color = indicatorColor,
                     size = indicatorSize,
-                    modifier = Modifier.align(Alignment.TopCenter),
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 80.dp), // Move lower as requested in #831
                 )
             } else {
                 ExpressivePullToRefreshIndicator(
@@ -74,7 +77,9 @@ fun ExpressivePullToRefreshBox(
                     isRefreshing = isRefreshing,
                     color = indicatorColor,
                     size = indicatorSize,
-                    modifier = Modifier.align(Alignment.TopCenter),
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 80.dp), // Move lower as requested in #831
                 )
             }
         },

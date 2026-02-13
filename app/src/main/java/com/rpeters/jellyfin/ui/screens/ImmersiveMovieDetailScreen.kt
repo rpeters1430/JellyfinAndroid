@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -25,6 +26,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.HdrOn
+import androidx.compose.material.icons.outlined.HighQuality
+import androidx.compose.material.icons.outlined.Speaker
+import androidx.compose.material.icons.outlined.SurroundSound
+import androidx.compose.material.icons.outlined.VideoFile
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ClosedCaption
 import androidx.compose.material.icons.rounded.Delete
@@ -45,6 +52,7 @@ import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material.icons.rounded.RateReview
 import androidx.compose.material.icons.rounded.Sd
 import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
@@ -146,11 +154,14 @@ fun ImmersiveMovieDetailScreen(
     val listState = remember(movie.id.toString()) { LazyListState() }
 
     Box(modifier = modifier.fillMaxSize()) {
-        // 1. Static Hero Background (Fixed)
+        // 1. Static Hero Background (Fixed) - Extended to edges
         StaticHeroSection(
             imageUrl = getBackdropUrl(movie),
-            height = ImmersiveDimens.HeroHeightPhone,
+            height = ImmersiveDimens.HeroHeightPhone + 60.dp, // ✅ Increased height for top bleed
             contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxWidth()
+                .offset(y = (-60).dp), // ✅ Bleed into status bar area
             content = {}, // Content moved to LazyColumn
         )
 
@@ -655,23 +666,58 @@ private fun MovieHeroContent(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                val ratingBadges = remember(movie) { buildRatingBadges(movie) }
-                if (ratingBadges.isNotEmpty()) {
-                    ratingBadges.forEach { rating ->
-                        ExternalRatingBadge(
-                            source = rating.source,
-                            value = rating.value,
+                // Community Rating with Yellow Star
+                movie.communityRating?.takeIf { it > 0f }?.let { rating ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = androidx.compose.material.icons.Icons.Default.Star,
+                            contentDescription = "Rating",
+                            tint = Color(0xFFFFD700), // Yellow Star
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = String.format(Locale.ROOT, "%.1f", rating),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
                         )
                     }
                 }
 
-                // Official Rating Badge
+                // Critic Rating with Trophy (Stars fallback)
+                movie.criticRating?.takeIf { it > 0f }?.let { rating ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Star, // Trophy icon fallback
+                            contentDescription = "Critic Rating",
+                            tint = Color(0xFFFFD700),
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "${rating.roundToInt()}%",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                        )
+                    }
+                }
+
+                // Official Rating Badge (Color Coded)
                 movie.officialRating?.let { rating ->
                     val normalizedRating = normalizeOfficialRating(rating) ?: return@let
+                    val tintColor = when (normalizedRating) {
+                        "G", "TV-G" -> Color(0xFF4CAF50) // Green
+                        "PG", "TV-PG" -> Color(0xFFFFC107) // Amber
+                        "PG-13", "TV-14" -> Color(0xFFFF9800) // Orange
+                        "R", "TV-MA", "NC-17" -> Color(0xFFF44336) // Red
+                        else -> Color.White.copy(alpha = 0.5f)
+                    }
                     Surface(
                         shape = RoundedCornerShape(6.dp),
-                        color = Color.White.copy(alpha = 0.2f),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)),
+                        color = tintColor.copy(alpha = 0.2f),
+                        border = BorderStroke(1.dp, tintColor.copy(alpha = 0.6f)),
                     ) {
                         Text(
                             text = normalizedRating,
@@ -727,7 +773,7 @@ private data class ImmersiveExternalRating(
 )
 
 private fun buildRatingBadges(movie: BaseItemDto): List<ImmersiveExternalRating> {
-    val providerKeys = movie.providerIds?.keys?.map { it.lowercase(Locale.ROOT) }?.toSet().orEmpty()
+    val providerKeys = movie.providerIds?.keys?.map { it }?.toSet().orEmpty()
     val hasImdb = "imdb" in providerKeys
     val hasTmdb = "tmdb" in providerKeys
     val badges = mutableListOf<ImmersiveExternalRating>()
@@ -892,33 +938,114 @@ private fun ImmersiveMovieInfoCard(
                 val videoStream = streams.findDefaultVideoStream()
                 val audioStream = streams.firstOrNull { it.type == MediaStreamType.AUDIO }
 
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    // New Enhanced Video Info Row
                     videoStream?.let { stream ->
-                        val icon = getResolutionIcon(stream.width, stream.height)
-                        val resolutionBadge = getResolutionBadge(stream.width, stream.height)
-                        val qualityText = when {
-                            (stream.height ?: 0) >= 2160 -> "4K"
-                            (stream.height ?: 0) >= 1440 -> "1440p"
-                            (stream.height ?: 0) >= 1080 -> "1080p"
-                            (stream.height ?: 0) >= 720 -> "720p"
-                            else -> resolutionBadge?.second ?: ""
+                        val height = stream.height ?: 0
+                        val resolutionText = when {
+                            height >= 4320 -> "8K"
+                            height >= 2160 -> "4K"
+                            height >= 1080 -> "FHD"
+                            height >= 720 -> "HD"
+                            else -> "SD"
                         }
 
-                        ImmersiveVideoInfoRow(
-                            label = stringResource(id = R.string.video),
-                            codec = "${stream.codec?.uppercase() ?: ""} $qualityText".trim(),
-                            icon = icon,
-                            resolutionBadge = resolutionBadge,
-                            is3D = false, // TODO: Find correct property for 3D
-                        )
+                        val codecText = when (stream.codec) {
+                            "hevc", "h265" -> "H265 HEVC"
+                            "h264", "avc" -> "H264 AVC"
+                            "av1" -> "AV1"
+                            "vp9" -> "VP9"
+                            else -> stream.codec ?: ""
+                        }
+
+                        val isHdr = stream.videoRange?.toString()?.contains("hdr", ignoreCase = true) == true ||
+                            stream.videoRangeType?.toString()?.contains("hdr", ignoreCase = true) == true
+
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.secondaryContainer,
+                                    modifier = Modifier.size(36.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.VideoFile,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        modifier = Modifier.padding(8.dp),
+                                    )
+                                }
+                                Column {
+                                    Text(
+                                        text = "Video",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        MetadataTag(text = resolutionText, icon = Icons.Outlined.HighQuality)
+                                        MetadataTag(text = codecText)
+                                        if (isHdr) MetadataTag(text = "HDR", icon = Icons.Outlined.HdrOn)
+                                        stream.bitDepth?.let { MetadataTag(text = "${it}-bit") }
+                                        stream.averageFrameRate?.let { MetadataTag(text = "${it.roundToInt()} FPS") }
+                                    }
+                                }
+                            }
+                        }
                     }
 
-                    audioStream?.codec?.let { codec ->
-                        ImmersiveInfoRow(
-                            label = stringResource(id = R.string.audio),
-                            value = codec.uppercase(),
-                            icon = Icons.Rounded.MusicNote,
-                        )
+                    // New Enhanced Audio Info Row
+                    audioStream?.let { stream ->
+                        val channelText = when (stream.channels) {
+                            8 -> "7.1"
+                            6 -> "5.1"
+                            2 -> "2.0"
+                            else -> stream.channels?.toString() ?: ""
+                        }
+
+                        val codecText = when (stream.codec) {
+                            "truehd" -> "TRUEHD"
+                            "eac3" -> "EAC3"
+                            "aac" -> "AAC"
+                            "ac3" -> "DD"
+                            "dca", "dts" -> "DTS"
+                            else -> stream.codec ?: ""
+                        }
+
+                        val isAtmos = stream.title?.contains("atmos", ignoreCase = true) == true ||
+                            stream.codec?.contains("atmos", ignoreCase = true) == true
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                modifier = Modifier.size(36.dp),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Speaker,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    modifier = Modifier.padding(8.dp),
+                                )
+                            }
+                            Column {
+                                Text(
+                                    text = "Audio",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    if (channelText.isNotEmpty()) MetadataTag(text = channelText, icon = Icons.Outlined.SurroundSound)
+                                    MetadataTag(text = codecText)
+                                    if (isAtmos) MetadataTag(text = "ATMOS")
+                                }
+                            }
+                        }
                     }
 
                     // Subtitles
@@ -940,7 +1067,7 @@ private fun ImmersiveMovieInfoCard(
 
             // Container Format
             movie.mediaSources?.firstOrNull()?.container?.let { container ->
-                DetailRow(label = "Container", value = container.uppercase())
+                DetailRow(label = "Container", value = container)
             }
 
             // Play progress
@@ -1380,7 +1507,7 @@ private fun ImmersiveSubtitleRow(
     }
 
     val labelText = currentSubtitle?.let {
-        val lang = it.language?.uppercase(Locale.ROOT) ?: "UNK"
+        val lang = it.language ?: "UNK"
         val title = it.title ?: it.displayTitle
         if (title != null && title != lang) "$lang - $title" else lang
     } ?: "None"
@@ -1443,7 +1570,7 @@ private fun ImmersiveSubtitleRow(
                 subtitles.forEach { stream ->
                     DropdownMenuItem(
                         text = {
-                            val lang = stream.language?.uppercase(Locale.ROOT) ?: "UNK"
+                            val lang = stream.language ?: "UNK"
                             val title = stream.title ?: stream.displayTitle
                             Text(if (title != null && title != lang) "$lang - $title" else lang)
                         },
@@ -1454,6 +1581,41 @@ private fun ImmersiveSubtitleRow(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun MetadataTag(
+    text: String,
+    icon: ImageVector? = null,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        shape = RoundedCornerShape(4.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+        modifier = modifier
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

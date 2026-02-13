@@ -65,7 +65,7 @@ fun ImmersiveHomeVideosScreen(
     var showSortMenu by remember { mutableStateOf(false) }
 
     val gridState = rememberLazyGridState()
-    val topBarVisible = true
+    val topBarVisible = false
 
     // Find all Home Videos libraries
     val homeVideosLibraries = remember(appState.libraries) {
@@ -198,11 +198,11 @@ fun ImmersiveHomeVideosScreen(
 
                     else -> {
                         LazyVerticalGrid(
-                            columns = GridCells.Adaptive(ImmersiveDimens.CardWidthSmall),
+                            columns = GridCells.Fixed(3), // ✅ Fixed columns to prevent stretching
                             state = gridState,
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(
-                                top = 0.dp,
+                                top = 16.dp, // ✅ Added top padding since hero is gone
                                 start = ImmersiveDimens.SpacingRowTight,
                                 end = ImmersiveDimens.SpacingRowTight,
                                 bottom = 120.dp,
@@ -210,42 +210,6 @@ fun ImmersiveHomeVideosScreen(
                             verticalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
                             horizontalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
                         ) {
-                            if (featuredVideos.isNotEmpty()) {
-                                item(
-                                    key = "hero_carousel",
-                                    span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) },
-                                ) {
-                                    val carouselItems = featuredVideos.map {
-                                        CarouselItem(
-                                            id = it.id.toString(),
-                                            title = it.name ?: "Home Video",
-                                            subtitle = it.productionYear?.toString() ?: "",
-                                            imageUrl = viewModel.getBackdropUrl(it)
-                                                ?: viewModel.getImageUrl(it) ?: "",
-                                        )
-                                    }
-
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(ImmersiveDimens.HeroHeightPhone)
-                                            .clipToBounds(),
-                                    ) {
-                                        ImmersiveHeroCarousel(
-                                            items = carouselItems,
-                                            onItemClick = { item ->
-                                                featuredVideos.find { it.id.toString() == item.id }
-                                                    ?.id?.let { onItemClick?.invoke(it.toString()) }
-                                            },
-                                            onPlayClick = { item ->
-                                                featuredVideos.find { it.id.toString() == item.id }
-                                                    ?.id?.let { onItemClick?.invoke(it.toString()) }
-                                            },
-                                        )
-                                    }
-                                }
-                            }
-
                             items(
                                 items = sortedVideos,
                                 key = { it.id.toString() },
@@ -262,6 +226,43 @@ fun ImmersiveHomeVideosScreen(
                         }
                     }
                 }
+            }
+        }
+
+        // Floating Header Controls (Back and Settings)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(horizontal = 12.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            // Back Button
+            Surface(
+                onClick = onBackClick,
+                shape = androidx.compose.foundation.shape.CircleShape,
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(12.dp).size(24.dp),
+                )
+            }
+
+            // Settings Icon
+            Surface(
+                onClick = { /* TODO: Add settings action if needed */ },
+                shape = androidx.compose.foundation.shape.CircleShape,
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Settings",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(12.dp).size(24.dp),
+                )
             }
         }
     }

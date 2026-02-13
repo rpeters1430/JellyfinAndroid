@@ -55,7 +55,9 @@
       "Bash(gh variable set:*)",
       "Bash(gh variable:*)",
       "Bash(gh api:*)",
-      "Bash(gh run list:*)"
+      "Bash(gh run list:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh issue comment:*)"
     ],
     "deny": [],
     "ask": [],

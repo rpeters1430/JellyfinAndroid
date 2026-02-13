@@ -1,5 +1,7 @@
 package com.rpeters.jellyfin.ui.navigation
 
+import android.net.Uri
+
 /**
  * Sealed class representing all possible screens in the app.
  * Each screen is represented as an object that extends this sealed class.
@@ -34,7 +36,7 @@ sealed class Screen(val route: String) {
             "stuff/$libraryId/$collectionType"
     }
     object Search : Screen("search?query={query}") {
-        fun createRoute(query: String) = "search?query=$query"
+        fun createRoute(query: String) = "search?query=${Uri.encode(query)}"
     }
     object AiAssistant : Screen("ai_assistant")
     object Favorites : Screen("favorites")

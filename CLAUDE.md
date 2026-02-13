@@ -67,17 +67,18 @@ scripts/gen-local-properties.ps1  # PowerShell (Windows)
 ## Project Architecture
 
 ### Project Identity
+- **Project Name**: Cinefin Android (formerly Jellyfin Android Client)
 - **Application ID**: `com.rpeters.jellyfin`
 - **Namespace**: `com.rpeters.jellyfin`
-- **Version**: Defined in `app/build.gradle.kts` (versionCode & versionName)
+- **Version**: Defined in `app/build.gradle.kts` (versionCode: 44, versionName: "14.12")
 
 ### High-Level Architecture
 This is a modern Android client for Jellyfin media servers built with:
-- **UI**: Jetpack Compose (BOM 2026.01.01) with Material 3 design system
+- **UI**: Jetpack Compose (BOM 2026.02.00) with Material 3 design system
 - **Architecture**: MVVM pattern with Repository pattern for data access
 - **DI**: Hilt 2.59.1 for dependency injection throughout the app
 - **Async**: Kotlin Coroutines 1.10.2 with StateFlow for reactive UI updates
-- **Media Playback**: ExoPlayer (Media3 1.9.2) with Jellyfin FFmpeg decoder
+- **Media Playback**: ExoPlayer (Media3 1.10.0-alpha01) with Jellyfin FFmpeg decoder
 - **Networking**: Retrofit 3.0.0 + OkHttp 5.3.2 + Jellyfin SDK 1.8.6
 - **Image Loading**: Coil 3.3.0 with custom performance optimizations
 - **Security**: Android Keystore encryption, dynamic certificate pinning with TOFU model
@@ -209,14 +210,15 @@ Key pattern: Use `Provider<T>` for circular dependencies (e.g., `Provider<Jellyf
   - Forgetting `advanceUntilIdle()` - coroutines won't execute
   - Using `every` instead of `coEvery` for Flows - causes inline function errors
   - Using `runBlocking { delay() }` instead of `advanceUntilIdle()` - unreliable
-- See docs/TESTING_GUIDE.md for complete ViewModel testing examples and detailed patterns
+- See `docs/development/TESTING_GUIDE.md` for complete ViewModel testing examples and detailed patterns
 
 ### Key Constants & Configuration
 - Centralized constants in `core/constants/Constants.kt`
-- SDK versions: compileSdk 36, targetSdk 35, minSdk 26 (Android 8.0+)
-- Java version: 21 with core library desugaring enabled
-- Kotlin version: 2.3.10 with KSP 2.3.5
-- Dependency versions: Centralized in `gradle/libs.versions.toml`
+- **SDK versions**: compileSdk 36, targetSdk 35, minSdk 26 (Android 8.0+)
+- **Current version**: versionCode 44, versionName "14.12"
+- **Java version**: 21 with core library desugaring enabled
+- **Kotlin version**: 2.3.10 with KSP 2.3.5
+- **Dependency versions**: Centralized in `gradle/libs.versions.toml`
 - **Release builds**: ProGuard/R8 enabled with shrinking and minification (`proguard-rules.pro`)
 - **Native debug symbols**: FULL debug symbols enabled for Play Console crash reporting
 - **Network security**: Custom configuration in `app/src/main/res/xml/network_security_config.xml`
@@ -301,17 +303,52 @@ The app includes AI-powered features using Google's Gemini models with automatic
   - Tracks AI usage, playback methods, cast sessions, UI interactions
 - **Configuration**: Requires `google-services.json` in `app/` directory
 
+## Documentation Resources
+
+This codebase has extensive documentation in the `docs/` directory:
+- **Central Index**: `docs/README.md` - Navigate all technical docs
+- **Features**: `docs/features/` - UI improvements, immersive UI progress, feature flags
+- **Development**: `docs/development/` - Testing guide, AI setup, contributing guidelines
+- **Plans**: `docs/plans/` - Roadmap, current status, phase progress
+- **Security**: `docs/security/` - TLS fixes and troubleshooting
+
+Key documents for Claude Code users:
+- `docs/development/TESTING_GUIDE.md` - ViewModel testing patterns (especially important)
+- `docs/development/AI_SETUP.md` - AI feature configuration
+- `docs/features/IMMERSIVE_UI_PROGRESS.md` - Immersive UI implementation status
+- `docs/plans/CURRENT_STATUS.md` - Verified project status and features
+- `docs/plans/ROADMAP.md` - Development roadmap and planned features
+
+## CI/CD & Automation
+
+### Gemini AI-Powered Issue Management
+The repository uses automated workflows powered by Google's Gemini AI:
+- **Auto-triaging**: Issues are automatically labeled when opened
+- **Fix planning**: Maintainers can comment `/fix` to generate AI fix plans
+- **Automated PRs**: Comment `/approve` on fix plans to create PRs with fixes
+- **Auto-merge**: Comment `/approve` on PRs to merge approved changes
+- **Workflows**: See `.github/workflows/gemini-*.yml` and `.github/GEMINI_README.md`
+- **Commands**: `/fix`, `/approve`, `/deny` (maintainers only)
+- **Security**: Only repository OWNER, MEMBER, and COLLABORATOR can use commands
+
+### Standard CI Workflows
+- ✅ Build verification on every push
+- 🧪 Unit testing with detailed reports
+- 🔍 Code quality checks (lint, security scans)
+- 📦 Dependency monitoring (weekly updates via Renovate)
+- 🚀 Automated releases on git tags
+
 ## Material 3 Design System
 
 ### Current Implementation
-- Using Material 3 alpha versions (1.5.0-alpha13, expressive: 1.5.0-alpha02)
+- Using Material 3 alpha versions (1.5.0-alpha14, expressive: 1.5.0-alpha02)
 - **Material 3 Expressive Components** enabled with official carousel implementation
 - **Official Material 3 Carousel** (androidx.compose.material3:material3-carousel) for hero content
   - `HorizontalUncontainedCarousel` for hero carousel with auto-scrolling (15 second intervals)
   - Maintains consistent item sizes ideal for large media content
   - Uses `CarouselState` and `CarouselDefaults` for state management
-- **Adaptive layouts** using Material 3 adaptive components (1.3.0-alpha07) for different screen sizes
-- Theme defined in `ui/theme/` with Jellyfin brand colors:
+- **Adaptive layouts** using Material 3 adaptive components (1.3.0-alpha08) for different screen sizes
+- Theme defined in `ui/theme/` with Cinefin brand colors:
   - Primary: Jellyfin Purple (#6200EE)
   - Secondary: Jellyfin Blue (#2962FF)
   - Tertiary: Jellyfin Teal (#00695C)
@@ -426,7 +463,7 @@ Example: `feat: add movie detail screen`, `fix: prevent crash on empty library`
 3. **Music Playback**: UI exists but playback controls incomplete
 4. **Offline Downloads**: Screen exists but core functionality incomplete
 
-Refer to CURRENT_STATUS.md for detailed feature status and ROADMAP.md for roadmap.
+Refer to `docs/plans/CURRENT_STATUS.md` for detailed feature status and `docs/plans/ROADMAP.md` for roadmap.
 
 ## Performance Optimization
 
@@ -476,7 +513,7 @@ Refer to CURRENT_STATUS.md for detailed feature status and ROADMAP.md for roadma
 - **Flow mocking failures**: Use `coEvery` instead of `every` for Flow properties
 - **Coroutine tests timing out**: Use `StandardTestDispatcher` with `advanceUntilIdle()`
 - **Mock not matching**: Add `any()` matchers for default parameters in repository methods
-- See TESTING_GUIDE.md for comprehensive testing patterns
+- See `docs/development/TESTING_GUIDE.md` for comprehensive testing patterns
 
 ## Code Quality Expectations
 

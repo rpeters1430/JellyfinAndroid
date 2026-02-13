@@ -143,6 +143,9 @@ fun ImmersiveTVShowDetailScreen(
                         onPlayEpisode = onPlayEpisode,
                         onRefresh = { viewModel.refresh() },
                         onPersonClick = onPersonClick,
+                        onGenerateAiSummary = { viewModel.generateAiSummary() },
+                        aiSummary = state.aiSummary,
+                        isLoadingAiSummary = state.isLoadingAiSummary,
                     )
                 }
             }
@@ -185,17 +188,23 @@ private fun ImmersiveShowDetailContent(
     onPlayEpisode: (BaseItemDto) -> Unit,
     onRefresh: () -> Unit,
     onPersonClick: (String, String) -> Unit,
+    onGenerateAiSummary: () -> Unit = {},
+    aiSummary: String? = null,
+    isLoadingAiSummary: Boolean = false,
 ) {
     val perfConfig = rememberImmersivePerformanceConfig()
     var expandedSeasonId by rememberSaveable { mutableStateOf<String?>(null) }
     val listState = remember(state.seriesDetails?.id?.toString()) { LazyListState() }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // 1. Static Hero Background (Fixed)
+        // 1. Static Hero Background (Fixed) - Extended to edges
         state.seriesDetails?.let { series ->
             StaticHeroSection(
                 imageUrl = getBackdropUrl(series),
-                height = ImmersiveDimens.HeroHeightPhone,
+                height = ImmersiveDimens.HeroHeightPhone + 60.dp, // ✅ Increased height
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .offset(y = (-60).dp), // ✅ Top bleed
                 content = {}, // Content moved to LazyColumn
             )
         }
@@ -233,7 +242,12 @@ private fun ImmersiveShowDetailContent(
             state.seriesDetails?.let { series ->
                 item {
                     Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
-                        ShowMetadataSection(series = series)
+                        ShowMetadataSection(
+                            series = series,
+                            onGenerateAiSummary = onGenerateAiSummary,
+                            aiSummary = aiSummary,
+                            isLoadingAiSummary = isLoadingAiSummary,
+                        )
                     }
                 }
             }
@@ -423,7 +437,12 @@ private fun ShowHeroContent(
 }
 
 @Composable
-private fun ShowMetadataSection(series: BaseItemDto) {
+private fun ShowMetadataSection(
+    series: BaseItemDto,
+    onGenerateAiSummary: () -> Unit = {},
+    aiSummary: String? = null,
+    isLoadingAiSummary: Boolean = false,
+) {
     Column(
         modifier = Modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -435,19 +454,26 @@ private fun ShowMetadataSection(series: BaseItemDto) {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             series.officialRating?.let { rating ->
-                normalizeOfficialRating(rating)?.let { normalized ->
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
-                    ) {
-                        Text(
-                            text = normalized,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        )
-                    }
+                val normalized = normalizeOfficialRating(rating) ?: return@let
+                val tintColor = when (normalized.uppercase()) {
+                    "G", "TV-G" -> Color(0xFF4CAF50) // Green
+                    "PG", "TV-PG" -> Color(0xFFFFC107) // Amber
+                    "PG-13", "TV-14" -> Color(0xFFFF9800) // Orange
+                    "R", "TV-MA", "NC-17" -> Color(0xFFF44336) // Red
+                    else -> Color.White.copy(alpha = 0.5f)
+                }
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = tintColor.copy(alpha = 0.2f),
+                    border = BorderStroke(1.dp, tintColor.copy(alpha = 0.6f)),
+                ) {
+                    Text(
+                        text = normalized,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    )
                 }
             }
 
@@ -469,15 +495,58 @@ private fun ShowMetadataSection(series: BaseItemDto) {
 
         // Overview (centered, 3 lines)
         series.overview?.let {
-            Text(
-                text = it,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-                lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.4,
-                textAlign = TextAlign.Center,
-            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.4,
+                    textAlign = TextAlign.Center,
+                )
+
+                // AI Summary button
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextButton(
+                        onClick = onGenerateAiSummary,
+                        enabled = !isLoadingAiSummary,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(if (aiSummary != null) "AI Summary" else "Generate AI Summary")
+                    }
+
+                    if (isLoadingAiSummary) {
+                        ExpressiveCircularLoading(size = 16.dp)
+                    }
+                }
+
+                // Show AI summary if available
+                aiSummary?.let { summary ->
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                        shape = RoundedCornerShape(12.dp),
+                    ) {
+                        Text(
+                            text = summary,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(12.dp),
+                        )
+                    }
+                }
+            }
         }
 
         // Genres (FlowRow with buttons, no horizontal scroll)

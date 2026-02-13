@@ -304,6 +304,7 @@ private fun ImmersiveCardContent(
                 overflow = TextOverflow.Ellipsis,
             )
 
+            // Subtitle text
             if (subtitle.isNotEmpty()) {
                 Text(
                     text = subtitle,
@@ -313,27 +314,6 @@ private fun ImmersiveCardContent(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 4.dp),
                 )
-            }
-
-            // Action buttons row
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                // Play button
-                IconButton(
-                    onClick = onPlayClick,
-                    modifier = Modifier.size(32.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.PlayCircle,
-                        contentDescription = "Play",
-                        tint = Color.White,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
             }
         }
     }

@@ -8,6 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import org.jellyfin.sdk.model.api.BaseItemDto
 import javax.inject.Inject
 import javax.inject.Named
@@ -31,6 +32,9 @@ class GenerativeAiRepository @Inject constructor(
     private val remoteConfig: RemoteConfigRepository,
     private val analytics: com.rpeters.jellyfin.utils.AnalyticsHelper,
 ) {
+    // Simple memory cache for AI summaries to avoid redundant API calls
+    private val summaryCache = mutableMapOf<String, String>()
+
     private fun getBackendName(usesPrimaryModel: Boolean): String {
         return if (usesPrimaryModel) {
             if (backendStateHolder.state.value.isUsingNano) "nano" else "cloud"
@@ -154,10 +158,19 @@ class GenerativeAiRepository @Inject constructor(
     /**
      * Generates a concise TL;DR summary of content overview.
      * Uses the primary model (Nano if available, cloud otherwise)
+     * Timeout: 15 seconds to prevent indefinite loading
      */
     suspend fun generateSummary(title: String, overview: String): String = withContext(Dispatchers.IO) {
         if (!isAiEnabled()) return@withContext overview
         if (overview.isBlank()) return@withContext "No overview available."
+
+        // Check cache first
+        val cacheKey = "${title}_${overview.hashCode()}"
+        summaryCache[cacheKey]?.let {
+            Log.v("GenerativeAi", "Returning cached summary for: $title")
+            return@withContext it
+        }
+
         logModelUsage("generateSummary", usesPrimaryModel = true)
 
         val template = remoteConfig.getString("ai_summary_prompt_template").takeIf { it.isNotBlank() }
@@ -194,11 +207,26 @@ class GenerativeAiRepository @Inject constructor(
         }
 
         try {
-            val response = getPrimaryModel().generateText(prompt)
+            // Apply 15-second timeout to prevent indefinite loading
+            val response = withTimeout(15_000L) {
+                getPrimaryModel().generateText(prompt)
+            }
             val success = response.isNotBlank()
             analytics.logAiEvent("summary", success, getBackendName(true))
-            response.ifBlank { "Unable to generate summary." }
+            val finalResponse = if (response.isBlank()) "Unable to generate summary." else response
+
+            // Store in cache if successful
+            if (success) {
+                summaryCache[cacheKey] = finalResponse
+            }
+
+            finalResponse
+        } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+            Log.w("GenerativeAi", "Summary generation timed out after 15s for: $title")
+            analytics.logAiEvent("summary", false, getBackendName(true))
+            "Summary generation timed out. Please try again."
         } catch (e: Exception) {
+            Log.e("GenerativeAi", "Summary generation failed for: $title", e)
             analytics.logAiEvent("summary", false, getBackendName(true))
             "Unable to generate summary right now."
         }
