@@ -107,3 +107,4 @@ Desktop.ini
 gha-creds-*.json
 
 .gemini/
+app/google-services.json
