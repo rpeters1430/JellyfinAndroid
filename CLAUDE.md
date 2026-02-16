@@ -70,7 +70,7 @@ scripts/gen-local-properties.ps1  # PowerShell (Windows)
 - **Project Name**: Cinefin Android (formerly Jellyfin Android Client)
 - **Application ID**: `com.rpeters.jellyfin`
 - **Namespace**: `com.rpeters.jellyfin`
-- **Version**: Defined in `app/build.gradle.kts` (versionCode: 46, versionName: "14.14")
+- **Version**: Defined in `app/build.gradle.kts` (versionCode: 49, versionName: "14.17")
 
 ### High-Level Architecture
 This is a modern Android client for Jellyfin media servers built with:
@@ -215,7 +215,7 @@ Key pattern: Use `Provider<T>` for circular dependencies (e.g., `Provider<Jellyf
 ### Key Constants & Configuration
 - Centralized constants in `core/constants/Constants.kt`
 - **SDK versions**: compileSdk 36, targetSdk 35, minSdk 26 (Android 8.0+)
-- **Current version**: versionCode 46, versionName "14.14"
+- **Current version**: versionCode 49, versionName "14.17"
 - **Java version**: 21 with core library desugaring enabled
 - **Kotlin version**: 2.3.10 with KSP 2.3.5
 - **Dependency versions**: Centralized in `gradle/libs.versions.toml`
@@ -341,7 +341,8 @@ The repository uses automated workflows powered by Google's Gemini AI:
 ## Material 3 Design System
 
 ### Current Implementation
-- Using Material 3 alpha versions (1.5.0-alpha14, expressive: 1.5.0-alpha02)
+- Using Material 3 forced to 1.5.0-alpha13 (via `resolutionStrategy` in build.gradle.kts)
+- Version catalog declares: material3: 1.5.0-alpha14, expressive: 1.5.0-alpha02, adaptive: 1.3.0-alpha08
 - **Material 3 Expressive Components** enabled with official carousel implementation
 - **Official Material 3 Carousel** (androidx.compose.material3:material3-carousel) for hero content
   - `HorizontalUncontainedCarousel` for hero carousel with auto-scrolling (15 second intervals)
