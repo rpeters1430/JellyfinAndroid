@@ -8,7 +8,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -208,53 +207,6 @@ fun ImmersiveHomeScreen(
                 tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(12.dp).size(24.dp),
             )
-        }
-
-        Surface(
-            onClick = onAiHealthCheck,
-            shape = CircleShape,
-            color = when {
-                appState.isCheckingAiHealth -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f)
-                appState.aiHealthCheckPassed == true -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f)
-                appState.aiHealthCheckPassed == false -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.9f)
-                else -> MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f)
-            },
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .statusBarsPadding()
-                .padding(horizontal = 12.dp, vertical = 12.dp),
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                if (appState.isCheckingAiHealth) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp,
-                    )
-                } else {
-                    Icon(
-                        imageVector = if (appState.aiHealthCheckPassed == true) Icons.Default.CheckCircle else Icons.Default.Error,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                    )
-                }
-                Text(
-                    text = if (appState.aiHealthCheckPassed == true) {
-                        "AI OK"
-                    } else if (appState.aiHealthCheckPassed == false) {
-                        "AI Error"
-                    } else if (appState.isCheckingAiHealth) {
-                        "AI Checking"
-                    } else {
-                        "AI Untested"
-                    },
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
         }
 
         // Snackbar host outside scaffold
