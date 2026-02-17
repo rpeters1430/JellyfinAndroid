@@ -161,6 +161,7 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
                 }
             },
             onSearchClick = { navController.navigate(Screen.Search.route) },
+            onAiAssistantClick = { navController.navigate(Screen.AiAssistant.route) },
             onSettingsClick = { navController.navigate(Screen.Profile.route) },
             onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
         )

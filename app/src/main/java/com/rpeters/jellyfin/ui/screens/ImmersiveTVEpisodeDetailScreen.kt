@@ -188,7 +188,7 @@ fun ImmersiveTVEpisodeDetailScreen(
                     item(key = "season_title") {
                         Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
                             Text(
-                                text = "More from this Season",
+                                text = "More From This Season",
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
