@@ -38,6 +38,9 @@ jobs:
           permission-issues: 'write'
           permission-pull-requests: 'write'
 
+      - name: 'Checkout repository'
+        uses: 'actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8' # ratchet:actions/checkout@v6
+
       - name: 'Run Gemini Fix'
         id: 'run_gemini_fix'
         uses: 'google-github-actions/run-gemini-cli@v0' # ratchet:exclude
