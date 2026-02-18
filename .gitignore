@@ -103,12 +103,13 @@ session_log_*
 .aider*
 
 # Gemini CLI
-# gemini-cli settings
-.gemini/
+# Ignore runtime files but allow commands/ and documentation
+.gemini/settings.json
+.gemini/telemetry.log
+.gemini/*.tmp
+.gemini/*.temp
 
 # GitHub App credentials
 gha-creds-*.json
-
-.gemini/
 app/google-services.json
 app/google-services.json
