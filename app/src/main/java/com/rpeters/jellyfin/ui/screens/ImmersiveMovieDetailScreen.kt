@@ -73,6 +73,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -969,6 +970,12 @@ private fun ImmersiveMovieInfoCard(
                             stream.videoRangeType.toString(),
                         )
 
+                        val codecIcon = if (codecText == "AVC") {
+                            ImageVector.vectorResource(id = R.drawable.avc_24px)
+                        } else {
+                            null
+                        }
+
                         VideoInfoCard(
                             resolution = resolution,
                             codec = codecText,
@@ -977,6 +984,7 @@ private fun ImmersiveMovieInfoCard(
                             isHdr = hdrType != null,
                             hdrType = hdrType ?: HdrType.HDR,
                             is3D = stream.videoDoViTitle?.contains("3D", ignoreCase = true) == true,
+                            codecIcon = codecIcon,
                         )
                     }
 

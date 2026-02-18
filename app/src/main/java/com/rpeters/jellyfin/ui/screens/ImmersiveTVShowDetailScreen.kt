@@ -11,7 +11,20 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
@@ -20,16 +33,34 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.SuggestionChipDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,9 +70,20 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
-import com.rpeters.jellyfin.ui.components.*
-import com.rpeters.jellyfin.ui.components.immersive.*
+import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
+import com.rpeters.jellyfin.ui.components.ExpressiveEmptyState
+import com.rpeters.jellyfin.ui.components.ExpressiveErrorState
+import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
+import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
+import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
+import com.rpeters.jellyfin.ui.components.PerformanceOptimizedLazyRow
+import com.rpeters.jellyfin.ui.components.immersive.AudioInfoCard
+import com.rpeters.jellyfin.ui.components.immersive.HdrType
+import com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize
+import com.rpeters.jellyfin.ui.components.immersive.ImmersiveMediaCard
+import com.rpeters.jellyfin.ui.components.immersive.ResolutionQuality
 import com.rpeters.jellyfin.ui.components.immersive.StaticHeroSection
+import com.rpeters.jellyfin.ui.components.immersive.VideoInfoCard
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
@@ -427,18 +469,18 @@ private fun ShowHeroContent(
             ) {
                 Icon(Icons.Default.PlayArrow, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
+                val userData = series.userData
                 Text(
                     text = when {
                         series.isCompletelyWatched() -> "Rewatch"
-                        series.userData?.playedPercentage != null && series.userData.playedPercentage!! > 0 -> "Watch Next"
+                        userData?.playedPercentage != null && userData.playedPercentage!! > 0 -> "Watch Next"
                         else -> "Start Watching Series"
-                    },
+                    }
                 )
             }
         }
     }
 }
-
 @Composable
 private fun ShowMetadataSection(
     series: BaseItemDto,
@@ -547,6 +589,81 @@ private fun ShowMetadataSection(
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.padding(12.dp),
                         )
+                    }
+                }
+
+                // ✨ Beautiful Material 3 Expressive Media Info Cards
+                series.mediaSources?.firstOrNull()?.mediaStreams?.let { streams ->
+                    val videoStream = streams.find { it.type == org.jellyfin.sdk.model.api.MediaStreamType.VIDEO }
+                    val audioStream = streams.find { it.type == org.jellyfin.sdk.model.api.MediaStreamType.AUDIO }
+
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        // Video Info Card
+                        videoStream?.let { stream ->
+                            val resolution = ResolutionQuality.fromResolution(stream.width, stream.height)
+                            val codecText = when (stream.codec?.lowercase()) {
+                                "hevc", "h265" -> "HEVC"
+                                "h264", "avc" -> "AVC"
+                                "av1" -> "AV1"
+                                "vp9" -> "VP9"
+                                else -> stream.codec?.uppercase() ?: ""
+                            }
+                            val hdrType = HdrType.detect(
+                                stream.videoRange.toString(),
+                                stream.videoRangeType.toString(),
+                            )
+
+                            val codecIcon = if (codecText == "AVC") {
+                                ImageVector.vectorResource(id = R.drawable.avc_24px)
+                            } else {
+                                null
+                            }
+
+                            VideoInfoCard(
+                                resolution = resolution,
+                                codec = codecText,
+                                bitDepth = stream.bitDepth,
+                                frameRate = stream.averageFrameRate?.toDouble(),
+                                isHdr = hdrType != null,
+                                hdrType = hdrType ?: HdrType.HDR,
+                                codecIcon = codecIcon,
+                            )
+                        }
+
+                        // Audio Info Card
+                        audioStream?.let { stream ->
+                            val channelText = when (stream.channels) {
+                                8 -> "7.1"
+                                6 -> "5.1"
+                                2 -> "Stereo"
+                                1 -> "Mono"
+                                else -> stream.channels?.toString()?.let { "$it.0" } ?: ""
+                            }
+
+                            val codecText = when (stream.codec?.lowercase()) {
+                                "truehd" -> "TrueHD"
+                                "eac3" -> "DD+"
+                                "aac" -> "AAC"
+                                "ac3" -> "DD"
+                                "dca", "dts" -> "DTS"
+                                "dtshd" -> "DTS-HD"
+                                "flac" -> "FLAC"
+                                else -> stream.codec?.uppercase() ?: ""
+                            }
+
+                            val isAtmos = stream.title?.contains("atmos", ignoreCase = true) == true ||
+                                stream.codec?.contains("atmos", ignoreCase = true) == true
+
+                            AudioInfoCard(
+                                channels = channelText,
+                                codec = codecText,
+                                isAtmos = isAtmos,
+                                language = stream.language?.uppercase(),
+                            )
+                        }
                     }
                 }
             }

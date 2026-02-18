@@ -6,7 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -25,35 +24,56 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.HdrOn
-import androidx.compose.material.icons.outlined.HighQuality
-import androidx.compose.material.icons.outlined.Speaker
-import androidx.compose.material.icons.outlined.SurroundSound
-import androidx.compose.material.icons.outlined.VideoFile
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.rounded.Person
-import androidx.compose.material3.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import coil3.compose.SubcomposeAsyncImage
-import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
-import com.rpeters.jellyfin.ui.components.*
-import com.rpeters.jellyfin.ui.components.immersive.*
+import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
+import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
+import com.rpeters.jellyfin.ui.components.PerformanceOptimizedLazyRow
+import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
+import com.rpeters.jellyfin.ui.components.immersive.AudioInfoCard
+import com.rpeters.jellyfin.ui.components.immersive.HdrType
+import com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize
+import com.rpeters.jellyfin.ui.components.immersive.ImmersiveMediaCard
+import com.rpeters.jellyfin.ui.components.immersive.OverlayGradientScrim
+import com.rpeters.jellyfin.ui.components.immersive.ResolutionQuality
 import com.rpeters.jellyfin.ui.components.immersive.StaticHeroSection
+import com.rpeters.jellyfin.ui.components.immersive.VideoInfoCard
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
@@ -63,7 +83,6 @@ import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.utils.isWatched
 import org.jellyfin.sdk.model.api.BaseItemDto
 import java.util.Locale
-import kotlin.math.roundToInt
 
 /**
  * Immersive TV Episode Detail screen.
@@ -456,7 +475,7 @@ private fun EpisodeOverviewSection(
         // Playback Capability
         playbackAnalysis?.let { PlaybackStatusBadge(analysis = it) }
 
-        // ✅ Enhanced Metadata Section (Grid-like tagging)
+        // ✅ Enhanced Metadata Section
         Surface(
             shape = RoundedCornerShape(12.dp),
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
@@ -464,112 +483,79 @@ private fun EpisodeOverviewSection(
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                // Video Info
-                episode.mediaSources?.firstOrNull()?.mediaStreams?.find { it.type == org.jellyfin.sdk.model.api.MediaStreamType.VIDEO }?.let { stream ->
-                    val width = stream.width ?: 0
-                    val height = stream.height ?: 0
-                    val resolutionText = when {
-                        height >= 4320 || width >= 7680 -> "8K"
-                        height >= 2160 || width >= 3840 -> "4K"
-                        height >= 1080 || width >= 1920 -> "FHD"
-                        height >= 720 || width >= 1280 -> "HD"
-                        else -> "SD"
-                    }
-                    val codecText = when (stream.codec) {
-                        "hevc", "h265" -> "H265 HEVC"
-                        "h264", "avc" -> "H264 AVC"
-                        "av1" -> "AV1"
-                        "vp9" -> "VP9"
-                        else -> stream.codec ?: ""
-                    }
-                    val isHdr = stream.videoRange.toString().contains("hdr", ignoreCase = true) ||
-                        stream.videoRangeType.toString().contains("hdr", ignoreCase = true)
+                // Media Info Cards
+                episode.mediaSources?.firstOrNull()?.mediaStreams?.let { streams ->
+                    val videoStream = streams.find { it.type == org.jellyfin.sdk.model.api.MediaStreamType.VIDEO }
+                    val audioStream = streams.find { it.type == org.jellyfin.sdk.model.api.MediaStreamType.AUDIO }
 
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.secondaryContainer,
-                            modifier = Modifier.size(40.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.VideoFile,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                modifier = Modifier.padding(6.dp),
-                            )
-                        }
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            MetadataTag(
-                                text = resolutionText,
-                                icon = Icons.Outlined.HighQuality,
-                                iconSize = 20.dp,
-                            )
-                            MetadataTag(text = codecText)
-                            if (isHdr) {
-                                MetadataTag(
-                                    text = "HDR",
-                                    icon = Icons.Outlined.HdrOn,
-                                    iconSize = 20.dp,
-                                )
+                        // Video Info Card
+                        videoStream?.let { stream ->
+                            val resolution = ResolutionQuality.fromResolution(stream.width, stream.height)
+                            val codecText = when (stream.codec?.lowercase()) {
+                                "hevc", "h265" -> "HEVC"
+                                "h264", "avc" -> "AVC"
+                                "av1" -> "AV1"
+                                "vp9" -> "VP9"
+                                else -> stream.codec?.uppercase() ?: ""
                             }
-                            stream.bitDepth?.let { MetadataTag(text = "$it-bit") }
-                            stream.averageFrameRate?.let { MetadataTag(text = "${it.roundToInt()} FPS") }
-                        }
-                    }
-                }
+                            val hdrType = HdrType.detect(
+                                stream.videoRange.toString(),
+                                stream.videoRangeType.toString(),
+                            )
 
-                // Audio Info
-                episode.mediaSources?.firstOrNull()?.mediaStreams?.find { it.type == org.jellyfin.sdk.model.api.MediaStreamType.AUDIO }?.let { stream ->
-                    val channelText = when (stream.channels) {
-                        8 -> "7.1"
-                        6 -> "5.1"
-                        2 -> "2.0"
-                        else -> stream.channels?.toString() ?: ""
-                    }
+                            val codecIcon = if (codecText == "AVC") {
+                                ImageVector.vectorResource(id = R.drawable.avc_24px)
+                            } else {
+                                null
+                            }
 
-                    val codecText = when (stream.codec) {
-                        "truehd" -> "TRUEHD"
-                        "eac3" -> "EAC3"
-                        "aac" -> "AAC"
-                        "ac3" -> "DD"
-                        "dca", "dts" -> "DTS"
-                        else -> stream.codec ?: ""
-                    }
-
-                    val isAtmos = stream.title?.contains("atmos", ignoreCase = true) == true ||
-                        stream.codec?.contains("atmos", ignoreCase = true) == true
-
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.secondaryContainer,
-                            modifier = Modifier.size(40.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Speaker,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                modifier = Modifier.padding(6.dp),
+                            VideoInfoCard(
+                                resolution = resolution,
+                                codec = codecText,
+                                bitDepth = stream.bitDepth,
+                                frameRate = stream.averageFrameRate?.toDouble(),
+                                isHdr = hdrType != null,
+                                hdrType = hdrType ?: HdrType.HDR,
+                                codecIcon = codecIcon,
                             )
                         }
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            if (channelText.isNotEmpty()) {
-                                MetadataTag(
-                                    text = channelText,
-                                    icon = Icons.Outlined.SurroundSound,
-                                    iconSize = 20.dp,
-                                )
+
+                        // Audio Info Card
+                        audioStream?.let { stream ->
+                            val channelText = when (stream.channels) {
+                                8 -> "7.1"
+                                6 -> "5.1"
+                                2 -> "Stereo"
+                                1 -> "Mono"
+                                else -> stream.channels?.toString()?.let { "$it.0" } ?: ""
                             }
-                            MetadataTag(text = codecText)
-                            if (isAtmos) MetadataTag(text = "ATMOS")
+
+                            val codecText = when (stream.codec?.lowercase()) {
+                                "truehd" -> "TrueHD"
+                                "eac3" -> "DD+"
+                                "aac" -> "AAC"
+                                "ac3" -> "DD"
+                                "dca", "dts" -> "DTS"
+                                "dtshd" -> "DTS-HD"
+                                "flac" -> "FLAC"
+                                else -> stream.codec?.uppercase() ?: ""
+                            }
+
+                            val isAtmos = stream.title?.contains("atmos", ignoreCase = true) == true ||
+                                stream.codec?.contains("atmos", ignoreCase = true) == true
+
+                            AudioInfoCard(
+                                channels = channelText,
+                                codec = codecText,
+                                isAtmos = isAtmos,
+                                language = stream.language?.uppercase(),
+                            )
                         }
                     }
                 }

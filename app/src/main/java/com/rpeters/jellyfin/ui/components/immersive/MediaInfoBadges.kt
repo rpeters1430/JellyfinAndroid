@@ -20,9 +20,11 @@ import androidx.compose.material.icons.outlined.GraphicEq
 import androidx.compose.material.icons.outlined.HdrOn
 import androidx.compose.material.icons.outlined.SurroundSound
 import androidx.compose.material.icons.outlined.VideoFile
+import androidx.compose.material.icons.rounded._4k
 import androidx.compose.material.icons.rounded.Hd
 import androidx.compose.material.icons.rounded.HighQuality
 import androidx.compose.material.icons.rounded.SdCard
+import androidx.compose.material.icons.rounded.SurroundSound
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -38,9 +40,11 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rpeters.jellyfin.R
 
 /**
  * Material 3 Expressive media quality badge with gradient background
@@ -316,6 +320,7 @@ fun VideoInfoCard(
     isHdr: Boolean = false,
     hdrType: HdrType = HdrType.HDR,
     is3D: Boolean = false,
+    codecIcon: ImageVector? = null,
     modifier: Modifier = Modifier,
 ) {
     MediaInfoCard(
@@ -335,7 +340,7 @@ fun VideoInfoCard(
                 HdrBadge(hdrType = hdrType)
             }
 
-            CodecBadge(text = codec)
+            CodecBadge(text = codec, icon = codecIcon)
 
             bitDepth?.let {
                 CodecBadge(text = "$it-bit")
@@ -426,7 +431,7 @@ enum class ResolutionQuality(
     ),
     UHD_4K(
         label = "4K",
-        icon = Icons.Rounded.HighQuality,
+        icon = Icons.Rounded._4k,
         gradientColors = listOf(
             Color(0xFFFF6B6B), // Coral red
             Color(0xFFEE5A6F), // Rose

@@ -1,4 +1,5 @@
 <resources>
+    <string name="ai_assistant">AI Assistant</string>
     <!-- App Name -->
     <string name="app_name">Cinefin</string>
     <string name="default_username">User</string>
