@@ -94,7 +94,7 @@ jobs:
                     "issue_read",
                     "pull_request_read",
                     "pull_request_review_write",
-                    "search_code"
+                    "search_code",
                     "create_or_update_file",
                     "create_pull_request",
                     "list_repository_contents",
