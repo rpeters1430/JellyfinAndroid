@@ -97,7 +97,7 @@ After reading the plan and creating the GitHub issue:
 - [docs/CAST_ISSUE_TEMPLATE.md](./CAST_ISSUE_TEMPLATE.md) - GitHub issue template
 - [CURRENT_STATUS.md](../CURRENT_STATUS.md) - Current app status
 - [ROADMAP.md](../ROADMAP.md) - Overall roadmap
-- [CLAUDE.md](../CLAUDE.md) - Development guidelines
+- [CLAUDE.md](../development/CLAUDE.md) - Development guidelines
 
 ## 💡 Tips for Success
 

@@ -322,7 +322,7 @@ When completing a task:
 ## Related Documentation
 
 - [docs/IMPROVEMENT_PLAN.md](docs/IMPROVEMENT_PLAN.md) - Detailed technical improvement plan (transcoding, security, accessibility)
-- [CLAUDE.md](CLAUDE.md) - Development guidelines
+- [CLAUDE.md](../development/CLAUDE.md) - Development guidelines
 - [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution process
 - [MATERIAL3_EXPRESSIVE.md](MATERIAL3_EXPRESSIVE.md) - M3 Expressive components
 - [docs/TESTING_GUIDE.md](docs/TESTING_GUIDE.md) - Testing patterns

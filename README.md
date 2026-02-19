@@ -305,7 +305,7 @@ This app respects your privacy and data security:
 - **Direct server connection** - All media streaming flows directly between your device and your Jellyfin server
 - **Limited analytics** - Only crash reports and performance metrics (via Firebase) for app stability
 
-For detailed information, see our [Privacy Policy](privacy-policy.md).
+For detailed information, see our [Privacy Policy](docs/legal/privacy-policy.md).
 
 ## 📄 License
 

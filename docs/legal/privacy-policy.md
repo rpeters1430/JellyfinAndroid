@@ -160,10 +160,10 @@ We take data security seriously and implement industry-standard measures to prot
 - **Export:** You can manually record your server connection details before uninstalling
 
 ### 7.2 Control Over Anonymous Analytics
-While we do not offer an in-app opt-out (as data is already anonymous), you can:
-- **Disable Crashlytics:** Firebase Crashlytics respects the Android opt-out settings
-- **Use Privacy-Focused Alternatives:** Consider using open-source builds without Firebase integration
-- **Contact Us:** Request information about your anonymous data (though we cannot identify individual users)
+- While we do not offer an in-app opt-out (as data is already anonymous), you can:
+  - **Disable Crashlytics:** Firebase Crashlytics respects the Android opt-out settings
+  - **Use Privacy-Focused Alternatives:** Consider using open-source builds without Firebase integration
+  - **Contact Us:** Request information about your anonymous data (though we cannot identify individual users)
 
 ### 7.3 Regional Privacy Rights
 
@@ -184,7 +184,7 @@ While we do not offer an in-app opt-out (as data is already anonymous), you can:
 - We respect all applicable data protection laws and regulations
 - Contact us to exercise any rights available under your local laws
 
-To exercise any of these rights, please contact us at the email address listed in Section 11.
+To exercise any of these rights, please contact us at the email address listed in Section 12.
 
 ## 8. Children's Privacy
 
@@ -192,7 +192,7 @@ The App is not directed to children under the age of 13 (or the applicable age o
 
 We do **not** knowingly collect personal information from children under 13. The anonymous diagnostic data we collect through Firebase does not include age information and cannot be used to identify children.
 
-If you are a parent or guardian and believe your child has provided us with personal information, please contact us immediately at rpeters1430@gmail.com, and we will take steps to investigate and address the issue.
+If you are a parent or guardian and believe your child has provided us with personal information, please contact us immediately at [rpeters1430@gmail.com](mailto:rpeters1430@gmail.com), and we will take steps to investigate and address the issue.
 
 ## 9. International Data Transfers
 
@@ -235,15 +235,15 @@ We may update this Privacy Policy from time to time to reflect changes in our pr
 
 If you have questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us:
 
-**Email:** rpeters1430@gmail.com
-**GitHub Repository:** [https://github.com/rpeters1430/Cinefin](https://github.com/rpeters1430/Cinefin)
-**Privacy Policy URL:** [https://rpeters1430.github.io/Cinefin/privacy-policy.html](https://rpeters1430.github.io/Cinefin/privacy-policy.html)
+**Email:** [rpeters1430@gmail.com](mailto:rpeters1430@gmail.com)
+**GitHub:** [rpeters1430/Cinefin](https://github.com/rpeters1430/Cinefin)
+**Privacy Policy URL:** [rpeters1430.github.io/Cinefin/docs/legal/privacy-policy.html](https://rpeters1430.github.io/Cinefin/docs/legal/privacy-policy.html)
 
 We will respond to privacy inquiries within 30 days.
 
 ## 13. Governing Law
 
-This Privacy Policy is governed by and construed in accordance with the laws of the United States and the State of [Your State], without regard to conflict of law principles.
+This Privacy Policy is governed by and construed in accordance with the laws of the United States, without regard to conflict of law principles.
 
 For users in the European Economic Area, UK, or Switzerland, GDPR and local data protection laws also apply.
 

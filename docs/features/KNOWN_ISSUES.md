@@ -384,7 +384,7 @@ We welcome contributions to fix these issues! See [CONTRIBUTING.md](CONTRIBUTING
 - **[UPGRADE_PATH.md](UPGRADE_PATH.md)** - Dependency upgrade strategy
 - **[docs/IMPROVEMENT_PLAN.md](docs/IMPROVEMENT_PLAN.md)** - Technical debt and code quality focus
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute fixes
-- **[CLAUDE.md](CLAUDE.md)** - Development guidelines and architecture
+- **[CLAUDE.md](../development/CLAUDE.md)** - Development guidelines and architecture
 
 ---
 

@@ -200,7 +200,7 @@ This document provides a comprehensive snapshot of what works RIGHT NOW in the J
 - **[ROADMAP.md](ROADMAP.md)** - Future features and development roadmap
 - **[KNOWN_ISSUES.md](KNOWN_ISSUES.md)** - Active bugs with workarounds and fix status
 - **[UPGRADE_PATH.md](UPGRADE_PATH.md)** - Dependency upgrade strategy and version roadmap
-- **[CLAUDE.md](CLAUDE.md)** - Development guidelines and architecture details
+- **[CLAUDE.md](../development/CLAUDE.md)** - Development guidelines and architecture details
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution process and guidelines
 - **[TESTING_GUIDE.md](docs/TESTING_GUIDE.md)** - Testing patterns and best practices
 - **[IMPROVEMENT_PLAN.md](docs/IMPROVEMENT_PLAN.md)** - Technical debt and code quality improvements
