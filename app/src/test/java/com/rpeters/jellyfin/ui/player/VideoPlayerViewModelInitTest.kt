@@ -42,6 +42,7 @@ class VideoPlayerViewModelInitTest {
     private lateinit var mockAdaptiveBitrateMonitor: com.rpeters.jellyfin.data.playback.AdaptiveBitrateMonitor
     private lateinit var mockAnalyticsHelper: com.rpeters.jellyfin.utils.AnalyticsHelper
     private lateinit var mockOkHttpClient: okhttp3.OkHttpClient
+    private lateinit var mockPlaybackPreferencesRepository: com.rpeters.jellyfin.data.preferences.PlaybackPreferencesRepository
     private lateinit var castStateFlow: MutableStateFlow<CastState>
     private lateinit var playbackProgressFlow: MutableStateFlow<PlaybackProgress>
 
@@ -57,6 +58,7 @@ class VideoPlayerViewModelInitTest {
         mockAdaptiveBitrateMonitor = mockk(relaxed = true)
         mockAnalyticsHelper = mockk(relaxed = true)
         mockOkHttpClient = mockk(relaxed = true)
+        mockPlaybackPreferencesRepository = mockk(relaxed = true)
 
         // Create flows that CastManager and PlaybackProgressManager will expose
         castStateFlow = MutableStateFlow(CastState())
@@ -70,6 +72,7 @@ class VideoPlayerViewModelInitTest {
         // Mock the flows
         every { mockCastManager.castState } returns castStateFlow
         every { mockPlaybackProgressManager.playbackProgress } returns playbackProgressFlow
+        every { mockPlaybackPreferencesRepository.preferences } returns MutableStateFlow(com.rpeters.jellyfin.data.preferences.PlaybackPreferences.DEFAULT)
 
         // Mock initialize method
         every { mockCastManager.initialize() } returns Unit
@@ -103,6 +106,7 @@ class VideoPlayerViewModelInitTest {
             adaptiveBitrateMonitor = mockAdaptiveBitrateMonitor,
             analytics = mockAnalyticsHelper,
             okHttpClient = mockOkHttpClient,
+            playbackPreferencesRepository = mockPlaybackPreferencesRepository,
         )
 
         // Allow coroutines to process
@@ -132,6 +136,7 @@ class VideoPlayerViewModelInitTest {
             adaptiveBitrateMonitor = mockAdaptiveBitrateMonitor,
             analytics = mockAnalyticsHelper,
             okHttpClient = mockOkHttpClient,
+            playbackPreferencesRepository = mockPlaybackPreferencesRepository,
         )
 
         advanceUntilIdle()
@@ -158,6 +163,7 @@ class VideoPlayerViewModelInitTest {
             adaptiveBitrateMonitor = mockAdaptiveBitrateMonitor,
             analytics = mockAnalyticsHelper,
             okHttpClient = mockOkHttpClient,
+            playbackPreferencesRepository = mockPlaybackPreferencesRepository,
         )
 
         advanceUntilIdle()

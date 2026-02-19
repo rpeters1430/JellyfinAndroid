@@ -49,6 +49,8 @@ class OfflineDownloadManager @Inject constructor(
     private val repository: JellyfinRepository,
     private val okHttpClient: OkHttpClient,
     private val encryptedPreferences: com.rpeters.jellyfin.data.security.EncryptedPreferences,
+    private val dispatchers: com.rpeters.jellyfin.data.common.DispatcherProvider,
+    private val dataStore: androidx.datastore.core.DataStore<androidx.datastore.preferences.core.Preferences>,
 ) {
 
     private val _downloads = MutableStateFlow<List<OfflineDownload>>(emptyList())
@@ -59,7 +61,7 @@ class OfflineDownloadManager @Inject constructor(
 
     private val downloadJobs = ConcurrentHashMap<String, Job>()
     private val supervisorJob = SupervisorJob()
-    private val downloadScope = CoroutineScope(Dispatchers.IO + supervisorJob)
+    private val downloadScope = CoroutineScope(dispatchers.io + supervisorJob)
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -86,7 +88,7 @@ class OfflineDownloadManager @Inject constructor(
         quality: VideoQuality? = null,
         downloadUrl: String? = null,
     ): String {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatchers.io) {
             val download = createDownload(item, quality, downloadUrl)
             addDownload(download)
             executeDownload(download)
@@ -346,8 +348,8 @@ class OfflineDownloadManager @Inject constructor(
 
     private suspend fun loadDownloads() {
         try {
-            context.offlineDownloadsDataStore.data.collect { preferences ->
-                val downloadsJson = preferences[stringPreferencesKey(DOWNLOADS_KEY)] ?: "[]"
+            dataStore.data.collect { preferences ->
+                val downloadsJson = preferences[androidx.datastore.preferences.core.stringPreferencesKey(DOWNLOADS_KEY)] ?: "[]"
                 val downloads = json.decodeFromString<List<OfflineDownload>>(downloadsJson)
                 _downloads.update { downloads }
             }
@@ -358,9 +360,9 @@ class OfflineDownloadManager @Inject constructor(
 
     private suspend fun saveDownloads() {
         try {
-            context.offlineDownloadsDataStore.edit { preferences ->
+            dataStore.edit { preferences ->
                 val downloadsJson = json.encodeToString(_downloads.value)
-                preferences[stringPreferencesKey(DOWNLOADS_KEY)] = downloadsJson
+                preferences[androidx.datastore.preferences.core.stringPreferencesKey(DOWNLOADS_KEY)] = downloadsJson
             }
         } catch (e: CancellationException) {
             throw e
@@ -460,3 +462,4 @@ class OfflineDownloadManager @Inject constructor(
         }
     }
 }
+

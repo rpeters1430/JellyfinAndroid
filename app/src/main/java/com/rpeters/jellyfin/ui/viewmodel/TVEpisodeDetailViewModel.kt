@@ -23,6 +23,7 @@ data class TVEpisodeDetailState(
     val nextEpisode: BaseItemDto? = null,
     val seasonEpisodes: List<BaseItemDto> = emptyList(),
     val playbackAnalysis: PlaybackCapabilityAnalysis? = null,
+    val playbackProgress: com.rpeters.jellyfin.ui.player.PlaybackProgress? = null,
     val isLoading: Boolean = false,
     val aiSummary: String? = null,
     val isLoadingAiSummary: Boolean = false,
@@ -33,20 +34,47 @@ class TVEpisodeDetailViewModel @Inject constructor(
     private val mediaRepository: JellyfinMediaRepository,
     private val enhancedPlaybackUtils: EnhancedPlaybackUtils,
     private val generativeAiRepository: GenerativeAiRepository,
+    private val playbackProgressManager: com.rpeters.jellyfin.ui.player.PlaybackProgressManager,
     private val analytics: com.rpeters.jellyfin.utils.AnalyticsHelper,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(TVEpisodeDetailState())
     val state: StateFlow<TVEpisodeDetailState> = _state.asStateFlow()
 
+    init {
+        observePlaybackProgress()
+    }
+
+    private fun observePlaybackProgress() {
+        viewModelScope.launch {
+            playbackProgressManager.playbackProgress.collect { progress ->
+                val currentEpisode = _state.value.episode
+                if (currentEpisode != null && progress.itemId == currentEpisode.id.toString()) {
+                    // Only update if progress is actually for this item and has valid data
+                    if (progress.positionMs > 0 || progress.isWatched) {
+                        _state.value = _state.value.copy(playbackProgress = progress)
+                    }
+                }
+            }
+        }
+    }
+
     fun loadEpisodeDetails(episode: BaseItemDto, seriesInfo: BaseItemDto? = null) {
         analytics.logUiEvent("TVEpisodeDetail", "view_episode")
         viewModelScope.launch {
+            val episodeId = episode.id.toString()
             _state.value = _state.value.copy(
                 episode = episode,
                 seriesInfo = seriesInfo,
                 isLoading = true,
             )
+
+            // Also fetch initial progress from server
+            try {
+                playbackProgressManager.getResumePosition(episodeId)
+            } catch (e: Exception) {
+                // Ignore
+            }
 
             // Load playback analysis
             loadEpisodeAnalysis(episode)

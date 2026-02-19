@@ -50,6 +50,7 @@ This is a modern Android client for Jellyfin media servers (branded as Cinefin),
   - **TV:** `ui/navigation/TvNavGraph.kt`.
   - **Device Detection:** `DeviceTypeUtils.getDeviceType()` in `MainActivity.kt`.
 - **Data Access:** All SDK calls MUST go through Repositories (`JellyfinRepository`, `JellyfinAuthRepository`). Returns `ApiResult<T>`.
+- **Improvement System:** Follow the **Cinefin Improvement System (CIS)** for systematic code quality and performance (see `docs/plans/IMPROVEMENT_SYSTEM.md`).
 - **Security:**
   - **Storage:** `SecureCredentialManager` (Android Keystore).
   - **Network:** `network_security_config.xml` + TOFU Certificate Pinning.

@@ -53,7 +53,7 @@ fun ImmersiveHomeVideoDetailScreen(
     getImageUrl: (BaseItemDto) -> String?,
     getBackdropUrl: (BaseItemDto) -> String?,
     onBackClick: () -> Unit,
-    onPlayClick: (BaseItemDto) -> Unit = {},
+    onPlayClick: (BaseItemDto, Long?) -> Unit = { _, _ -> },
     onFavoriteClick: (BaseItemDto) -> Unit = {},
     onShareClick: (BaseItemDto) -> Unit = {},
     onDownloadClick: (BaseItemDto) -> Unit = {},
@@ -61,6 +61,7 @@ fun ImmersiveHomeVideoDetailScreen(
     onMarkWatchedClick: (BaseItemDto) -> Unit = {},
     onRefresh: () -> Unit = {},
     playbackAnalysis: PlaybackCapabilityAnalysis? = null,
+    playbackProgress: com.rpeters.jellyfin.ui.player.PlaybackProgress? = null,
     isRefreshing: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
@@ -70,6 +71,14 @@ fun ImmersiveHomeVideoDetailScreen(
     var showDeleteConfirmation by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val listState = rememberLazyListState()
+
+    // Refresh when screen is resumed to catch latest playback status
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
+            onRefresh()
+        }
+    }
 
     PerformanceMetricsTracker(
         enabled = com.rpeters.jellyfin.BuildConfig.DEBUG,
@@ -116,11 +125,26 @@ fun ImmersiveHomeVideoDetailScreen(
                     )
                 }
 
+                // Live Playback Progress Indicator
+                playbackProgress?.let { progress ->
+                    item(key = "playback_progress") {
+                        Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
+                            com.rpeters.jellyfin.ui.components.PlaybackProgressIndicator(
+                                progress = progress,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            )
+                        }
+                    }
+                }
+
                 // Large Play Button
                 item(key = "play_button", contentType = "action") {
                     Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
                         Button(
-                            onClick = { onPlayClick(item) },
+                            onClick = { 
+                                val resumePos = playbackProgress?.positionMs
+                                onPlayClick(item, resumePos) 
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = ImmersiveDimens.SpacingContentPadding)

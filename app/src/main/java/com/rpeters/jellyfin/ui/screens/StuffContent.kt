@@ -135,6 +135,8 @@ internal fun StuffGrid(
                 imageUrl = getImageUrl(stuffItem) ?: "",
                 rating = stuffItem.communityRating,
                 isFavorite = stuffItem.userData?.isFavorite == true,
+                isWatched = stuffItem.userData?.played == true,
+                watchProgress = (stuffItem.userData?.playedPercentage ?: 0.0).toFloat() / 100f,
                 onCardClick = { onItemClick(stuffItem.id.toString()) },
                 onPlayClick = {
                     // For home videos, trigger playback

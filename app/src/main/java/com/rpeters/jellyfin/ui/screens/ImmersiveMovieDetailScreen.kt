@@ -120,7 +120,7 @@ fun ImmersiveMovieDetailScreen(
     getLogoUrl: (BaseItemDto) -> String? = { null },
     getPersonImageUrl: (org.jellyfin.sdk.model.api.BaseItemPerson) -> String? = { null },
     onBackClick: () -> Unit,
-    onPlayClick: (BaseItemDto, Int?) -> Unit = { item, _ -> },
+    onPlayClick: (BaseItemDto, Int?, Long?) -> Unit = { item, _, _ -> },
     onFavoriteClick: (BaseItemDto) -> Unit = {},
     onShareClick: (BaseItemDto) -> Unit = {},
     onDeleteClick: (BaseItemDto) -> Unit = {},
@@ -131,6 +131,7 @@ fun ImmersiveMovieDetailScreen(
     onGenerateAiSummary: () -> Unit = {},
     aiSummary: String? = null,
     isLoadingAiSummary: Boolean = false,
+    playbackProgress: com.rpeters.jellyfin.ui.player.PlaybackProgress? = null,
     relatedItems: List<BaseItemDto> = emptyList(),
     playbackAnalysis: PlaybackCapabilityAnalysis? = null,
     whyYoullLoveThis: String? = null,
@@ -154,6 +155,14 @@ fun ImmersiveMovieDetailScreen(
 
     // Track scroll state - reset on navigation by using movie ID as key for remember
     val listState = remember(movie.id.toString()) { LazyListState() }
+
+    // Refresh when screen is resumed to catch latest playback status
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
+            onRefresh()
+        }
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         // 1. Static Hero Background (Fixed) - Extended to edges
@@ -282,6 +291,18 @@ fun ImmersiveMovieDetailScreen(
                     }
                 }
 
+                // Live Playback Progress Indicator
+                playbackProgress?.let { progress ->
+                    item(key = "playback_progress") {
+                        Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
+                            com.rpeters.jellyfin.ui.components.PlaybackProgressIndicator(
+                                progress = progress,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            )
+                        }
+                    }
+                }
+
                 // Play Button and Action Row
                 item {
                     Column(
@@ -294,7 +315,11 @@ fun ImmersiveMovieDetailScreen(
                     ) {
                         // Primary Play Button
                         Surface(
-                            onClick = { onPlayClick(movie, selectedSubtitleIndex) },
+                            onClick = { 
+                                // Use the latest position from playbackProgress if available
+                                val resumePos = playbackProgress?.positionMs ?: 0L
+                                onPlayClick(movie, selectedSubtitleIndex) 
+                            },
                             shape = RoundedCornerShape(12.dp),
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.fillMaxWidth(),

@@ -99,13 +99,15 @@ fun ImmersiveTVEpisodeDetailScreen(
     onBackClick: () -> Unit,
     onEpisodeClick: (BaseItemDto) -> Unit = {},
     onViewSeriesClick: () -> Unit = {},
-    onPlayClick: (BaseItemDto, Int?) -> Unit = { _, _ -> },
+    onPlayClick: (BaseItemDto, Int?, Long?) -> Unit = { _, _, _ -> },
     onDownloadClick: (BaseItemDto) -> Unit = {},
     onDeleteClick: (BaseItemDto) -> Unit = {},
     onFavoriteClick: (BaseItemDto) -> Unit = {},
     onMarkWatchedClick: (BaseItemDto) -> Unit = {},
+    onRefresh: () -> Unit = {},
     onPersonClick: (String, String) -> Unit = { _, _ -> },
     playbackAnalysis: PlaybackCapabilityAnalysis? = null,
+    playbackProgress: com.rpeters.jellyfin.ui.player.PlaybackProgress? = null,
     onGenerateAiSummary: () -> Unit = {},
     aiSummary: String? = null,
     isLoadingAiSummary: Boolean = false,
@@ -124,6 +126,14 @@ fun ImmersiveTVEpisodeDetailScreen(
     // ✅ Fix: Scroll to top when episode changes
     LaunchedEffect(episode.id) {
         listState.scrollToItem(0)
+    }
+
+    // Refresh when screen is resumed to catch latest playback status
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
+            onRefresh()
+        }
     }
 
     val heroImage = getBackdropUrl(episode).takeIf { !it.isNullOrBlank() }
@@ -157,7 +167,10 @@ fun ImmersiveTVEpisodeDetailScreen(
                     EpisodeHeroContent(
                         episode = episode,
                         seriesInfo = seriesInfo,
-                        onPlayClick = { onPlayClick(episode, null) },
+                        onPlayClick = { 
+                            val resumePos = playbackProgress?.positionMs
+                            onPlayClick(episode, null, resumePos) 
+                        },
                     )
                 }
 
@@ -169,6 +182,18 @@ fun ImmersiveTVEpisodeDetailScreen(
                             .height(1.dp)
                             .background(MaterialTheme.colorScheme.background),
                     )
+                }
+
+                // Live Playback Progress Indicator
+                playbackProgress?.let { progress ->
+                    item(key = "playback_progress") {
+                        Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
+                            com.rpeters.jellyfin.ui.components.PlaybackProgressIndicator(
+                                progress = progress,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            )
+                        }
+                    }
                 }
 
                 // 2. Overview & AI Summary

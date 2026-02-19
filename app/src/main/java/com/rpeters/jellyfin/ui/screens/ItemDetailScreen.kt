@@ -44,6 +44,7 @@ import javax.inject.Inject
 class ItemDetailViewModel @Inject constructor(
     private val mediaRepository: JellyfinMediaRepository,
     private val enhancedPlaybackUtils: EnhancedPlaybackUtils,
+    private val playbackProgressManager: com.rpeters.jellyfin.ui.player.PlaybackProgressManager,
 ) : ViewModel() {
     var item = mutableStateOf<BaseItemDto?>(null)
         private set
@@ -51,9 +52,36 @@ class ItemDetailViewModel @Inject constructor(
         private set
     var playbackAnalysis = mutableStateOf<com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis?>(null)
         private set
+    var playbackProgress = mutableStateOf<com.rpeters.jellyfin.ui.player.PlaybackProgress?>(null)
+        private set
+
+    init {
+        observePlaybackProgress()
+    }
+
+    private fun observePlaybackProgress() {
+        viewModelScope.launch {
+            playbackProgressManager.playbackProgress.collect { progress ->
+                val currentItem = item.value
+                if (currentItem != null && progress.itemId == currentItem.id.toString()) {
+                    // Only update if progress is actually for this item and has valid data
+                    if (progress.positionMs > 0 || progress.isWatched) {
+                        playbackProgress.value = progress
+                    }
+                }
+            }
+        }
+    }
 
     fun load(itemId: String) {
         viewModelScope.launch {
+            // Also fetch initial progress from server
+            try {
+                playbackProgressManager.getResumePosition(itemId)
+            } catch (e: Exception) {
+                // Ignore
+            }
+
             when (val result = mediaRepository.getItemDetails(itemId)) {
                 is ApiResult.Success -> {
                     item.value = result.data

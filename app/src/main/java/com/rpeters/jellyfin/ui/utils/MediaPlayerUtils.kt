@@ -31,7 +31,13 @@ object MediaPlayerUtils {
     /**
      * Launches the internal video player with enhanced features
      */
-    fun playMedia(context: Context, streamUrl: String, item: BaseItemDto, subtitleIndex: Int? = null) {
+    fun playMedia(
+        context: Context,
+        streamUrl: String,
+        item: BaseItemDto,
+        subtitleIndex: Int? = null,
+        startPosition: Long? = null
+    ) {
         if (item.type == BaseItemKind.AUDIO || item.type == BaseItemKind.MUSIC_ALBUM) {
             playAudio(context, streamUrl, item)
             return
@@ -39,11 +45,12 @@ object MediaPlayerUtils {
 
         try {
             if (BuildConfig.DEBUG) {
-                Log.d("MediaPlayerUtils", "Launching internal video player for: ${item.name}")
+                Log.d("MediaPlayerUtils", "Launching internal video player for: ${item.name} at position $startPosition")
             }
 
             val itemId = item.id.toString()
-            val resumePosition = item.userData?.playbackPositionTicks?.div(10_000) ?: 0L
+            // Use provided startPosition if available, otherwise fallback to item's userData
+            val resumePosition = startPosition ?: item.userData?.playbackPositionTicks?.div(10_000) ?: 0L
 
             val intent = VideoPlayerActivity.createIntent(
                 context = context,

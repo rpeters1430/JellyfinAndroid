@@ -108,6 +108,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
         }
         val item by detailViewModel.item
         val playbackAnalysis by detailViewModel.playbackAnalysis
+        val playbackProgress by detailViewModel.playbackProgress
         val error by detailViewModel.error
 
         item?.let { videoItem ->
@@ -116,13 +117,14 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 getImageUrl = { mainViewModel.getImageUrl(it) },
                 getBackdropUrl = { mainViewModel.getBackdropUrl(it) },
                 onBackClick = { navController.popBackStack() },
-                onPlayClick = { video ->
+                onPlayClick = { video, startPosition ->
                     val streamUrl = mainViewModel.getStreamUrl(video)
                     if (streamUrl != null) {
                         MediaPlayerUtils.playMedia(
                             context = navController.context,
                             streamUrl = streamUrl,
                             item = video,
+                            startPosition = startPosition
                         )
                     }
                 },
@@ -150,7 +152,12 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 onMarkWatchedClick = { video ->
                     mainViewModel.toggleWatchedStatus(video)
                 },
+                onRefresh = { 
+                    // Refresh current item
+                    item?.id?.toString()?.let { detailViewModel.load(it) }
+                },
                 playbackAnalysis = playbackAnalysis,
+                playbackProgress = playbackProgress,
             )
         } ?: run {
             val errorMessage = error
@@ -186,6 +193,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
         }
         val item by detailViewModel.item
         val playbackAnalysis by detailViewModel.playbackAnalysis
+        val playbackProgress by detailViewModel.playbackProgress
         val error by detailViewModel.error
         item?.let { videoItem ->
             ImmersiveHomeVideoDetailScreen(
@@ -193,13 +201,14 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 getImageUrl = { mainViewModel.getImageUrl(it) },
                 getBackdropUrl = { mainViewModel.getBackdropUrl(it) },
                 onBackClick = { navController.popBackStack() },
-                onPlayClick = { video ->
+                onPlayClick = { video, startPosition ->
                     val streamUrl = mainViewModel.getStreamUrl(video)
                     if (streamUrl != null) {
                         MediaPlayerUtils.playMedia(
                             context = navController.context,
                             streamUrl = streamUrl,
                             item = video,
+                            startPosition = startPosition
                         )
                     }
                 },
@@ -227,7 +236,12 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 onMarkWatchedClick = { video ->
                     mainViewModel.toggleWatchedStatus(video)
                 },
+                onRefresh = { 
+                    // Refresh current item
+                    item?.id?.toString()?.let { detailViewModel.load(it) }
+                },
                 playbackAnalysis = playbackAnalysis,
+                playbackProgress = playbackProgress,
             )
         } ?: if (error != null) {
             Column(
@@ -297,8 +311,9 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
             ImmersiveMovieDetailScreen(
                 movie = resolvedMovie,
                 relatedItems = detailState.similarMovies,
+                playbackProgress = detailState.playbackProgress,
                 onBackClick = { navController.popBackStack() },
-                onPlayClick = { movieItem, subtitleIndex ->
+                onPlayClick = { movieItem, subtitleIndex, startPosition ->
                     val streamUrl = mainViewModel.getStreamUrl(movieItem)
                     if (streamUrl != null) {
                         MediaPlayerUtils.playMedia(
@@ -306,6 +321,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                             streamUrl = streamUrl,
                             item = movieItem,
                             subtitleIndex = subtitleIndex,
+                            startPosition = startPosition
                         )
                     }
                 },
@@ -420,6 +436,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                     episode = episode,
                     seriesInfo = detailState.seriesInfo ?: series,
                     seasonEpisodes = detailState.seasonEpisodes,
+                    playbackProgress = detailState.playbackProgress,
                     getImageUrl = { mainViewModel.getImageUrl(it) },
                     getBackdropUrl = { mainViewModel.getBackdropUrl(it) },
                     onBackClick = { navController.popBackStack() },
@@ -436,7 +453,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                             }
                         }
                     },
-                    onPlayClick = { episodeItem, subtitleIndex ->
+                    onPlayClick = { episodeItem, subtitleIndex, startPosition ->
                         val streamUrl = mainViewModel.getStreamUrl(episodeItem)
                         if (streamUrl != null) {
                             MediaPlayerUtils.playMedia(
@@ -444,6 +461,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                                 streamUrl = streamUrl,
                                 item = episodeItem,
                                 subtitleIndex = subtitleIndex,
+                                startPosition = startPosition
                             )
                         }
                     },
@@ -458,6 +476,9 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                     },
                     onFavoriteClick = { mainViewModel.toggleFavorite(it) },
                     onMarkWatchedClick = { mainViewModel.toggleWatchedStatus(it) },
+                    onRefresh = { 
+                        episode?.let { ep -> viewModel.loadEpisodeDetails(ep, series) }
+                    },
                     onDeleteClick = { episodeItem ->
                         mainViewModel.deleteItem(episodeItem) { success, error ->
                             val context = navController.context

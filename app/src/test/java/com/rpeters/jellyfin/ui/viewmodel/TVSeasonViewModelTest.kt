@@ -28,8 +28,9 @@ import java.util.UUID
 class TVSeasonViewModelTest {
     private val repository: JellyfinRepository = mockk()
     private val mediaRepository: JellyfinMediaRepository = mockk()
+    private val generativeAiRepository: com.rpeters.jellyfin.data.repository.GenerativeAiRepository = mockk(relaxed = true)
     private val dispatcher = StandardTestDispatcher()
-    private val viewModel by lazy { TVSeasonViewModel(repository, mediaRepository) }
+    private val viewModel by lazy { TVSeasonViewModel(repository, mediaRepository, generativeAiRepository) }
 
     @Before
     fun setup() {

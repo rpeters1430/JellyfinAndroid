@@ -22,6 +22,7 @@ data class MovieDetailState(
     val movie: BaseItemDto? = null,
     val similarMovies: List<BaseItemDto> = emptyList(),
     val playbackAnalysis: PlaybackCapabilityAnalysis? = null,
+    val playbackProgress: com.rpeters.jellyfin.ui.player.PlaybackProgress? = null,
     val isLoading: Boolean = false,
     val isSimilarMoviesLoading: Boolean = false,
     val errorMessage: String? = null,
@@ -37,16 +38,50 @@ class MovieDetailViewModel @Inject constructor(
     private val mediaRepository: JellyfinMediaRepository,
     private val enhancedPlaybackUtils: EnhancedPlaybackUtils,
     private val generativeAiRepository: GenerativeAiRepository,
+    private val playbackProgressManager: com.rpeters.jellyfin.ui.player.PlaybackProgressManager,
     private val analytics: com.rpeters.jellyfin.utils.AnalyticsHelper,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MovieDetailState())
     val state: StateFlow<MovieDetailState> = _state.asStateFlow()
 
+    init {
+        observePlaybackProgress()
+    }
+
+    private fun observePlaybackProgress() {
+        viewModelScope.launch {
+            playbackProgressManager.playbackProgress.collect { progress ->
+                val currentMovie = _state.value.movie
+                if (currentMovie != null && progress.itemId == currentMovie.id.toString()) {
+                    // Only update if progress is actually for this item and has valid data
+                    if (progress.positionMs > 0 || progress.isWatched) {
+                        _state.value = _state.value.copy(playbackProgress = progress)
+                    }
+                    
+                    // If progress was updated externally (e.g. finished playing), 
+                    // we might want to refresh the movie metadata to get updated 'played' status
+                    if (progress.isWatched && currentMovie.userData?.played != true) {
+                        refresh()
+                    }
+                }
+            }
+        }
+    }
+
     fun loadMovieDetails(movieId: String) {
         analytics.logUiEvent("MovieDetail", "view_movie")
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, errorMessage = null, playbackAnalysis = null)
+            
+            // Also fetch initial progress from server
+            val initialProgress = try {
+                val resumePos = playbackProgressManager.getResumePosition(movieId)
+                playbackProgressManager.playbackProgress.value
+            } catch (e: Exception) {
+                null
+            }
+
             when (val result = repository.getMovieDetails(movieId)) {
                 is ApiResult.Success -> {
                     val analysis = try {
@@ -57,6 +92,7 @@ class MovieDetailViewModel @Inject constructor(
                     _state.value = _state.value.copy(
                         movie = result.data,
                         playbackAnalysis = analysis,
+                        playbackProgress = initialProgress?.takeIf { it.itemId == movieId },
                         isLoading = false,
                     )
 
