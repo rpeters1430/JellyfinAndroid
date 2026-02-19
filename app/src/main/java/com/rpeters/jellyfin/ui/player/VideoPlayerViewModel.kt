@@ -117,7 +117,7 @@ data class VideoPlayerState(
     val introEndMs: Long? = null,
     val outroStartMs: Long? = null,
     val outroEndMs: Long? = null,
-    // Auto-play next episode
+    // Autoplay next episode
     val nextEpisode: BaseItemDto? = null,
     val showNextEpisodeCountdown: Boolean = false,
     val nextEpisodeCountdown: Int = 0, // seconds remaining
@@ -146,7 +146,7 @@ class VideoPlayerViewModel @Inject constructor(
     val playerState: StateFlow<VideoPlayerState> = _playerState.asStateFlow()
     val playbackProgress: StateFlow<PlaybackProgress> = playbackProgressManager.playbackProgress
 
-    // Collect playback preferences for controlling behavior (audio language, auto-play, resume mode)
+    // Collect playback preferences for controlling behavior (audio language, autoplay, resume mode)
     private val playbackPreferences: StateFlow<com.rpeters.jellyfin.data.preferences.PlaybackPreferences> =
         playbackPreferencesRepository.preferences
             .stateIn(
@@ -566,7 +566,7 @@ class VideoPlayerViewModel @Inject constructor(
         }
 
         // Release existing player if switching to a different item
-        if (exoPlayer != null && currentItemId != itemId) {
+        if (exoPlayer != null) {
             SecureLogger.d("VideoPlayer", "Releasing existing player before initializing new item")
             releasePlayer()
         }
@@ -630,7 +630,7 @@ class VideoPlayerViewModel @Inject constructor(
 
                 if (resumePosition > 0 && !shouldResume) {
                     SecureLogger.d("VideoPlayer", "Resume disabled - ignoring saved position ${resumePosition}ms")
-                } else if (resumePosition > 0 && shouldResume) {
+                } else if (resumePosition > 0) {
                     SecureLogger.d("VideoPlayer", "Resume enabled - starting from saved position ${resumePosition}ms")
                 }
 
@@ -651,7 +651,7 @@ class VideoPlayerViewModel @Inject constructor(
                 // Get playbook info once and reuse it for both subtitle extraction and playback URL selection
                 val playbackInfo = try {
                     repository.getPlaybackInfo(itemId)
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     null
                 }
                 currentMediaSourceId = playbackInfo?.mediaSources?.firstOrNull()?.id
@@ -772,7 +772,7 @@ class VideoPlayerViewModel @Inject constructor(
                     playMethod = playMethod,
                 )
 
-                if (streamUrl.isNullOrEmpty()) {
+                if (streamUrl.isEmpty()) {
                     throw Exception("No stream URL available from playback manager")
                 }
 
@@ -1909,12 +1909,12 @@ class VideoPlayerViewModel @Inject constructor(
         val autoPlayEnabled = playbackPreferences.value.autoPlayNextEpisode
 
         if (nextEpisode != null && autoPlayEnabled) {
-            // Episode with next episode available and auto-play enabled - start countdown
+            // Episode with next episode available and autoplay enabled - start countdown
             SecureLogger.d("VideoPlayer", "Auto-play enabled: starting next episode countdown")
             startNextEpisodeCountdown()
         } else {
-            // Movie, last episode in season, or auto-play disabled - activity will handle finish
-            if (nextEpisode != null && !autoPlayEnabled) {
+            // Movie, last episode in season, or autoplay disabled - activity will handle finish
+            if (nextEpisode != null) {
                 SecureLogger.d("VideoPlayer", "Next episode available but auto-play disabled - video ended")
             } else {
                 SecureLogger.d("VideoPlayer", "No next episode, video ended")
@@ -1923,7 +1923,7 @@ class VideoPlayerViewModel @Inject constructor(
     }
 
     /**
-     * Start the countdown timer for auto-playing the next episode
+     * Start the countdown timer for autoplaying the next episode
      */
     private fun startNextEpisodeCountdown() {
         val countdownSeconds = 10 // 10 seconds countdown

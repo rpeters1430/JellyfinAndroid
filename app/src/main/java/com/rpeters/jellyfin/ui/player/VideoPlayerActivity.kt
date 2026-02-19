@@ -16,8 +16,10 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Rational
 import android.view.WindowManager
+import java.util.Locale
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.annotation.RequiresApi
 import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -250,8 +252,7 @@ class VideoPlayerActivity : FragmentActivity() {
     }
 
     private fun isPipSupported(): Boolean {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
-            packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
+        return packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
     }
 
     @Deprecated("Deprecated in Java")
@@ -281,7 +282,7 @@ class VideoPlayerActivity : FragmentActivity() {
 
     override fun onPause() {
         super.onPause()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && isInPictureInPictureMode) {
+        if (isInPictureInPictureMode) {
             return
         }
         // Only pause if we're actually leaving the activity (not just transitioning)
@@ -316,12 +317,9 @@ class VideoPlayerActivity : FragmentActivity() {
     }
 
     private fun updateHdrMode(isHdrContent: Boolean) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val shouldEnable = isHdrContent && deviceCapabilities.supportsHdrDisplay()
         if (shouldEnable == isHdrModeEnabled) return
-        window.setColorMode(
-            if (shouldEnable) ActivityInfo.COLOR_MODE_HDR else ActivityInfo.COLOR_MODE_DEFAULT,
-        )
+        window.colorMode = if (shouldEnable) ActivityInfo.COLOR_MODE_HDR else ActivityInfo.COLOR_MODE_DEFAULT
         isHdrModeEnabled = shouldEnable
         SecureLogger.d("VideoPlayerActivity", "HDR mode ${if (shouldEnable) "enabled" else "disabled"}")
     }
@@ -335,11 +333,9 @@ class VideoPlayerActivity : FragmentActivity() {
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun enterPictureInPictureModeCustom() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && packageManager.hasSystemFeature(
-                PackageManager.FEATURE_PICTURE_IN_PICTURE,
-            )
-        ) {
+        if (packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)) {
             val playerState = playerViewModel.playerState.value
 
             // Calculate aspect ratio from video dimensions, fallback to 16:9
@@ -349,34 +345,28 @@ class VideoPlayerActivity : FragmentActivity() {
                 Rational(16, 9)
             }
 
-            val params = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val builder = PictureInPictureParams.Builder()
-                    .setAspectRatio(aspectRatio)
+            val builder = PictureInPictureParams.Builder()
+                .setAspectRatio(aspectRatio)
 
-                // Add custom actions for Android 8.0+
-                val actions = buildPipActions(playerState.isPlaying)
-                builder.setActions(actions)
-                pipSourceRect?.let { builder.setSourceRectHint(it) }
+            // Add custom actions for Android 8.0+
+            val actions = buildPipActions(playerState.isPlaying)
+            builder.setActions(actions)
+            pipSourceRect?.let { builder.setSourceRectHint(it) }
 
-                // Add title for Android 12+
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    builder
-                        .setTitle(currentItemName)
-                        .setSubtitle(formatDuration(playerState.currentPosition) + " / " + formatDuration(playerState.duration))
-                        .setAutoEnterEnabled(true) // Auto-enter when user presses home
-                        .setSeamlessResizeEnabled(true) // Smooth resize transitions
-                }
-
-                builder.build()
-            } else {
-                return // PiP not supported
+            // Add title and metadata for Android 12+ (API 31)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                builder.setTitle(currentItemName)
+                builder.setSubtitle(formatDuration(playerState.currentPosition) + " / " + formatDuration(playerState.duration))
+                builder.setAutoEnterEnabled(true) // Auto-enter when user presses home
+                builder.setSeamlessResizeEnabled(true) // Smooth resize transitions
             }
 
             try {
-                enterPictureInPictureMode(params)
+                enterPictureInPictureMode(builder.build())
                 SecureLogger.d("VideoPlayerActivity", "Entered PiP mode successfully")
-            } catch (e: CancellationException) {
-                throw e
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                SecureLogger.e("VideoPlayerActivity", "Failed to enter PiP mode", e)
             }
         }
     }
@@ -452,7 +442,7 @@ class VideoPlayerActivity : FragmentActivity() {
         val seconds = (millis / 1000).toInt()
         val minutes = seconds / 60
         val remainingSeconds = seconds % 60
-        return String.format("%d:%02d", minutes, remainingSeconds)
+        return String.format(Locale.ROOT, "%d:%02d", minutes, remainingSeconds)
     }
 
     private fun toggleOrientation() {
@@ -468,13 +458,15 @@ class VideoPlayerActivity : FragmentActivity() {
      */
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
-        if (shouldAutoEnterPip(
-                sdkInt = Build.VERSION.SDK_INT,
-                isPipSupported = isPipSupported(),
-                isPlaying = playerViewModel.playerState.value.isPlaying,
-            )
-        ) {
-            enterPictureInPictureModeCustom()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (shouldAutoEnterPip(
+                    sdkInt = Build.VERSION.SDK_INT,
+                    isPipSupported = isPipSupported(),
+                    isPlaying = playerViewModel.playerState.value.isPlaying,
+                )
+            ) {
+                enterPictureInPictureModeCustom()
+            }
         }
     }
 
@@ -492,7 +484,9 @@ class VideoPlayerActivity : FragmentActivity() {
         if (isInPictureInPictureMode) {
             // Entered PiP mode - hide UI controls (handled by Compose UI state)
             SecureLogger.d("VideoPlayerActivity", "Entered PiP mode")
-            updatePipParams()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                updatePipParams()
+            }
         } else {
             // Exited PiP mode - restore full screen
             SecureLogger.d("VideoPlayerActivity", "Exited PiP mode")
@@ -503,26 +497,29 @@ class VideoPlayerActivity : FragmentActivity() {
     /**
      * Update PiP params dynamically (for play/pause button updates)
      */
-    fun updatePipParams() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && isInPipMode) {
+    private fun updatePipParams() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        
+        if (isInPipMode) {
             try {
                 val playerState = playerViewModel.playerState.value
                 val actions = buildPipActions(playerState.isPlaying)
 
-                val params = PictureInPictureParams.Builder()
+                val builder = PictureInPictureParams.Builder()
                     .setActions(actions)
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    params.setSubtitle(
+                    builder.setSubtitle(
                         formatDuration(playerState.currentPosition) + " / " +
                             formatDuration(playerState.duration),
                     )
                 }
-                pipSourceRect?.let { params.setSourceRectHint(it) }
+                pipSourceRect?.let { builder.setSourceRectHint(it) }
 
-                setPictureInPictureParams(params.build())
-            } catch (e: CancellationException) {
-                throw e
+                setPictureInPictureParams(builder.build())
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                SecureLogger.e("VideoPlayerActivity", "Failed to update PiP params", e)
             }
         }
     }
