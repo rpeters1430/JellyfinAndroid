@@ -9,9 +9,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -25,6 +28,8 @@ import com.rpeters.jellyfin.ui.adaptive.rememberWindowLayoutInfo
 import com.rpeters.jellyfin.ui.components.tv.TvEmptyState
 import com.rpeters.jellyfin.ui.components.tv.TvErrorBanner
 import com.rpeters.jellyfin.ui.components.tv.TvFullScreenLoading
+import com.rpeters.jellyfin.ui.components.tv.TvHeroCarousel
+import com.rpeters.jellyfin.ui.components.tv.TvImmersiveBackground
 import com.rpeters.jellyfin.ui.screens.tv.adaptive.TabletHomeContent
 import com.rpeters.jellyfin.ui.screens.tv.adaptive.TvCarouselHomeContent
 import com.rpeters.jellyfin.ui.screens.tv.adaptive.TvHomeMediaSection
@@ -36,17 +41,20 @@ import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import org.jellyfin.sdk.model.api.BaseItemKind
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text as TvText
+import androidx.tv.material3.ExperimentalTvMaterial3Api
 
 private const val RECENT_MOVIES_ID = "recent_movies"
 private const val RECENT_TV_SHOW_EPISODES_ID = "recent_tv_show_episodes"
 private const val ALL_MOVIES_ID = "all_movies"
 private const val ALL_TV_SHOWS_ID = "all_tv_shows"
 
+@OptIn(ExperimentalTvMaterial3Api::class)
 @OptInAppExperimentalApis
 @Composable
 fun TvHomeScreen(
     onItemSelect: (String) -> Unit,
     onLibrarySelect: (String) -> Unit,
+    onPlay: (itemId: String, itemName: String, startMs: Long) -> Unit = { _, _, _ -> },
     modifier: Modifier = Modifier,
     viewModel: MainAppViewModel = hiltViewModel(),
 ) {
@@ -58,13 +66,17 @@ fun TvHomeScreen(
     val windowLayoutInfo = rememberWindowLayoutInfo()
     val layoutConfig = rememberAdaptiveLayoutConfig(windowSizeClass, windowLayoutInfo)
 
+    // State for the immersive background
+    var focusedBackdrop by remember { mutableStateOf<String?>(null) }
+
     // Ensure initial data is loaded when entering the TV home screen
-    androidx.compose.runtime.LaunchedEffect(Unit) {
+    LaunchedEffect(Unit) {
         // loadInitialData has internal guards against concurrent runs
         viewModel.loadInitialData(forceRefresh = false)
     }
 
     val recentMovies = appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name]?.take(10) ?: emptyList()
+    val featuredMovies = recentMovies.take(5)
     val recentTvShowEpisodes = appState.recentlyAddedByTypes[BaseItemKind.EPISODE.name]?.take(10) ?: emptyList()
     val allMovies = appState.allMovies.take(10)
     val allTvShows = appState.allTVShows.take(10)
@@ -109,90 +121,123 @@ fun TvHomeScreen(
         Box(
             modifier = modifier
                 .fillMaxSize()
-                .background(TvMaterialTheme.colorScheme.surface)
                 .tvKeyboardHandler(
                     focusManager = focusManager,
                     onHome = { /* Already on home */ },
                     onSearch = { /* Navigate to search */ },
                 ),
         ) {
-            // Show loading state if still loading
-            if (appState.isLoading || appState.isLoadingMovies || appState.isLoadingTVShows) {
-                TvFullScreenLoading(message = "Loading your media...")
-                return@Box
-            }
+            // Background Layer
+            TvImmersiveBackground(backdropUrl = focusedBackdrop)
 
-            // Show error state if there's an error
-            appState.errorMessage?.let { error ->
-                TvErrorBanner(
-                    title = "Connection Error",
-                    message = error,
-                    onRetry = {
-                        viewModel.loadInitialData(forceRefresh = true)
-                    },
-                    onDismiss = { viewModel.clearError() },
-                )
-                return@Box
-            }
+            // Content Layer
+            Box(modifier = Modifier.fillMaxSize()) {
+                // Show loading state if still loading
+                if (appState.isLoading || appState.isLoadingMovies || appState.isLoadingTVShows) {
+                    TvFullScreenLoading(message = "Loading your media...")
+                    return@Box
+                }
 
-            // Show empty state if no content
-            if (appState.libraries.isEmpty() && appState.recentlyAdded.isEmpty()) {
-                TvEmptyState(
-                    title = "No Content Available",
-                    message = "Connect to your Jellyfin server and add some media to get started.",
-                    onAction = {
-                        viewModel.loadInitialData(forceRefresh = true)
-                    },
-                    actionText = "Refresh",
-                )
-                return@Box
-            }
+                // Show error state if there's an error
+                appState.errorMessage?.let { error ->
+                    TvErrorBanner(
+                        title = "Connection Error",
+                        message = error,
+                        onRetry = {
+                            viewModel.loadInitialData(forceRefresh = true)
+                        },
+                        onDismiss = { viewModel.clearError() },
+                    )
+                    return@Box
+                }
 
-            if (layoutConfig.shouldShowDualPane) {
-                TabletHomeContent(
-                    layoutConfig = layoutConfig,
-                    sections = sections,
-                    focusManager = tvFocusManager,
-                    modifier = Modifier.fillMaxSize(),
-                    header = {
-                        TvHomeHeader(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(layoutConfig.headerPadding),
-                        )
-                    },
-                    onItemSelect = { item ->
-                        onItemSelect(item.id.toString())
-                    },
-                    getImageUrl = viewModel::getImageUrl,
-                    getSeriesImageUrl = viewModel::getSeriesImageUrl,
-                    libraries = appState.libraries,
-                    onLibrarySelect = onLibrarySelect,
-                    isLoadingLibraries = appState.isLoading,
-                    initialFocusRequester = initialFocusRequester.takeIf { firstSectionId != null },
-                )
-            } else {
-                TvCarouselHomeContent(
-                    layoutConfig = layoutConfig,
-                    sections = sections,
-                    focusManager = tvFocusManager,
-                    modifier = Modifier.fillMaxSize(),
-                    header = {
-                        TvHomeHeader(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(layoutConfig.headerPadding),
-                        )
-                    },
-                    onItemSelect = { item ->
-                        onItemSelect(item.id.toString())
-                    },
-                    libraries = appState.libraries,
-                    onLibrarySelect = onLibrarySelect,
-                    isLoadingLibraries = appState.isLoading,
-                    initialFocusRequester = initialFocusRequester,
-                    firstSectionId = firstSectionId,
-                )
+                // Show empty state if no content
+                if (appState.libraries.isEmpty() && appState.recentlyAdded.isEmpty()) {
+                    TvEmptyState(
+                        title = "No Content Available",
+                        message = "Connect to your Jellyfin server and add some media to get started.",
+                        onAction = {
+                            viewModel.loadInitialData(forceRefresh = true)
+                        },
+                        actionText = "Refresh",
+                    )
+                    return@Box
+                }
+
+                if (layoutConfig.shouldShowDualPane) {
+                    TabletHomeContent(
+                        layoutConfig = layoutConfig,
+                        sections = sections,
+                        focusManager = tvFocusManager,
+                        modifier = Modifier.fillMaxSize(),
+                        header = {
+                            Column {
+                                TvHomeHeader(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(layoutConfig.headerPadding),
+                                )
+                                TvHeroCarousel(
+                                    featuredItems = featuredMovies,
+                                    onItemClick = { item -> onItemSelect(item.id.toString()) },
+                                    onPlayClick = { item ->
+                                        onPlay(item.id.toString(), item.name ?: "", 0L)
+                                    },
+                                    getBackdropUrl = viewModel::getBackdropUrl,
+                                    modifier = Modifier.padding(bottom = 24.dp)
+                                )
+                            }
+                        },
+                        onItemFocus = { item ->
+                            focusedBackdrop = viewModel.getBackdropUrl(item)
+                        },
+                        onItemSelect = { item ->
+                            onItemSelect(item.id.toString())
+                        },
+                        getImageUrl = viewModel::getImageUrl,
+                        getSeriesImageUrl = viewModel::getSeriesImageUrl,
+                        libraries = appState.libraries,
+                        onLibrarySelect = onLibrarySelect,
+                        isLoadingLibraries = appState.isLoading,
+                        initialFocusRequester = initialFocusRequester.takeIf { firstSectionId != null },
+                    )
+                } else {
+                    TvCarouselHomeContent(
+                        layoutConfig = layoutConfig,
+                        sections = sections,
+                        focusManager = tvFocusManager,
+                        modifier = Modifier.fillMaxSize(),
+                        header = {
+                            Column {
+                                TvHomeHeader(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(layoutConfig.headerPadding),
+                                )
+                                TvHeroCarousel(
+                                    featuredItems = featuredMovies,
+                                    onItemClick = { item -> onItemSelect(item.id.toString()) },
+                                    onPlayClick = { item ->
+                                        onPlay(item.id.toString(), item.name ?: "", 0L)
+                                    },
+                                    getBackdropUrl = viewModel::getBackdropUrl,
+                                    modifier = Modifier.padding(bottom = 24.dp)
+                                )
+                            }
+                        },
+                        onItemFocus = { item ->
+                            focusedBackdrop = viewModel.getBackdropUrl(item)
+                        },
+                        onItemSelect = { item ->
+                            onItemSelect(item.id.toString())
+                        },
+                        libraries = appState.libraries,
+                        onLibrarySelect = onLibrarySelect,
+                        isLoadingLibraries = appState.isLoading,
+                        initialFocusRequester = initialFocusRequester,
+                        firstSectionId = firstSectionId,
+                    )
+                }
             }
         }
     }

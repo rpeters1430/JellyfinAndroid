@@ -21,12 +21,19 @@ import com.rpeters.jellyfin.ui.screens.tv.TvHomeScreen
 import com.rpeters.jellyfin.ui.screens.tv.TvItemDetailScreen
 import com.rpeters.jellyfin.ui.screens.tv.TvLibraryScreen
 import com.rpeters.jellyfin.ui.screens.tv.TvQuickConnectScreen
+import com.rpeters.jellyfin.ui.screens.tv.TvSearchScreen
 import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
 
 private object TvRoutes {
     const val ServerConnection = "tv_server_connection"
     const val QuickConnect = "tv_quick_connect"
     const val Home = "tv_home"
+    const val Movies = "tv_movies"
+    const val TvShows = "tv_shows"
+    const val Music = "tv_music"
+    const val Search = "tv_search"
+    const val Favorites = "tv_favorites"
+    const val Settings = "tv_settings"
     const val Library = "tv_library/{libraryId}"
     const val Item = "tv_item/{itemId}"
     const val Player = "tv_player/{itemId}?itemName={itemName}&startPosition={startPosition}"
@@ -128,6 +135,54 @@ fun TvNavGraph(
                 onLibrarySelect = { libraryId ->
                     navController.navigate("tv_library/$libraryId")
                 },
+                onPlay = { itemId, itemName, startMs ->
+                    navController.navigate(TvRoutes.playerRoute(itemId, itemName, startMs))
+                },
+            )
+        }
+
+        composable(TvRoutes.Movies) {
+            // Placeholder for TV Movies Screen
+            TvLibraryScreen(
+                libraryId = "movies",
+                onItemSelect = { itemId -> navController.navigate("tv_item/$itemId") },
+            )
+        }
+
+        composable(TvRoutes.TvShows) {
+            // Placeholder for TV Shows Screen
+            TvLibraryScreen(
+                libraryId = "tvshows",
+                onItemSelect = { itemId -> navController.navigate("tv_item/$itemId") },
+            )
+        }
+
+        composable(TvRoutes.Music) {
+            // Placeholder for TV Music Screen
+            TvLibraryScreen(
+                libraryId = "music",
+                onItemSelect = { itemId -> navController.navigate("tv_item/$itemId") },
+            )
+        }
+
+        composable(TvRoutes.Search) {
+            TvSearchScreen(
+                onItemSelect = { itemId -> navController.navigate("tv_item/$itemId") }
+            )
+        }
+
+        composable(TvRoutes.Favorites) {
+            TvLibraryScreen(
+                libraryId = "favorites",
+                onItemSelect = { itemId -> navController.navigate("tv_item/$itemId") },
+            )
+        }
+
+        composable(TvRoutes.Settings) {
+            // Placeholder for TV Settings Screen
+            TvLibraryScreen(
+                libraryId = "settings",
+                onItemSelect = { itemId -> navController.navigate("tv_item/$itemId") },
             )
         }
 
