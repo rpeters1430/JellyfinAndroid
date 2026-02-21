@@ -33,6 +33,7 @@ private object TvRoutes {
     const val Movies = "tv_movies"
     const val TvShows = "tv_shows"
     const val Music = "tv_music"
+    const val HomeVideos = "tv_homevideos"
     const val Search = "tv_search"
     const val Favorites = "tv_favorites"
     const val Settings = "tv_settings"
@@ -163,6 +164,13 @@ fun TvNavGraph(
             // Placeholder for TV Music Screen
             TvLibraryScreen(
                 libraryId = "music",
+                onItemSelect = { itemId -> navController.navigate("tv_item/$itemId") },
+            )
+        }
+
+        composable(TvRoutes.HomeVideos) {
+            TvLibraryScreen(
+                libraryId = "homevideos",
                 onItemSelect = { itemId -> navController.navigate("tv_item/$itemId") },
             )
         }
