@@ -44,7 +44,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -85,6 +88,9 @@ import com.rpeters.jellyfin.utils.isWatched
 import org.jellyfin.sdk.model.api.BaseItemDto
 import java.util.Locale
 
+import com.rpeters.jellyfin.ui.components.QualitySelectionDialog
+import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
+
 /**
  * Immersive TV Episode Detail screen.
  * Cinematic view for individual episodes with parallax hero and season context.
@@ -101,7 +107,7 @@ fun ImmersiveTVEpisodeDetailScreen(
     onEpisodeClick: (BaseItemDto) -> Unit = {},
     onViewSeriesClick: () -> Unit = {},
     onPlayClick: (BaseItemDto, Int?, Long?) -> Unit = { _, _, _ -> },
-    onDownloadClick: (BaseItemDto) -> Unit = {},
+    onDownloadClick: (BaseItemDto, com.rpeters.jellyfin.data.offline.VideoQuality) -> Unit = { _, _ -> },
     onDeleteClick: (BaseItemDto) -> Unit = {},
     onFavoriteClick: (BaseItemDto) -> Unit = {},
     onMarkWatchedClick: (BaseItemDto) -> Unit = {},
@@ -115,9 +121,23 @@ fun ImmersiveTVEpisodeDetailScreen(
     modifier: Modifier = Modifier,
 ) {
     val perfConfig = rememberImmersivePerformanceConfig()
+    val downloadsViewModel: DownloadsViewModel = hiltViewModel()
     val listState = remember(episode.id.toString()) { LazyListState() }
     val context = LocalContext.current
     val mainAppViewModel: MainAppViewModel = hiltViewModel()
+    var showQualityDialog by remember { mutableStateOf(false) }
+
+    if (showQualityDialog) {
+        QualitySelectionDialog(
+            item = episode,
+            onDismiss = { showQualityDialog = false },
+            onQualitySelected = { quality ->
+                onDownloadClick(episode, quality)
+                showQualityDialog = false
+            },
+            downloadsViewModel = downloadsViewModel,
+        )
+    }
 
     PerformanceMetricsTracker(
         enabled = com.rpeters.jellyfin.BuildConfig.DEBUG,
@@ -217,7 +237,7 @@ fun ImmersiveTVEpisodeDetailScreen(
                             episode = episode,
                             onFavoriteClick = { onFavoriteClick(episode) },
                             onMarkWatchedClick = { onMarkWatchedClick(episode) },
-                            onDownloadClick = { onDownloadClick(episode) },
+                            onDownloadClick = { showQualityDialog = true },
                             onDeleteClick = { onDeleteClick(episode) },
                             onShareClick = {
                                 com.rpeters.jellyfin.ui.utils.ShareUtils.shareMedia(context, episode)

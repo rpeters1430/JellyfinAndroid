@@ -16,6 +16,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.data.offline.DownloadStatus
 import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.MediaStreamType
 import kotlin.math.roundToInt
 
 @androidx.media3.common.util.UnstableApi
@@ -28,9 +29,22 @@ fun DownloadButton(
 ) {
     val downloads by downloadsViewModel.downloads.collectAsState()
     val downloadProgress by downloadsViewModel.downloadProgress.collectAsState()
+    var showQualityDialog by remember { mutableStateOf(false) }
 
     val currentDownload = downloads.find { it.jellyfinItemId == item.id.toString() }
     val progress = currentDownload?.let { downloadProgress[it.id] }
+
+    if (showQualityDialog) {
+        QualitySelectionDialog(
+            item = item,
+            onDismiss = { showQualityDialog = false },
+            onQualitySelected = { quality ->
+                downloadsViewModel.startDownload(item, quality)
+                showQualityDialog = false
+            },
+            downloadsViewModel = downloadsViewModel,
+        )
+    }
 
     Box(modifier = modifier) {
         when (currentDownload?.status) {
@@ -65,7 +79,7 @@ fun DownloadButton(
             else -> {
                 // No download in progress or pending
                 StartDownloadButton(
-                    onDownload = { downloadsViewModel.startDownload(item) },
+                    onDownload = { showQualityDialog = true },
                     showText = showText,
                 )
             }

@@ -489,7 +489,7 @@ class EnhancedPlaybackManager @Inject constructor(
             playSessionId = playSessionId,
             audioStreamIndex = audioStreamIndex,
             subtitleStreamIndex = subtitleStreamIndex,
-            maxAudioChannels = maxAudioChannels,
+            audioChannels = maxAudioChannels,
         )
 
         if (directStreamUrl.isNullOrBlank()) {
@@ -618,7 +618,7 @@ class EnhancedPlaybackManager @Inject constructor(
             playSessionId = playSessionId,
             audioStreamIndex = audioStreamIndex,
             subtitleStreamIndex = subtitleStreamIndex,
-            maxAudioChannels = maxAudioChannels,
+            audioChannels = maxAudioChannels,
         )
 
         // Return error if no valid URL could be generated

@@ -132,8 +132,8 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 onShareClick = { video ->
                     ShareUtils.shareMedia(context = navController.context, item = video)
                 },
-                onDownloadClick = { video ->
-                    downloadsViewModel.startDownload(video)
+                onDownloadClick = { video, quality ->
+                    downloadsViewModel.startDownload(video, quality)
                 },
                 onDeleteClick = { video ->
                     mainViewModel.deleteItem(video) { success, message ->
@@ -216,8 +216,8 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 onShareClick = { video ->
                     ShareUtils.shareMedia(context = navController.context, item = video)
                 },
-                onDownloadClick = { video ->
-                    downloadsViewModel.startDownload(video)
+                onDownloadClick = { video, quality ->
+                    downloadsViewModel.startDownload(video, quality)
                 },
                 onDeleteClick = { video ->
                     mainViewModel.deleteItem(video) { success, message ->
@@ -276,6 +276,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
         }
         val mainViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
         val detailViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MovieDetailViewModel>()
+        val downloadsViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<DownloadsViewModel>()
 
         val lifecycleOwner = LocalLifecycleOwner.current
         val appState by mainViewModel.appState.collectAsStateWithLifecycle(
@@ -345,6 +346,9 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                     }
                 },
                 onMarkWatchedClick = { mainViewModel.toggleWatchedStatus(resolvedMovie) },
+                onDownloadClick = { movieItem, quality ->
+                    downloadsViewModel.startDownload(movieItem, quality)
+                },
                 onRelatedMovieClick = { relatedMovieId ->
                     navController.navigate(Screen.MovieDetail.createRoute(relatedMovieId))
                 },
@@ -395,6 +399,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
 
         val mainViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
         val viewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<TVEpisodeDetailViewModel>()
+        val downloadsViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<DownloadsViewModel>()
         val lifecycleOwner = LocalLifecycleOwner.current
         val appState by mainViewModel.appState.collectAsStateWithLifecycle(
             initialValue = mainViewModel.appState.value,
@@ -465,14 +470,8 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                             )
                         }
                     },
-                    onDownloadClick = { episodeItem ->
-                        mainViewModel.getDownloadUrl(episodeItem)?.let { downloadUrl ->
-                            val downloadManager = android.app.DownloadManager.Request(android.net.Uri.parse(downloadUrl))
-                            downloadManager.setTitle(episodeItem.name ?: "Episode Download")
-                            downloadManager.setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                            val manager = navController.context.getSystemService(android.app.DownloadManager::class.java)
-                            manager.enqueue(downloadManager)
-                        }
+                    onDownloadClick = { episodeItem, quality ->
+                        downloadsViewModel.startDownload(episodeItem, quality)
                     },
                     onFavoriteClick = { mainViewModel.toggleFavorite(it) },
                     onMarkWatchedClick = { mainViewModel.toggleWatchedStatus(it) },

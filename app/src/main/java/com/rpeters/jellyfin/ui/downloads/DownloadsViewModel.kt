@@ -11,6 +11,7 @@ import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
 import com.rpeters.jellyfin.data.offline.OfflinePlaybackManager
 import com.rpeters.jellyfin.data.offline.OfflineStorageInfo
 import com.rpeters.jellyfin.data.offline.VideoQuality
+import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.ui.player.VideoPlayerActivity
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -31,6 +32,7 @@ class DownloadsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val downloadManager: OfflineDownloadManager,
     private val playbackManager: OfflinePlaybackManager,
+    private val repository: JellyfinRepository,
 ) : ViewModel() {
 
     val downloads: StateFlow<List<OfflineDownload>> = downloadManager.downloads
@@ -47,13 +49,55 @@ class DownloadsViewModel @Inject constructor(
         initialValue = null,
     )
 
+    companion object {
+        val QUALITY_PRESETS = listOf(
+            VideoQuality(id = "original", label = "Original Quality", bitrate = 0, width = 0, height = 0),
+            VideoQuality(id = "high", label = "High (1080p, 6 Mbps)", bitrate = 6_000_000, width = 1920, height = 1080, audioBitrate = 192_000, audioChannels = 2),
+            VideoQuality(id = "medium", label = "Medium (720p, 3 Mbps)", bitrate = 3_000_000, width = 1280, height = 720, audioBitrate = 128_000, audioChannels = 2),
+            VideoQuality(id = "low", label = "Low (480p, 1 Mbps)", bitrate = 1_000_000, width = 854, height = 480, audioBitrate = 96_000, audioChannels = 2),
+        )
+    }
+
+    fun getAvailableQualityPresets(item: BaseItemDto): List<VideoQuality> {
+        val mediaSource = item.mediaSources?.firstOrNull()
+        val videoStream = mediaSource?.mediaStreams?.find { it.type == org.jellyfin.sdk.model.api.MediaStreamType.VIDEO }
+        val originalHeight = videoStream?.height ?: 0
+        val originalWidth = videoStream?.width ?: 0
+
+        return QUALITY_PRESETS.filter { preset ->
+            preset.id == "original" || 
+            (preset.height < originalHeight && originalHeight > 0) ||
+            (preset.width < originalWidth && originalWidth > 0)
+        }
+    }
+
     fun startDownload(
         item: BaseItemDto,
         quality: VideoQuality? = null,
         downloadUrl: String? = null,
     ) {
         viewModelScope.launch {
-            downloadManager.startDownload(item, quality, downloadUrl)
+            val url = if (quality != null && quality.id != "original") {
+                // Determine best codec for small size but great quality
+                // HEVC (h265) is preferred for small size
+                val videoCodec = "hevc" 
+                
+                repository.getTranscodedStreamUrl(
+                    itemId = item.id.toString(),
+                    maxBitrate = quality.bitrate,
+                    maxWidth = quality.width,
+                    maxHeight = quality.height,
+                    videoCodec = videoCodec,
+                    audioCodec = "aac",
+                    audioBitrate = quality.audioBitrate,
+                    audioChannels = quality.audioChannels ?: 2,
+                    container = "mp4",
+                )
+            } else {
+                downloadUrl ?: repository.getDownloadUrl(item.id.toString())
+            }
+
+            downloadManager.startDownload(item, quality, url)
         }
     }
 

@@ -1020,6 +1020,8 @@ class JellyfinRepository @Inject constructor(
         videoCodec: String = DEFAULT_VIDEO_CODEC,
         audioCodec: String = DEFAULT_AUDIO_CODEC,
         container: String = DEFAULT_CONTAINER,
+        audioBitrate: Int? = null,
+        audioChannels: Int = DEFAULT_MAX_AUDIO_CHANNELS,
     ): String? =
         streamRepository.getTranscodedStreamUrl(
             itemId = itemId,
@@ -1029,6 +1031,8 @@ class JellyfinRepository @Inject constructor(
             videoCodec = videoCodec,
             audioCodec = audioCodec,
             container = container,
+            audioBitrate = audioBitrate,
+            audioChannels = audioChannels,
         )
 
     fun getHlsStreamUrl(itemId: String): String? =

@@ -47,6 +47,11 @@ import java.util.Locale
  * - Floating back button
  * - Material 3 animations
  */
+import com.rpeters.jellyfin.ui.components.QualitySelectionDialog
+import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+
+@OptIn(ExperimentalMaterial3Api::class)
 @OptInAppExperimentalApis
 @Composable
 fun ImmersiveHomeVideoDetailScreen(
@@ -57,7 +62,7 @@ fun ImmersiveHomeVideoDetailScreen(
     onPlayClick: (BaseItemDto, Long?) -> Unit = { _, _ -> },
     onFavoriteClick: (BaseItemDto) -> Unit = {},
     onShareClick: (BaseItemDto) -> Unit = {},
-    onDownloadClick: (BaseItemDto) -> Unit = {},
+    onDownloadClick: (BaseItemDto, com.rpeters.jellyfin.data.offline.VideoQuality) -> Unit = { _, _ -> },
     onDeleteClick: (BaseItemDto) -> Unit = {},
     onMarkWatchedClick: (BaseItemDto) -> Unit = {},
     onRefresh: () -> Unit = {},
@@ -67,10 +72,24 @@ fun ImmersiveHomeVideoDetailScreen(
     modifier: Modifier = Modifier,
 ) {
     val perfConfig = rememberImmersivePerformanceConfig()
+    val downloadsViewModel: DownloadsViewModel = hiltViewModel()
     var isFavorite by remember { mutableStateOf(item.userData?.isFavorite == true) }
     var isWatched by remember { mutableStateOf(item.userData?.played == true) }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
+    var showQualityDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
+
+    if (showQualityDialog) {
+        QualitySelectionDialog(
+            item = item,
+            onDismiss = { showQualityDialog = false },
+            onQualitySelected = { quality ->
+                onDownloadClick(item, quality)
+                showQualityDialog = false
+            },
+            downloadsViewModel = downloadsViewModel,
+        )
+    }
     val listState = rememberLazyListState()
 
     // Refresh when screen is resumed to catch latest playback status
@@ -214,7 +233,7 @@ fun ImmersiveHomeVideoDetailScreen(
                             ImmersiveActionButton(
                                 icon = Icons.Default.Download,
                                 label = "Download",
-                                onClick = { onDownloadClick(item) },
+                                onClick = { showQualityDialog = true },
                                 modifier = Modifier.weight(1f),
                             )
                             ImmersiveActionButton(

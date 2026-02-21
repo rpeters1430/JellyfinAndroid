@@ -294,21 +294,31 @@ fun DownloadProgressIndicator(progress: DownloadProgress) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                "${progress.progressPercent.roundToInt()}%",
+                if (progress.isTranscoding) "Transcoding..." else "${progress.progressPercent.roundToInt()}%",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                "${formatBytes(progress.downloadedBytes)} / ${formatBytes(progress.totalBytes)}",
+                if (progress.totalBytes > 0L) {
+                    "${formatBytes(progress.downloadedBytes)} / ${formatBytes(progress.totalBytes)}"
+                } else {
+                    formatBytes(progress.downloadedBytes)
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
-        LinearProgressIndicator(
-            progress = { progress.progressPercent / 100f },
-            modifier = Modifier.fillMaxWidth(),
-        )
+        if (progress.isTranscoding || progress.totalBytes <= 0L) {
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth(),
+            )
+        } else {
+            LinearProgressIndicator(
+                progress = { progress.progressPercent / 100f },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -319,12 +329,14 @@ fun DownloadProgressIndicator(progress: DownloadProgress) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            progress.remainingTimeMs?.let { remaining ->
-                Text(
-                    formatDuration(remaining),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            if (!progress.isTranscoding) {
+                progress.remainingTimeMs?.let { remaining ->
+                    Text(
+                        formatDuration(remaining),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }

@@ -17,6 +17,7 @@
     
     <!-- Offline download permissions -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
@@ -84,6 +85,17 @@
             </intent-filter>
         </receiver>
 
+        <!-- Download action receiver -->
+        <receiver
+            android:name=".data.worker.DownloadActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.rpeters.jellyfin.ACTION_PAUSE_DOWNLOAD" />
+                <action android:name="com.rpeters.jellyfin.ACTION_RESUME_DOWNLOAD" />
+                <action android:name="com.rpeters.jellyfin.ACTION_CANCEL_DOWNLOAD" />
+            </intent-filter>
+        </receiver>
+
         <!-- Cast support -->
         <meta-data
             android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
@@ -109,6 +121,12 @@
                 android:value="androidx.startup"
                 tools:node="remove" />
         </provider>
+
+        <!-- Required when workers call setForeground(ForegroundInfo(..., FOREGROUND_SERVICE_TYPE_DATA_SYNC)) -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
     </application>
 
 </manifest>

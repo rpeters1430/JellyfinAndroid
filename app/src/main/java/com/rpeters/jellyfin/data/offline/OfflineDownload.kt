@@ -28,6 +28,8 @@ data class VideoQuality(
     val bitrate: Int,
     val width: Int,
     val height: Int,
+    val audioBitrate: Int? = null,
+    val audioChannels: Int? = null,
 )
 
 enum class DownloadStatus {
@@ -46,4 +48,6 @@ data class DownloadProgress(
     val progressPercent: Float,
     val downloadSpeedBps: Long,
     val remainingTimeMs: Long?,
+    val isTranscoding: Boolean = false,
+    val transcodingProgress: Float? = null,
 )

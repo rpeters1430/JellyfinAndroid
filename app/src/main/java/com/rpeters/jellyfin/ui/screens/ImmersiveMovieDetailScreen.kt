@@ -112,6 +112,11 @@ import org.jellyfin.sdk.model.api.MediaStreamType
 import java.util.Locale
 import kotlin.math.roundToInt
 
+import androidx.compose.material.icons.rounded.FileDownload
+import com.rpeters.jellyfin.ui.components.QualitySelectionDialog
+import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+
 @OptIn(ExperimentalMaterial3Api::class)
 @OptInAppExperimentalApis
 @Composable
@@ -130,6 +135,7 @@ fun ImmersiveMovieDetailScreen(
     onRelatedMovieClick: (String) -> Unit = {},
     onPersonClick: (String, String) -> Unit = { _, _ -> },
     onRefresh: () -> Unit = {},
+    onDownloadClick: (BaseItemDto, com.rpeters.jellyfin.data.offline.VideoQuality) -> Unit = { _, _ -> },
     onGenerateAiSummary: () -> Unit = {},
     aiSummary: String? = null,
     isLoadingAiSummary: Boolean = false,
@@ -143,12 +149,26 @@ fun ImmersiveMovieDetailScreen(
     modifier: Modifier = Modifier,
 ) {
     val perfConfig = rememberImmersivePerformanceConfig()
+    val downloadsViewModel: DownloadsViewModel = hiltViewModel()
     var isFavorite by remember { mutableStateOf(movie.userData?.isFavorite == true) }
     var isWatched by remember { mutableStateOf(movie.userData?.played == true) }
     var selectedSubtitleIndex by remember { mutableStateOf<Int?>(null) }
     var showMoreOptions by remember { mutableStateOf(false) }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
+    var showQualityDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
+
+    if (showQualityDialog) {
+        QualitySelectionDialog(
+            item = movie,
+            onDismiss = { showQualityDialog = false },
+            onQualitySelected = { quality ->
+                onDownloadClick(movie, quality)
+                showQualityDialog = false
+            },
+            downloadsViewModel = downloadsViewModel,
+        )
+    }
 
     PerformanceMetricsTracker(
         enabled = com.rpeters.jellyfin.BuildConfig.DEBUG,
@@ -377,9 +397,9 @@ fun ImmersiveMovieDetailScreen(
                                 modifier = Modifier.weight(1f),
                             )
                             ActionButton(
-                                icon = Icons.Rounded.Delete,
-                                label = "Delete",
-                                onClick = { showDeleteConfirmation = true },
+                                icon = Icons.Rounded.FileDownload,
+                                label = "Download",
+                                onClick = { showQualityDialog = true },
                                 modifier = Modifier.weight(1f),
                             )
                         }

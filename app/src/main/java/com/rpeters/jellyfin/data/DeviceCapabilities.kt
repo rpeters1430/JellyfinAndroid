@@ -43,6 +43,22 @@ class DeviceCapabilities @Inject constructor(
     private var maxResolution: Pair<Int, Int>? = null
     private var hdrSupported: Boolean? = null
     private var totalRAM: Long? = null
+    private var deviceId: String? = null
+
+    /**
+     * Get unique device ID for API requests
+     */
+    fun getDeviceId(): String {
+        deviceId?.let { return it }
+        val prefs = context.getSharedPreferences("device_prefs", Context.MODE_PRIVATE)
+        var id = prefs.getString("device_id", null)
+        if (id == null) {
+            id = java.util.UUID.randomUUID().toString()
+            prefs.edit().putString("device_id", id).apply()
+        }
+        deviceId = id
+        return id
+    }
 
     /**
      * Check if the device can directly play a given media format

@@ -5,6 +5,7 @@ import com.rpeters.jellyfin.data.offline.DownloadStatus
 import com.rpeters.jellyfin.data.offline.OfflineDownload
 import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
 import com.rpeters.jellyfin.data.offline.OfflinePlaybackManager
+import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import io.mockk.MockKAnnotations
 import io.mockk.coVerify
 import io.mockk.every
@@ -29,6 +30,9 @@ class DownloadsViewModelTest {
     @MockK(relaxUnitFun = true)
     lateinit var playbackManager: OfflinePlaybackManager
 
+    @MockK(relaxUnitFun = true)
+    lateinit var repository: JellyfinRepository
+
     @MockK
     lateinit var context: Context
 
@@ -44,7 +48,7 @@ class DownloadsViewModelTest {
         downloadsFlow = MutableStateFlow(emptyList())
         every { downloadManager.downloads } returns downloadsFlow
         every { downloadManager.downloadProgress } returns MutableStateFlow(emptyMap())
-        viewModel = DownloadsViewModel(context, downloadManager, playbackManager)
+        viewModel = DownloadsViewModel(context, downloadManager, playbackManager, repository)
     }
 
     @After

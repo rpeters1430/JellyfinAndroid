@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.data.offline
 
+import androidx.test.core.app.ApplicationProvider
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
@@ -56,15 +57,12 @@ class OfflineDownloadManagerTest {
 
     @Before
     fun setUp() {
-        context = mockk(relaxed = true)
+        context = ApplicationProvider.getApplicationContext()
         repository = mockk(relaxed = true)
         okHttpClient = mockk(relaxed = true)
 
         // Create a temporary directory for test downloads and datastore
         tempDir = createTempDirectory("jellyfin_test").toFile()
-        every { context.getExternalFilesDir(null) } returns tempDir
-        every { context.getExternalFilesDir(any()) } returns tempDir
-        every { context.filesDir } returns tempDir
 
         // Create a real in-memory DataStore using test scope
         dataStore = PreferenceDataStoreFactory.create(
@@ -89,7 +87,7 @@ class OfflineDownloadManagerTest {
     fun tearDown() {
         // Clean up temp directory
         tempDir.deleteRecursively()
-        clearMocks(context, repository, okHttpClient)
+        clearMocks(repository, okHttpClient)
     }
 
     @Test

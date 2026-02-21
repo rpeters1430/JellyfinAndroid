@@ -1,20 +1,32 @@
 package com.rpeters.jellyfin.data.offline
 
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.os.Environment
 import android.util.Log
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.datastore.core.DataStore
+import com.rpeters.jellyfin.data.worker.DownloadActionReceiver
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
+import androidx.work.BackoffPolicy
+import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.WorkRequest
+import androidx.work.workDataOf
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.data.worker.OfflineDownloadWorker
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.currentCoroutineContext
@@ -37,11 +49,9 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
-
-// DataStore extension
-private val Context.offlineDownloadsDataStore: DataStore<Preferences> by preferencesDataStore(name = "offline_downloads")
 
 @Singleton
 class OfflineDownloadManager @Inject constructor(
@@ -74,6 +84,14 @@ class OfflineDownloadManager @Inject constructor(
         private const val JELLYFIN_OFFLINE_DIR = "JellyfinOffline"
         private const val CHUNK_SIZE = 8192
         private const val ENCRYPTED_URL_PREFIX = "encrypted_url_"
+        private const val OFFLINE_DOWNLOAD_WORK_TAG = "offline_download"
+    }
+
+    enum class DownloadExecutionResult {
+        SUCCESS,
+        RETRY,
+        FAILURE,
+        CANCELLED,
     }
 
     init {
@@ -91,7 +109,7 @@ class OfflineDownloadManager @Inject constructor(
         return withContext(dispatchers.io) {
             val download = createDownload(item, quality, downloadUrl)
             addDownload(download)
-            executeDownload(download)
+            scheduleDownload(download.id, ExistingWorkPolicy.REPLACE)
             download.id
         }
     }
@@ -99,17 +117,69 @@ class OfflineDownloadManager @Inject constructor(
     fun pauseDownload(downloadId: String) {
         downloadJobs[downloadId]?.cancel()
         downloadJobs.remove(downloadId)
+        cancelWork(downloadId)
 
         downloadScope.launch {
             updateDownloadStatus(downloadId, DownloadStatus.PAUSED)
+            showPausedNotification(downloadId)
+        }
+    }
+
+    private fun showPausedNotification(downloadId: String) {
+        val download = getDownloadById(downloadId) ?: return
+
+        val resumeIntent = Intent(context, DownloadActionReceiver::class.java).apply {
+            action = DownloadActionReceiver.ACTION_RESUME
+            putExtra(DownloadActionReceiver.EXTRA_DOWNLOAD_ID, downloadId)
+        }
+        val resumePendingIntent = PendingIntent.getBroadcast(
+            context,
+            downloadId.hashCode() + 3,
+            resumeIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        val cancelIntent = Intent(context, DownloadActionReceiver::class.java).apply {
+            action = DownloadActionReceiver.ACTION_CANCEL
+            putExtra(DownloadActionReceiver.EXTRA_DOWNLOAD_ID, downloadId)
+        }
+        val cancelPendingIntent = PendingIntent.getBroadcast(
+            context,
+            downloadId.hashCode() + 4,
+            cancelIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        val notification = NotificationCompat.Builder(context, "offline_downloads_progress")
+            .setSmallIcon(R.drawable.ic_launcher_monochrome)
+            .setContentTitle("Download Paused")
+            .setContentText(download.itemName)
+            .setOngoing(false)
+            .setAutoCancel(true)
+            .addAction(R.drawable.ic_launcher_monochrome, "Resume", resumePendingIntent)
+            .addAction(R.drawable.ic_launcher_monochrome, "Cancel", cancelPendingIntent)
+            .build()
+
+        try {
+            NotificationManagerCompat.from(context).notify(downloadId.hashCode(), notification)
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Failed to show paused notification", e)
         }
     }
 
     fun resumeDownload(downloadId: String) {
+        // Clear paused notification
+        try {
+            NotificationManagerCompat.from(context).cancel(downloadId.hashCode())
+        } catch (e: Exception) {
+            // Ignore
+        }
+
         val download = _downloads.value.find { it.id == downloadId }
-        if (download != null && download.status == DownloadStatus.PAUSED) {
+        if (download != null && (download.status == DownloadStatus.PAUSED || download.status == DownloadStatus.FAILED)) {
             downloadScope.launch {
-                executeDownload(download)
+                updateDownloadStatus(downloadId, DownloadStatus.PENDING)
+                scheduleDownload(downloadId, ExistingWorkPolicy.REPLACE)
             }
         }
     }
@@ -121,6 +191,7 @@ class OfflineDownloadManager @Inject constructor(
                 // Cancel if downloading
                 downloadJobs[downloadId]?.cancel()
                 downloadJobs.remove(downloadId)
+                cancelWork(downloadId)
 
                 // Delete file
                 deleteDownloadFile(it)
@@ -157,43 +228,89 @@ class OfflineDownloadManager @Inject constructor(
         return calculateDirectorySize(offlineDir)
     }
 
-    private suspend fun executeDownload(download: OfflineDownload) {
-        val job = downloadScope.launch {
-            try {
-                updateDownloadStatus(download.id, DownloadStatus.DOWNLOADING)
+    suspend fun executeDownload(downloadId: String): DownloadExecutionResult {
+        return executeDownload(downloadId, onProgress = null)
+    }
 
-                // SECURITY: Decrypt the download URL
-                val actualUrl = getDecryptedUrl(download.downloadUrl)
-                if (actualUrl == null) {
-                    Log.e(TAG, "Failed to decrypt download URL for ${download.id}")
-                    updateDownloadStatus(download.id, DownloadStatus.FAILED)
-                    return@launch
-                }
+    suspend fun executeDownload(
+        downloadId: String,
+        onProgress: (suspend (OfflineDownload, DownloadProgress) -> Unit)? = null,
+    ): DownloadExecutionResult {
+        val download = _downloads.value.find { it.id == downloadId }
+            ?: return DownloadExecutionResult.FAILURE
 
-                val request = Request.Builder()
-                    .url(actualUrl)
-                    .build()
+        return try {
+            updateDownloadStatus(download.id, DownloadStatus.DOWNLOADING)
 
-                val response = okHttpClient.newCall(request).execute()
+            val actualUrl = getDecryptedUrl(download.downloadUrl)
+            if (actualUrl == null) {
+                Log.e(TAG, "Failed to decrypt download URL for ${download.id}")
+                updateDownloadStatus(download.id, DownloadStatus.FAILED)
+                return DownloadExecutionResult.FAILURE
+            }
 
-                // Use response in a use block to ensure proper resource cleanup
-                response.use {
-                    if (!it.isSuccessful) {
-                        throw IOException("Download failed: ${it.code}")
+            val outputFile = File(download.localFilePath)
+            outputFile.parentFile?.mkdirs()
+            val existingSize = if (outputFile.exists()) outputFile.length() else 0L
+
+            val requestBuilder = Request.Builder().url(actualUrl)
+            if (existingSize > 0L) {
+                requestBuilder.header("Range", "bytes=$existingSize-")
+            }
+
+            val response = okHttpClient.newCall(requestBuilder.build()).execute()
+
+            response.use {
+                if (!it.isSuccessful) {
+                    if (it.code in 500..599 || it.code == 429 || it.code == 408) {
+                        updateDownloadStatus(download.id, DownloadStatus.PENDING)
+                        return DownloadExecutionResult.RETRY
                     }
+                    throw IOException("Download failed: ${it.code}")
+                }
 
-                    downloadFile(it, download)
+                val canAppend = existingSize > 0L && it.code == 206
+                val startByte = if (canAppend) existingSize else 0L
+                val totalBytes = downloadFile(it, download, startByte, canAppend, onProgress)
+
+                if (currentCoroutineContext().isActive) {
+                    updateDownloadBytes(download.id, totalBytes)
+                    updateDownloadStatus(download.id, DownloadStatus.COMPLETED)
+                    if (BuildConfig.DEBUG) {
+                        Log.d(TAG, "Download completed: ${download.itemName} ($totalBytes bytes)")
+                    }
+                    return DownloadExecutionResult.SUCCESS
                 }
-            } catch (e: CancellationException) {
-                if (BuildConfig.DEBUG) {
-                    Log.d(TAG, "Download cancelled: ${download.id}")
-                }
-                // Re-throw to propagate cancellation up the coroutine hierarchy
-                throw e
+            }
+
+            DownloadExecutionResult.CANCELLED
+        } catch (e: CancellationException) {
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "Download cancelled: ${download.id}")
+            }
+            throw e
+        } catch (e: IOException) {
+            Log.w(TAG, "Transient download error for ${download.id}: ${e.message}")
+            updateDownloadStatus(download.id, DownloadStatus.PENDING)
+            DownloadExecutionResult.RETRY
+        } catch (e: Exception) {
+            Log.e(TAG, "Download failed for ${download.id}", e)
+            updateDownloadStatus(download.id, DownloadStatus.FAILED)
+            DownloadExecutionResult.FAILURE
+        }
+    }
+
+    private fun executeDownloadInProcess(downloadId: String) {
+        val download = _downloads.value.find { it.id == downloadId } ?: return
+        val job = downloadScope.launch {
+            when (executeDownload(downloadId)) {
+                DownloadExecutionResult.RETRY -> updateDownloadStatus(downloadId, DownloadStatus.FAILED)
+                DownloadExecutionResult.CANCELLED -> updateDownloadStatus(downloadId, DownloadStatus.CANCELLED)
+                else -> Unit
             }
         }
 
-        downloadJobs[download.id] = job
+        downloadJobs[downloadId] = job
     }
 
     /**
@@ -216,25 +333,24 @@ class OfflineDownloadManager @Inject constructor(
         return urlKeyOrUrl
     }
 
-    private suspend fun downloadFile(response: Response, download: OfflineDownload) {
+    private suspend fun downloadFile(
+        response: Response,
+        download: OfflineDownload,
+        startByte: Long,
+        append: Boolean,
+        onProgress: (suspend (OfflineDownload, DownloadProgress) -> Unit)?,
+    ): Long {
         val body = response.body
 
-        val contentLength = body.contentLength()
+        val bodyLength = body.contentLength()
+        val totalBytesExpected = if (bodyLength > 0L) startByte + bodyLength else bodyLength
         val outputFile = File(download.localFilePath)
 
         // Create parent directories if they don't exist
         outputFile.parentFile?.mkdirs()
 
-        // Handle resume for partial downloads
-        val existingSize = if (outputFile.exists()) outputFile.length() else 0L
-        val startByte = if (download.status == DownloadStatus.PAUSED) existingSize else 0L
-
         body.byteStream().use { inputStream ->
-            FileOutputStream(outputFile, download.status == DownloadStatus.PAUSED).use { outputStream ->
-
-                if (startByte > 0) {
-                    inputStream.skip(startByte)
-                }
+            FileOutputStream(outputFile, append).use { outputStream ->
 
                 val buffer = ByteArray(CHUNK_SIZE)
                 var totalBytesRead = startByte
@@ -250,38 +366,25 @@ class OfflineDownloadManager @Inject constructor(
                     // Update progress
                     val currentTime = System.currentTimeMillis()
                     val elapsedTime = currentTime - startTime
-                    val speed = if (elapsedTime > 0) (totalBytesRead * 1000L) / elapsedTime else 0L
-                    val remainingBytes = contentLength - totalBytesRead
+                    val speed = if (elapsedTime > 0) ((totalBytesRead - startByte) * 1000L) / elapsedTime else 0L
+                    val remainingBytes = totalBytesExpected - totalBytesRead
                     val remainingTime = if (speed > 0) (remainingBytes * 1000L) / speed else null
 
                     val progress = DownloadProgress(
                         downloadId = download.id,
                         downloadedBytes = totalBytesRead,
-                        totalBytes = contentLength,
-                        progressPercent = if (contentLength > 0) (totalBytesRead.toFloat() / contentLength * 100f) else 0f,
+                        totalBytes = totalBytesExpected,
+                        progressPercent = if (totalBytesExpected > 0) (totalBytesRead.toFloat() / totalBytesExpected * 100f) else 0f,
                         downloadSpeedBps = speed,
                         remainingTimeMs = remainingTime,
+                        isTranscoding = totalBytesExpected <= 0L && download.quality != null && download.quality.id != "original",
                     )
 
                     updateDownloadProgress(progress)
+                    onProgress?.invoke(download, progress)
                     updateDownloadBytes(download.id, totalBytesRead)
                 }
-
-                // Mark as completed if still active and either:
-                // 1. We've read the expected content length, OR
-                // 2. Content length is unknown (negative) and stream ended naturally
-                if (currentCoroutineContext().isActive &&
-                    (totalBytesRead == contentLength || contentLength < 0)
-                ) {
-                    updateDownloadStatus(download.id, DownloadStatus.COMPLETED)
-                    downloadJobs.remove(download.id)
-                    if (BuildConfig.DEBUG) {
-                        Log.d(
-                            "OfflineDownloadManager",
-                            "Download completed: ${download.itemName} ($totalBytesRead bytes)",
-                        )
-                    }
-                }
+                return totalBytesRead
             }
         }
     }
@@ -348,10 +451,15 @@ class OfflineDownloadManager @Inject constructor(
 
     private suspend fun loadDownloads() {
         try {
+            var initialized = false
             dataStore.data.collect { preferences ->
                 val downloadsJson = preferences[androidx.datastore.preferences.core.stringPreferencesKey(DOWNLOADS_KEY)] ?: "[]"
                 val downloads = json.decodeFromString<List<OfflineDownload>>(downloadsJson)
                 _downloads.update { downloads }
+                if (!initialized) {
+                    initialized = true
+                    requeueIncompleteDownloads(downloads)
+                }
             }
         } catch (e: CancellationException) {
             throw e
@@ -436,6 +544,14 @@ class OfflineDownloadManager @Inject constructor(
      * Cancel a specific download and clean up its resources.
      */
     fun cancelDownload(downloadId: String) {
+        // Clear notifications
+        try {
+            NotificationManagerCompat.from(context).cancel(downloadId.hashCode())
+        } catch (e: Exception) {
+            // Ignore
+        }
+
+        cancelWork(downloadId)
         downloadJobs[downloadId]?.let { job ->
             if (job.isActive) {
                 job.cancel(CancellationException("Download cancelled by user"))
@@ -461,5 +577,62 @@ class OfflineDownloadManager @Inject constructor(
             saveDownloads()
         }
     }
-}
 
+    fun getDownloadById(downloadId: String): OfflineDownload? {
+        return _downloads.value.find { it.id == downloadId }
+    }
+
+    private fun scheduleDownload(downloadId: String, policy: ExistingWorkPolicy) {
+        val enqueued = enqueueDownloadWork(downloadId, policy)
+        if (!enqueued) {
+            executeDownloadInProcess(downloadId)
+        }
+    }
+
+    private fun enqueueDownloadWork(downloadId: String, policy: ExistingWorkPolicy): Boolean {
+        val workManager = workManagerOrNull() ?: return false
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val request = OneTimeWorkRequestBuilder<OfflineDownloadWorker>()
+            .setInputData(workDataOf(OfflineDownloadWorker.KEY_DOWNLOAD_ID to downloadId))
+            .setConstraints(constraints)
+            .setBackoffCriteria(
+                BackoffPolicy.EXPONENTIAL,
+                WorkRequest.MIN_BACKOFF_MILLIS,
+                TimeUnit.MILLISECONDS,
+            )
+            .addTag(OFFLINE_DOWNLOAD_WORK_TAG)
+            .addTag(downloadTag(downloadId))
+            .build()
+
+        workManager.enqueueUniqueWork(downloadWorkName(downloadId), policy, request)
+        return true
+    }
+
+    private fun cancelWork(downloadId: String) {
+        workManagerOrNull()?.cancelUniqueWork(downloadWorkName(downloadId))
+    }
+
+    private fun requeueIncompleteDownloads(downloads: List<OfflineDownload>) {
+        downloads
+            .filter { it.status == DownloadStatus.PENDING || it.status == DownloadStatus.DOWNLOADING }
+            .forEach { scheduleDownload(it.id, ExistingWorkPolicy.KEEP) }
+    }
+
+    private fun workManagerOrNull(): WorkManager? {
+        return try {
+            WorkManager.getInstance(context)
+        } catch (e: IllegalStateException) {
+            if (BuildConfig.DEBUG) {
+                Log.w(TAG, "WorkManager unavailable; falling back to in-process downloads", e)
+            }
+            null
+        }
+    }
+
+    private fun downloadWorkName(downloadId: String): String = "offline-download-$downloadId"
+
+    private fun downloadTag(downloadId: String): String = "offline-download-tag-$downloadId"
+}

@@ -204,7 +204,8 @@ class JellyfinStreamRepository @Inject constructor(
         playSessionId: String? = null,
         audioStreamIndex: Int? = null,
         subtitleStreamIndex: Int? = null,
-        maxAudioChannels: Int = DEFAULT_MAX_AUDIO_CHANNELS,
+        audioChannels: Int = DEFAULT_MAX_AUDIO_CHANNELS,
+        audioBitrate: Int? = null,
         allowAudioStreamCopy: Boolean = true,
     ): String? {
         val server = authRepository.getCurrentServer() ?: return null
@@ -222,7 +223,7 @@ class JellyfinStreamRepository @Inject constructor(
         }
 
         // Validate that itemId is a valid UUID format
-        runCatching { UUID.fromString(itemId) }.getOrNull() ?: run {
+        runCatching { java.util.UUID.fromString(itemId) }.getOrNull() ?: run {
             Log.w("JellyfinStreamRepository", "getTranscodedStreamUrl: Invalid item ID format: $itemId")
             return null
         }
@@ -231,13 +232,18 @@ class JellyfinStreamRepository @Inject constructor(
             val params = mutableListOf<String>()
 
             // Add transcoding parameters
-            maxBitrate?.let { params.add("MaxStreamingBitrate=$it") }
+            maxBitrate?.let { 
+                params.add("MaxStreamingBitrate=$it")
+                params.add("VideoBitRate=$it")
+            }
             maxWidth?.let { params.add("MaxWidth=$it") }
             maxHeight?.let { params.add("MaxHeight=$it") }
             params.add("VideoCodec=$videoCodec")
             params.add("AudioCodec=$audioCodec")
             params.add("Container=$container")
-            params.add("TranscodingMaxAudioChannels=$maxAudioChannels")
+            params.add("AudioChannels=$audioChannels")
+            audioBitrate?.let { params.add("AudioBitRate=$it") }
+            params.add("DeviceId=${deviceCapabilities.getDeviceId()}")
             params.add("BreakOnNonKeyFrames=true")
             // Allow Direct Stream - keep video quality, only transcode audio if needed
             params.add("AllowVideoStreamCopy=true")
@@ -250,7 +256,7 @@ class JellyfinStreamRepository @Inject constructor(
             // Add playback identifiers when available so the server can apply session-specific settings.
             mediaSourceId?.let { params.add("MediaSourceId=$it") }
             playSessionId?.let { params.add("PlaySessionId=$it") }
-                ?: params.add("PlaySessionId=${UUID.randomUUID()}")
+                ?: params.add("PlaySessionId=${java.util.UUID.randomUUID()}")
             // Auth via header (OkHttp interceptor)
 
             // Use progressive stream endpoint instead of HLS for better compatibility
