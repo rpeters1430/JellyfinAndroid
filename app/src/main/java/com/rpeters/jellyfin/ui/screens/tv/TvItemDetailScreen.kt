@@ -152,19 +152,29 @@ fun TvItemDetailScreen(
                 horizontalArrangement = Arrangement.spacedBy(48.dp),
                 verticalAlignment = Alignment.Top
             ) {
-                // Poster Card
+                val isVideo = item?.type == BaseItemKind.VIDEO
+
+                // Poster / Backdrop Card — landscape for video items, portrait for movies/series
+                val cardWidth = if (isVideo) 390.dp else 260.dp
+                val cardHeight = if (isVideo) 220.dp else 390.dp
+                val cardImageUrl = if (isVideo) {
+                    item?.let { viewModel.getBackdropUrl(it) ?: viewModel.getImageUrl(it) }
+                } else {
+                    item?.let { viewModel.getImageUrl(it) }
+                }
+
                 TvCard(
                     onClick = {},
-                    modifier = Modifier.size(260.dp, 390.dp),
+                    modifier = Modifier.size(cardWidth, cardHeight),
                     scale = TvCardDefaults.scale(focusedScale = 1.05f),
-                    colors = TvCardDefaults.colors(containerColor = Color.DarkGray)
+                    colors = TvCardDefaults.colors(containerColor = Color.DarkGray),
                 ) {
                     JellyfinAsyncImage(
-                        model = item?.let { viewModel.getImageUrl(it) },
+                        model = cardImageUrl,
                         contentDescription = item?.name,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),
-                        requestSize = rememberCoilSize(260.dp, 390.dp)
+                        requestSize = rememberCoilSize(cardWidth, cardHeight),
                     )
                 }
 
