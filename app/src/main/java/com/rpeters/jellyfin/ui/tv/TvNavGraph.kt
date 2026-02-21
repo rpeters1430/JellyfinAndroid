@@ -22,6 +22,7 @@ import com.rpeters.jellyfin.ui.screens.tv.TvItemDetailScreen
 import com.rpeters.jellyfin.ui.screens.tv.TvLibraryScreen
 import com.rpeters.jellyfin.ui.screens.tv.TvQuickConnectScreen
 import com.rpeters.jellyfin.ui.screens.tv.TvSearchScreen
+import com.rpeters.jellyfin.ui.screens.tv.TvSettingsScreen
 import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
 
 private object TvRoutes {
@@ -179,10 +180,12 @@ fun TvNavGraph(
         }
 
         composable(TvRoutes.Settings) {
-            // Placeholder for TV Settings Screen
-            TvLibraryScreen(
-                libraryId = "settings",
-                onItemSelect = { itemId -> navController.navigate("tv_item/$itemId") },
+            TvSettingsScreen(
+                onSignOut = {
+                    navController.navigate(TvRoutes.ServerConnection) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
             )
         }
 
