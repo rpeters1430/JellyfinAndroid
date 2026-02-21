@@ -54,6 +54,7 @@ private const val ALL_TV_SHOWS_ID = "all_tv_shows"
 fun TvHomeScreen(
     onItemSelect: (String) -> Unit,
     onLibrarySelect: (String) -> Unit,
+    onSearch: () -> Unit = {},
     onPlay: (itemId: String, itemName: String, startMs: Long) -> Unit = { _, _, _ -> },
     modifier: Modifier = Modifier,
     viewModel: MainAppViewModel = hiltViewModel(),
@@ -124,7 +125,7 @@ fun TvHomeScreen(
                 .tvKeyboardHandler(
                     focusManager = focusManager,
                     onHome = { /* Already on home */ },
-                    onSearch = { /* Navigate to search */ },
+                    onSearch = onSearch,
                 ),
         ) {
             // Background Layer

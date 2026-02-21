@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
@@ -29,6 +30,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.tv.material3.Card as TvCard
+import androidx.tv.material3.CardDefaults as TvCardDefaults
+import androidx.tv.material3.MaterialTheme as TvMaterialTheme
+import androidx.tv.material3.Text as TvText
 import coil3.request.crossfade
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.adaptive.AdaptiveLayoutConfig
@@ -38,10 +43,6 @@ import com.rpeters.jellyfin.ui.tv.TvFocusManager
 import com.rpeters.jellyfin.ui.tv.TvFocusableCarousel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
-import androidx.tv.material3.Card as TvCard
-import androidx.tv.material3.CardDefaults as TvCardDefaults
-import androidx.tv.material3.MaterialTheme as TvMaterialTheme
-import androidx.tv.material3.Text as TvText
 
 @Composable
 fun TvContentCarousel(
@@ -134,6 +135,12 @@ fun TvContentCard(
     posterWidth: Dp = 240.dp,
     posterHeight: Dp = 360.dp,
 ) {
+    val imageUrl = if (item.type == org.jellyfin.sdk.model.api.BaseItemKind.EPISODE) {
+        getImageUrl(item) ?: getSeriesImageUrl(item)
+    } else {
+        getImageUrl(item)
+    }
+
     Column(
         modifier = modifier
             .width(posterWidth)
@@ -151,38 +158,32 @@ fun TvContentCard(
             colors = TvCardDefaults.colors(
                 containerColor = TvMaterialTheme.colorScheme.surfaceVariant,
             ),
+            scale = TvCardDefaults.scale(focusedScale = 1.1f),
             glow = TvCardDefaults.glow(
                 focusedGlow = androidx.tv.material3.Glow(
-                    elevationColor = if (isFocused) TvMaterialTheme.colorScheme.primary else TvMaterialTheme.colorScheme.surface,
-                    elevation = if (isFocused) 16.dp else 0.dp,
+                    elevationColor = TvMaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                    elevation = 12.dp,
                 ),
             ),
         ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                val imageUrl = if (item.type == org.jellyfin.sdk.model.api.BaseItemKind.EPISODE) {
-                    getImageUrl(item) ?: getSeriesImageUrl(item)
-                } else {
-                    getImageUrl(item)
-                }
-
-                JellyfinAsyncImage(
-                    model = imageUrl,
-                    contentDescription = item.name,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                    requestSize = rememberCoilSize(posterWidth, posterHeight),
-                    builder = { crossfade(true) },
-                )
-            }
+            JellyfinAsyncImage(
+                model = imageUrl,
+                contentDescription = item.name,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+                requestSize = rememberCoilSize(posterWidth, posterHeight),
+                builder = { crossfade(true) },
+            )
         }
 
         // Title below the card
         TvText(
             text = item.name ?: stringResource(id = R.string.unknown),
             style = TvMaterialTheme.typography.titleMedium,
-            maxLines = 2,
+            maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            color = TvMaterialTheme.colorScheme.onSurface,
+            color = if (isFocused) Color.White else TvMaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(top = 8.dp)
         )
 
         // Subtitle

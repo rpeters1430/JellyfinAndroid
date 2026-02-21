@@ -7,20 +7,27 @@ import android.util.Rational
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Audiotrack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.FastForward
@@ -28,11 +35,8 @@ import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PictureInPictureAlt
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.Icon
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -54,10 +58,8 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -77,11 +79,17 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.tv.material3.Button as TvButton
 import androidx.tv.material3.ButtonDefaults as TvButtonDefaults
-import androidx.tv.material3.Card as TvCard
-import androidx.tv.material3.CardDefaults as TvCardDefaults
+import androidx.tv.material3.ClickableSurfaceDefaults
+import androidx.tv.material3.Icon as TvIcon
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Surface as TvSurface
 import androidx.tv.material3.Text as TvText
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.tv.material3.Card as TvCard
+import androidx.tv.material3.CardDefaults as TvCardDefaults
+import androidx.compose.ui.tooling.preview.Preview
 
 private const val SEEK_INTERVAL_MS = 30_000L
 
@@ -180,49 +188,40 @@ fun TvVideoPlayerScreen(
     onErrorDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val focusManager = LocalFocusManager.current
     var controlsVisible by remember { mutableStateOf(true) }
-    var showAudioDialog by remember { mutableStateOf(false) }
-    var showSubtitleDialog by remember { mutableStateOf(false) }
+    var showQuickSettings by remember { mutableStateOf(false) }
+
     val playPauseRequester = remember { FocusRequester() }
-    var sliderPosition by remember { mutableStateOf(state.currentPosition.coerceAtLeast(0L).toFloat()) }
-    var sliderDragging by remember { mutableStateOf(false) }
+    val quickSettingsCloseRequester = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
         delay(300)
         playPauseRequester.requestFocus()
     }
 
-    LaunchedEffect(state.isPlaying, controlsVisible) {
-        if (state.isPlaying && controlsVisible) {
+    // Auto-hide controls
+    LaunchedEffect(state.isPlaying, controlsVisible, showQuickSettings) {
+        if (state.isPlaying && controlsVisible && !showQuickSettings) {
             delay(5000)
             controlsVisible = false
         }
     }
 
-    LaunchedEffect(state.isPlaying) {
-        if (!state.isPlaying) controlsVisible = true
-    }
-
-    // Show error in Toast for TV
-    val context = LocalContext.current
-    LaunchedEffect(state.error) {
-        state.error?.let { errorMessage ->
-            android.widget.Toast.makeText(
-                context,
-                errorMessage,
-                android.widget.Toast.LENGTH_LONG,
-            ).show()
-            onErrorDismiss()
+    LaunchedEffect(showQuickSettings) {
+        if (showQuickSettings) {
+            controlsVisible = true
+            quickSettingsCloseRequester.requestFocus()
+        } else {
+            playPauseRequester.requestFocus()
         }
     }
 
-    LaunchedEffect(state.currentPosition, state.duration) {
-        if (!sliderDragging) {
-            val safeDuration = state.duration.coerceAtLeast(1L)
-            sliderPosition = state.currentPosition
-                .coerceIn(0L, safeDuration)
-                .toFloat()
+    // Show error in Toast
+    val context = LocalContext.current
+    LaunchedEffect(state.error) {
+        state.error?.let { errorMessage ->
+            android.widget.Toast.makeText(context, errorMessage, android.widget.Toast.LENGTH_LONG).show()
+            onErrorDismiss()
         }
     }
 
@@ -230,33 +229,41 @@ fun TvVideoPlayerScreen(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black)
-            .tvKeyboardHandler(
-                focusManager = focusManager,
-                onBack = {
-                    onBack()
-                },
-                onPlayPause = {
-                    controlsVisible = true
-                    onPlayPause()
-                },
-                onMenu = {
-                    showAudioDialog = true
-                },
-                onMore = {
-                    showSubtitleDialog = true
-                },
-                onSeekForward = {
-                    controlsVisible = true
-                    onSeekForward()
-                },
-                onSeekBackward = {
-                    controlsVisible = true
-                    onSeekBackward()
-                },
-            )
             .onKeyEvent { keyEvent ->
                 if (keyEvent.type != KeyEventType.KeyDown) return@onKeyEvent false
+                
+                // If settings is open, let it handle keys or close it on back
+                if (showQuickSettings) {
+                    if (keyEvent.key == Key.Back) {
+                        showQuickSettings = false
+                        return@onKeyEvent true
+                    }
+                    // Trap unhandled keys while settings is open so playback controls
+                    // underneath do not react unexpectedly.
+                    return@onKeyEvent true
+                }
+
                 when (keyEvent.key) {
+                    Key.DirectionUp -> {
+                        controlsVisible = true
+                        true
+                    }
+                    Key.DirectionDown -> {
+                        if (controlsVisible) {
+                            showQuickSettings = true
+                        } else {
+                            controlsVisible = true
+                        }
+                        true
+                    }
+                    Key.DirectionCenter, Key.Enter, Key.MediaPlayPause -> {
+                        if (!controlsVisible) {
+                            controlsVisible = true
+                        } else {
+                            onPlayPause()
+                        }
+                        true
+                    }
                     Key.DirectionLeft, Key.MediaRewind -> {
                         controlsVisible = true
                         onSeekBackward()
@@ -268,13 +275,18 @@ fun TvVideoPlayerScreen(
                         true
                     }
                     Key.Back -> {
-                        onBack()
+                        if (controlsVisible) {
+                            controlsVisible = false
+                        } else {
+                            onBack()
+                        }
                         true
                     }
                     else -> false
                 }
             },
     ) {
+        // Video Layer
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = { context ->
@@ -290,6 +302,7 @@ fun TvVideoPlayerScreen(
             },
         )
 
+        // Controls Layer
         AnimatedVisibility(
             visible = controlsVisible,
             enter = fadeIn(),
@@ -301,169 +314,365 @@ fun TvVideoPlayerScreen(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                MaterialTheme.colorScheme.scrim.copy(alpha = 0.75f),
-                                MaterialTheme.colorScheme.scrim.copy(alpha = 0.35f),
+                                Color.Black.copy(alpha = 0.6f),
                                 Color.Transparent,
+                                Color.Black.copy(alpha = 0.8f),
                             ),
-                        ),
-                    ),
+                        )
+                    )
             ) {
+                // Top Info
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(56.dp)
+                ) {
+                    TvText(
+                        text = state.itemName,
+                        style = TvMaterialTheme.typography.headlineLarge,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                // Bottom Controls
                 Column(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
                         .padding(horizontal = 64.dp, vertical = 48.dp),
-                    verticalArrangement = Arrangement.spacedBy(32.dp),
+                    verticalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TvText(
-                            text = state.itemName,
-                            style = TvMaterialTheme.typography.headlineMedium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(
-                            text = formatPlaybackPosition(state.currentPosition, state.duration),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
-                        )
-                    }
+                    // Enhanced Seek Bar
+                    TvSeekBar(
+                        currentPosition = state.currentPosition,
+                        duration = state.duration,
+                        bufferedPosition = state.bufferedPosition,
+                        onSeekTo = onSeekTo
+                    )
 
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Slider(
-                            value = sliderPosition,
-                            onValueChange = { newValue ->
-                                controlsVisible = true
-                                sliderDragging = true
-                                sliderPosition = newValue
-                            },
-                            onValueChangeFinished = {
-                                sliderDragging = false
-                                onSeekTo(sliderPosition.toLong())
-                            },
-                            valueRange = 0f..state.duration.coerceAtLeast(1L).toFloat(),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .focusable()
-                                .onFocusChanged { focusState ->
-                                    if (focusState.isFocused) controlsVisible = true
-                                },
-                        )
-                        LinearProgressIndicator(
-                            progress = {
-                                if (state.duration > 0) {
-                                    (state.bufferedPosition / state.duration.toFloat()).coerceIn(0f, 1f)
-                                } else {
-                                    0f
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-
+                    // Control Buttons
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(32.dp, Alignment.CenterHorizontally),
-                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterHorizontally),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        ControlButton(
-                            text = "Rewind 30s",
+                        TvPlayerButton(
                             icon = Icons.Default.FastRewind,
-                            onClick = {
-                                controlsVisible = true
-                                onSeekBackward()
-                            },
-                            modifier = Modifier.onFocusChanged { if (it.isFocused) controlsVisible = true },
+                            onClick = onSeekBackward
                         )
-                        ControlButton(
-                            text = if (state.isPlaying) "Pause" else "Play",
+                        
+                        TvPlayerButton(
                             icon = if (state.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                            onClick = {
-                                controlsVisible = true
-                                onPlayPause()
-                            },
+                            onClick = onPlayPause,
                             modifier = Modifier
-                                .focusRequester(playPauseRequester)
-                                .onFocusChanged { if (it.isFocused) controlsVisible = true },
+                                .size(64.dp)
+                                .focusRequester(playPauseRequester),
+                            isPrimary = true
                         )
-                        ControlButton(
-                            text = "Forward 30s",
+                        
+                        TvPlayerButton(
                             icon = Icons.Default.FastForward,
+                            onClick = onSeekForward
+                        )
+
+                        Spacer(modifier = Modifier.width(32.dp))
+
+                        TvPlayerButton(
+                            icon = Icons.Default.Settings,
                             onClick = {
                                 controlsVisible = true
-                                onSeekForward()
+                                showQuickSettings = true
                             },
-                            modifier = Modifier.onFocusChanged { if (it.isFocused) controlsVisible = true },
+                            label = "Settings"
                         )
-                        ControlButton(
-                            text = "Audio",
-                            icon = Icons.Default.Audiotrack,
-                            onClick = {
-                                controlsVisible = true
-                                showAudioDialog = true
-                            },
-                            enabled = state.availableAudioTracks.isNotEmpty(),
-                            modifier = Modifier.onFocusChanged { if (it.isFocused) controlsVisible = true },
-                        )
-                        ControlButton(
-                            text = "Subtitles",
-                            icon = Icons.Default.ClosedCaption,
-                            onClick = {
-                                controlsVisible = true
-                                showSubtitleDialog = true
-                            },
-                            enabled = state.availableSubtitleTracks.isNotEmpty(),
-                            modifier = Modifier.onFocusChanged { if (it.isFocused) controlsVisible = true },
-                        )
-                        if (pipState.isSupported) {
-                            ControlButton(
-                                text = "Picture-in-picture",
-                                icon = Icons.Default.PictureInPictureAlt,
-                                onClick = {
-                                    controlsVisible = true
-                                    pipState.enterPictureInPicture()
-                                },
-                                modifier = Modifier.onFocusChanged { if (it.isFocused) controlsVisible = true },
-                            )
-                        }
                     }
                 }
             }
         }
 
-        if (showAudioDialog) {
-            TrackSelectionDialog(
-                title = "Audio Tracks",
-                options = state.availableAudioTracks,
-                selectedId = state.selectedAudioTrack?.displayName,
-                onSelect = { track ->
-                    showAudioDialog = false
-                    onShowAudio(track)
-                },
-                onDismiss = { showAudioDialog = false },
-            )
-        }
-
-        if (showSubtitleDialog) {
-            TrackSelectionDialog(
-                title = "Subtitles",
-                options = state.availableSubtitleTracks,
-                selectedId = state.selectedSubtitleTrack?.displayName,
-                onSelect = { track ->
-                    showSubtitleDialog = false
-                    onShowSubtitles(track)
-                },
-                onDismiss = { showSubtitleDialog = false },
-                includeNoneOption = true,
-                onNoneSelected = {
-                    showSubtitleDialog = false
-                    onShowSubtitles(null)
-                },
+        // Quick Settings Side Drawer
+        AnimatedVisibility(
+            visible = showQuickSettings,
+            enter = slideInHorizontally(initialOffsetX = { it }),
+            exit = slideOutHorizontally(targetOffsetX = { it }),
+            modifier = Modifier.align(Alignment.CenterEnd)
+        ) {
+            TvQuickSettingsDrawer(
+                state = state,
+                onShowAudio = { onShowAudio(it); showQuickSettings = false },
+                onShowSubtitles = { onShowSubtitles(it); showQuickSettings = false },
+                onClose = { showQuickSettings = false },
+                closeButtonFocusRequester = quickSettingsCloseRequester,
             )
         }
     }
 }
+
+@Composable
+fun TvSeekBar(
+    currentPosition: Long,
+    duration: Long,
+    bufferedPosition: Long,
+    onSeekTo: (Long) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val safeDuration = duration.coerceAtLeast(1L)
+    var isFocused by remember { mutableStateOf(false) }
+    var pendingPosition by remember(duration) { mutableStateOf(currentPosition.coerceIn(0L, safeDuration)) }
+    val progress = if (duration > 0) pendingPosition.toFloat() / duration else 0f
+    val bufferedProgress = if (duration > 0) bufferedPosition.toFloat() / duration else 0f
+
+    LaunchedEffect(currentPosition, safeDuration, isFocused) {
+        if (!isFocused) {
+            pendingPosition = currentPosition.coerceIn(0L, safeDuration)
+        }
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .focusable()
+            .onFocusChanged { isFocused = it.isFocused }
+            .onKeyEvent { keyEvent ->
+                if (keyEvent.type != KeyEventType.KeyDown) return@onKeyEvent false
+                when (keyEvent.key) {
+                    Key.DirectionLeft -> {
+                        pendingPosition = (pendingPosition - SEEK_INTERVAL_MS).coerceAtLeast(0L)
+                        onSeekTo(pendingPosition)
+                        true
+                    }
+                    Key.DirectionRight -> {
+                        pendingPosition = (pendingPosition + SEEK_INTERVAL_MS).coerceAtMost(safeDuration)
+                        onSeekTo(pendingPosition)
+                        true
+                    }
+                    Key.DirectionCenter, Key.Enter -> {
+                        onSeekTo(pendingPosition)
+                        true
+                    }
+                    else -> false
+                }
+            },
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(modifier = Modifier.fillMaxWidth().height(12.dp)) {
+            // Background
+            Box(modifier = Modifier.fillMaxSize().background(Color.White.copy(alpha = 0.2f), TvMaterialTheme.shapes.small))
+            
+            // Buffered
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(bufferedProgress.coerceIn(0f, 1f))
+                    .fillMaxHeight()
+                    .background(Color.White.copy(alpha = 0.3f), TvMaterialTheme.shapes.small)
+            )
+            
+            // Progress
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(progress.coerceIn(0f, 1f))
+                    .fillMaxHeight()
+                    .background(TvMaterialTheme.colorScheme.primary, TvMaterialTheme.shapes.small)
+            )
+        }
+        
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            TvText(
+                text = formatTime(pendingPosition),
+                style = TvMaterialTheme.typography.labelMedium,
+                color = Color.White.copy(alpha = 0.8f)
+            )
+            TvText(
+                text = formatTime(duration),
+                style = TvMaterialTheme.typography.labelMedium,
+                color = Color.White.copy(alpha = 0.8f)
+            )
+        }
+    }
+}
+
+@Composable
+fun TvPlayerButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    label: String? = null,
+    isPrimary: Boolean = false
+) {
+    var isFocused by remember { mutableStateOf(false) }
+    
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        TvSurface(
+            onClick = onClick,
+            modifier = modifier
+                .size(if (isPrimary) 64.dp else 48.dp)
+                .onFocusChanged { isFocused = it.isFocused },
+            shape = ClickableSurfaceDefaults.shape(TvMaterialTheme.shapes.extraLarge),
+            colors = ClickableSurfaceDefaults.colors(
+                containerColor = if (isPrimary) TvMaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.1f),
+                focusedContainerColor = if (isPrimary) TvMaterialTheme.colorScheme.primaryContainer else Color.White.copy(alpha = 0.25f)
+            ),
+            scale = ClickableSurfaceDefaults.scale(focusedScale = 1.2f)
+        ) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                TvIcon(
+                    imageVector = icon,
+                    contentDescription = label,
+                    modifier = Modifier.size(if (isPrimary) 32.dp else 24.dp),
+                    tint = if (isPrimary) TvMaterialTheme.colorScheme.onPrimary else Color.White
+                )
+            }
+        }
+        if (label != null) {
+            TvText(
+                text = label,
+                style = TvMaterialTheme.typography.labelSmall,
+                color = if (isFocused) Color.White else Color.White.copy(alpha = 0.6f)
+            )
+        }
+    }
+}
+
+@Composable
+fun TvQuickSettingsDrawer(
+    state: VideoPlayerState,
+    onShowAudio: (TrackInfo) -> Unit,
+    onShowSubtitles: (TrackInfo?) -> Unit,
+    onClose: () -> Unit,
+    closeButtonFocusRequester: FocusRequester? = null,
+) {
+    var selectedTab by remember { mutableStateOf(0) } // 0: Audio, 1: Subtitles
+
+    TvSurface(
+        modifier = Modifier
+            .fillMaxHeight()
+            .width(400.dp),
+        colors = androidx.tv.material3.SurfaceDefaults.colors(
+            containerColor = Color(0xFF1A1A1A).copy(alpha = 0.95f)
+        ),
+        shape = androidx.compose.ui.graphics.RectangleShape
+    ) {
+        Column(modifier = Modifier.fillMaxSize().padding(32.dp)) {
+            TvText(
+                text = "Settings",
+                style = TvMaterialTheme.typography.headlineSmall,
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // Tabs
+            Row(modifier = Modifier.fillMaxWidth()) {
+                TvTabButton(text = "Audio", selected = selectedTab == 0, onClick = { selectedTab = 0 }, modifier = Modifier.weight(1f))
+                TvTabButton(text = "Subtitles", selected = selectedTab == 1, onClick = { selectedTab = 1 }, modifier = Modifier.weight(1f))
+            }
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // Track List
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (selectedTab == 0) {
+                    items(state.availableAudioTracks) { track ->
+                        val isSelected = state.selectedAudioTrack?.displayName == track.displayName
+                        TvTrackItem(
+                            title = track.displayName,
+                            isSelected = isSelected,
+                            onClick = { onShowAudio(track) }
+                        )
+                    }
+                } else {
+                    item {
+                        TvTrackItem(
+                            title = "None",
+                            isSelected = state.selectedSubtitleTrack == null,
+                            onClick = { onShowSubtitles(null) }
+                        )
+                    }
+                    items(state.availableSubtitleTracks) { track ->
+                        val isSelected = state.selectedSubtitleTrack?.displayName == track.displayName
+                        TvTrackItem(
+                            title = track.displayName,
+                            isSelected = isSelected,
+                            onClick = { onShowSubtitles(track) }
+                        )
+                    }
+                }
+            }
+            
+            Spacer(modifier = Modifier.weight(1f))
+            
+            TvButton(
+                onClick = onClose,
+                modifier = if (closeButtonFocusRequester != null) {
+                    Modifier
+                        .fillMaxWidth()
+                        .focusRequester(closeButtonFocusRequester)
+                } else {
+                    Modifier.fillMaxWidth()
+                },
+            ) {
+                TvText("Close")
+            }
+        }
+    }
+}
+
+@Composable
+fun TvTabButton(text: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    TvSurface(
+        onClick = onClick,
+        modifier = modifier.height(40.dp).padding(horizontal = 4.dp),
+        colors = ClickableSurfaceDefaults.colors(
+            containerColor = if (selected) TvMaterialTheme.colorScheme.primary else Color.Transparent,
+            focusedContainerColor = if (selected) TvMaterialTheme.colorScheme.primaryContainer else Color.White.copy(alpha = 0.1f)
+        ),
+        shape = ClickableSurfaceDefaults.shape(TvMaterialTheme.shapes.medium)
+    ) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+            TvText(text = text, style = TvMaterialTheme.typography.labelLarge, color = Color.White)
+        }
+    }
+}
+
+@Composable
+fun TvTrackItem(title: String, isSelected: Boolean, onClick: () -> Unit) {
+    TvSurface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth().height(56.dp),
+        colors = ClickableSurfaceDefaults.colors(
+            containerColor = if (isSelected) Color.White.copy(alpha = 0.15f) else Color.Transparent,
+            focusedContainerColor = Color.White.copy(alpha = 0.25f)
+        ),
+        shape = ClickableSurfaceDefaults.shape(TvMaterialTheme.shapes.small)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            TvText(text = title, style = TvMaterialTheme.typography.bodyLarge, color = Color.White)
+            if (isSelected) {
+                TvIcon(Icons.Default.Check, null, tint = TvMaterialTheme.colorScheme.primary)
+            }
+        }
+    }
+}
+
+private fun formatTime(ms: Long): String {
+    if (ms <= 0) return "00:00"
+    val totalSeconds = ms / 1000
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+    return if (hours > 0) {
+        String.format("%d:%02d:%02d", hours, minutes, seconds)
+    } else {
+        String.format("%02d:%02d", minutes, seconds)
+    }
+}
+
 
 @Composable
 private fun ControlButton(

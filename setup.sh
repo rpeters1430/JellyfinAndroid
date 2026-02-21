@@ -182,7 +182,28 @@ fi
 
 if [ -f "$PROJECT_DIR/gradlew" ]; then
   chmod +x "$PROJECT_DIR/gradlew"
-  echo "sdk.dir=$SDK_ROOT" > "$PROJECT_DIR/local.properties"
+  LOCAL_PROPERTIES_FILE="$PROJECT_DIR/local.properties"
+  TMP_FILE="$(mktemp)"
+
+  if [ -f "$LOCAL_PROPERTIES_FILE" ]; then
+    grep -v '^sdk\.dir=' "$LOCAL_PROPERTIES_FILE" > "$TMP_FILE" || true
+  fi
+
+  {
+    echo "sdk.dir=$SDK_ROOT"
+    cat "$TMP_FILE" 2>/dev/null || true
+  } > "$LOCAL_PROPERTIES_FILE"
+
+  if ! grep -q '^GOOGLE_AI_API_KEY=' "$LOCAL_PROPERTIES_FILE"; then
+    {
+      echo ""
+      echo "## Google AI API key for Gemini cloud fallback"
+      echo "## Get your key from: https://aistudio.google.com/apikey"
+      echo "GOOGLE_AI_API_KEY="
+    } >> "$LOCAL_PROPERTIES_FILE"
+  fi
+
+  rm -f "$TMP_FILE"
 fi
 
 echo "✅ Android SDK ready (API $TARGET_API, Build-Tools $BUILD_TOOLS)"

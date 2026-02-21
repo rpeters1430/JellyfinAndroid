@@ -11,6 +11,31 @@ if (-not $sdkDir -or $sdkDir -eq "") {
   exit 1
 }
 
-"sdk.dir=$sdkDir" | Out-File -FilePath local.properties -Encoding UTF8 -NoNewline
-Write-Host "Wrote local.properties with sdk.dir=$sdkDir"
+$localPropertiesPath = "local.properties"
+$existingLines = @()
 
+if (Test-Path $localPropertiesPath) {
+  $existingLines = Get-Content $localPropertiesPath
+}
+
+# Keep existing values but replace sdk.dir with the latest path.
+$filteredLines = $existingLines | Where-Object { $_ -notmatch '^sdk\.dir=' }
+$newLines = @("sdk.dir=$sdkDir") + $filteredLines
+
+$hasGoogleAiApiKey = $false
+foreach ($line in $newLines) {
+  if ($line -match '^GOOGLE_AI_API_KEY=') {
+    $hasGoogleAiApiKey = $true
+    break
+  }
+}
+
+if (-not $hasGoogleAiApiKey) {
+  $newLines += ""
+  $newLines += "## Google AI API key for Gemini cloud fallback"
+  $newLines += "## Get your key from: https://aistudio.google.com/apikey"
+  $newLines += "GOOGLE_AI_API_KEY="
+}
+
+$newLines | Set-Content -Path $localPropertiesPath -Encoding UTF8
+Write-Host "Updated local.properties with sdk.dir=$sdkDir (existing entries preserved)"

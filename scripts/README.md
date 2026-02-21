@@ -89,7 +89,8 @@ Building signed release bundle (AAB) for Play Console...
 
 ### `gen-local-properties.ps1` / `gen-local-properties.sh`
 
-Generates `local.properties` file with Android SDK path from environment variables. Used primarily in CI/CD environments.
+Generates or updates `local.properties` with Android SDK path from environment variables. Used primarily in CI/CD environments.
+Preserves existing entries (such as `GOOGLE_AI_API_KEY` and signing keys) and adds a `GOOGLE_AI_API_KEY=` placeholder if missing.
 
 **Windows:**
 ```powershell

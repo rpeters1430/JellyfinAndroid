@@ -57,6 +57,7 @@ fun TvCarouselHomeContent(
     focusManager: TvFocusManager,
     modifier: Modifier = Modifier,
     header: @Composable () -> Unit,
+    onItemFocus: (BaseItemDto) -> Unit = {},
     onItemSelect: (BaseItemDto) -> Unit,
     libraries: List<BaseItemDto>,
     onLibrarySelect: (String) -> Unit,
@@ -80,6 +81,7 @@ fun TvCarouselHomeContent(
                 section = section,
                 layoutConfig = layoutConfig,
                 focusManager = focusManager,
+                onItemFocus = onItemFocus,
                 onItemSelect = onItemSelect,
                 initialFocusRequester = initialFocusRequester.takeIf { firstSectionId == section.id },
             )
@@ -101,6 +103,7 @@ private fun TvContentCardSection(
     section: TvHomeMediaSection,
     layoutConfig: AdaptiveLayoutConfig,
     focusManager: TvFocusManager,
+    onItemFocus: (BaseItemDto) -> Unit,
     onItemSelect: (BaseItemDto) -> Unit,
     initialFocusRequester: FocusRequester?,
 ) {
@@ -124,6 +127,7 @@ private fun TvContentCardSection(
         title = section.title,
         layoutConfig = layoutConfig,
         focusManager = focusManager,
+        onItemFocus = onItemFocus,
         onItemSelect = onItemSelect,
         carouselId = carouselId,
         isLoading = section.isLoading,
@@ -141,6 +145,7 @@ fun TabletHomeContent(
     focusManager: TvFocusManager,
     modifier: Modifier = Modifier,
     header: @Composable () -> Unit,
+    onItemFocus: (BaseItemDto) -> Unit = {},
     onItemSelect: (BaseItemDto) -> Unit,
     getImageUrl: (BaseItemDto) -> String?,
     getSeriesImageUrl: (BaseItemDto) -> String?,
@@ -165,6 +170,7 @@ fun TabletHomeContent(
                 section = section,
                 layoutConfig = layoutConfig,
                 focusManager = focusManager,
+                onItemFocus = onItemFocus,
                 onItemSelect = onItemSelect,
                 getImageUrl = getImageUrl,
                 getSeriesImageUrl = getSeriesImageUrl,
@@ -188,6 +194,7 @@ private fun TabletMediaSection(
     section: TvHomeMediaSection,
     layoutConfig: AdaptiveLayoutConfig,
     focusManager: TvFocusManager,
+    onItemFocus: (BaseItemDto) -> Unit,
     onItemSelect: (BaseItemDto) -> Unit,
     getImageUrl: (BaseItemDto) -> String?,
     getSeriesImageUrl: (BaseItemDto) -> String?,
@@ -243,6 +250,7 @@ private fun TabletMediaSection(
                 onFocusChanged = { isFocused, index ->
                     if (isFocused && index in items.indices) {
                         focusedIndex = index
+                        onItemFocus(items[index])
                     }
                 },
             ) { focusModifier ->

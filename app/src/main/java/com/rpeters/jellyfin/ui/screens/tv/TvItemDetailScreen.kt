@@ -72,6 +72,7 @@ fun TvItemDetailScreen(
     modifier: Modifier = Modifier,
     viewModel: MainAppViewModel = hiltViewModel(),
     seasonViewModel: TVSeasonViewModel = hiltViewModel(),
+    onItemSelect: (String) -> Unit,
     onPlay: (itemId: String, itemName: String, startPositionMs: Long) -> Unit,
 ) {
     val appState by viewModel.appState.collectAsState()
@@ -90,7 +91,7 @@ fun TvItemDetailScreen(
             ?: appState.allTVShows.firstOrNull { it.id.toString() == id }
             ?: appState.recentlyAdded.firstOrNull { it.id.toString() == id }
             ?: appState.itemsByLibrary.values.asSequence().flatten().firstOrNull { it.id.toString() == id }
-            ?: seasonState.seriesDetails // Fallback to details from season VM
+            ?: seasonState.seriesDetails?.takeIf { it.id.toString() == id }
             ?: appState.selectedItem?.takeIf { it.id.toString() == id }
     }
 
@@ -372,7 +373,7 @@ fun TvItemDetailScreen(
                     layoutConfig = layoutConfig,
                     focusManager = tvFocusManager,
                     onItemSelect = { related ->
-                        // In a real app, navigate to this item's detail
+                        onItemSelect(related.id.toString())
                     }
                 )
             } else if (appState.recentlyAdded.isNotEmpty()) {
@@ -383,7 +384,7 @@ fun TvItemDetailScreen(
                     layoutConfig = layoutConfig,
                     focusManager = tvFocusManager,
                     onItemSelect = { related ->
-                        // Navigate to related item
+                        onItemSelect(related.id.toString())
                     }
                 )
             }

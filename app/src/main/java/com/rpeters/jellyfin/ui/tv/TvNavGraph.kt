@@ -138,6 +138,9 @@ fun TvNavGraph(
                 onLibrarySelect = { libraryId ->
                     navController.navigate("tv_library/$libraryId")
                 },
+                onSearch = {
+                    navController.navigate(TvRoutes.Search)
+                },
                 onPlay = { itemId, itemName, startMs ->
                     navController.navigate(TvRoutes.playerRoute(itemId, itemName, startMs))
                 },
@@ -192,7 +195,7 @@ fun TvNavGraph(
             TvSettingsScreen(
                 onSignOut = {
                     navController.navigate(TvRoutes.ServerConnection) {
-                        popUpTo(0) { inclusive = true }
+                        popUpTo(navController.graph.id) { inclusive = true }
                     }
                 },
             )
@@ -210,6 +213,9 @@ fun TvNavGraph(
             val itemId = backStackEntry.arguments?.getString("itemId")
             TvItemDetailScreen(
                 itemId = itemId,
+                onItemSelect = { selectedId ->
+                    navController.navigate("tv_item/$selectedId")
+                },
                 onPlay = { id, name, startMs ->
                     navController.navigate(TvRoutes.playerRoute(id, name, startMs))
                 },

@@ -57,7 +57,9 @@
       "Bash(gh api:*)",
       "Bash(gh run list:*)",
       "Bash(gh issue view:*)",
-      "Bash(gh issue comment:*)"
+      "Bash(gh issue comment:*)",
+      "Bash(curl:*)",
+      "Bash(git stash:*)"
     ],
     "deny": [],
     "ask": [],
