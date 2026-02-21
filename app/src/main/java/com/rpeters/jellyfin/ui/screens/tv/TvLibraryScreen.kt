@@ -1,22 +1,40 @@
 package com.rpeters.jellyfin.ui.screens.tv
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.adaptive.rememberAdaptiveLayoutConfig
-import com.rpeters.jellyfin.ui.screens.LibraryType
+import com.rpeters.jellyfin.ui.adaptive.rememberWindowLayoutInfo
+import com.rpeters.jellyfin.ui.components.tv.TvContentCard
+import com.rpeters.jellyfin.ui.components.tv.TvEmptyState
+import com.rpeters.jellyfin.ui.components.tv.TvFullScreenLoading
+import com.rpeters.jellyfin.ui.components.tv.TvImmersiveBackground
+import com.rpeters.jellyfin.ui.tv.TvFocusableGrid
 import com.rpeters.jellyfin.ui.tv.rememberTvFocusManager
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
+import com.rpeters.jellyfin.ui.screens.LibraryType
+import org.jellyfin.sdk.model.api.CollectionType
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text as TvText
 
@@ -30,117 +48,144 @@ fun TvLibraryScreen(
 ) {
     val context = LocalContext.current
     val windowSizeClass = calculateWindowSizeClass(context as android.app.Activity)
-    val layoutConfig = rememberAdaptiveLayoutConfig(windowSizeClass)
+    val windowLayoutInfo = rememberWindowLayoutInfo()
+    val layoutConfig = rememberAdaptiveLayoutConfig(windowSizeClass, windowLayoutInfo)
     val focusManager = rememberTvFocusManager()
     val appState by viewModel.appState.collectAsState()
     val library = appState.libraries.firstOrNull { it.id.toString() == libraryId }
+        ?: when (libraryId) {
+            "movies"  -> appState.libraries.firstOrNull {
+                it.collectionType == CollectionType.MOVIES
+            }
+            "tvshows" -> appState.libraries.firstOrNull {
+                it.collectionType == CollectionType.TVSHOWS
+            }
+            "music"   -> appState.libraries.firstOrNull {
+                it.collectionType == CollectionType.MUSIC
+            }
+            else -> null
+        }
+    
+    var focusedBackdrop by remember { mutableStateOf<String?>(null) }
 
     // Ensure libraries are loaded first
-    androidx.compose.runtime.LaunchedEffect(appState.libraries, appState.isLoading) {
+    LaunchedEffect(appState.libraries, appState.isLoading) {
         if (appState.libraries.isEmpty() && !appState.isLoading) {
             viewModel.loadInitialData()
         }
     }
 
-    // Choose items based on library type - use itemsByLibrary for library-specific data
-    val items = when (library?.collectionType) {
-        org.jellyfin.sdk.model.api.CollectionType.MOVIES ->
-            appState.itemsByLibrary[libraryId] ?: emptyList()
-        org.jellyfin.sdk.model.api.CollectionType.TVSHOWS ->
-            appState.itemsByLibrary[libraryId] ?: emptyList()
-        org.jellyfin.sdk.model.api.CollectionType.MUSIC ->
-            appState.itemsByLibrary[libraryId] ?: emptyList()
-        org.jellyfin.sdk.model.api.CollectionType.HOMEVIDEOS ->
-            appState.itemsByLibrary[libraryId] ?: emptyList()
-        else ->
-            appState.itemsByLibrary[libraryId] ?: emptyList()
+    // Choose items based on library type
+    val items = if (libraryId == "favorites") {
+        appState.favorites
+    } else {
+        appState.itemsByLibrary[library?.id?.toString() ?: libraryId] ?: emptyList()
     }
 
     // Determine if this specific library is loading
     val isLibraryLoading = when (library?.collectionType) {
-        org.jellyfin.sdk.model.api.CollectionType.MOVIES -> appState.isLoadingMovies
-        org.jellyfin.sdk.model.api.CollectionType.TVSHOWS -> appState.isLoadingTVShows
+        CollectionType.MOVIES -> appState.isLoadingMovies
+        CollectionType.TVSHOWS -> appState.isLoadingTVShows
         else -> appState.isLoading
     }
 
-    // Trigger on-demand loading based on library type
-    // Only trigger after libraries are loaded to avoid race condition
-    androidx.compose.runtime.LaunchedEffect(libraryId, library?.collectionType, appState.libraries) {
-        // Wait for libraries to be loaded before attempting to load library content
-        if (appState.libraries.isEmpty()) {
-            return@LaunchedEffect
+    // Load favorites when navigating to the favorites synthetic route
+    LaunchedEffect(libraryId) {
+        if (libraryId == "favorites") {
+            viewModel.loadFavorites()
         }
+    }
+
+    // Trigger on-demand loading
+    LaunchedEffect(libraryId, library?.collectionType, appState.libraries) {
+        if (appState.libraries.isEmpty()) return@LaunchedEffect
 
         library?.let { lib ->
             when (lib.collectionType) {
-                org.jellyfin.sdk.model.api.CollectionType.MOVIES -> {
-                    viewModel.loadLibraryTypeData(lib, LibraryType.MOVIES)
-                }
-                org.jellyfin.sdk.model.api.CollectionType.TVSHOWS -> {
-                    viewModel.loadLibraryTypeData(lib, LibraryType.TV_SHOWS)
-                }
-                org.jellyfin.sdk.model.api.CollectionType.MUSIC -> {
-                    viewModel.loadLibraryTypeData(lib, LibraryType.MUSIC)
-                }
-                org.jellyfin.sdk.model.api.CollectionType.HOMEVIDEOS -> {
-                    viewModel.loadHomeVideos(lib.id.toString())
-                }
-                else -> {
-                    // For other types, try loading as home videos
-                    viewModel.loadHomeVideos(lib.id.toString())
-                }
+                CollectionType.MOVIES -> viewModel.loadLibraryTypeData(lib, LibraryType.MOVIES)
+                CollectionType.TVSHOWS -> viewModel.loadLibraryTypeData(lib, LibraryType.TV_SHOWS)
+                CollectionType.MUSIC -> viewModel.loadLibraryTypeData(lib, LibraryType.MUSIC)
+                else -> viewModel.loadHomeVideos(lib.id.toString())
             }
         }
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(56.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
-    ) {
-        TvText(
-            text = library?.name ?: "Library",
-            style = TvMaterialTheme.typography.headlineLarge,
-            color = TvMaterialTheme.colorScheme.onSurface,
-        )
+    Box(modifier = modifier.fillMaxSize()) {
+        // Background Layer
+        TvImmersiveBackground(backdropUrl = focusedBackdrop)
 
-        if (isLibraryLoading && items.isEmpty()) {
-            com.rpeters.jellyfin.ui.components.tv.TvSkeletonCarousel(
-                title = "Loading...",
-                itemCount = 6,
+        // Content Layer
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 56.dp)
+                .padding(top = 48.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+        ) {
+            TvText(
+                text = library?.name ?: when (libraryId) {
+                    "movies"    -> "Movies"
+                    "tvshows"   -> "TV Shows"
+                    "music"     -> "Music"
+                    "favorites" -> "Favorites"
+                    else        -> "Library"
+                },
+                style = TvMaterialTheme.typography.displaySmall,
+                color = Color.White,
             )
-        } else if (items.isEmpty()) {
-            com.rpeters.jellyfin.ui.components.tv.TvEmptyState(
-                title = "No Items Found",
-                message = "This library appears to be empty or still loading.",
-                onAction = {
-                    // Retry loading
-                    library?.let { lib ->
-                        when (lib.collectionType) {
-                            org.jellyfin.sdk.model.api.CollectionType.MOVIES ->
-                                viewModel.loadLibraryTypeData(lib, LibraryType.MOVIES, forceRefresh = true)
-                            org.jellyfin.sdk.model.api.CollectionType.TVSHOWS ->
-                                viewModel.loadLibraryTypeData(lib, LibraryType.TV_SHOWS, forceRefresh = true)
-                            org.jellyfin.sdk.model.api.CollectionType.MUSIC ->
-                                viewModel.loadLibraryTypeData(lib, LibraryType.MUSIC, forceRefresh = true)
-                            else ->
-                                viewModel.loadHomeVideos(lib.id.toString())
+
+            if (isLibraryLoading && items.isEmpty()) {
+                TvFullScreenLoading(message = "Loading items...")
+            } else if (items.isEmpty()) {
+                TvEmptyState(
+                    title = "No Items Found",
+                    message = "This library appears to be empty.",
+                    onAction = { viewModel.loadInitialData(forceRefresh = true) },
+                    actionText = "Refresh",
+                )
+            } else {
+                val gridState = rememberLazyGridState()
+                val columns = layoutConfig.gridColumns.coerceAtLeast(4)
+                
+                TvFocusableGrid(
+                    gridId = "library_${libraryId ?: "all"}",
+                    focusManager = focusManager,
+                    lazyGridState = gridState,
+                    itemCount = items.size,
+                    columnsCount = columns,
+                    onFocusChanged = { isFocused, index ->
+                        if (isFocused && index in items.indices) {
+                            focusedBackdrop = viewModel.getBackdropUrl(items[index])
                         }
                     }
-                },
-                actionText = "Retry",
-            )
-        } else {
-            com.rpeters.jellyfin.ui.components.tv.TvContentCarousel(
-                items = items,
-                title = "All Items",
-                layoutConfig = layoutConfig,
-                focusManager = focusManager,
-                onItemSelect = { baseItem ->
-                    onItemSelect(baseItem.id.toString())
-                },
-            )
+                ) { focusModifier ->
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(columns),
+                        state = gridState,
+                        modifier = focusModifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 56.dp),
+                        verticalArrangement = Arrangement.spacedBy(24.dp),
+                        horizontalArrangement = Arrangement.spacedBy(24.dp),
+                    ) {
+                        itemsIndexed(
+                            items = items,
+                            key = { _, item -> item.id.toString() },
+                        ) { index, item ->
+                            TvContentCard(
+                                item = item,
+                                onItemFocus = {
+                                    focusedBackdrop = viewModel.getBackdropUrl(item)
+                                },
+                                onItemSelect = { onItemSelect(item.id.toString()) },
+                                getImageUrl = viewModel::getImageUrl,
+                                getSeriesImageUrl = viewModel::getSeriesImageUrl,
+                                posterWidth = layoutConfig.carouselItemWidth,
+                                posterHeight = layoutConfig.carouselItemHeight,
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
