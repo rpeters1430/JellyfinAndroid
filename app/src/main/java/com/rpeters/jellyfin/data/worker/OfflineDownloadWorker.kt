@@ -179,14 +179,15 @@ class OfflineDownloadWorker @AssistedInject constructor(
             .addAction(R.drawable.ic_launcher_monochrome, "Cancel", cancelPendingIntent)
             .build()
 
+        val notificationId = NOTIFICATION_ID_FOREGROUND_BASE + (downloadId.hashCode() and 0x7FFFFFFF) % 1000
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             ForegroundInfo(
-                NOTIFICATION_ID_FOREGROUND,
+                notificationId,
                 notification,
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
             )
         } else {
-            ForegroundInfo(NOTIFICATION_ID_FOREGROUND, notification)
+            ForegroundInfo(notificationId, notification)
         }
     }
 
@@ -274,7 +275,7 @@ class OfflineDownloadWorker @AssistedInject constructor(
         const val KEY_DOWNLOAD_ID = "offline_download_id"
         private const val CHANNEL_DOWNLOADS = "offline_downloads_progress"
         private const val CHANNEL_COMPLETED = "offline_downloads_completed"
-        private const val NOTIFICATION_ID_FOREGROUND = 3901
+        private const val NOTIFICATION_ID_FOREGROUND_BASE = 3000
         private const val NOTIFICATION_ID_COMPLETION_BASE = 4100
         private const val FOREGROUND_UPDATE_MIN_INTERVAL_MS = 1500L
         private const val FOREGROUND_UPDATE_MIN_PERCENT_DELTA = 2
