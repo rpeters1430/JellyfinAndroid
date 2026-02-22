@@ -18,6 +18,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import okhttp3.Call
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.Request
@@ -191,6 +192,34 @@ class OfflineDownloadManagerTest {
         assertNotNull("Download progress should not be null", progress)
         assertTrue(progress.containsKey(downloadId))
         assertEquals(100f, progress[downloadId]?.progressPercent)
+    }
+
+    @Test
+    fun `download completes correctly with throttled DataStore writes`() = runTest(testDispatcher) {
+        val item = buildBaseItem(id = UUID.randomUUID(), name = "Throttle Test")
+        val downloadUrl = "https://server/stream/video.mp4"
+
+        // 3 MB body — would cause ~384 DataStore writes at 8 KB/chunk before the fix
+        val threeMB = ByteArray(3 * 1024 * 1024) { it.toByte() }
+        val call = mockk<Call>(relaxed = true)
+        val response = Response.Builder()
+            .request(Request.Builder().url("https://server/video.mp4").build())
+            .protocol(Protocol.HTTP_1_1)
+            .code(200)
+            .message("OK")
+            .body(threeMB.toResponseBody("video/mp4".toMediaType()))
+            .build()
+        every { okHttpClient.newCall(any()) } returns call
+        every { call.execute() } returns response
+
+        val downloadId = manager.startDownload(item, downloadUrl = downloadUrl)
+        advanceUntilIdle()
+
+        val download = manager.downloads.value.find { it.id == downloadId }
+        assertNotNull("Download should exist", download)
+        assertEquals("Download should be COMPLETED", DownloadStatus.COMPLETED, download?.status)
+        assertTrue("Progress should be tracked", manager.downloadProgress.value.containsKey(downloadId))
+        assertEquals("Final progress should be 100%", 100f, manager.downloadProgress.value[downloadId]?.progressPercent)
     }
 
     // Helper functions

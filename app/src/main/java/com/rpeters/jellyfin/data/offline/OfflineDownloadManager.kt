@@ -374,6 +374,8 @@ class OfflineDownloadManager @Inject constructor(
                     var totalBytesRead = startByte
                     var bytesRead: Int
                     val startTime = System.currentTimeMillis()
+                    var lastSavedBytes = startByte
+                    val SAVE_INTERVAL_BYTES = 1_048_576L
 
                     while (inputStream.read(buffer).also { bytesRead = it } != -1) {
                         if (!currentCoroutineContext().isActive) break
@@ -414,7 +416,11 @@ class OfflineDownloadManager @Inject constructor(
 
                         updateDownloadProgress(progress)
                         onProgress?.invoke(download, progress)
-                        updateDownloadBytes(download.id, totalBytesRead)
+                        // Only persist to DataStore every 1 MB to avoid hammering storage
+                        if (totalBytesRead - lastSavedBytes >= SAVE_INTERVAL_BYTES) {
+                            updateDownloadBytes(download.id, totalBytesRead)
+                            lastSavedBytes = totalBytesRead
+                        }
                     }
                     return totalBytesRead
                 }
