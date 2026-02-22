@@ -581,8 +581,9 @@ class OfflineDownloadManager @Inject constructor(
     }
 
     private fun getOfflineDirectory(): File {
-        val externalDir = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
-        val offlineDir = File(externalDir, JELLYFIN_OFFLINE_DIR)
+        val baseDir = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
+            ?: context.filesDir  // fallback to internal storage if external unavailable
+        val offlineDir = File(baseDir, JELLYFIN_OFFLINE_DIR)
         if (!offlineDir.exists()) {
             offlineDir.mkdirs()
         }

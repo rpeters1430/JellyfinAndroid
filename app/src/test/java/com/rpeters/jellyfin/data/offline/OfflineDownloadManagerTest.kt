@@ -195,6 +195,18 @@ class OfflineDownloadManagerTest {
     }
 
     @Test
+    fun `getAvailableStorage does not throw when called`() = runTest(testDispatcher) {
+        val storage = manager.getAvailableStorage()
+        assertTrue("Available storage should be non-negative", storage >= 0)
+    }
+
+    @Test
+    fun `getUsedStorage does not throw when called`() = runTest(testDispatcher) {
+        val used = manager.getUsedStorage()
+        assertTrue("Used storage should be non-negative", used >= 0)
+    }
+
+    @Test
     fun `download completes correctly with throttled DataStore writes`() = runTest(testDispatcher) {
         val item = buildBaseItem(id = UUID.randomUUID(), name = "Throttle Test")
         val downloadUrl = "https://server/stream/video.mp4"
