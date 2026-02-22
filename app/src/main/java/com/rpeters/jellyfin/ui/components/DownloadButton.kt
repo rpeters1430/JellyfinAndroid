@@ -135,6 +135,7 @@ private fun DownloadingButton(
     }
     val displayProgress = when {
         isTranscoding && transcodingProgress != null -> transcodingProgress / 100f
+        isTranscoding -> 0f
         else -> progress / 100f
     }
 

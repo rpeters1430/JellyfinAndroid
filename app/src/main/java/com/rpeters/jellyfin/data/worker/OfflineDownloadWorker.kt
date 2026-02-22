@@ -78,9 +78,10 @@ class OfflineDownloadWorker @AssistedInject constructor(
                             progressPercent = percent,
                             downloadedBytes = progress.downloadedBytes,
                             totalBytes = progress.totalBytes,
-                            indeterminate = progress.totalBytes <= 0L && !progress.isTranscoding,
+                            indeterminate = progress.totalBytes <= 0L,
                             isTranscoding = progress.isTranscoding,
                             transcodingProgress = progress.transcodingProgress,
+                            transcodingEtaMs = progress.transcodingEtaMs,
                         ),
                     )
                 }
@@ -117,6 +118,7 @@ class OfflineDownloadWorker @AssistedInject constructor(
         indeterminate: Boolean,
         isTranscoding: Boolean = false,
         transcodingProgress: Float? = null,
+        transcodingEtaMs: Long? = null,
     ): ForegroundInfo {
         val pauseIntent = Intent(applicationContext, DownloadActionReceiver::class.java).apply {
             action = DownloadActionReceiver.ACTION_PAUSE
@@ -149,17 +151,26 @@ class OfflineDownloadWorker @AssistedInject constructor(
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .apply {
-                if (isTranscoding && transcodingProgress != null) {
-                    // Phase 1: Server is transcoding
-                    val tcPercent = transcodingProgress.toInt().coerceIn(0, 100)
-                    setProgress(100, tcPercent, false)
-                    setSubText("Server transcoding: $tcPercent% \u00b7 Downloaded: ${formatBytes(downloadedBytes)}")
+                if (isTranscoding) {
+                    val tcPercent = transcodingProgress?.toInt()?.coerceIn(0, 100)
+                    if (tcPercent != null) {
+                        setProgress(100, tcPercent, false)
+                    } else {
+                        setProgress(100, 0, true)
+                    }
+                    val etaText = transcodingEtaMs?.let { " · ETA ${formatDuration(it)}" } ?: ""
+                    val progressText = tcPercent?.let { "$it%" } ?: "starting"
+                    setSubText("Server transcoding: $progressText$etaText")
                 } else if (totalBytes > 0L) {
-                    // Phase 2: Normal download with known size
+                    // Known or estimated size - show determinate progress
                     setProgress(100, progressPercent, false)
-                    setSubText("${formatBytes(downloadedBytes)} / ${formatBytes(totalBytes)}")
+                    setSubText("${formatBytes(downloadedBytes)} / ~${formatBytes(totalBytes)}")
+                } else if (downloadedBytes > 0L) {
+                    // Unknown size, data flowing - show downloaded amount
+                    setProgress(100, 0, true)
+                    setSubText("Downloaded ${formatBytes(downloadedBytes)}")
                 } else {
-                    // Fallback: indeterminate
+                    // Initial state before data starts flowing
                     setProgress(100, 0, true)
                     setSubText("Preparing download")
                 }
@@ -248,6 +259,14 @@ class OfflineDownloadWorker @AssistedInject constructor(
         } else {
             String.format("%.1f %s", value, units[unitIndex])
         }
+    }
+
+    private fun formatDuration(durationMs: Long): String {
+        if (durationMs <= 0L) return "<1m"
+        val totalSeconds = durationMs / 1000
+        val minutes = totalSeconds / 60
+        val seconds = totalSeconds % 60
+        return if (minutes > 0) "${minutes}m ${seconds}s" else "${seconds}s"
     }
 
     companion object {

@@ -347,15 +347,24 @@ class OfflineDownloadManager @Inject constructor(
         val body = response.body
 
         val bodyLength = body.contentLength()
-        val totalBytesExpected = if (bodyLength > 0L) startByte + bodyLength else bodyLength
+        val isEstimatedSize = bodyLength <= 0L
+        // If server provides Content-Length, use it. Otherwise estimate from bitrate × duration.
+        val totalBytesExpected = when {
+            bodyLength > 0L -> startByte + bodyLength
+            else -> estimateTotalBytes(download)
+        }
         val outputFile = File(download.localFilePath)
 
         // Create parent directories if they don't exist
         outputFile.parentFile?.mkdirs()
 
-        // Start transcoding progress poller for non-original quality downloads
         val transcodingRef = AtomicReference<com.rpeters.jellyfin.data.repository.TranscodingProgressInfo?>(null)
         val pollerJob = downloadScope.launchTranscodingPoller(download, transcodingRef)
+
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "Download starting: contentLength=$bodyLength, " +
+                "estimatedTotal=$totalBytesExpected, quality=${download.quality?.label}")
+        }
 
         try {
             body.byteStream().use { inputStream ->
@@ -376,30 +385,31 @@ class OfflineDownloadManager @Inject constructor(
                         val currentTime = System.currentTimeMillis()
                         val elapsedTime = currentTime - startTime
                         val speed = if (elapsedTime > 0) ((totalBytesRead - startByte) * 1000L) / elapsedTime else 0L
-                        val remainingBytes = totalBytesExpected - totalBytesRead
-                        val remainingTime = if (speed > 0) (remainingBytes * 1000L) / speed else null
+                        val remainingBytes = if (totalBytesExpected > 0L) totalBytesExpected - totalBytesRead else 0L
+                        val remainingTime = if (speed > 0 && totalBytesExpected > 0L) {
+                            (remainingBytes * 1000L) / speed
+                        } else {
+                            null
+                        }
 
-                        // Read latest transcoding progress
-                        val transcodingInfo = transcodingRef.get()
-                        val isNonOriginal = download.quality != null && download.quality.id != "original"
-                        val transcodingActive = isNonOriginal &&
-                            (transcodingInfo == null || transcodingInfo.completionPercentage < 100.0)
-                        val isTranscoding = totalBytesExpected <= 0L && transcodingActive
+                        val rawPercent = if (totalBytesExpected > 0L) {
+                            totalBytesRead.toFloat() / totalBytesExpected * 100f
+                        } else {
+                            0f
+                        }
+                        // Cap estimated progress at 99% since the estimate may be inaccurate
+                        val progressPercent = if (isEstimatedSize) rawPercent.coerceAtMost(99f) else rawPercent
 
                         val progress = DownloadProgress(
                             downloadId = download.id,
                             downloadedBytes = totalBytesRead,
                             totalBytes = totalBytesExpected,
-                            progressPercent = if (totalBytesExpected > 0) {
-                                (totalBytesRead.toFloat() / totalBytesExpected * 100f)
-                            } else {
-                                // Use transcoding progress as the displayed percentage when no content length
-                                transcodingInfo?.completionPercentage?.toFloat() ?: 0f
-                            },
+                            progressPercent = progressPercent,
                             downloadSpeedBps = speed,
                             remainingTimeMs = remainingTime,
-                            isTranscoding = isTranscoding,
-                            transcodingProgress = transcodingInfo?.completionPercentage?.toFloat(),
+                            isTranscoding = false,
+                            transcodingProgress = null,
+                            transcodingEtaMs = null,
                         )
 
                         updateDownloadProgress(progress)
@@ -415,34 +425,70 @@ class OfflineDownloadManager @Inject constructor(
     }
 
     /**
-     * Poll server for transcoding progress in a background coroutine.
-     * Updates the provided AtomicReference with the latest progress.
-     * Stops when transcoding completes or coroutine is cancelled.
+     * Poll server for transcoding progress before media bytes start flowing.
+     * This allows notifications/UI to show "transcoding" state and ETA.
      */
     private fun CoroutineScope.launchTranscodingPoller(
         download: OfflineDownload,
         progressRef: AtomicReference<com.rpeters.jellyfin.data.repository.TranscodingProgressInfo?>,
     ): Job? {
-        // Only poll for non-original quality downloads
         val quality = download.quality ?: return null
         if (quality.id == "original") return null
 
         val deviceId = deviceCapabilities.getDeviceId()
 
         return launch {
+            var previousPercent: Double? = null
+            var previousAtMs: Long? = null
+
             try {
                 while (isActive) {
-                    delay(TRANSCODING_POLL_INTERVAL_MS)
                     val progress = repository.getTranscodingProgress(
                         deviceId = deviceId,
                         jellyfinItemId = download.jellyfinItemId,
                     )
                     progressRef.set(progress)
 
-                    // Stop polling once transcoding is complete
-                    if (progress != null && progress.completionPercentage >= 100.0) {
+                    val percent = progress?.completionPercentage?.coerceIn(0.0, 100.0)
+                    val now = System.currentTimeMillis()
+                    val etaMs = if (percent != null && previousPercent != null && previousAtMs != null) {
+                        val prevPercent = previousPercent
+                        val prevAtMs = previousAtMs
+                        val deltaPercent = percent - prevPercent
+                        val deltaMs = now - prevAtMs
+                        if (deltaPercent > 0.0 && deltaMs > 0L && percent < 100.0) {
+                            val percentPerMs = deltaPercent / deltaMs.toDouble()
+                            (((100.0 - percent) / percentPerMs).toLong()).coerceAtLeast(0L)
+                        } else {
+                            null
+                        }
+                    } else {
+                        null
+                    }
+
+                    if (percent != null) {
+                        val progressUpdate = DownloadProgress(
+                            downloadId = download.id,
+                            downloadedBytes = 0L,
+                            totalBytes = -1L,
+                            progressPercent = percent.toFloat(),
+                            downloadSpeedBps = 0L,
+                            remainingTimeMs = null,
+                            isTranscoding = true,
+                            transcodingProgress = percent.toFloat(),
+                            transcodingEtaMs = etaMs,
+                        )
+                        updateDownloadProgress(progressUpdate)
+                    }
+
+                    previousPercent = percent
+                    previousAtMs = now
+
+                    if (percent != null && percent >= 100.0) {
                         break
                     }
+
+                    delay(TRANSCODING_POLL_INTERVAL_MS)
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -454,12 +500,44 @@ class OfflineDownloadManager @Inject constructor(
         }
     }
 
+    /**
+     * Estimate total download bytes from bitrate and runtime when Content-Length is unavailable.
+     * This happens for transcoded streams where the server sends chunked encoding.
+     * The estimate uses: totalBytes = (videoBitrate + audioBitrate) × durationSeconds / 8
+     * with a 5% overhead factor for container metadata.
+     */
+    private fun estimateTotalBytes(download: OfflineDownload): Long {
+        val quality = download.quality ?: return -1L
+        val runtimeTicks = download.runtimeTicks ?: return -1L
+        if (quality.id == "original") return -1L
+
+        val durationSeconds = runtimeTicks / 10_000_000.0
+        val videoBitrate = quality.bitrate.toLong()
+        val audioBitrate = (quality.audioBitrate ?: 128_000).toLong()
+        val totalBitrate = videoBitrate + audioBitrate
+
+        // Convert bits to bytes, add 5% for container overhead
+        val estimatedBytes = (totalBitrate * durationSeconds / 8.0 * 1.05).toLong()
+
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "Estimated download size: ${estimatedBytes / (1024 * 1024)}MB " +
+                "(${durationSeconds.toLong()}s @ ${totalBitrate / 1000}kbps)")
+        }
+
+        return if (estimatedBytes > 0L) estimatedBytes else -1L
+    }
+
+
     private suspend fun createDownload(
         item: BaseItemDto,
         quality: VideoQuality?,
         downloadUrl: String?,
     ): OfflineDownload {
-        val url = downloadUrl ?: repository.getStreamUrl(item.id.toString()) ?: ""
+        val itemId = item.id.toString()
+        val url = downloadUrl
+            ?: repository.getDownloadUrl(itemId)
+            ?: repository.getStreamUrl(itemId)
+            ?: ""
         val fileName = "${item.name?.replace(Regex("[^a-zA-Z0-9.-]"), "_")}_${System.currentTimeMillis()}.mp4"
         val localPath = File(getOfflineDirectory(), fileName).absolutePath
 
@@ -479,6 +557,7 @@ class OfflineDownloadManager @Inject constructor(
             fileSize = 0L, // Will be updated during download
             quality = quality,
             playSessionId = extractPlaySessionId(url),
+            runtimeTicks = item.runTimeTicks,
             downloadStartTime = System.currentTimeMillis(),
         )
     }

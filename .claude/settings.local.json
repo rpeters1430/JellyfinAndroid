@@ -59,7 +59,12 @@
       "Bash(gh issue view:*)",
       "Bash(gh issue comment:*)",
       "Bash(curl:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "WebFetch(domain:javadoc.io)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:kotlin-sdk.jellyfin.org)",
+      "Bash(cd:*)",
+      "Bash(head:*)"
     ],
     "deny": [],
     "ask": [],

@@ -296,7 +296,7 @@ fun DownloadProgressIndicator(progress: DownloadProgress) {
             Text(
                 when {
                     progress.isTranscoding && progress.transcodingProgress != null ->
-                        "Server transcoding: ${progress.transcodingProgress.roundToInt()}%"
+                        "Transcoding: ${progress.transcodingProgress.roundToInt()}%"
                     progress.isTranscoding ->
                         "Transcoding..."
                     else ->
@@ -306,8 +306,10 @@ fun DownloadProgressIndicator(progress: DownloadProgress) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                if (progress.totalBytes > 0L) {
-                    "${formatBytes(progress.downloadedBytes)} / ${formatBytes(progress.totalBytes)}"
+                if (progress.isTranscoding) {
+                    progress.transcodingEtaMs?.let { "ETA ${formatDuration(it)}" } ?: "Preparing stream..."
+                } else if (progress.totalBytes > 0L) {
+                    "${formatBytes(progress.downloadedBytes)} / ~${formatBytes(progress.totalBytes)}"
                 } else {
                     formatBytes(progress.downloadedBytes)
                 },
@@ -316,27 +318,24 @@ fun DownloadProgressIndicator(progress: DownloadProgress) {
             )
         }
 
-        when {
-            progress.isTranscoding && progress.transcodingProgress != null -> {
-                // Determinate progress bar using transcoding percentage
-                LinearProgressIndicator(
-                    progress = { progress.transcodingProgress / 100f },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-            progress.isTranscoding || progress.totalBytes <= 0L -> {
-                // Indeterminate fallback
-                LinearProgressIndicator(
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-            else -> {
-                // Normal download progress
-                LinearProgressIndicator(
-                    progress = { progress.progressPercent / 100f },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
+        if (progress.isTranscoding && progress.transcodingProgress != null) {
+            LinearProgressIndicator(
+                progress = { progress.transcodingProgress / 100f },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        } else if (progress.isTranscoding || progress.totalBytes <= 0L) {
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth(),
+            )
+        } else if (progress.totalBytes > 0L) {
+            LinearProgressIndicator(
+                progress = { progress.progressPercent / 100f },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        } else {
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
 
         Row(
@@ -350,6 +349,15 @@ fun DownloadProgressIndicator(progress: DownloadProgress) {
             )
             if (!progress.isTranscoding) {
                 progress.remainingTimeMs?.let { remaining ->
+                    Text(
+                        formatDuration(remaining),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            if (progress.isTranscoding) {
+                progress.transcodingEtaMs?.let { remaining ->
                     Text(
                         formatDuration(remaining),
                         style = MaterialTheme.typography.bodySmall,

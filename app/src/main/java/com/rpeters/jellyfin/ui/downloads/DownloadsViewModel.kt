@@ -77,24 +77,22 @@ class DownloadsViewModel @Inject constructor(
         downloadUrl: String? = null,
     ) {
         viewModelScope.launch {
+            val itemId = item.id.toString()
             val url = if (quality != null && quality.id != "original") {
-                // Determine best codec for small size but great quality
-                // HEVC (h265) is preferred for small size
-                val videoCodec = "hevc" 
-                
+                // Use H.264 for offline transcoded downloads for maximum Jellyfin server/device compatibility.
                 repository.getTranscodedStreamUrl(
-                    itemId = item.id.toString(),
+                    itemId = itemId,
                     maxBitrate = quality.bitrate,
                     maxWidth = quality.width,
                     maxHeight = quality.height,
-                    videoCodec = videoCodec,
+                    videoCodec = "h264",
                     audioCodec = "aac",
                     audioBitrate = quality.audioBitrate,
                     audioChannels = quality.audioChannels ?: 2,
                     container = "mp4",
-                )
+                ) ?: repository.getDownloadUrl(itemId)
             } else {
-                downloadUrl ?: repository.getDownloadUrl(item.id.toString())
+                downloadUrl ?: repository.getDownloadUrl(itemId)
             }
 
             downloadManager.startDownload(item, quality, url)

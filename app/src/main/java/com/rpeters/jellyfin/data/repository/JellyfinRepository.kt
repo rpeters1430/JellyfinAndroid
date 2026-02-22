@@ -1307,7 +1307,6 @@ class JellyfinRepository @Inject constructor(
 
     /**
      * Get transcoding progress for active sessions on this device.
-     * Polls the Sessions API to get TranscodingInfo.completionPercentage.
      *
      * @param deviceId The device ID to filter sessions by
      * @param jellyfinItemId Optional item ID to match specific transcoding session
@@ -1324,7 +1323,6 @@ class JellyfinRepository @Inject constructor(
             }
             val sessions = response.content
 
-            // Find session with active transcoding
             val session = if (jellyfinItemId != null) {
                 sessions.find { session ->
                     session.transcodingInfo != null &&
@@ -1337,7 +1335,6 @@ class JellyfinRepository @Inject constructor(
             session?.transcodingInfo?.let { info ->
                 TranscodingProgressInfo(
                     completionPercentage = info.completionPercentage ?: 0.0,
-                    isActive = true,
                     bitrate = info.bitrate,
                     width = info.width,
                     height = info.height,
@@ -1394,7 +1391,6 @@ class JellyfinRepository @Inject constructor(
 
 data class TranscodingProgressInfo(
     val completionPercentage: Double,
-    val isActive: Boolean,
     val bitrate: Int? = null,
     val width: Int? = null,
     val height: Int? = null,

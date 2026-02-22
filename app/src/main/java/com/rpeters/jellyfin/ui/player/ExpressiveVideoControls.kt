@@ -32,7 +32,6 @@ import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Hd
 import androidx.compose.material.icons.filled.HighQuality
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
@@ -62,7 +61,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
@@ -225,15 +223,11 @@ private fun ExpressiveTopControls(
                                     Color(0xFF00BCD4), // Cyan — video copied, audio transcoded
                                     "Direct Stream",
                                 )
-                                playerState.isTranscoding -> Triple(
+
+                                else -> Triple(
                                     Icons.Default.Settings,
                                     Color(0xFFFF9800), // Orange color
                                     "Transcoding",
-                                )
-                                else -> Triple(
-                                    Icons.Default.Info,
-                                    Color.Gray,
-                                    "Unknown",
                                 )
                             }
 
@@ -372,11 +366,7 @@ private fun ExpressiveBottomControls(
                             modifier = Modifier.weight(1f),
                         ) {
                             // Buffer indicator (background layer) - subtle and less prominent
-                            val bufferedProgress = if (playerState.duration > 0) {
-                                (playerState.bufferedPosition.toFloat() / playerState.duration.toFloat()).coerceIn(0f, 1f)
-                            } else {
-                                0f
-                            }
+                            val bufferedProgress = (playerState.bufferedPosition.toFloat() / playerState.duration.toFloat()).coerceIn(0f, 1f)
 
                             Box(
                                 modifier = Modifier

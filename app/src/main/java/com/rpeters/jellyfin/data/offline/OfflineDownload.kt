@@ -15,7 +15,8 @@ data class OfflineDownload(
     val downloadedBytes: Long = 0L,
     val status: DownloadStatus = DownloadStatus.PENDING,
     val quality: VideoQuality? = null,
-    val playSessionId: String? = null,  // For tracking server transcoding progress
+    val playSessionId: String? = null,
+    val runtimeTicks: Long? = null,  // Item runtime in ticks (10,000,000 ticks = 1 second)
     val thumbnailUrl: String? = null,
     val downloadStartTime: Long? = null,
     val downloadCompleteTime: Long? = null,
@@ -51,4 +52,5 @@ data class DownloadProgress(
     val remainingTimeMs: Long?,
     val isTranscoding: Boolean = false,
     val transcodingProgress: Float? = null,
+    val transcodingEtaMs: Long? = null,
 )
