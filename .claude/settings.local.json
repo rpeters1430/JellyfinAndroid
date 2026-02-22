@@ -64,7 +64,9 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:kotlin-sdk.jellyfin.org)",
       "Bash(cd:*)",
-      "Bash(head:*)"
+      "Bash(head:*)",
+      "Skill(code-review:code-review)",
+      "Bash(git:*)"
     ],
     "deny": [],
     "ask": [],
