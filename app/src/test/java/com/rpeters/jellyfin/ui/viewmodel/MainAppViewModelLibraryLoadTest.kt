@@ -425,4 +425,113 @@ class MainAppViewModelLibraryLoadTest {
         val state = viewModel.appState.value
         assertEquals(null, state.errorMessage)
     }
+
+    @Test
+    fun `loadLibraryTypeData_whenDataAlreadyLoaded_skipsReloadWithoutForceRefresh`() = runTest {
+        // Arrange
+        val libraryId = UUID.randomUUID()
+        val library = BaseItemDto(
+            id = libraryId,
+            name = "Movies",
+            type = BaseItemKind.COLLECTION_FOLDER,
+            collectionType = CollectionType.MOVIES,
+        )
+        val existingMovie = BaseItemDto(
+            id = UUID.randomUUID(),
+            name = "Already Loaded Movie",
+            type = BaseItemKind.MOVIE,
+        )
+
+        // Pre-populate with both library AND existing items
+        viewModel.setAppStateForTest(
+            MainAppState(
+                libraries = listOf(library),
+                itemsByLibrary = mapOf(libraryId.toString() to listOf(existingMovie)),
+            ),
+        )
+
+        // Act - call without forceRefresh
+        viewModel.loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = false)
+        advanceUntilIdle()
+
+        // Assert - getLibraryItems should NOT be called since data is already present
+        coVerify(exactly = 0) {
+            mediaRepository.getLibraryItems(
+                parentId = any(),
+                itemTypes = any(),
+                startIndex = any(),
+                limit = any(),
+                collectionType = any(),
+            )
+        }
+
+        // Existing items should be unchanged
+        val state = viewModel.appState.value
+        val items = state.itemsByLibrary[libraryId.toString()]
+        assertNotNull("Items should still be present", items)
+        assertEquals(1, items!!.size)
+        assertEquals("Already Loaded Movie", items.first().name)
+    }
+
+    @Test
+    fun `loadLibraryTypeData_whenDataAlreadyLoaded_reloadsWithForceRefresh`() = runTest {
+        // Arrange
+        val libraryId = UUID.randomUUID()
+        val library = BaseItemDto(
+            id = libraryId,
+            name = "Movies",
+            type = BaseItemKind.COLLECTION_FOLDER,
+            collectionType = CollectionType.MOVIES,
+        )
+        val existingMovie = BaseItemDto(
+            id = UUID.randomUUID(),
+            name = "Old Movie",
+            type = BaseItemKind.MOVIE,
+        )
+        val newMovie = BaseItemDto(
+            id = UUID.randomUUID(),
+            name = "New Movie",
+            type = BaseItemKind.MOVIE,
+        )
+
+        // Pre-populate with library AND existing items
+        viewModel.setAppStateForTest(
+            MainAppState(
+                libraries = listOf(library),
+                itemsByLibrary = mapOf(libraryId.toString() to listOf(existingMovie)),
+            ),
+        )
+
+        // Mock API to return a different set of items
+        coEvery {
+            mediaRepository.getLibraryItems(
+                parentId = libraryId.toString(),
+                itemTypes = "Movie",
+                startIndex = any(),
+                limit = any(),
+                collectionType = "movies",
+            )
+        } returns ApiResult.Success(listOf(newMovie))
+
+        // Act - call WITH forceRefresh
+        viewModel.loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = true)
+        advanceUntilIdle()
+
+        // Assert - getLibraryItems should be called even though data exists
+        coVerify(exactly = 1) {
+            mediaRepository.getLibraryItems(
+                parentId = libraryId.toString(),
+                itemTypes = "Movie",
+                startIndex = any(),
+                limit = any(),
+                collectionType = "movies",
+            )
+        }
+
+        // Items should be updated with new data
+        val state = viewModel.appState.value
+        val items = state.itemsByLibrary[libraryId.toString()]
+        assertEquals(1, items?.size)
+        assertEquals("New Movie", items?.firstOrNull()?.name)
+    }
 }

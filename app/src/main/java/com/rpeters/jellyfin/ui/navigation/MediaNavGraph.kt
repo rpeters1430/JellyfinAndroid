@@ -274,12 +274,6 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
             SecureLogger.e("NavGraph", "Stuff navigation cancelled: libraryId is null or blank")
             return@composable
         }
-        val viewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
-        val lifecycleOwner = LocalLifecycleOwner.current
-        val appState by viewModel.appState.collectAsStateWithLifecycle(
-            lifecycle = lifecycleOwner.lifecycle,
-            minActiveState = androidx.lifecycle.Lifecycle.State.STARTED,
-        )
 
         LibraryTypeScreen(
             libraryType = LibraryType.STUFF,
@@ -292,7 +286,7 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
                     }
                 }
             },
-            viewModel = viewModel,
+            viewModel = mainViewModel,
         )
     }
 }
