@@ -154,8 +154,7 @@ fun LibraryTypeScreen(
         listState.scrollToItem(0)
     }
 
-    LaunchedEffect(libraryType, appState.libraries) {
-        if (appState.libraries.isEmpty()) return@LaunchedEffect
+    LaunchedEffect(libraryType) {
         hasRequestedData = true
         viewModel.loadLibraryTypeData(libraryType, forceRefresh = false)
     }

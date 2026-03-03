@@ -700,6 +700,12 @@ class MainAppViewModel @Inject constructor(
 
             val libraryId = library.id.toString()
 
+            // Skip reload if data is already loaded and no force refresh requested
+            if (!forceRefresh && _appState.value.itemsByLibrary[libraryId]?.isNotEmpty() == true) {
+                SecureLogger.v("MainAppViewModel-Load", "Skipping reload for library $libraryId - data already present")
+                return@launch
+            }
+
             // ✅ DEBUG: Enhanced logging for library loading
             SecureLogger.v("MainAppViewModel-Load", "🔄 Starting loadLibraryTypeData:")
             SecureLogger.v(
