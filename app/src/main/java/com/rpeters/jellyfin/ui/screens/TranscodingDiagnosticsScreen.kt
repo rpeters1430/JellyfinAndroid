@@ -131,9 +131,9 @@ private fun SummaryCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column {
-                    Text(stringResource(id = R.string.total_videos_label), style = MaterialTheme.typography.bodyMedium)
-                    Text(stringResource(id = R.string.direct_play_label), style = MaterialTheme.typography.bodyMedium)
-                    Text(stringResource(id = R.string.needs_transcoding_label), style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(id = R.string.total_videos_label) + ":", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(id = R.string.direct_play_label) + ":", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(id = R.string.needs_transcoding_label) + ":", style = MaterialTheme.typography.bodyMedium)
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text("$totalVideos", fontWeight = FontWeight.Bold)
