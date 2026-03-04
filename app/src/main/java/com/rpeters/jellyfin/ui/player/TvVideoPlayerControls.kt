@@ -50,6 +50,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -60,6 +61,7 @@ import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.Icon
 import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import com.rpeters.jellyfin.ui.tv.tvKeyboardHandler
 import kotlinx.coroutines.delay
@@ -623,7 +625,7 @@ fun TvPlayerSettingsDialog(
                         .fillMaxWidth()
                         .focusRequester(tabFocusRequesters[3]),
                 ) {
-                    TvText("Close")
+                    TvText(stringResource(id = R.string.close))
                 }
             }
         }

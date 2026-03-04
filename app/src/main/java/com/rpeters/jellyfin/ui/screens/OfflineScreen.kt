@@ -1,9 +1,10 @@
 package com.rpeters.jellyfin.ui.screens
 
+import android.graphics.BitmapFactory
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.Image
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -21,7 +22,6 @@ import com.rpeters.jellyfin.ui.theme.Dimens
 import com.rpeters.jellyfin.ui.utils.*
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
-import android.graphics.BitmapFactory
 import java.io.File
 import java.text.DateFormat
 import java.util.Date
@@ -101,9 +101,9 @@ fun OfflineScreen(
     if (showClearDialog) {
         AlertDialog(
             onDismissRequest = { showClearDialog = false },
-            title = { Text("Clear All Downloads") },
+            title = { Text(stringResource(id = R.string.clear_all_downloads)) },
             text = {
-                Text("This will delete all downloaded content and free up storage space. This action cannot be undone.")
+                Text(stringResource(id = R.string.clear_all_downloads_message))
             },
             confirmButton = {
                 Button(
@@ -116,12 +116,12 @@ fun OfflineScreen(
                         containerColor = MaterialTheme.colorScheme.error,
                     ),
                 ) {
-                    Text("Clear All")
+                    Text(stringResource(id = R.string.clear_all))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showClearDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(id = R.string.cancel))
                 }
             },
         )
@@ -221,7 +221,7 @@ private fun StorageInfoCard(
                             modifier = Modifier.size(18.dp),
                         )
                         Spacer(modifier = Modifier.width(Dimens.Spacing4))
-                        Text("Clear All")
+                        Text(stringResource(id = R.string.clear_all))
                     }
                 }
             }

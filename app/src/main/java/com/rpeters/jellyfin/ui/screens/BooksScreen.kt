@@ -14,7 +14,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.R
 
 @OptInAppExperimentalApis
 @Composable
@@ -25,7 +27,7 @@ fun BooksScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Books") },
+                title = { Text(stringResource(id = R.string.books)) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
@@ -45,7 +47,7 @@ fun BooksScreen(
                 .padding(paddingValues),
             contentAlignment = Alignment.Center,
         ) {
-            Text("Books Screen")
+            Text(stringResource(id = R.string.books_screen))
         }
     }
 }

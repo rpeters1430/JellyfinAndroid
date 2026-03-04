@@ -1,6 +1,5 @@
 package com.rpeters.jellyfin.ui.components.tv
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -21,17 +20,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Button
 import androidx.tv.material3.Carousel
-import androidx.tv.material3.CarouselDefaults
 import androidx.tv.material3.CarouselState
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import androidx.tv.material3.rememberCarouselState
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.image.rememberScreenWidthHeight
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -71,7 +71,7 @@ fun TvHeroCarousel(
                 contentDescription = item.name,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
-                requestSize = rememberScreenWidthHeight(400.dp)
+                requestSize = rememberScreenWidthHeight(400.dp),
             )
 
             // Cinematic Gradient Overlay
@@ -83,14 +83,14 @@ fun TvHeroCarousel(
                             colors = listOf(
                                 Color.Black.copy(alpha = 0.8f),
                                 Color.Black.copy(alpha = 0.4f),
-                                Color.Transparent
+                                Color.Transparent,
                             ),
                             startX = 0f,
-                            endX = Float.POSITIVE_INFINITY
-                        )
-                    )
+                            endX = Float.POSITIVE_INFINITY,
+                        ),
+                    ),
             )
-            
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -98,10 +98,10 @@ fun TvHeroCarousel(
                         brush = Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                Color.Black.copy(alpha = 0.7f)
-                            )
-                        )
-                    )
+                                Color.Black.copy(alpha = 0.7f),
+                            ),
+                        ),
+                    ),
             )
 
             // Content Information
@@ -110,7 +110,7 @@ fun TvHeroCarousel(
                     .align(Alignment.CenterStart)
                     .padding(start = 56.dp, bottom = 48.dp)
                     .fillMaxWidth(0.5f),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
                     text = item.name ?: "Unknown Title",
@@ -118,7 +118,7 @@ fun TvHeroCarousel(
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
 
                 item.overview?.let { overview ->
@@ -127,7 +127,7 @@ fun TvHeroCarousel(
                         style = MaterialTheme.typography.bodyLarge,
                         color = Color.White.copy(alpha = 0.8f),
                         maxLines = 3,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
 
@@ -136,16 +136,16 @@ fun TvHeroCarousel(
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Button(
                         onClick = { onPlayClick(item) },
-                        modifier = Modifier.width(120.dp)
+                        modifier = Modifier.width(120.dp),
                     ) {
-                        Text("Play")
+                        Text(stringResource(id = R.string.play))
                     }
 
                     Button(
                         onClick = { onItemClick(item) },
-                        modifier = Modifier.width(140.dp)
+                        modifier = Modifier.width(140.dp),
                     ) {
-                        Text("More Info")
+                        Text(stringResource(id = R.string.more_info))
                     }
                 }
             }

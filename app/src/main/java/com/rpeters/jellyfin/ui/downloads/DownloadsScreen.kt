@@ -3,16 +3,13 @@ package com.rpeters.jellyfin.ui.downloads
 import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -33,9 +31,6 @@ import com.rpeters.jellyfin.data.offline.DownloadStatus
 import com.rpeters.jellyfin.data.offline.OfflineDownload
 import com.rpeters.jellyfin.data.offline.VideoQuality
 import com.rpeters.jellyfin.ui.components.ExpressiveSwitchListItem
-import com.rpeters.jellyfin.ui.theme.Dimens
-import java.text.DateFormat
-import java.util.Date
 import kotlin.math.roundToInt
 
 @androidx.media3.common.util.UnstableApi
@@ -58,20 +53,20 @@ fun DownloadsScreen(
     if (showDeleteAllConfirmation) {
         AlertDialog(
             onDismissRequest = { },
-            title = { Text("Delete all downloads?") },
-            text = { Text("This removes all local offline copies from this device.") },
+            title = { Text(stringResource(id = R.string.downloads_delete_all_title)) },
+            text = { Text(stringResource(id = R.string.downloads_delete_all_message)) },
             confirmButton = {
                 TextButton(
                     onClick = {
                         downloadsViewModel.deleteAllDownloads()
                     },
                 ) {
-                    Text("Delete all")
+                    Text(stringResource(id = R.string.downloads_delete_all_confirm))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { }) {
-                    Text("Cancel")
+                    Text(stringResource(id = R.string.cancel))
                 }
             },
         )
@@ -80,20 +75,20 @@ fun DownloadsScreen(
     if (showClearWatchedConfirmation) {
         AlertDialog(
             onDismissRequest = { },
-            title = { Text("Clear watched downloads?") },
-            text = { Text("Removes completed downloads watched at least 90%.") },
+            title = { Text(stringResource(id = R.string.downloads_clear_watched_title)) },
+            text = { Text(stringResource(id = R.string.downloads_clear_watched_message)) },
             confirmButton = {
                 TextButton(
                     onClick = {
                         downloadsViewModel.clearWatchedDownloads()
                     },
                 ) {
-                    Text("Clear watched")
+                    Text(stringResource(id = R.string.downloads_clear_watched_confirm))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { }) {
-                    Text("Cancel")
+                    Text(stringResource(id = R.string.cancel))
                 }
             },
         )
@@ -102,7 +97,7 @@ fun DownloadsScreen(
     redownloadTarget?.let { target ->
         AlertDialog(
             onDismissRequest = { },
-            title = { Text("Redownload in different quality") },
+            title = { Text(stringResource(id = R.string.downloads_redownload_quality_title)) },
             text = {
                 Column {
                     DownloadsViewModel.QUALITY_PRESETS.forEach { quality ->
@@ -119,7 +114,7 @@ fun DownloadsScreen(
             },
             confirmButton = {
                 TextButton(onClick = { }) {
-                    Text("Cancel")
+                    Text(stringResource(id = R.string.cancel))
                 }
             },
         )
@@ -128,7 +123,7 @@ fun DownloadsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Downloads", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(id = R.string.downloads), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -157,9 +152,9 @@ fun DownloadsScreen(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
-                )
+                ),
             )
-        }
+        },
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(paddingValues),
@@ -200,7 +195,7 @@ fun DownloadsScreen(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(horizontal = 4.dp)
+                        modifier = Modifier.padding(horizontal = 4.dp),
                     )
                 }
             }
@@ -248,7 +243,7 @@ fun DownloadsScreen(
                     }
                 }
             }
-            
+
             item { Spacer(modifier = Modifier.height(16.dp)) }
         }
     }
@@ -269,14 +264,14 @@ private fun ExpressiveStorageCard(
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Box(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(MaterialTheme.shapes.medium)
                         .background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = Icons.Default.Storage,
@@ -303,7 +298,7 @@ private fun ExpressiveStorageCard(
                     progress = { storageInfo.usedSpacePercentage / 100f },
                     modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
                     trackColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
 
                 Row(
@@ -339,16 +334,19 @@ private fun ExpressiveDownloadItem(
     onPlay: () -> Unit,
 ) {
     val isCompleted = download.status == DownloadStatus.COMPLETED
-    
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(
-            containerColor = if (isCompleted) MaterialTheme.colorScheme.surfaceContainerLow 
-                            else MaterialTheme.colorScheme.surfaceContainer
+            containerColor = if (isCompleted) {
+                MaterialTheme.colorScheme.surfaceContainerLow
+            } else {
+                MaterialTheme.colorScheme.surfaceContainer
+            },
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = if (isCompleted) 0.dp else 2.dp),
-        border = if (isCompleted) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)) else null
+        border = if (isCompleted) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)) else null,
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -357,7 +355,7 @@ private fun ExpressiveDownloadItem(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.Top,
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -369,16 +367,16 @@ private fun ExpressiveDownloadItem(
                     )
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Surface(
                             color = MaterialTheme.colorScheme.secondaryContainer,
-                            shape = MaterialTheme.shapes.extraSmall
+                            shape = MaterialTheme.shapes.extraSmall,
                         ) {
                             Text(
                                 download.quality?.label ?: "Original",
                                 style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                             )
                         }
                         Text(
@@ -400,7 +398,7 @@ private fun ExpressiveDownloadItem(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 when (download.status) {
                     DownloadStatus.DOWNLOADING -> {
@@ -435,15 +433,15 @@ private fun ActionIconButton(
     contentDescription: String,
     onClick: () -> Unit,
     containerColor: Color = Color.Transparent,
-    contentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant
+    contentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
 ) {
     FilledIconButton(
         onClick = onClick,
         colors = IconButtonDefaults.filledIconButtonColors(
             containerColor = containerColor,
-            contentColor = contentColor
+            contentColor = contentColor,
         ),
-        modifier = Modifier.size(40.dp)
+        modifier = Modifier.size(40.dp),
     ) {
         Icon(icon, contentDescription, modifier = Modifier.size(20.dp))
     }
@@ -476,14 +474,14 @@ private fun ExpressiveDownloadPreferencesCard(
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Box(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(MaterialTheme.shapes.medium)
                         .background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = Icons.Default.Settings,
@@ -502,18 +500,18 @@ private fun ExpressiveDownloadPreferencesCard(
                 Surface(
                     color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
                     shape = MaterialTheme.shapes.medium,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Row(
                         modifier = Modifier.padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         Icon(Icons.Default.Sync, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.secondary)
                         Text(
                             "Pending sync: $pendingOfflineSyncCount updates",
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
                         )
                     }
                 }
@@ -524,7 +522,7 @@ private fun ExpressiveDownloadPreferencesCard(
                 subtitle = "Only download over Wi-Fi networks",
                 checked = wifiOnly,
                 onCheckedChange = onWifiOnlyChanged,
-                leadingIcon = Icons.Default.Wifi
+                leadingIcon = Icons.Default.Wifi,
             )
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
@@ -532,7 +530,7 @@ private fun ExpressiveDownloadPreferencesCard(
             QualitySelector(
                 currentQualityId = defaultQualityId,
                 qualities = qualities,
-                onQualitySelected = onDefaultQualitySelected
+                onQualitySelected = onDefaultQualitySelected,
             )
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
@@ -542,7 +540,7 @@ private fun ExpressiveDownloadPreferencesCard(
                 subtitle = "Remove watched items automatically",
                 checked = autoCleanEnabled,
                 onCheckedChange = onAutoCleanEnabledChanged,
-                leadingIcon = Icons.Default.AutoDelete
+                leadingIcon = Icons.Default.AutoDelete,
             )
 
             AnimatedVisibility(visible = autoCleanEnabled) {
@@ -550,7 +548,7 @@ private fun ExpressiveDownloadPreferencesCard(
                     Text(
                         "Keep watched for $autoCleanWatchedRetentionDays days",
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
                     )
                     // Simplified row for retention
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -558,23 +556,23 @@ private fun ExpressiveDownloadPreferencesCard(
                             FilterChip(
                                 selected = autoCleanWatchedRetentionDays == days,
                                 onClick = { onAutoCleanWatchedRetentionDaysSelected(days) },
-                                label = { Text("$days d") }
+                                label = { Text("$days d") },
                             )
                         }
                     }
-                    
+
                     Button(
                         onClick = onRunAutoCleanNow,
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                         ),
-                        shape = MaterialTheme.shapes.medium
+                        shape = MaterialTheme.shapes.medium,
                     ) {
                         Icon(Icons.Default.CleaningServices, null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("Clean Up Now")
+                        Text(stringResource(id = R.string.clean_up_now))
                     }
                 }
             }
@@ -586,13 +584,13 @@ private fun ExpressiveDownloadPreferencesCard(
 private fun QualitySelector(
     currentQualityId: String,
     qualities: List<VideoQuality>,
-    onQualitySelected: (String) -> Unit
+    onQualitySelected: (String) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             "Default Quality",
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.primary,
         )
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             items(qualities) { quality ->
@@ -603,7 +601,9 @@ private fun QualitySelector(
                     label = { Text(quality.label) },
                     leadingIcon = if (isSelected) {
                         { Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp)) }
-                    } else null
+                    } else {
+                        null
+                    },
                 )
             }
         }
@@ -624,7 +624,7 @@ fun DownloadStatusChipEnhanced(status: DownloadStatus) {
     Surface(
         color = color.copy(alpha = 0.1f),
         shape = CircleShape,
-        border = BorderStroke(1.dp, color.copy(alpha = 0.2f))
+        border = BorderStroke(1.dp, color.copy(alpha = 0.2f)),
     ) {
         Text(
             text = status.name.lowercase().replaceFirstChar { it.uppercase() },
@@ -642,7 +642,7 @@ fun DownloadProgressIndicatorEnhanced(progress: DownloadProgress) {
             progress = { if (progress.isTranscoding) (progress.transcodingProgress ?: 0f) / 100f else progress.progressPercent / 100f },
             modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
         )
-        
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
