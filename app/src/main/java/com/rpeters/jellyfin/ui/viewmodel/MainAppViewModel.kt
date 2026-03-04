@@ -1416,7 +1416,7 @@ class MainAppViewModel @androidx.annotation.OptIn(UnstableApi::class)
     }
 
     fun loadHomeVideos(libraryId: String) {
-        val library = BaseItemDto(id = UUID.fromString(libraryId), type = BaseItemKind.VIDEO)
+        val library = BaseItemDto(id = UUID.fromString(libraryId), type = BaseItemKind.COLLECTION_FOLDER, collectionType = CollectionType.HOMEVIDEOS)
         loadLibraryTypeData(library, LibraryType.STUFF)
     }
 

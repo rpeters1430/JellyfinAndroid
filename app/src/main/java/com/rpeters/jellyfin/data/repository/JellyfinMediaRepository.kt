@@ -145,7 +145,7 @@ class JellyfinMediaRepository @Inject constructor(
                 val response = client.itemsApi.getItems(
                     userId = userUuid,
                     parentId = parent,
-                    recursive = true,
+                    recursive = !isHomeVideos,
                     includeItemTypes = itemKinds,
                     sortBy = sortBy,
                     sortOrder = sortOrder,
@@ -188,7 +188,7 @@ class JellyfinMediaRepository @Inject constructor(
                             val response = client.itemsApi.getItems(
                                 userId = userUuid,
                                 parentId = parent,
-                                recursive = true,
+                                recursive = !isHomeVideos,
                                 includeItemTypes = null,
                                 startIndex = validatedParams.startIndex,
                                 limit = validatedParams.limit,
