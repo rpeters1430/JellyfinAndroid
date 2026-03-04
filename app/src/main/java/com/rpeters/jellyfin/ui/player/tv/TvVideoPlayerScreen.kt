@@ -26,17 +26,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PictureInPictureAlt
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -61,6 +60,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -69,29 +69,24 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+import androidx.tv.material3.ClickableSurfaceDefaults
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.preferences.SubtitleAppearancePreferences
 import com.rpeters.jellyfin.ui.player.TrackInfo
 import com.rpeters.jellyfin.ui.player.VideoPlayerState
 import com.rpeters.jellyfin.ui.player.VideoPlayerViewModel
 import com.rpeters.jellyfin.ui.player.applySubtitleAppearance
-import com.rpeters.jellyfin.ui.tv.tvKeyboardHandler
 import com.rpeters.jellyfin.ui.viewmodel.SubtitleAppearancePreferencesViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.tv.material3.Button as TvButton
 import androidx.tv.material3.ButtonDefaults as TvButtonDefaults
-import androidx.tv.material3.ClickableSurfaceDefaults
+import androidx.tv.material3.Card as TvCard
+import androidx.tv.material3.CardDefaults as TvCardDefaults
 import androidx.tv.material3.Icon as TvIcon
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Surface as TvSurface
 import androidx.tv.material3.Text as TvText
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.tv.material3.Card as TvCard
-import androidx.tv.material3.CardDefaults as TvCardDefaults
-import androidx.compose.ui.tooling.preview.Preview
 
 private const val SEEK_INTERVAL_MS = 30_000L
 
@@ -233,7 +228,7 @@ fun TvVideoPlayerScreen(
             .background(Color.Black)
             .onKeyEvent { keyEvent ->
                 if (keyEvent.type != KeyEventType.KeyDown) return@onKeyEvent false
-                
+
                 // If settings is open, let it handle keys or close it on back
                 if (showQuickSettings) {
                     if (keyEvent.key == Key.Back) {
@@ -320,20 +315,20 @@ fun TvVideoPlayerScreen(
                                 Color.Transparent,
                                 Color.Black.copy(alpha = 0.8f),
                             ),
-                        )
-                    )
+                        ),
+                    ),
             ) {
                 // Top Info
                 Column(
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .padding(56.dp)
+                        .padding(56.dp),
                 ) {
                     TvText(
                         text = state.itemName,
                         style = TvMaterialTheme.typography.headlineLarge,
                         color = Color.White,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                 }
 
@@ -343,39 +338,39 @@ fun TvVideoPlayerScreen(
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
                         .padding(horizontal = 64.dp, vertical = 48.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp)
+                    verticalArrangement = Arrangement.spacedBy(24.dp),
                 ) {
                     // Enhanced Seek Bar
                     TvSeekBar(
                         currentPosition = state.currentPosition,
                         duration = state.duration,
                         bufferedPosition = state.bufferedPosition,
-                        onSeekTo = onSeekTo
+                        onSeekTo = onSeekTo,
                     )
 
                     // Control Buttons
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterHorizontally),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         TvPlayerButton(
                             icon = Icons.Default.FastRewind,
-                            onClick = onSeekBackward
+                            onClick = onSeekBackward,
                         )
-                        
+
                         TvPlayerButton(
                             icon = if (state.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                             onClick = onPlayPause,
                             modifier = Modifier
                                 .size(64.dp)
                                 .focusRequester(playPauseRequester),
-                            isPrimary = true
+                            isPrimary = true,
                         )
-                        
+
                         TvPlayerButton(
                             icon = Icons.Default.FastForward,
-                            onClick = onSeekForward
+                            onClick = onSeekForward,
                         )
 
                         Spacer(modifier = Modifier.width(32.dp))
@@ -386,7 +381,7 @@ fun TvVideoPlayerScreen(
                                 controlsVisible = true
                                 showQuickSettings = true
                             },
-                            label = "Settings"
+                            label = "Settings",
                         )
                     }
                 }
@@ -398,12 +393,18 @@ fun TvVideoPlayerScreen(
             visible = showQuickSettings,
             enter = slideInHorizontally(initialOffsetX = { it }),
             exit = slideOutHorizontally(targetOffsetX = { it }),
-            modifier = Modifier.align(Alignment.CenterEnd)
+            modifier = Modifier.align(Alignment.CenterEnd),
         ) {
             TvQuickSettingsDrawer(
                 state = state,
-                onShowAudio = { onShowAudio(it); showQuickSettings = false },
-                onShowSubtitles = { onShowSubtitles(it); showQuickSettings = false },
+                onShowAudio = {
+                    onShowAudio(it)
+                    showQuickSettings = false
+                },
+                onShowSubtitles = {
+                    onShowSubtitles(it)
+                    showQuickSettings = false
+                },
                 onClose = { showQuickSettings = false },
                 closeButtonFocusRequester = quickSettingsCloseRequester,
             )
@@ -417,7 +418,7 @@ fun TvSeekBar(
     duration: Long,
     bufferedPosition: Long,
     onSeekTo: (Long) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val safeDuration = duration.coerceAtLeast(1L)
     var isFocused by remember { mutableStateOf(false) }
@@ -461,34 +462,34 @@ fun TvSeekBar(
         Box(modifier = Modifier.fillMaxWidth().height(12.dp)) {
             // Background
             Box(modifier = Modifier.fillMaxSize().background(Color.White.copy(alpha = 0.2f), TvMaterialTheme.shapes.small))
-            
+
             // Buffered
             Box(
                 modifier = Modifier
                     .fillMaxWidth(bufferedProgress.coerceIn(0f, 1f))
                     .fillMaxHeight()
-                    .background(Color.White.copy(alpha = 0.3f), TvMaterialTheme.shapes.small)
+                    .background(Color.White.copy(alpha = 0.3f), TvMaterialTheme.shapes.small),
             )
-            
+
             // Progress
             Box(
                 modifier = Modifier
                     .fillMaxWidth(progress.coerceIn(0f, 1f))
                     .fillMaxHeight()
-                    .background(TvMaterialTheme.colorScheme.primary, TvMaterialTheme.shapes.small)
+                    .background(TvMaterialTheme.colorScheme.primary, TvMaterialTheme.shapes.small),
             )
         }
-        
+
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             TvText(
                 text = formatTime(pendingPosition),
                 style = TvMaterialTheme.typography.labelMedium,
-                color = Color.White.copy(alpha = 0.8f)
+                color = Color.White.copy(alpha = 0.8f),
             )
             TvText(
                 text = formatTime(duration),
                 style = TvMaterialTheme.typography.labelMedium,
-                color = Color.White.copy(alpha = 0.8f)
+                color = Color.White.copy(alpha = 0.8f),
             )
         }
     }
@@ -500,10 +501,10 @@ fun TvPlayerButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     label: String? = null,
-    isPrimary: Boolean = false
+    isPrimary: Boolean = false,
 ) {
     var isFocused by remember { mutableStateOf(false) }
-    
+
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         TvSurface(
             onClick = onClick,
@@ -513,16 +514,16 @@ fun TvPlayerButton(
             shape = ClickableSurfaceDefaults.shape(TvMaterialTheme.shapes.extraLarge),
             colors = ClickableSurfaceDefaults.colors(
                 containerColor = if (isPrimary) TvMaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.1f),
-                focusedContainerColor = if (isPrimary) TvMaterialTheme.colorScheme.primaryContainer else Color.White.copy(alpha = 0.25f)
+                focusedContainerColor = if (isPrimary) TvMaterialTheme.colorScheme.primaryContainer else Color.White.copy(alpha = 0.25f),
             ),
-            scale = ClickableSurfaceDefaults.scale(focusedScale = 1.2f)
+            scale = ClickableSurfaceDefaults.scale(focusedScale = 1.2f),
         ) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                 TvIcon(
                     imageVector = icon,
                     contentDescription = label,
                     modifier = Modifier.size(if (isPrimary) 32.dp else 24.dp),
-                    tint = if (isPrimary) TvMaterialTheme.colorScheme.onPrimary else Color.White
+                    tint = if (isPrimary) TvMaterialTheme.colorScheme.onPrimary else Color.White,
                 )
             }
         }
@@ -530,7 +531,7 @@ fun TvPlayerButton(
             TvText(
                 text = label,
                 style = TvMaterialTheme.typography.labelSmall,
-                color = if (isFocused) Color.White else Color.White.copy(alpha = 0.6f)
+                color = if (isFocused) Color.White else Color.White.copy(alpha = 0.6f),
             )
         }
     }
@@ -551,28 +552,28 @@ fun TvQuickSettingsDrawer(
             .fillMaxHeight()
             .width(400.dp),
         colors = androidx.tv.material3.SurfaceDefaults.colors(
-            containerColor = Color(0xFF1A1A1A).copy(alpha = 0.95f)
+            containerColor = Color(0xFF1A1A1A).copy(alpha = 0.95f),
         ),
-        shape = androidx.compose.ui.graphics.RectangleShape
+        shape = androidx.compose.ui.graphics.RectangleShape,
     ) {
         Column(modifier = Modifier.fillMaxSize().padding(32.dp)) {
             TvText(
                 text = "Settings",
                 style = TvMaterialTheme.typography.headlineSmall,
                 color = Color.White,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             // Tabs
             Row(modifier = Modifier.fillMaxWidth()) {
                 TvTabButton(text = "Audio", selected = selectedTab == 0, onClick = { selectedTab = 0 }, modifier = Modifier.weight(1f))
                 TvTabButton(text = "Subtitles", selected = selectedTab == 1, onClick = { selectedTab = 1 }, modifier = Modifier.weight(1f))
             }
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             // Track List
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (selectedTab == 0) {
@@ -581,7 +582,7 @@ fun TvQuickSettingsDrawer(
                         TvTrackItem(
                             title = track.displayName,
                             isSelected = isSelected,
-                            onClick = { onShowAudio(track) }
+                            onClick = { onShowAudio(track) },
                         )
                     }
                 } else {
@@ -589,7 +590,7 @@ fun TvQuickSettingsDrawer(
                         TvTrackItem(
                             title = "None",
                             isSelected = state.selectedSubtitleTrack == null,
-                            onClick = { onShowSubtitles(null) }
+                            onClick = { onShowSubtitles(null) },
                         )
                     }
                     items(state.availableSubtitleTracks) { track ->
@@ -597,14 +598,14 @@ fun TvQuickSettingsDrawer(
                         TvTrackItem(
                             title = track.displayName,
                             isSelected = isSelected,
-                            onClick = { onShowSubtitles(track) }
+                            onClick = { onShowSubtitles(track) },
                         )
                     }
                 }
             }
-            
+
             Spacer(modifier = Modifier.weight(1f))
-            
+
             TvButton(
                 onClick = onClose,
                 modifier = if (closeButtonFocusRequester != null) {
@@ -628,9 +629,9 @@ fun TvTabButton(text: String, selected: Boolean, onClick: () -> Unit, modifier: 
         modifier = modifier.height(40.dp).padding(horizontal = 4.dp),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = if (selected) TvMaterialTheme.colorScheme.primary else Color.Transparent,
-            focusedContainerColor = if (selected) TvMaterialTheme.colorScheme.primaryContainer else Color.White.copy(alpha = 0.1f)
+            focusedContainerColor = if (selected) TvMaterialTheme.colorScheme.primaryContainer else Color.White.copy(alpha = 0.1f),
         ),
-        shape = ClickableSurfaceDefaults.shape(TvMaterialTheme.shapes.medium)
+        shape = ClickableSurfaceDefaults.shape(TvMaterialTheme.shapes.medium),
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
             TvText(text = text, style = TvMaterialTheme.typography.labelLarge, color = Color.White)
@@ -645,14 +646,14 @@ fun TvTrackItem(title: String, isSelected: Boolean, onClick: () -> Unit) {
         modifier = Modifier.fillMaxWidth().height(56.dp),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = if (isSelected) Color.White.copy(alpha = 0.15f) else Color.Transparent,
-            focusedContainerColor = Color.White.copy(alpha = 0.25f)
+            focusedContainerColor = Color.White.copy(alpha = 0.25f),
         ),
-        shape = ClickableSurfaceDefaults.shape(TvMaterialTheme.shapes.small)
+        shape = ClickableSurfaceDefaults.shape(TvMaterialTheme.shapes.small),
     ) {
         Row(
             modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             TvText(text = title, style = TvMaterialTheme.typography.bodyLarge, color = Color.White)
             if (isSelected) {
@@ -674,7 +675,6 @@ private fun formatTime(ms: Long): String {
         String.format("%02d:%02d", minutes, seconds)
     }
 }
-
 
 @Composable
 private fun ControlButton(

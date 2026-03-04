@@ -27,7 +27,6 @@ import com.rpeters.jellyfin.data.offline.OfflineDownload
 import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
 import com.rpeters.jellyfin.utils.SecureLogger
 import org.jellyfin.sdk.model.api.BaseItemDto
-import org.jellyfin.sdk.model.api.MediaStreamType
 import kotlin.math.roundToInt
 
 @androidx.media3.common.util.UnstableApi
@@ -47,7 +46,7 @@ fun DownloadButton(
 
     // Deferred permission launcher
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
+        ActivityResultContracts.RequestPermission(),
     ) { granted ->
         SecureLogger.i(
             "DownloadsFlow",

@@ -88,8 +88,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.repeatOnLifecycle
 import coil3.compose.SubcomposeAsyncImage
@@ -654,8 +654,8 @@ fun ImmersiveMovieDetailScreen(
         // Download Progress Overlay — show as soon as the download is queued, before bytes flow
         val downloadStatus = movieDownload?.status
         if (downloadStatus == com.rpeters.jellyfin.data.offline.DownloadStatus.DOWNLOADING ||
-            downloadStatus == com.rpeters.jellyfin.data.offline.DownloadStatus.PENDING) {
-
+            downloadStatus == com.rpeters.jellyfin.data.offline.DownloadStatus.PENDING
+        ) {
             Surface(
                 modifier = Modifier
                     .align(Alignment.TopCenter)

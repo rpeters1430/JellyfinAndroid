@@ -31,8 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.repeatOnLifecycle
-import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
 import com.rpeters.jellyfin.ui.components.QualitySelectionDialog
@@ -45,8 +45,8 @@ import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import com.rpeters.jellyfin.ui.utils.findDefaultAudioStream
 import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
-import com.rpeters.jellyfin.utils.getFormattedDuration
 import com.rpeters.jellyfin.utils.SecureLogger
+import com.rpeters.jellyfin.utils.getFormattedDuration
 import org.jellyfin.sdk.model.api.BaseItemDto
 import java.util.Locale
 

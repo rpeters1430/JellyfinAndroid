@@ -1,9 +1,10 @@
 package com.rpeters.jellyfin.ui.screens
 
+import android.graphics.BitmapFactory
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.Image
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -21,7 +22,6 @@ import com.rpeters.jellyfin.ui.theme.Dimens
 import com.rpeters.jellyfin.ui.utils.*
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
-import android.graphics.BitmapFactory
 import java.io.File
 import java.text.DateFormat
 import java.util.Date
