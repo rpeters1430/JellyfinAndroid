@@ -390,9 +390,16 @@ class ServerConnectionViewModel @Inject constructor(
                 is ApiResult.Error -> {
                     if (!handlePinningError(serverResult)) {
                         val hasOfflineMedia = hasPlayableOfflineMedia()
+                        val errorMessage = when (serverResult.errorType) {
+                            ErrorType.DNS_RESOLUTION ->
+                                "Could not find an IP address for the server hostname. " +
+                                    "Please check the server address for typos, or try using " +
+                                    "an IP address directly (e.g., 192.168.1.100:8096)."
+                            else -> "Cannot connect to server: ${serverResult.message}"
+                        }
                         _connectionState.value = _connectionState.value.copy(
                             isConnecting = false,
-                            errorMessage = "Cannot connect to server: ${serverResult.message}",
+                            errorMessage = errorMessage,
                             connectionPhase = ConnectionPhase.Error,
                             canEnterOffline = hasOfflineMedia,
                         )
@@ -894,10 +901,17 @@ class ServerConnectionViewModel @Inject constructor(
                     }
                 }
                 is ApiResult.Error -> {
+                    val errorMessage = when (serverResult.errorType) {
+                        ErrorType.DNS_RESOLUTION ->
+                            "Could not find an IP address for the server hostname. " +
+                                "Please check the server address for typos, or try using " +
+                                "an IP address directly (e.g., 192.168.1.100:8096)."
+                        else -> "Cannot connect to server: ${serverResult.message}"
+                    }
                     _connectionState.value = _connectionState.value.copy(
                         isConnecting = false,
                         quickConnectStatus = "",
-                        errorMessage = "Cannot connect to server: ${serverResult.message}",
+                        errorMessage = errorMessage,
                     )
                 }
                 is ApiResult.Loading -> {
