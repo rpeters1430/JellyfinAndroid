@@ -479,12 +479,13 @@ private fun ShowHeroContent(
                         series.isCompletelyWatched() -> "Rewatch"
                         userData?.playedPercentage != null && userData.playedPercentage!! > 0 -> "Watch Next"
                         else -> "Start Watching Series"
-                    }
+                    },
                 )
             }
         }
     }
 }
+
 @Composable
 private fun ShowMetadataSection(
     series: BaseItemDto,
