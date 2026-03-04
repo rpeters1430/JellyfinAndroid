@@ -258,7 +258,7 @@ fun getStatusColor(status: String?): Color {
 }
 
 fun getOfficialRatingColor(officialRating: String): Color {
-    return when (officialRating.uppercase()) {
+    return when (officialRating.uppercase(java.util.Locale.ROOT)) {
         "G", "TV-G" -> OfficialRatingGreen
         "PG", "TV-PG" -> OfficialRatingAmber
         "PG-13", "TV-14" -> OfficialRatingOrange
