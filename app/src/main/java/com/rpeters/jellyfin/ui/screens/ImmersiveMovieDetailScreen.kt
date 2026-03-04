@@ -88,8 +88,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.repeatOnLifecycle
 import coil3.compose.SubcomposeAsyncImage
@@ -112,15 +112,15 @@ import com.rpeters.jellyfin.ui.components.immersive.StaticHeroSection
 import com.rpeters.jellyfin.ui.components.immersive.VideoInfoCard
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
-import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.Dimens
-import com.rpeters.jellyfin.ui.theme.RatingGold
-import com.rpeters.jellyfin.ui.theme.getOfficialRatingColor
+import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.JellyfinTeal80
 import com.rpeters.jellyfin.ui.theme.Quality1440
 import com.rpeters.jellyfin.ui.theme.Quality4K
 import com.rpeters.jellyfin.ui.theme.QualityHD
 import com.rpeters.jellyfin.ui.theme.QualitySD
+import com.rpeters.jellyfin.ui.theme.RatingGold
+import com.rpeters.jellyfin.ui.theme.getOfficialRatingColor
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import com.rpeters.jellyfin.utils.SecureLogger
@@ -657,8 +657,8 @@ fun ImmersiveMovieDetailScreen(
         // Download Progress Overlay — show as soon as the download is queued, before bytes flow
         val downloadStatus = movieDownload?.status
         if (downloadStatus == com.rpeters.jellyfin.data.offline.DownloadStatus.DOWNLOADING ||
-            downloadStatus == com.rpeters.jellyfin.data.offline.DownloadStatus.PENDING) {
-
+            downloadStatus == com.rpeters.jellyfin.data.offline.DownloadStatus.PENDING
+        ) {
             Surface(
                 modifier = Modifier
                     .align(Alignment.TopCenter)

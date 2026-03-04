@@ -86,13 +86,13 @@ import com.rpeters.jellyfin.ui.components.immersive.StaticHeroSection
 import com.rpeters.jellyfin.ui.components.immersive.VideoInfoCard
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
-import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.Dimens
+import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
+import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.theme.OfficialRatingGreen
 import com.rpeters.jellyfin.ui.theme.RatingGold
-import com.rpeters.jellyfin.ui.theme.getOfficialRatingColor
-import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.theme.SeriesBlue
+import com.rpeters.jellyfin.ui.theme.getOfficialRatingColor
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonState
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonViewModel
 import com.rpeters.jellyfin.utils.getItemKey
@@ -479,12 +479,13 @@ private fun ShowHeroContent(
                         series.isCompletelyWatched() -> "Rewatch"
                         userData?.playedPercentage != null && userData.playedPercentage!! > 0 -> "Watch Next"
                         else -> "Start Watching Series"
-                    }
+                    },
                 )
             }
         }
     }
 }
+
 @Composable
 private fun ShowMetadataSection(
     series: BaseItemDto,
