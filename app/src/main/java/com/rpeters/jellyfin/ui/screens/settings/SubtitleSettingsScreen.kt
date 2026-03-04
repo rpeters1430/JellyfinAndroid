@@ -49,6 +49,9 @@ import com.rpeters.jellyfin.data.preferences.SubtitleFont
 import com.rpeters.jellyfin.data.preferences.SubtitleTextSize
 import com.rpeters.jellyfin.ui.components.ExpressiveRadioListItem
 import com.rpeters.jellyfin.ui.viewmodel.SubtitleAppearancePreferencesViewModel
+import com.rpeters.jellyfin.ui.theme.SubtitlePreviewGradientStart
+import com.rpeters.jellyfin.ui.theme.SubtitlePreviewGradientEnd
+import com.rpeters.jellyfin.ui.theme.Dimens
 
 /**
  * Enhanced Subtitle Settings screen with live preview and modern Material 3 Expressive UI.
@@ -146,7 +149,7 @@ private fun SubtitlePreviewCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .height(200.dp),
+            .height(Dimens.Height200),
         shape = MaterialTheme.shapes.extraLarge,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -157,7 +160,7 @@ private fun SubtitlePreviewCard(
                     .fillMaxSize()
                     .background(
                         brush = Brush.verticalGradient(
-                            colors = listOf(Color(0xFF1A1A1A), Color(0xFF333333))
+                            colors = listOf(SubtitlePreviewGradientStart, SubtitlePreviewGradientEnd)
                         )
                     ),
                 contentAlignment = Alignment.Center
@@ -165,7 +168,7 @@ private fun SubtitlePreviewCard(
                 Icon(
                     imageVector = Icons.Default.Movie,
                     contentDescription = null,
-                    modifier = Modifier.size(64.dp),
+                    modifier = Modifier.size(Dimens.Size64),
                     tint = Color.White.copy(alpha = 0.1f)
                 )
             }
