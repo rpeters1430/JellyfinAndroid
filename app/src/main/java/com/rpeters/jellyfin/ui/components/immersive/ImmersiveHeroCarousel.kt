@@ -139,11 +139,15 @@ fun ImmersiveHeroCarousel(
                 // ✅ Performance: Use optimized items list
                 val item = optimizedItems[index]
                 val isActive = index == currentItem
+                
+                // ✅ Performance: Stabilize callbacks per item
+                val stableOnItemClick = remember(item, onItemClick) { { onItemClick(item) } }
+                val stableOnPlayClick = remember(item, onPlayClick) { { onPlayClick(item) } }
 
                 ImmersiveHeroCard(
                     item = item,
-                    onItemClick = { onItemClick(item) },
-                    onPlayClick = { onPlayClick(item) },
+                    onItemClick = stableOnItemClick,
+                    onPlayClick = stableOnPlayClick,
                     isActive = isActive,
                     performanceConfig = performanceConfig,
                     modifier = Modifier

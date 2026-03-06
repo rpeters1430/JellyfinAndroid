@@ -1,6 +1,8 @@
 # Android Build Files
 *.iml
 .gradle
+.gradle-local/
+.android-local/
 /local.properties
 /.idea/caches
 /.idea/libraries

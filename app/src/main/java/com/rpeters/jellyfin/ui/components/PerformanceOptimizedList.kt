@@ -77,9 +77,10 @@ fun PerformanceOptimizedLazyColumn(
     ) {
         itemsIndexed(
             items = optimizedItems,
-            key = { index, item -> "${item.id}_$index" },
+            key = { _, item -> item.id.toString() }, // ✅ Use stable unique ID
             contentType = { _, _ -> "performance_list_item" },
         ) { index, item ->
+            // ✅ Performance: Check visibility with a small buffer
             val isVisible = index in visibleRange
             content(item, index, isVisible)
         }
@@ -102,7 +103,7 @@ fun PerformanceOptimizedLazyRow(
     content: @Composable (item: BaseItemDto, index: Int, isVisible: Boolean) -> Unit,
 ) {
     // Limit items for performance
-    val optimizedItems = remember(items) {
+    val optimizedItems = remember(items, maxVisibleItems) {
         if (items.size > maxVisibleItems) {
             items.take(maxVisibleItems)
         } else {
@@ -120,8 +121,9 @@ fun PerformanceOptimizedLazyRow(
     }
 
     val visibleRange = remember(firstVisibleIndex, visibleItemCount) {
-        val start = firstVisibleIndex.coerceAtLeast(0)
-        val end = (firstVisibleIndex + visibleItemCount + 5).coerceAtMost(optimizedItems.size)
+        // ✅ Performance: Buffer of 3 items for smoother horizontal scrolling
+        val start = (firstVisibleIndex - 3).coerceAtLeast(0)
+        val end = (firstVisibleIndex + visibleItemCount + 3).coerceAtMost(optimizedItems.size)
         start until end
     }
 
@@ -135,7 +137,7 @@ fun PerformanceOptimizedLazyRow(
     ) {
         itemsIndexed(
             items = optimizedItems,
-            key = { index, item -> "${item.id}_$index" },
+            key = { _, item -> item.id.toString() }, // ✅ Use stable unique ID
             contentType = { _, _ -> "performance_row_item" },
         ) { index, item ->
             val isVisible = index in visibleRange
@@ -159,7 +161,7 @@ fun PerformanceOptimizedLazyGrid(
     content: @Composable (item: BaseItemDto, index: Int) -> Unit,
 ) {
     // Limit items for performance
-    val optimizedItems = remember(items) {
+    val optimizedItems = remember(items, maxVisibleItems) {
         if (items.size > maxVisibleItems) {
             items.take(maxVisibleItems)
         } else {
@@ -176,13 +178,14 @@ fun PerformanceOptimizedLazyGrid(
     ) {
         itemsIndexed(
             items = optimizedItems,
-            key = { index, item -> "${item.id}_$index" },
+            key = { _, item -> item.id.toString() }, // ✅ Use stable unique ID
             contentType = { _, _ -> "performance_grid_item" },
         ) { index, item ->
             content(item, index)
         }
     }
 }
+
 
 /**
  * Adaptive performance optimization based on device capabilities.

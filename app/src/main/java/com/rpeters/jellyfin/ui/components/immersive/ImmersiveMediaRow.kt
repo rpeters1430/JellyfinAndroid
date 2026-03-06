@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import com.rpeters.jellyfin.ui.components.PerformanceOptimizedLazyRow
@@ -57,10 +58,14 @@ fun ImmersiveMediaRow(
             contentPadding = PaddingValues(horizontal = ImmersiveDimens.SpacingContentPadding),
             maxVisibleItems = performanceConfig.maxRowItems, // Device-tier adaptive (20-50 items)
         ) { item, index, isVisible ->
+            // ✅ Performance: Stabilize callbacks per item to allow recomposition skipping
+            val stableOnCardClick = remember(item, onItemClick) { { onItemClick(item) } }
+            val stableOnCardLongPress = remember(item, onItemLongPress) { { onItemLongPress(item) } }
+            
             ImmersiveMediaCard(
                 title = item.name ?: "Unknown",
                 imageUrl = getImageUrl(item) ?: "",
-                onCardClick = { onItemClick(item) },
+                onCardClick = stableOnCardClick,
                 subtitle = itemSubtitle(item),
                 rating = item.communityRating,
                 isFavorite = item.userData?.isFavorite == true,

@@ -5,6 +5,7 @@ package com.rpeters.jellyfin.ui.navigation
 import android.util.Log
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -36,40 +37,23 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
             minActiveState = Lifecycle.State.STARTED,
         )
 
-        // CRITICAL FIX: Wait for currentServer to be available before loading data
-        // During auto-login, the navigation happens before the session is fully established
-        // This ensures we only load data when we have a valid connection
-        LaunchedEffect(currentServer) {
-            val server = currentServer
-            if (server != null) {
-                if (BuildConfig.DEBUG) {
-                    Log.d("HomeScreen", "Current server available, loading initial data for: ${server.name}")
-                }
-                viewModel.loadInitialData()
-                viewModel.runAiHealthCheck()
-            } else {
-                if (BuildConfig.DEBUG) {
-                    Log.d("HomeScreen", "Waiting for server connection before loading data")
-                }
-            }
-        }
-
-        // Use ImmersiveHomeScreen by default
-        ImmersiveHomeScreen(
-            appState = appState,
-            currentServer = currentServer,
-            onRefresh = { viewModel.loadInitialData() },
-            onSearch = { query ->
+        // ✅ Performance: Stabilize callbacks to prevent unnecessary recompositions
+        val onRefresh = remember(viewModel) { { viewModel.loadInitialData() } }
+        val onSearch = remember(viewModel, navController) {
+            { query: String ->
                 viewModel.search(query)
                 navController.navigate(Screen.Search.route)
-            },
-            onClearSearch = { viewModel.clearSearch() },
-            onSearchClick = { navController.navigate(Screen.Search.route) },
-            onAiAssistantClick = { navController.navigate(Screen.AiAssistant.route) },
-            getImageUrl = { item -> viewModel.getImageUrl(item) },
-            getBackdropUrl = { item -> viewModel.getBackdropUrl(item) },
-            getSeriesImageUrl = { item -> viewModel.getSeriesImageUrl(item) },
-            onItemClick = { item ->
+            }
+        }
+        val onClearSearch = remember(viewModel) { { viewModel.clearSearch() } }
+        val onSearchClick = remember(navController) { { navController.navigate(Screen.Search.route) } }
+        val onAiAssistantClick = remember(navController) { { navController.navigate(Screen.AiAssistant.route) } }
+        val getImageUrl = remember(viewModel) { { item: org.jellyfin.sdk.model.api.BaseItemDto -> viewModel.getImageUrl(item) } }
+        val getBackdropUrl = remember(viewModel) { { item: org.jellyfin.sdk.model.api.BaseItemDto -> viewModel.getBackdropUrl(item) } }
+        val getSeriesImageUrl = remember(viewModel) { { item: org.jellyfin.sdk.model.api.BaseItemDto -> viewModel.getSeriesImageUrl(item) } }
+        
+        val onItemClick = remember(navController) {
+            { item: org.jellyfin.sdk.model.api.BaseItemDto ->
                 when (item.type) {
                     org.jellyfin.sdk.model.api.BaseItemKind.MOVIE -> {
                         item.id.let { movieId ->
@@ -101,8 +85,11 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
                         }
                     }
                 }
-            },
-            onLibraryClick = { library ->
+            }
+        }
+
+        val onLibraryClick = remember(navController) {
+            { library: org.jellyfin.sdk.model.api.BaseItemDto ->
                 try {
                     libraryRouteFor(library)?.let { route ->
                         navController.navigate(route)
@@ -115,10 +102,49 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
                 } catch (e: CancellationException) {
                     throw e
                 }
-            },
-            onSettingsClick = { navController.navigate(Screen.Settings.route) },
-            onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
-            onAiHealthCheck = { viewModel.runAiHealthCheck(force = true) },
+                Unit
+            }
+        }
+        
+        val onSettingsClick = remember(navController) { { navController.navigate(Screen.Settings.route) } }
+        val onNowPlayingClick = remember(navController) { { navController.navigate(Screen.NowPlaying.route) } }
+        val onAiHealthCheck = remember(viewModel) { { viewModel.runAiHealthCheck(force = true) } }
+
+        // CRITICAL FIX: Wait for currentServer to be available before loading data
+        // During auto-login, the navigation happens before the session is fully established
+        // This ensures we only load data when we have a valid connection
+        LaunchedEffect(currentServer) {
+            val server = currentServer
+            if (server != null) {
+                if (BuildConfig.DEBUG) {
+                    Log.d("HomeScreen", "Current server available, loading initial data for: ${server.name}")
+                }
+                viewModel.loadInitialData()
+                viewModel.runAiHealthCheck()
+            } else {
+                if (BuildConfig.DEBUG) {
+                    Log.d("HomeScreen", "Waiting for server connection before loading data")
+                }
+            }
+        }
+
+        // Use ImmersiveHomeScreen by default
+        ImmersiveHomeScreen(
+            appState = appState,
+            currentServer = currentServer,
+            onRefresh = onRefresh,
+            onSearch = onSearch,
+            onClearSearch = onClearSearch,
+            onSearchClick = onSearchClick,
+            onAiAssistantClick = onAiAssistantClick,
+            getImageUrl = getImageUrl,
+            getBackdropUrl = getBackdropUrl,
+            getSeriesImageUrl = getSeriesImageUrl,
+            onItemClick = onItemClick,
+            onLibraryClick = onLibraryClick,
+            onSettingsClick = onSettingsClick,
+            onNowPlayingClick = onNowPlayingClick,
+            onAiHealthCheck = onAiHealthCheck,
         )
     }
 
@@ -129,6 +155,31 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
             lifecycle = lifecycleOwner.lifecycle,
             minActiveState = Lifecycle.State.STARTED,
         )
+
+        // ✅ Performance: Stabilize callbacks
+        val onRefresh = remember(viewModel) { { viewModel.loadInitialData(forceRefresh = true) } }
+        val getImageUrl = remember(viewModel) { { item: org.jellyfin.sdk.model.api.BaseItemDto -> viewModel.getImageUrl(item) } }
+        val onLibraryClick = remember(navController) {
+            { library: org.jellyfin.sdk.model.api.BaseItemDto ->
+                try {
+                    libraryRouteFor(library)?.let { route ->
+                        navController.navigate(route)
+                    } ?: run {
+                        Log.w(
+                            "NavGraph",
+                            "No route found for library: ${library.name} (${library.collectionType})",
+                        )
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                }
+                Unit
+            }
+        }
+        val onSearchClick = remember(navController) { { navController.navigate(Screen.Search.route) } }
+        val onAiAssistantClick = remember(navController) { { navController.navigate(Screen.AiAssistant.route) } }
+        val onSettingsClick = remember(navController) { { navController.navigate(Screen.Settings.route) } }
+        val onNowPlayingClick = remember(navController) { { navController.navigate(Screen.NowPlaying.route) } }
 
         LaunchedEffect(Unit) {
             if (appState.libraries.isEmpty() && !appState.isLoading) {
@@ -144,26 +195,13 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
             libraries = appState.libraries,
             isLoading = appState.isLoading,
             errorMessage = appState.errorMessage,
-            onRefresh = { viewModel.loadInitialData(forceRefresh = true) },
-            getImageUrl = { item -> viewModel.getImageUrl(item) },
-            onLibraryClick = { library ->
-                try {
-                    libraryRouteFor(library)?.let { route ->
-                        navController.navigate(route)
-                    } ?: run {
-                        Log.w(
-                            "NavGraph",
-                            "No route found for library: ${library.name} (${library.collectionType})",
-                        )
-                    }
-                } catch (e: CancellationException) {
-                    throw e
-                }
-            },
-            onSearchClick = { navController.navigate(Screen.Search.route) },
-            onAiAssistantClick = { navController.navigate(Screen.AiAssistant.route) },
-            onSettingsClick = { navController.navigate(Screen.Settings.route) },
-            onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
+            onRefresh = onRefresh,
+            getImageUrl = getImageUrl,
+            onLibraryClick = onLibraryClick,
+            onSearchClick = onSearchClick,
+            onAiAssistantClick = onAiAssistantClick,
+            onSettingsClick = onSettingsClick,
+            onNowPlayingClick = onNowPlayingClick,
         )
     }
 

@@ -90,24 +90,30 @@ fun ImmersiveHomeScreen(
     val managementEnabled = libraryActionPrefs.enableManagementActions
     val managementDisabledMessage = stringResource(id = R.string.library_actions_management_disabled)
 
-    val handleItemLongPress: (BaseItemDto) -> Unit = { item ->
-        if (managementEnabled) {
-            selectedItem = item
-            showManageSheet = true
-        } else {
-            coroutineScope.launch {
-                snackbarHostState.showSnackbar(message = managementDisabledMessage)
+    // ✅ Performance: Stabilize internal callbacks
+    val handleItemLongPress = remember(managementEnabled, coroutineScope, managementDisabledMessage) {
+        { item: BaseItemDto ->
+            if (managementEnabled) {
+                selectedItem = item
+                showManageSheet = true
+            } else {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar(message = managementDisabledMessage)
+                }
             }
+            Unit
         }
     }
 
-    val handlePlay: (BaseItemDto) -> Unit = { item ->
-        val streamUrl = viewModel.getStreamUrl(item)
-        if (streamUrl != null) {
-            MediaPlayerUtils.playMedia(context, streamUrl, item)
-        } else {
-            coroutineScope.launch {
-                snackbarHostState.showSnackbar("Unable to start playback")
+    val handlePlay = remember(viewModel, context, coroutineScope) {
+        { item: BaseItemDto ->
+            val streamUrl = viewModel.getStreamUrl(item)
+            if (streamUrl != null) {
+                MediaPlayerUtils.playMedia(context, streamUrl, item)
+            } else {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("Unable to start playback")
+                }
             }
         }
     }
@@ -122,30 +128,11 @@ fun ImmersiveHomeScreen(
 
     Box(modifier = modifier.fillMaxSize()) {
         ImmersiveScaffold(
-            // No top bar - using floating settings icon instead
-            topBarVisible = false,
+            // No top bar title, but we pass the visibility state for consistent behavior
+            topBarVisible = topBarVisible,
             topBarTitle = "",
             topBarTranslucent = false,
-            // Show bottom bar with mini player
-            bottomBarVisible = false, // Using MiniPlayer outside scaffold
-            // Floating action group
-            floatingActionButton = {
-                FloatingActionGroup(
-                    orientation = FabOrientation.Vertical,
-                    primaryAction = FabAction(
-                        icon = Icons.Default.Search,
-                        contentDescription = stringResource(id = R.string.search),
-                        onClick = onSearchClick,
-                    ),
-                    secondaryActions = listOf(
-                        FabAction(
-                            icon = Icons.Default.AutoAwesome,
-                            contentDescription = "AI Assistant",
-                            onClick = onAiAssistantClick,
-                        ),
-                    ),
-                )
-            },
+            // ...
             scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(),
         ) { paddingValues ->
             PerformanceMetricsTracker(
@@ -192,22 +179,28 @@ fun ImmersiveHomeScreen(
             }
         }
 
-        // Floating Settings Icon (top-right)
-        Surface(
-            onClick = onSettingsClick,
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .statusBarsPadding()
-                .padding(horizontal = 12.dp, vertical = 12.dp),
+        // ✅ Performance: Animated visibility for floating settings icon based on scroll direction
+        androidx.compose.animation.AnimatedVisibility(
+            visible = topBarVisible,
+            enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.expandVertically(),
+            exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.shrinkVertically(),
+            modifier = Modifier.align(Alignment.TopEnd)
         ) {
-            Icon(
-                imageVector = Icons.Default.Settings,
-                contentDescription = stringResource(id = R.string.settings),
-                tint = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(12.dp).size(24.dp),
-            )
+            Surface(
+                onClick = onSettingsClick,
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .padding(horizontal = 12.dp, vertical = 12.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = stringResource(id = R.string.settings),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(12.dp).size(24.dp),
+                )
+            }
         }
 
         // Snackbar host outside scaffold
@@ -227,18 +220,21 @@ fun ImmersiveHomeScreen(
             val refreshRequestedMessage = stringResource(id = R.string.library_actions_refresh_requested)
             val unknownErrorMessage = stringResource(id = R.string.unknown_error)
 
-            MediaItemActionsSheet(
-                item = item,
-                sheetState = sheetState,
-                onDismiss = {
+            // ✅ Performance: Stabilize bottom sheet callbacks
+            val onDismissSheet = remember {
+                {
                     showManageSheet = false
                     selectedItem = null
-                },
-                onPlay = {
+                }
+            }
+            val onPlayFromSheet = remember(item) {
+                {
                     handlePlay(item)
                     showManageSheet = false
-                },
-                onDelete = { dismissed, _ ->
+                }
+            }
+            val onDeleteFromSheet = remember(item, viewModel, deleteSuccessMessage) {
+                { dismissed: Boolean, _: Boolean ->
                     if (dismissed) {
                         coroutineScope.launch {
                             viewModel.deleteItem(item)
@@ -249,6 +245,17 @@ fun ImmersiveHomeScreen(
                     } else {
                         showManageSheet = false
                     }
+                }
+            }
+
+            MediaItemActionsSheet(
+                item = item,
+                sheetState = sheetState,
+                onDismiss = onDismissSheet,
+                onPlay = onPlayFromSheet,
+                onDelete = { dismissed, _ -> 
+                    onDeleteFromSheet(dismissed, true)
+                    Unit // Ensure Unit return type
                 },
             )
         }
@@ -364,6 +371,14 @@ private fun ImmersiveHomeContent(
                             )
                         }
                     }
+                    
+                    val carouselOnItemClick = remember(stableOnItemClick, contentLists.featuredItems) {
+                        { selected: CarouselItem ->
+                            contentLists.featuredItems.firstOrNull { it.id.toString() == selected.id }
+                                ?.let { stableOnItemClick(it) }
+                            Unit
+                        }
+                    }
 
                     Box(
                         modifier = Modifier
@@ -373,18 +388,13 @@ private fun ImmersiveHomeContent(
                     ) {
                         ImmersiveHeroCarousel(
                             items = featured,
-                            onItemClick = { selected ->
-                                contentLists.featuredItems.firstOrNull { it.id.toString() == selected.id }
-                                    ?.let(stableOnItemClick)
-                            },
-                            onPlayClick = { selected ->
-                                contentLists.featuredItems.firstOrNull { it.id.toString() == selected.id }
-                                    ?.let(stableOnItemClick)
-                            },
+                            onItemClick = carouselOnItemClick,
+                            onPlayClick = carouselOnItemClick,
                         )
                     }
                 }
             }
+
 
             // Viewing Mood Widget (AI-powered mood analysis)
             if (viewingMood != null) {
