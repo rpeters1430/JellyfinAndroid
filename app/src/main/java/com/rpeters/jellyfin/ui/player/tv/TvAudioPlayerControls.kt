@@ -28,8 +28,6 @@ import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -53,6 +51,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Icon
+import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.tv.requestInitialFocus
@@ -113,34 +112,45 @@ fun TvAudioPlayerControls(
             ) {
                 Text(
                     text = formatTime(currentPosition),
-                    style = MaterialTheme.typography.bodyLarge.copy(
+                    style = TvMaterialTheme.typography.bodyLarge.copy(
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Medium,
                     ),
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = TvMaterialTheme.colorScheme.onSurface,
                 )
                 Text(
                     text = formatTime(duration),
-                    style = MaterialTheme.typography.bodyLarge.copy(
+                    style = TvMaterialTheme.typography.bodyLarge.copy(
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Medium,
                     ),
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = TvMaterialTheme.colorScheme.onSurface,
                 )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
             // Progress bar
-            LinearProgressIndicator(
-                progress = { if (duration > 0) currentPosition.toFloat() / duration.toFloat() else 0f },
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp)),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
-            )
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(TvMaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)),
+            ) {
+                val progress = if (duration > 0) {
+                    (currentPosition.toFloat() / duration.toFloat()).coerceIn(0f, 1f)
+                } else {
+                    0f
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(progress)
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(TvMaterialTheme.colorScheme.primary),
+                )
+            }
         }
 
         // Main playback controls
@@ -285,19 +295,19 @@ private fun TvAudioControlButton(
     )
 
     val backgroundColor = when {
-        isPrimary && isFocused -> MaterialTheme.colorScheme.primary
-        isPrimary -> MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
-        isActive && isFocused -> MaterialTheme.colorScheme.secondary
-        isActive -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.8f)
-        isFocused -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
-        else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        isPrimary && isFocused -> TvMaterialTheme.colorScheme.primary
+        isPrimary -> TvMaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+        isActive && isFocused -> TvMaterialTheme.colorScheme.secondary
+        isActive -> TvMaterialTheme.colorScheme.secondary.copy(alpha = 0.8f)
+        isFocused -> TvMaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
+        else -> TvMaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
     }
 
     val iconColor = when {
-        isPrimary -> MaterialTheme.colorScheme.onPrimary
-        isActive -> MaterialTheme.colorScheme.onSecondary
-        isFocused -> MaterialTheme.colorScheme.onSurface
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
+        isPrimary -> TvMaterialTheme.colorScheme.onPrimary
+        isActive -> TvMaterialTheme.colorScheme.onSecondary
+        isFocused -> TvMaterialTheme.colorScheme.onSurface
+        else -> TvMaterialTheme.colorScheme.onSurfaceVariant
     }
 
     Box(
@@ -310,7 +320,7 @@ private fun TvAudioControlButton(
                 if (isFocused) {
                     Modifier.border(
                         width = 3.dp,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = TvMaterialTheme.colorScheme.onSurface,
                         shape = CircleShape,
                     )
                 } else {

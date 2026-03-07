@@ -1,6 +1,5 @@
 package com.rpeters.jellyfin.ui.screens.tv
 
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,6 +9,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -21,6 +21,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
+import kotlinx.coroutines.delay
 import org.jellyfin.sdk.model.api.BaseItemDto
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text as TvText
@@ -38,31 +39,21 @@ fun TvLibrariesSection(
         modifier = Modifier.padding(start = 56.dp, top = 24.dp, bottom = 16.dp),
     )
 
-    val focusRequester = remember { FocusRequester() }
-
     LazyRow(
         contentPadding = PaddingValues(horizontal = 56.dp),
         horizontalArrangement = Arrangement.spacedBy(24.dp),
-        modifier = modifier
-            .focusRequester(focusRequester)
-            .focusable(),
+        modifier = modifier,
     ) {
         items(
-            libraries,
+            items = libraries,
             key = { it.id.toString() },
             contentType = { "tv_library_card" },
         ) { library ->
             TvLibraryCard(
                 library = library,
                 onLibrarySelect = { id -> onLibrarySelect(id) },
+                requestInitialFocus = library == libraries.firstOrNull(),
             )
-        }
-    }
-
-    // Request initial focus on libraries row
-    androidx.compose.runtime.LaunchedEffect(Unit) {
-        if (libraries.isNotEmpty()) {
-            focusRequester.requestFocus()
         }
     }
 }
@@ -72,9 +63,17 @@ fun TvLibraryCard(
     library: BaseItemDto,
     onLibrarySelect: (String) -> Unit,
     modifier: Modifier = Modifier,
+    requestInitialFocus: Boolean = false,
 ) {
     val focusRequester = remember { FocusRequester() }
     var isFocused by remember { mutableStateOf(false) }
+
+    LaunchedEffect(requestInitialFocus, library.id) {
+        if (requestInitialFocus) {
+            delay(100)
+            focusRequester.requestFocus()
+        }
+    }
 
     Card(
         modifier = modifier

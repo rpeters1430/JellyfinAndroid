@@ -1,11 +1,14 @@
 package com.rpeters.jellyfin.ui.components.tv
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -19,6 +22,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -57,6 +62,11 @@ fun TvContentCarousel(
     carouselId: String = title.replace(" ", "_").lowercase(),
     isLoading: Boolean = false,
     focusRequester: FocusRequester? = null,
+    focusBridgeManager: FocusManager? = null,
+    onExitUp: (() -> Boolean)? = null,
+    onExitDown: (() -> Boolean)? = null,
+    onExitLeft: (() -> Boolean)? = null,
+    onExitRight: (() -> Boolean)? = null,
 ) {
     // Show skeleton if loading or no items
     if (isLoading || items.isEmpty()) {
@@ -86,13 +96,21 @@ fun TvContentCarousel(
             lazyListState = lazyListState,
             itemCount = items.size,
             focusRequester = focusRequester,
+            onExitLeft = onExitLeft ?: focusBridgeManager?.let { manager ->
+                { manager.moveFocus(FocusDirection.Left) }
+            },
+            onExitRight = onExitRight ?: focusBridgeManager?.let { manager ->
+                { manager.moveFocus(FocusDirection.Right) }
+            },
+            onExitUp = onExitUp,
+            onExitDown = onExitDown,
             onFocusChanged = { isFocused, index ->
                 focusedIndex = index
                 if (isFocused && index < items.size) {
                     onItemFocus(items[index])
                 }
             },
-        ) { focusModifier ->
+        ) { focusModifier, wrapperFocusedIndex, itemFocusRequesters ->
             LazyRow(
                 state = lazyListState,
                 contentPadding = PaddingValues(horizontal = horizontalPadding),
@@ -113,7 +131,8 @@ fun TvContentCarousel(
                         onItemSelect = { onItemSelect(item) },
                         getImageUrl = viewModel::getImageUrl,
                         getSeriesImageUrl = viewModel::getSeriesImageUrl,
-                        isFocused = focusedIndex == index,
+                        focusRequester = itemFocusRequesters[index],
+                        isFocused = focusedIndex == index || wrapperFocusedIndex == index,
                         posterWidth = layoutConfig.carouselItemWidth,
                         posterHeight = layoutConfig.carouselItemHeight,
                     )
@@ -131,6 +150,7 @@ fun TvContentCard(
     getImageUrl: (BaseItemDto) -> String?,
     getSeriesImageUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier,
+    focusRequester: FocusRequester? = null,
     isFocused: Boolean = false,
     posterWidth: Dp = 240.dp,
     posterHeight: Dp = 360.dp,
@@ -140,12 +160,15 @@ fun TvContentCard(
     } else {
         getImageUrl(item)
     }
+    val isPlayed = item.userData?.played == true
+    val progressRatio = item.playbackProgressRatio()
+    val isInProgress = progressRatio > 0f && !isPlayed
 
     Column(
         modifier = modifier
             .width(posterWidth)
             .onFocusChanged { focusState ->
-                if (focusState.isFocused) {
+                if (focusState.hasFocus) {
                     onItemFocus()
                 }
             },
@@ -154,7 +177,15 @@ fun TvContentCard(
     ) {
         TvCard(
             onClick = { onItemSelect() },
-            modifier = Modifier.size(posterWidth, posterHeight),
+            modifier = Modifier
+                .size(posterWidth, posterHeight)
+                .then(
+                    if (focusRequester != null) {
+                        Modifier.focusRequester(focusRequester)
+                    } else {
+                        Modifier
+                    }
+                ),
             colors = TvCardDefaults.colors(
                 containerColor = TvMaterialTheme.colorScheme.surfaceVariant,
             ),
@@ -166,14 +197,32 @@ fun TvContentCard(
                 ),
             ),
         ) {
-            JellyfinAsyncImage(
-                model = imageUrl,
-                contentDescription = item.name,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-                requestSize = rememberCoilSize(posterWidth, posterHeight),
-                builder = { crossfade(true) },
-            )
+            Box(modifier = Modifier.fillMaxSize()) {
+                JellyfinAsyncImage(
+                    model = imageUrl,
+                    contentDescription = item.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    requestSize = rememberCoilSize(posterWidth, posterHeight),
+                    builder = { crossfade(true) },
+                )
+
+                TvPlaybackStatusBadge(
+                    isPlayed = isPlayed,
+                    isInProgress = isInProgress,
+                    modifier = Modifier.padding(10.dp),
+                )
+
+                if (isInProgress) {
+                    TvPlaybackProgressBar(
+                        progressRatio = progressRatio,
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .fillMaxWidth()
+                            .height(5.dp)
+                    )
+                }
+            }
         }
 
         // Title below the card

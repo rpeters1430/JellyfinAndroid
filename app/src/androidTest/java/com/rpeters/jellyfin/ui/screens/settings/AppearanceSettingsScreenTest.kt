@@ -1,9 +1,10 @@
 package com.rpeters.jellyfin.ui.screens.settings
 
 import android.os.Build
-import androidx.compose.ui.test.assertDoesNotExist
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -356,7 +357,7 @@ class AppearanceSettingsScreenTest {
         }
 
         // Then - Accent color section should not be visible
-        composeTestRule.onNodeWithText("Accent Color").assertDoesNotExist()
+        composeTestRule.onAllNodesWithText("Accent Color").assertCountEquals(0)
     }
 
     @Test

@@ -63,6 +63,9 @@ fun TvHeroCarousel(
     ) { index ->
         val item = featuredItems[index]
         val backdropUrl = getBackdropUrl(item)
+        val isPlayed = item.userData?.played == true
+        val progressRatio = item.playbackProgressRatio()
+        val isInProgress = progressRatio > 0f && !isPlayed
 
         Box(modifier = Modifier.fillMaxSize()) {
             // Background Image
@@ -121,6 +124,13 @@ fun TvHeroCarousel(
                     overflow = TextOverflow.Ellipsis,
                 )
 
+                if (isPlayed || isInProgress) {
+                    TvPlaybackStatusBadge(
+                        isPlayed = isPlayed,
+                        isInProgress = isInProgress,
+                    )
+                }
+
                 item.overview?.let { overview ->
                     Text(
                         text = overview,
@@ -132,6 +142,16 @@ fun TvHeroCarousel(
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
+
+                if (isInProgress) {
+                    TvPlaybackProgressBar(
+                        progressRatio = progressRatio,
+                        modifier = Modifier
+                            .fillMaxWidth(0.7f)
+                            .height(5.dp),
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
 
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Button(

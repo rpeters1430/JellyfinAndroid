@@ -70,6 +70,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
+import com.rpeters.jellyfin.ui.components.AiSummaryCard
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveEmptyState
 import com.rpeters.jellyfin.ui.components.ExpressiveErrorState
@@ -77,6 +78,7 @@ import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
 import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
 import com.rpeters.jellyfin.ui.components.PerformanceOptimizedLazyRow
+import com.rpeters.jellyfin.ui.components.sanitizedAiSummary
 import com.rpeters.jellyfin.ui.components.immersive.AudioInfoCard
 import com.rpeters.jellyfin.ui.components.immersive.HdrType
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize
@@ -582,18 +584,9 @@ private fun ShowMetadataSection(
                 }
 
                 // Show AI summary if available
-                aiSummary?.let { summary ->
-                    Surface(
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                        shape = RoundedCornerShape(12.dp),
-                    ) {
-                        Text(
-                            text = summary,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.padding(12.dp),
-                        )
-                    }
+                val summaryText = aiSummary?.sanitizedAiSummary()
+                if (!summaryText.isNullOrBlank()) {
+                    AiSummaryCard(summary = summaryText)
                 }
 
                 // ✨ Beautiful Material 3 Expressive Media Info Cards

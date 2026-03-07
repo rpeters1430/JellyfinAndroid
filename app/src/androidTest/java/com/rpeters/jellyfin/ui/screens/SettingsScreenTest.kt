@@ -5,11 +5,10 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.rpeters.jellyfin.data.preferences.CredentialSecurityPreferences
 import com.rpeters.jellyfin.data.preferences.LibraryActionsPreferences
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
-import com.rpeters.jellyfin.ui.viewmodel.CredentialSecurityPreferencesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.LibraryActionsPreferencesViewModel
+import com.rpeters.jellyfin.ui.viewmodel.RemoteConfigViewModel
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -30,27 +29,20 @@ class SettingsScreenTest {
     )
 
     private lateinit var libraryPreferencesFlow: MutableStateFlow<LibraryActionsPreferences>
-    private lateinit var credentialPreferencesFlow: MutableStateFlow<CredentialSecurityPreferences>
-    private lateinit var isUpdatingFlow: MutableStateFlow<Boolean>
     private lateinit var libraryViewModel: LibraryActionsPreferencesViewModel
-    private lateinit var credentialViewModel: CredentialSecurityPreferencesViewModel
+    private lateinit var remoteConfigViewModel: RemoteConfigViewModel
     private var managePinsClicked = false
 
     @Before
     fun setup() {
         libraryPreferencesFlow = MutableStateFlow(LibraryActionsPreferences.DEFAULT)
-        credentialPreferencesFlow = MutableStateFlow(CredentialSecurityPreferences.DEFAULT)
-        isUpdatingFlow = MutableStateFlow(false)
-
         libraryViewModel = mockk(relaxed = true)
-        credentialViewModel = mockk(relaxed = true)
+        remoteConfigViewModel = mockk(relaxed = true)
 
         every { libraryViewModel.preferences } returns libraryPreferencesFlow
-        every { credentialViewModel.preferences } returns credentialPreferencesFlow
-        every { credentialViewModel.isUpdating } returns isUpdatingFlow
+        every { remoteConfigViewModel.getBoolean(any()) } returns true
 
         coEvery { libraryViewModel.setManagementActionsEnabled(any()) } returns Unit
-        coEvery { credentialViewModel.setStrongAuthRequired(any()) } returns Unit
 
         managePinsClicked = false
     }
@@ -63,7 +55,7 @@ class SettingsScreenTest {
                     onBackClick = {},
                     onManagePinsClick = { managePinsClicked = true },
                     libraryActionsPreferencesViewModel = libraryViewModel,
-                    credentialSecurityPreferencesViewModel = credentialViewModel,
+                    remoteConfigViewModel = remoteConfigViewModel,
                 )
             }
         }

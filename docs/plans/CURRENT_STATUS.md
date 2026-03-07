@@ -1,8 +1,8 @@
 # Jellyfin Android - Current Status
 
-**Last Updated**: February 5, 2026
+**Last Updated**: March 7, 2026
 
-This document provides a comprehensive snapshot of what works RIGHT NOW in the Jellyfin Android client. For planned features and improvements, see [ROADMAP.md](ROADMAP.md). For known bugs and workarounds, see [KNOWN_ISSUES.md](KNOWN_ISSUES.md). For dependency upgrade strategy, see [UPGRADE_PATH.md](UPGRADE_PATH.md).
+This document provides a comprehensive snapshot of what works RIGHT NOW in the Jellyfin Android client. For planned features and improvements, see [ROADMAP.md](ROADMAP.md). For known bugs and workarounds, see [KNOWN_ISSUES.md](../features/KNOWN_ISSUES.md). For dependency upgrade strategy, see [UPGRADE_PATH.md](UPGRADE_PATH.md).
 
 ---
 
@@ -27,6 +27,7 @@ This document provides a comprehensive snapshot of what works RIGHT NOW in the J
 | **Picture-in-Picture** | ✅ Complete | Phone, Tablet, TV | Manual/auto-enter, remote actions (play/pause, skip ±30s) |
 | **Chromecast** | ✅ Complete | Phone, Tablet | Full casting with seek, volume, position tracking |
 | **Auto-Play Next Episode** | ✅ Complete | Phone, Tablet | Countdown UI, automatic continuation |
+| **Offline Downloads** | ✅ Complete | Phone, Tablet | Background WorkManager downloads, progress notifications, storage management, offline playback routing, delete/cleanup actions, Wi-Fi-only setting |
 | **Firebase Integration** | ✅ Complete | All | Analytics, Config, Crashlytics, App Check |
 | **Material 3 UI** | ✅ Complete | All | Expressive components, dark/light/AMOLED themes |
 | **Adaptive Navigation** | ✅ Complete | All | Screen-size responsive navigation |
@@ -37,7 +38,6 @@ This document provides a comprehensive snapshot of what works RIGHT NOW in the J
 | Feature | Status | Platforms | What Works | What's Missing | Issue Link |
 |---------|--------|-----------|------------|----------------|------------|
 | **Music Playback** | ⚠️ Partial | Phone, Tablet | UI, basic playback | Background playback, notification controls, lock screen controls, queue management | [ROADMAP §1.1](ROADMAP.md#11-music-background-playback) |
-| **Offline Downloads** | ⚠️ Partial | Phone, Tablet | UI screens exist | Core download logic, WorkManager integration, progress tracking, offline playback | [ROADMAP §1.2](ROADMAP.md#12-offline-downloads), [KNOWN_ISSUES #7](KNOWN_ISSUES.md) |
 | **Android TV** | ⚠️ Partial | Android TV | UI screens, basic navigation | D-pad testing, focus indicators, player controls | [ROADMAP §2.1](ROADMAP.md#21-d-pad-navigation-audit) |
 
 ### ❌ Not Implemented
@@ -90,23 +90,23 @@ This document provides a comprehensive snapshot of what works RIGHT NOW in the J
 | Component | Version | Status |
 |-----------|---------|--------|
 | **Kotlin** | 2.3.10 | ✅ Stable |
-| **Compose BOM** | 2026.01.01 | ✅ Latest |
-| **Material 3** | 1.5.0-alpha13 | ⚠️ Alpha (intentional for Expressive) |
-| **Hilt** | 2.59.1 | ✅ Stable |
+| **Compose BOM** | 2026.02.01 | ✅ Latest |
+| **Material 3** | 1.5.0-alpha15 | ⚠️ Alpha (intentional for Expressive) |
+| **Hilt** | 2.59.2 | ✅ Stable |
 | **Coroutines** | 1.10.2 | ✅ Stable |
 | **Retrofit** | 3.0.0 | ✅ Stable |
 | **OkHttp** | 5.3.2 | ✅ Stable |
-| **Coil** | 3.3.0 | ✅ Stable |
-| **Media3** | 1.9.1 | ✅ Stable |
+| **Coil** | 3.4.0 | ✅ Stable |
+| **Media3** | 1.10.0-beta01 | ⚠️ Beta |
 | **Jellyfin SDK** | 1.8.6 | ✅ Stable |
 | **Navigation** | 2.9.7 | ✅ Stable |
-| **Paging** | 3.4.0 | ✅ Stable |
+| **Paging** | 3.4.1 | ✅ Stable |
 
 **See**: [UPGRADE_PATH.md](UPGRADE_PATH.md) for full dependency upgrade strategy.
 
 ### Build Status
 
-- **CI/CD**: ✅ Passing on all branches
+- **CI/CD**: ⚠️ Dependency check workflow is active; primary Android CI workflows referenced in docs are currently missing from `.github/workflows`
 - **Unit Tests**: ✅ Passing (target 70%+ coverage)
 - **Lint**: ⚠️ ~150 non-critical warnings (see [ROADMAP §3.2](ROADMAP.md#32-fix-build-warnings))
 - **Coverage**: ✅ JaCoCo configured and reporting
@@ -154,20 +154,21 @@ This document provides a comprehensive snapshot of what works RIGHT NOW in the J
 - ✅ **Transcoding Diagnostics**: Added transcoding diagnostics tool and firebase integration (Feb 2026)
 - ✅ **Network Resilience**: Added offline startup handling, network state monitoring, and DNS resolution error handling (Feb 2026)
 - ✅ **Auto-play next episode** with countdown UI (Jan 23, 2026)
+- ✅ **Offline downloads completed**: background worker, progress notifications, storage management, and offline playback routing (Feb 2026)
 - ✅ **Offline download hanging bug** fixed (Jan 2026)
 - ✅ **Download ID mismatch** resolved (Jan 2026)
 - ✅ **Chromecast enhancements**: seek bar, volume control, position tracking (Jan 2026)
 
 ### Active Development
 - 🔄 Music background playback (in progress - [ROADMAP §1.1](ROADMAP.md))
-- 🔄 Offline downloads core functionality (in progress - [ROADMAP §1.2](ROADMAP.md))
+- 🔄 Offline downloads reliability polish (Wi-Fi-only WorkManager constraints and long-run validation)
 - 🔄 Android TV D-pad navigation testing (in progress - [ROADMAP §2.1](ROADMAP.md))
 
 ### Code Quality Focus
 - 🎯 Test coverage target: 70%+ for ViewModels and Repositories
 - 🎯 Refactoring large composables (ongoing - [ROADMAP §3.1](ROADMAP.md))
 - 🎯 Fixing build warnings (planned - [ROADMAP §3.2](ROADMAP.md))
-- 🎯 Auth refresh retry improvements (planned - [KNOWN_ISSUES #5](KNOWN_ISSUES.md))
+- 🎯 Auth refresh retry improvements (planned - [KNOWN_ISSUES #5](../features/KNOWN_ISSUES.md))
 
 ---
 
@@ -198,12 +199,12 @@ This document provides a comprehensive snapshot of what works RIGHT NOW in the J
 ## Related Documentation
 
 - **[ROADMAP.md](ROADMAP.md)** - Future features and development roadmap
-- **[KNOWN_ISSUES.md](KNOWN_ISSUES.md)** - Active bugs with workarounds and fix status
+- **[KNOWN_ISSUES.md](../features/KNOWN_ISSUES.md)** - Active bugs with workarounds and fix status
 - **[UPGRADE_PATH.md](UPGRADE_PATH.md)** - Dependency upgrade strategy and version roadmap
-- **[CLAUDE.md](CLAUDE.md)** - Development guidelines and architecture details
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution process and guidelines
-- **[TESTING_GUIDE.md](docs/TESTING_GUIDE.md)** - Testing patterns and best practices
-- **[IMPROVEMENT_PLAN.md](docs/IMPROVEMENT_PLAN.md)** - Technical debt and code quality improvements
+- **[CLAUDE.md](../../CLAUDE.md)** - Development guidelines and architecture details
+- **[CONTRIBUTING.md](../development/CONTRIBUTING.md)** - Contribution process and guidelines
+- **[TESTING_GUIDE.md](../development/TESTING_GUIDE.md)** - Testing patterns and best practices
+- **[IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md)** - Technical debt and code quality improvements
 
 ---
 
@@ -211,8 +212,8 @@ This document provides a comprehensive snapshot of what works RIGHT NOW in the J
 
 **What Works Now**: The Jellyfin Android client is a fully functional media player with secure authentication, video playback, library browsing, search, favorites, Picture-in-Picture, Chromecast, and auto-play next episode. The UI is modern with Material 3 Expressive components, and the architecture is solid with MVVM, Hilt DI, and Kotlin Coroutines.
 
-**What's In Progress**: Music background playback, offline downloads functionality, and Android TV D-pad navigation are under active development.
+**What's In Progress**: Music background playback, Android TV D-pad navigation, and offline reliability polish are under active development.
 
 **What's Planned**: Live TV, Sync Play, multi-profile support, and home screen widgets are on the roadmap for future phases.
 
-**Known Issues**: See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for detailed bug tracking with workarounds and fix status.
+**Known Issues**: See [KNOWN_ISSUES.md](../features/KNOWN_ISSUES.md) for detailed bug tracking with workarounds and fix status.

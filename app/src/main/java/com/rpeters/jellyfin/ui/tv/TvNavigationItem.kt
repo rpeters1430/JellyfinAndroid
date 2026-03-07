@@ -23,12 +23,12 @@ sealed class TvNavigationItem(
     object Movies : TvNavigationItem("tv_movies", "Movies", Icons.Default.Movie)
     object TvShows : TvNavigationItem("tv_shows", "TV Shows", Icons.Default.Tv)
     object Music : TvNavigationItem("tv_music", "Music", Icons.Default.LibraryMusic)
-    object Videos : TvNavigationItem("tv_homevideos", "Videos", Icons.Default.VideoLibrary)
+    object Stuff : TvNavigationItem("tv_stuff", "Stuff", Icons.Default.VideoLibrary)
     object Search : TvNavigationItem("tv_search", "Search", Icons.Default.Search)
     object Favorites : TvNavigationItem("tv_favorites", "Favorites", Icons.Default.Favorite)
     object Settings : TvNavigationItem("tv_settings", "Settings", Icons.Default.Settings)
 
     companion object {
-        val items = listOf(Home, Movies, TvShows, Music, Videos, Search, Favorites, Settings)
+        val items = listOf(Home, Movies, TvShows, Music, Stuff, Search, Favorites, Settings)
     }
 }

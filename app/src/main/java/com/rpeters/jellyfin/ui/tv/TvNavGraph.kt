@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -33,7 +34,8 @@ private object TvRoutes {
     const val Movies = "tv_movies"
     const val TvShows = "tv_shows"
     const val Music = "tv_music"
-    const val HomeVideos = "tv_homevideos"
+    const val Stuff = "tv_stuff"
+    const val LegacyHomeVideos = "tv_homevideos"
     const val Search = "tv_search"
     const val Favorites = "tv_favorites"
     const val Settings = "tv_settings"
@@ -54,10 +56,12 @@ private object TvRoutes {
 fun TvNavGraph(
     navController: NavHostController = rememberNavController(),
     startDestination: String = TvRoutes.ServerConnection,
+    modifier: Modifier = Modifier,
 ) {
     NavHost(
         navController = navController,
         startDestination = startDestination,
+        modifier = modifier,
     ) {
         composable(TvRoutes.ServerConnection) {
             val connectionViewModel: ServerConnectionViewModel = hiltViewModel()
@@ -153,6 +157,8 @@ fun TvNavGraph(
             TvLibraryScreen(
                 libraryId = "movies",
                 onItemSelect = { itemId -> navController.navigate("tv_item/$itemId") },
+                onBack = { navController.popBackStack() },
+                onSearch = { navController.navigate(TvRoutes.Search) },
             )
         }
 
@@ -161,6 +167,8 @@ fun TvNavGraph(
             TvLibraryScreen(
                 libraryId = "tvshows",
                 onItemSelect = { itemId -> navController.navigate("tv_item/$itemId") },
+                onBack = { navController.popBackStack() },
+                onSearch = { navController.navigate(TvRoutes.Search) },
             )
         }
 
@@ -169,19 +177,33 @@ fun TvNavGraph(
             TvLibraryScreen(
                 libraryId = "music",
                 onItemSelect = { itemId -> navController.navigate("tv_item/$itemId") },
+                onBack = { navController.popBackStack() },
+                onSearch = { navController.navigate(TvRoutes.Search) },
             )
         }
 
-        composable(TvRoutes.HomeVideos) {
+        composable(TvRoutes.Stuff) {
             TvLibraryScreen(
                 libraryId = "homevideos",
                 onItemSelect = { itemId -> navController.navigate("tv_item/$itemId") },
+                onBack = { navController.popBackStack() },
+                onSearch = { navController.navigate(TvRoutes.Search) },
             )
+        }
+
+        composable(TvRoutes.LegacyHomeVideos) {
+            LaunchedEffect(Unit) {
+                navController.navigate(TvRoutes.Stuff) {
+                    popUpTo(TvRoutes.LegacyHomeVideos) { inclusive = true }
+                    launchSingleTop = true
+                }
+            }
         }
 
         composable(TvRoutes.Search) {
             TvSearchScreen(
-                onItemSelect = { itemId -> navController.navigate("tv_item/$itemId") }
+                onItemSelect = { itemId -> navController.navigate("tv_item/$itemId") },
+                onBack = { navController.popBackStack() },
             )
         }
 
@@ -189,6 +211,8 @@ fun TvNavGraph(
             TvLibraryScreen(
                 libraryId = "favorites",
                 onItemSelect = { itemId -> navController.navigate("tv_item/$itemId") },
+                onBack = { navController.popBackStack() },
+                onSearch = { navController.navigate(TvRoutes.Search) },
             )
         }
 
@@ -207,6 +231,8 @@ fun TvNavGraph(
             TvLibraryScreen(
                 libraryId = libraryId,
                 onItemSelect = { itemId -> navController.navigate("tv_item/$itemId") },
+                onBack = { navController.popBackStack() },
+                onSearch = { navController.navigate(TvRoutes.Search) },
             )
         }
 
@@ -220,6 +246,8 @@ fun TvNavGraph(
                 onPlay = { id, name, startMs ->
                     navController.navigate(TvRoutes.playerRoute(id, name, startMs))
                 },
+                onBack = { navController.popBackStack() },
+                onSearch = { navController.navigate(TvRoutes.Search) },
             )
         }
 

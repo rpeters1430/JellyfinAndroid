@@ -21,6 +21,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
@@ -59,6 +61,7 @@ fun TvCarouselHomeContent(
     header: @Composable () -> Unit,
     onItemFocus: (BaseItemDto) -> Unit = {},
     onItemSelect: (BaseItemDto) -> Unit,
+    focusBridgeManager: FocusManager? = null,
     libraries: List<BaseItemDto>,
     onLibrarySelect: (String) -> Unit,
     isLoadingLibraries: Boolean,
@@ -83,6 +86,7 @@ fun TvCarouselHomeContent(
                 focusManager = focusManager,
                 onItemFocus = onItemFocus,
                 onItemSelect = onItemSelect,
+                focusBridgeManager = focusBridgeManager,
                 initialFocusRequester = initialFocusRequester.takeIf { firstSectionId == section.id },
             )
         }
@@ -105,6 +109,7 @@ private fun TvContentCardSection(
     focusManager: TvFocusManager,
     onItemFocus: (BaseItemDto) -> Unit,
     onItemSelect: (BaseItemDto) -> Unit,
+    focusBridgeManager: FocusManager?,
     initialFocusRequester: FocusRequester?,
 ) {
     if (section.isLoading && section.items.isEmpty()) {
@@ -132,6 +137,7 @@ private fun TvContentCardSection(
         carouselId = carouselId,
         isLoading = section.isLoading,
         focusRequester = initialFocusRequester,
+        focusBridgeManager = focusBridgeManager,
     )
 }
 
@@ -147,6 +153,7 @@ fun TabletHomeContent(
     header: @Composable () -> Unit,
     onItemFocus: (BaseItemDto) -> Unit = {},
     onItemSelect: (BaseItemDto) -> Unit,
+    focusBridgeManager: FocusManager? = null,
     getImageUrl: (BaseItemDto) -> String?,
     getSeriesImageUrl: (BaseItemDto) -> String?,
     libraries: List<BaseItemDto>,
@@ -172,6 +179,7 @@ fun TabletHomeContent(
                 focusManager = focusManager,
                 onItemFocus = onItemFocus,
                 onItemSelect = onItemSelect,
+                focusBridgeManager = focusBridgeManager,
                 getImageUrl = getImageUrl,
                 getSeriesImageUrl = getSeriesImageUrl,
                 focusRequester = initialFocusRequester.takeIf { index == 0 },
@@ -196,6 +204,7 @@ private fun TabletMediaSection(
     focusManager: TvFocusManager,
     onItemFocus: (BaseItemDto) -> Unit,
     onItemSelect: (BaseItemDto) -> Unit,
+    focusBridgeManager: FocusManager?,
     getImageUrl: (BaseItemDto) -> String?,
     getSeriesImageUrl: (BaseItemDto) -> String?,
     focusRequester: FocusRequester?,
@@ -247,13 +256,16 @@ private fun TabletMediaSection(
                 itemCount = items.size,
                 columnsCount = columns,
                 focusRequester = focusRequester,
+                onExitLeft = {
+                    focusBridgeManager?.moveFocus(FocusDirection.Left) ?: false
+                },
                 onFocusChanged = { isFocused, index ->
                     if (isFocused && index in items.indices) {
                         focusedIndex = index
                         onItemFocus(items[index])
                     }
                 },
-            ) { focusModifier ->
+            ) { focusModifier, wrapperFocusedIndex, itemFocusRequesters ->
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(columns),
                     state = gridState,
@@ -275,7 +287,8 @@ private fun TabletMediaSection(
                             onItemSelect = { onItemSelect(item) },
                             getImageUrl = getImageUrl,
                             getSeriesImageUrl = getSeriesImageUrl,
-                            isFocused = focusedIndex == index,
+                            focusRequester = itemFocusRequesters[index],
+                            isFocused = focusedIndex == index || wrapperFocusedIndex == index,
                             posterWidth = layoutConfig.carouselItemWidth,
                             posterHeight = layoutConfig.carouselItemHeight,
                         )

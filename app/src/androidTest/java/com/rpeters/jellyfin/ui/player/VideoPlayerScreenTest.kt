@@ -1,11 +1,12 @@
 package com.rpeters.jellyfin.ui.player
 
 import androidx.activity.ComponentActivity
-import androidx.compose.ui.test.assertDoesNotExist
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.media3.common.Format
@@ -60,7 +61,7 @@ class VideoPlayerScreenTest {
             supportsPip = true,
         )
 
-        composeRule.onNodeWithTag(VideoPlayerTestTags.SubtitlesButton).assertDoesNotExist()
+        composeRule.onAllNodesWithTag(VideoPlayerTestTags.SubtitlesButton).assertCountEquals(0)
 
         val subtitleTrack = buildTrack(
             groupIndex = 0,
@@ -89,7 +90,7 @@ class VideoPlayerScreenTest {
             supportsPip = true,
         )
 
-        composeRule.onNodeWithTag(VideoPlayerTestTags.AudioTracksButton).assertDoesNotExist()
+        composeRule.onAllNodesWithTag(VideoPlayerTestTags.AudioTracksButton).assertCountEquals(0)
 
         val secondTrack = buildTrack(
             groupIndex = 1,

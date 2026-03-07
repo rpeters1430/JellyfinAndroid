@@ -2,62 +2,51 @@
 
 ## Overview
 
-This repository includes several GitHub Actions workflows to ensure code quality, automated testing, and release management for the Jellyfin Android client.
+This repository includes GitHub Actions workflows for Android build verification, dependency monitoring, and repository automation.
 
 ## Workflows
 
-### 1. `android-ci.yml` - Basic CI
+### 1. `android-ci.yml` - Android CI
 **Triggers:** Push/PR to `main` or `develop` branches
 
 **What it does:**
-- ✅ Builds debug APK using `gradlew assembleDebug`
-- ✅ Runs unit tests
-- ✅ Uploads build artifacts
+- ✅ Builds debug APK using `:app:assembleDebug`
+- ✅ Runs unit tests with `:app:testDebugUnitTest`
+- ✅ Runs lint with `:app:lintDebug`
+- ✅ Uploads APK + test/lint reports as artifacts
 - ✅ Caches Gradle dependencies for faster builds
 
-### 2. `android-ci-extended.yml` - Comprehensive CI
-**Triggers:** Push/PR to `main` or `develop` branches, manual trigger
-
-**What it does:**
-- 🔍 **Lint Check** - Analyzes code for potential issues
-- 🧪 **Unit Tests** - Runs all unit tests with detailed reporting
-- 🏗️ **Build Matrix** - Builds both debug and release APKs
-- 🔒 **Security Scan** - Trivy vulnerability scanning (main branch only)
-
 ### 3. `dependency-check.yml` - Dependency Management
-**Triggers:** Weekly schedule (Mondays 9 AM UTC), manual trigger
+**Triggers:** Push/PR to `main` or `develop`, weekly schedule
 
 **What it does:**
-- 📦 Checks for dependency updates
-- ✅ Validates Gradle wrapper integrity
-- 📊 Generates dependency reports
+- 📦 Generates dependency graph/report for the app runtime classpath
+- 🔎 Runs GitHub dependency review on pull requests
 
-### 4. `release.yml` - Automated Releases
-**Triggers:** Git tags matching `v*.*.*`, manual trigger
+### 4. `claude.yml` - Repository Automation
+**Triggers:** Issue/PR events and comment commands
 
 **What it does:**
-- 🚀 Builds release APK
-- 📝 Creates GitHub release with changelog
-- 📱 Uploads APK as release asset
+- 🤖 Runs configured Claude automation for review/triage/fix workflows
 
 ## Build Requirements
 
-- **JDK:** 17 (Temurin distribution)
+- **JDK:** 21 (Temurin distribution)
 - **Android SDK:** Latest (auto-installed)
 - **Gradle:** Uses wrapper (gradlew)
-- **Min SDK:** 31 (Android 12)
-- **Target SDK:** 36
+- **Min SDK:** 26 (Android 8.0)
+- **Target SDK:** 35
+- **Compile SDK:** 36
 
 ## Artifacts
 
 ### Build Artifacts
-- `debug-apk` - Debug APK (30 days retention)
-- `release-apk` - Release APK (30 days retention)
+- `debug-apk` - Debug APK
 
 ### Reports
-- `lint-reports` - Code analysis reports (7 days)
-- `build-reports` - Build failure reports (7 days)
-- `dependency-updates-report` - Dependency update info (7 days)
+- `lint-reports` - Code analysis reports
+- `unit-test-reports` - JVM test outputs
+- `dependency-report` - Dependency classpath report
 
 ## Status Badges
 
@@ -94,10 +83,7 @@ To run the same checks locally:
    git push origin v1.0.0
    ```
 
-2. **Automatic release:** The workflow will automatically:
-   - Build release APK
-   - Create GitHub release
-   - Upload APK asset
+2. **CI validates each push/PR:** Android CI builds, tests, and lints automatically.
 
 ## Troubleshooting
 
@@ -128,8 +114,7 @@ To run the same checks locally:
 
 ## Future Enhancements
 
-- 🔐 APK signing with upload keys
-- 🧪 Instrumented tests with emulator
-- 📊 Code coverage reporting
-- 🚀 Play Store deployment
-- 🔄 Automatic dependency updates with Dependabot
+- 🧪 Instrumented tests with emulator in CI
+- 📊 Code coverage reporting upload
+- 🚀 Release workflow for tags
+- 🔄 Automatic dependency update PRs

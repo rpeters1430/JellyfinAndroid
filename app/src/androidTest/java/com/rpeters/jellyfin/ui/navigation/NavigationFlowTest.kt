@@ -5,7 +5,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.test.assertExists
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -33,7 +33,7 @@ class NavigationFlowTest {
 
         composeRule.onNodeWithText("Load Episodes").performClick()
         assertEquals("episodes", navController.currentDestination?.route)
-        composeRule.onNodeWithText("Episodes Screen").assertExists()
+        composeRule.onNodeWithText("Episodes Screen").assertIsDisplayed()
     }
 }
 

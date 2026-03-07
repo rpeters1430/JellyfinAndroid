@@ -47,6 +47,7 @@ private const val RECENT_MOVIES_ID = "recent_movies"
 private const val RECENT_TV_SHOW_EPISODES_ID = "recent_tv_show_episodes"
 private const val ALL_MOVIES_ID = "all_movies"
 private const val ALL_TV_SHOWS_ID = "all_tv_shows"
+private const val CONTINUE_WATCHING_ID = "continue_watching"
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @OptInAppExperimentalApis
@@ -76,13 +77,34 @@ fun TvHomeScreen(
         viewModel.loadInitialData(forceRefresh = false)
     }
 
+    val continueWatching = appState.continueWatching
+        .sortedWith(tvInProgressComparator())
+        .take(10)
     val recentMovies = appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name]?.take(10) ?: emptyList()
-    val featuredMovies = recentMovies.take(5)
     val recentTvShowEpisodes = appState.recentlyAddedByTypes[BaseItemKind.EPISODE.name]?.take(10) ?: emptyList()
     val allMovies = appState.allMovies.take(10)
     val allTvShows = appState.allTVShows.take(10)
+    val featuredItems = buildList {
+        addAll(continueWatching)
+        addAll(
+            appState.recentlyAdded
+                .sortedWith(tvInProgressComparator())
+                .take(10),
+        )
+        addAll(recentTvShowEpisodes)
+        addAll(recentMovies)
+    }
+        .distinctBy { it.id }
+        .sortedWith(tvInProgressComparator())
+        .take(5)
 
     val sections = listOf(
+        TvHomeMediaSection(
+            id = CONTINUE_WATCHING_ID,
+            title = "Continue Watching",
+            items = continueWatching,
+            isLoading = appState.isLoading,
+        ),
         TvHomeMediaSection(
             id = RECENT_MOVIES_ID,
             title = "Recently Added Movies",
@@ -179,7 +201,7 @@ fun TvHomeScreen(
                                         .padding(layoutConfig.headerPadding),
                                 )
                                 TvHeroCarousel(
-                                    featuredItems = featuredMovies,
+                                    featuredItems = featuredItems,
                                     onItemClick = { item -> onItemSelect(item.id.toString()) },
                                     onPlayClick = { item ->
                                         onPlay(item.id.toString(), item.name ?: "", 0L)
@@ -195,6 +217,7 @@ fun TvHomeScreen(
                         onItemSelect = { item ->
                             onItemSelect(item.id.toString())
                         },
+                        focusBridgeManager = focusManager,
                         getImageUrl = viewModel::getImageUrl,
                         getSeriesImageUrl = viewModel::getSeriesImageUrl,
                         libraries = appState.libraries,
@@ -216,7 +239,7 @@ fun TvHomeScreen(
                                         .padding(layoutConfig.headerPadding),
                                 )
                                 TvHeroCarousel(
-                                    featuredItems = featuredMovies,
+                                    featuredItems = featuredItems,
                                     onItemClick = { item -> onItemSelect(item.id.toString()) },
                                     onPlayClick = { item ->
                                         onPlay(item.id.toString(), item.name ?: "", 0L)
@@ -232,6 +255,7 @@ fun TvHomeScreen(
                         onItemSelect = { item ->
                             onItemSelect(item.id.toString())
                         },
+                        focusBridgeManager = focusManager,
                         libraries = appState.libraries,
                         onLibrarySelect = onLibrarySelect,
                         isLoadingLibraries = appState.isLoading,
@@ -242,6 +266,25 @@ fun TvHomeScreen(
             }
         }
     }
+}
+
+private fun tvInProgressComparator(): Comparator<org.jellyfin.sdk.model.api.BaseItemDto> {
+    return compareByDescending<org.jellyfin.sdk.model.api.BaseItemDto> { it.isInProgress() }
+        .thenByDescending { it.type == BaseItemKind.EPISODE }
+        .thenByDescending { it.playbackProgressRatio() }
+}
+
+private fun org.jellyfin.sdk.model.api.BaseItemDto.isInProgress(): Boolean {
+    val playbackTicks = userData?.playbackPositionTicks ?: 0L
+    val isPlayed = userData?.played == true
+    return playbackTicks > 0L && !isPlayed
+}
+
+private fun org.jellyfin.sdk.model.api.BaseItemDto.playbackProgressRatio(): Double {
+    val playbackTicks = userData?.playbackPositionTicks ?: return 0.0
+    val runtimeTicks = runTimeTicks ?: return 0.0
+    if (runtimeTicks <= 0L) return 0.0
+    return (playbackTicks.toDouble() / runtimeTicks.toDouble()).coerceIn(0.0, 1.0)
 }
 
 @Composable

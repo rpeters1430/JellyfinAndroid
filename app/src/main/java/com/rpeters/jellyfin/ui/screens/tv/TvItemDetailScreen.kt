@@ -30,10 +30,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -43,7 +51,9 @@ import com.rpeters.jellyfin.ui.components.tv.TvContentCarousel
 import com.rpeters.jellyfin.ui.components.tv.TvImmersiveBackground
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.image.rememberCoilSize
+import com.rpeters.jellyfin.ui.tv.TvScreenFocusScope
 import com.rpeters.jellyfin.ui.tv.rememberTvFocusManager
+import com.rpeters.jellyfin.ui.tv.tvKeyboardHandler
 import com.rpeters.jellyfin.ui.utils.MediaPlayerUtils
 import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
@@ -74,11 +84,14 @@ fun TvItemDetailScreen(
     seasonViewModel: TVSeasonViewModel = hiltViewModel(),
     onItemSelect: (String) -> Unit,
     onPlay: (itemId: String, itemName: String, startPositionMs: Long) -> Unit,
+    onBack: (() -> Unit)? = null,
+    onSearch: (() -> Unit)? = null,
 ) {
     val appState by viewModel.appState.collectAsState()
     val seasonState by seasonViewModel.state.collectAsState()
     val userPrefs: UserPreferencesViewModel = hiltViewModel()
     val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
     val playerVm: com.rpeters.jellyfin.ui.player.VideoPlayerViewModel = hiltViewModel()
     val tvFocusManager = rememberTvFocusManager()
     
@@ -113,14 +126,28 @@ fun TvItemDetailScreen(
     var focusedBackdrop by remember(item) { 
         mutableStateOf(item?.let { viewModel.getBackdropUrl(it) }) 
     }
+    val playButtonFocusRequester = remember { FocusRequester() }
+    val nextContentFocusRequester = remember { FocusRequester() }
 
-    Box(modifier = modifier.fillMaxSize()) {
-        // Full-screen Immersive Backdrop
-        TvImmersiveBackground(
-            backdropUrl = focusedBackdrop,
-            dimAmount = 0.7f,
-            blurRadius = 15
-        )
+    TvScreenFocusScope(
+        screenKey = "tv_item_${itemId ?: "unknown"}",
+        focusManager = tvFocusManager,
+    ) {
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .tvKeyboardHandler(
+                    focusManager = focusManager,
+                    onBack = onBack,
+                    onSearch = onSearch,
+                ),
+        ) {
+            // Full-screen Immersive Backdrop
+            TvImmersiveBackground(
+                backdropUrl = focusedBackdrop,
+                dimAmount = 0.7f,
+                blurRadius = 15
+            )
 
         // Gradient overlay for bottom-heavy content
         Box(
@@ -137,16 +164,16 @@ fun TvItemDetailScreen(
                 )
         )
 
-        val scrollState = rememberScrollState()
+            val scrollState = rememberScrollState()
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .padding(horizontal = 56.dp)
-                .padding(top = 80.dp, bottom = 56.dp),
-            verticalArrangement = Arrangement.spacedBy(32.dp)
-        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(horizontal = 56.dp)
+                    .padding(top = 80.dp, bottom = 56.dp),
+                verticalArrangement = Arrangement.spacedBy(32.dp)
+            ) {
             // Main Info Section
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -263,6 +290,16 @@ fun TvItemDetailScreen(
                                     onPlay(id, title, resumeMs)
                                 }
                             },
+                            modifier = Modifier
+                                .focusRequester(playButtonFocusRequester)
+                                .onPreviewKeyEvent { keyEvent ->
+                                    if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionDown) {
+                                        nextContentFocusRequester.requestFocus()
+                                        true
+                                    } else {
+                                        false
+                                    }
+                                },
                             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
                         ) {
                             TvIcon(Icons.Default.PlayArrow, null)
@@ -274,6 +311,14 @@ fun TvItemDetailScreen(
                             onClick = {
                                 item?.let {
                                     userPrefs.toggleFavorite(it) { _, _ -> }
+                                }
+                            },
+                            modifier = Modifier.onPreviewKeyEvent { keyEvent ->
+                                if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionDown) {
+                                    nextContentFocusRequester.requestFocus()
+                                    true
+                                } else {
+                                    false
                                 }
                             },
                             colors = TvButtonDefaults.colors(
@@ -293,6 +338,14 @@ fun TvItemDetailScreen(
                                     } else {
                                         userPrefs.markAsWatched(it) { _, _ -> }
                                     }
+                                }
+                            },
+                            modifier = Modifier.onPreviewKeyEvent { keyEvent ->
+                                if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionDown) {
+                                    nextContentFocusRequester.requestFocus()
+                                    true
+                                } else {
+                                    false
                                 }
                             },
                             colors = TvButtonDefaults.colors(
@@ -351,6 +404,11 @@ fun TvItemDetailScreen(
                             title = "",
                             layoutConfig = layoutConfig,
                             focusManager = tvFocusManager,
+                            focusRequester = nextContentFocusRequester,
+                            onExitUp = {
+                                playButtonFocusRequester.requestFocus()
+                                true
+                            },
                             onItemFocus = { episode ->
                                 // Optional: Update backdrop to episode backdrop
                                 val epBackdrop = viewModel.getBackdropUrl(episode)
@@ -372,6 +430,11 @@ fun TvItemDetailScreen(
                     title = "You Might Also Like",
                     layoutConfig = layoutConfig,
                     focusManager = tvFocusManager,
+                    focusRequester = nextContentFocusRequester,
+                    onExitUp = {
+                        playButtonFocusRequester.requestFocus()
+                        true
+                    },
                     onItemSelect = { related ->
                         onItemSelect(related.id.toString())
                     }
@@ -383,10 +446,16 @@ fun TvItemDetailScreen(
                     title = "Recently Added",
                     layoutConfig = layoutConfig,
                     focusManager = tvFocusManager,
+                    focusRequester = nextContentFocusRequester,
+                    onExitUp = {
+                        playButtonFocusRequester.requestFocus()
+                        true
+                    },
                     onItemSelect = { related ->
                         onItemSelect(related.id.toString())
                     }
                 )
+            }
             }
         }
     }

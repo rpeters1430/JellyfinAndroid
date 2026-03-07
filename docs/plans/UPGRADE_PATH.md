@@ -1,8 +1,8 @@
 # Jellyfin Android - Dependency Upgrade Path
 
-**Last Updated**: January 30, 2026
+**Last Updated**: March 7, 2026
 
-This document outlines the dependency upgrade strategy, current status, and roadmap for modernizing the Jellyfin Android client's dependencies. For current feature status, see [CURRENT_STATUS.md](CURRENT_STATUS.md). For known bugs, see [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
+This document outlines the dependency upgrade strategy, current status, and roadmap for modernizing the Jellyfin Android client's dependencies. For current feature status, see [CURRENT_STATUS.md](CURRENT_STATUS.md). For known bugs, see [KNOWN_ISSUES.md](../features/KNOWN_ISSUES.md).
 
 ---
 
@@ -14,21 +14,20 @@ These dependencies are on stable releases and current versions:
 
 | Dependency | Version | Category | Notes |
 |------------|---------|----------|-------|
-| **Kotlin** | 2.3.0 | Language | Latest stable |
-| **Compose BOM** | 2026.01.01 | UI Framework | Latest BOM |
-| **Hilt** | 2.59 | Dependency Injection | Latest stable |
+| **Kotlin** | 2.3.10 | Language | Latest stable |
+| **Compose BOM** | 2026.02.01 | UI Framework | Latest BOM |
+| **Hilt** | 2.59.2 | Dependency Injection | Latest stable |
 | **Kotlin Coroutines** | 1.10.2 | Async | Latest stable |
 | **Retrofit** | 3.0.0 | Networking | Latest stable |
 | **OkHttp** | 5.3.2 | HTTP Client | Latest stable |
-| **Coil** | 3.3.0 | Image Loading | Latest stable |
-| **Media3** | 1.9.1 | Media Playback | Latest stable |
+| **Coil** | 3.4.0 | Image Loading | Latest stable |
 | **Jellyfin SDK** | 1.8.6 | API Client | Latest stable |
 | **Navigation** | 2.9.7 | Navigation | Latest stable |
 | **Kotlinx Serialization** | 1.10.0 | Serialization | Latest stable |
-| **Lifecycle** | 2.10.0 | AndroidX | Latest stable |
 | **Desugar JDK Libs** | 2.1.5 | Java Compatibility | Latest stable |
 | **JUnit** | 4.13.2 | Testing | Latest stable |
-| **MockK** | 1.14.7 | Testing | Latest stable |
+| **MockK** | 1.14.9 | Testing | Latest stable |
+| **Paging** | 3.4.1 | Paging | Latest stable |
 
 **Action**: ✅ **None** - These dependencies are current and stable.
 
@@ -42,10 +41,10 @@ These dependencies are intentionally on alpha/beta versions for specific reasons
 
 | Dependency | Current Version | Stable Version | Reason for Alpha | Upgrade Blocker |
 |------------|----------------|----------------|------------------|-----------------|
-| **Material 3** | 1.5.0-alpha13 | 1.4.0 | Expressive components | Expressive only in alpha |
-| **Material 3 Adaptive Navigation Suite** | 1.5.0-alpha13 | 1.4.0 | Enhanced navigation | Coupled with M3 alpha |
-| **Material 3 Adaptive** | 1.3.0-alpha07 | 1.1.0 | Adaptive layouts | Enhanced features in alpha |
-| **Material 3 Window Size** | 1.5.0-alpha13 | 1.4.0 | Window size classes | Coupled with M3 alpha |
+| **Material 3** | 1.5.0-alpha15 | 1.4.0 | Expressive components | Expressive only in alpha |
+| **Material 3 Adaptive Navigation Suite** | 1.5.0-alpha15 | 1.4.0 | Enhanced navigation | Coupled with M3 alpha |
+| **Material 3 Adaptive** | 1.3.0-alpha09 | 1.1.0 | Adaptive layouts | Enhanced features in alpha |
+| **Material 3 Window Size** | 1.5.0-alpha15 | 1.4.0 | Window size classes | Coupled with M3 alpha |
 | **Material 3 Expressive Components** | 1.5.0-alpha02 | N/A | Expressive design | **Not available in stable** |
 | **Google Material** | 1.14.0-alpha09 | 1.13.0 | Supporting library | Coupled with M3 alpha |
 
@@ -63,12 +62,14 @@ These dependencies are intentionally on alpha/beta versions for specific reasons
 
 | Dependency | Current Version | Stable Version | Reason for Alpha | Can Upgrade? |
 |------------|----------------|----------------|------------------|--------------|
-| **Core KTX** | 1.18.0-alpha01 | 1.17.0 | Latest features | ⚠️ Evaluate |
-| **Activity Compose** | 1.13.0-alpha01 | 1.12.1 | Latest features | ⚠️ Evaluate |
+| **Core KTX** | 1.18.0-rc01 | 1.17.0 | Latest features | ⚠️ Evaluate |
+| **Activity Compose** | 1.13.0-rc01 | 1.12.1 | Latest features | ⚠️ Evaluate |
 | **Biometric** | 1.4.0-alpha05 | 1.1.0 | Enhanced auth | ⚠️ Evaluate |
-| **DataStore** | 1.3.0-alpha05 | 1.1.1 | Performance improvements | ⚠️ Wait for stable |
+| **DataStore** | 1.3.0-alpha06 | 1.1.1 | Performance improvements | ⚠️ Wait for stable |
 | **Window** | 1.6.0-alpha01 | 1.3.0 | Foldable support | ⚠️ Evaluate |
 | **AndroidX TV Material** | 1.1.0-alpha01 | 1.0.0 | TV enhancements | ⚠️ Evaluate |
+| **Lifecycle Runtime** | 2.11.0-alpha01 | 2.10.x | New lifecycle/runtime APIs | ⚠️ Evaluate |
+| **Media3** | 1.10.0-beta01 | 1.9.x | New playback/cast/session updates | ⚠️ Beta rollout validation |
 
 **Reason**: These dependencies are on alpha versions for:
 - **Core KTX, Activity Compose**: Latest feature set for modern Android development
@@ -96,7 +97,7 @@ The following upgrades are now complete:
 
 | Dependency | Previous Version | Current Version | Notes |
 |------------|------------------|-----------------|-------|
-| **Paging** | 3.4.0-rc01 | 3.4.0 | Stable release now in use |
+| **Paging** | 3.4.0-rc01 | 3.4.1 | Stable release now in use |
 
 **Action**: ✅ **No immediate upgrades pending** in this category.
 
@@ -122,7 +123,7 @@ The following upgrades are now complete:
 
 #### Upgrade Paging to Stable (Completed)
 
-**Current**: `3.4.0` (stable)
+**Current**: `3.4.1` (stable)
 
 **Status**: ✅ Completed (Jan 2026). No further action required.
 
@@ -136,7 +137,7 @@ The following upgrades are now complete:
 
 #### 2.1: Evaluate DataStore Upgrade
 
-**Current**: `1.3.0-alpha05` → **Target**: `1.3.0` (when available)
+**Current**: `1.3.0-alpha06` → **Target**: `1.3.0` (when available)
 
 **Justification**: DataStore is critical for app settings and credentials. Alpha versions may have bugs.
 
@@ -193,8 +194,8 @@ grep -r "androidx.biometric" app/src/main/java
 #### 2.4: Evaluate Core KTX and Activity Compose
 
 **Current**:
-- Core KTX: `1.18.0-alpha01` → **Target**: `1.17.0` (stable) or `1.18.0` (when available)
-- Activity Compose: `1.13.0-alpha01` → **Target**: `1.12.1` (stable) or `1.13.0` (when available)
+- Core KTX: `1.18.0-rc01` → **Target**: `1.18.0` (stable)
+- Activity Compose: `1.13.0-rc01` → **Target**: `1.13.0` (stable)
 
 **Investigation Required**:
 1. Review changelog for alpha-only features being used
@@ -243,8 +244,8 @@ grep -r "androidx.biometric" app/src/main/java
 #### 3.2: Material 3 Adaptive Libraries
 
 **Dependencies**:
-- Material 3 Adaptive: `1.3.0-alpha06` → `TBD`
-- Material 3 Adaptive Navigation Suite: `1.5.0-alpha13` → `TBD`
+- Material 3 Adaptive: `1.3.0-alpha09` → `TBD`
+- Material 3 Adaptive Navigation Suite: `1.5.0-alpha15` → `TBD`
 
 **Strategy**: Upgrade together with Material 3 main library in Phase 3.1.
 
@@ -506,9 +507,9 @@ grep -r "Carousel" app/src/main/java
 
 - **[CURRENT_STATUS.md](CURRENT_STATUS.md)** - Current dependency versions in use
 - **[ROADMAP.md](ROADMAP.md)** - Feature development roadmap
-- **[KNOWN_ISSUES.md](KNOWN_ISSUES.md)** - Known bugs and workarounds
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines
-- **[MATERIAL3_EXPRESSIVE.md](MATERIAL3_EXPRESSIVE.md)** - Material 3 Expressive usage justification
+- **[KNOWN_ISSUES.md](../features/KNOWN_ISSUES.md)** - Known bugs and workarounds
+- **[CONTRIBUTING.md](../development/CONTRIBUTING.md)** - Contribution guidelines
+- **[MATERIAL3_EXPRESSIVE.md](../features/MATERIAL3_EXPRESSIVE.md)** - Material 3 Expressive usage justification
 
 ---
 
@@ -517,10 +518,10 @@ grep -r "Carousel" app/src/main/java
 **Current State**: The app uses a mix of stable and alpha dependencies. All alpha dependencies are intentional and justified:
 - **Material 3 alphas**: Required for Expressive components (not available in stable)
 - **AndroidX alphas**: Early access to enhanced features (evaluated individually)
-- **Paging**: Stable 3.4.0 now in use
+- **Paging**: Stable 3.4.1 now in use
 
 **Upgrade Priority**:
-1. ✅ **Phase 1**: Upgrade Paging to 3.4.0 stable (completed)
+1. ✅ **Phase 1**: Upgrade Paging to 3.4.x stable (completed)
 2. 📋 **Phase 2**: Evaluate AndroidX alpha dependencies, downgrade to stable where possible (Q1 2026)
 3. 🔒 **Phase 3**: Wait for Material 3 Expressive stable, then upgrade all M3 dependencies (mid-2026)
 4. ✅ **Phase 4**: Carousel dependency resolved (official Material 3 carousel in use)
@@ -528,4 +529,3 @@ grep -r "Carousel" app/src/main/java
 **Risk Assessment**: Overall low risk. Material 3 alphas are stable in practice, and stable fallback versions exist for most AndroidX libraries.
 
 **Maintenance**: Regular review of dependency updates via Dependabot, monthly check for stable releases, quarterly UPGRADE_PATH review.
-

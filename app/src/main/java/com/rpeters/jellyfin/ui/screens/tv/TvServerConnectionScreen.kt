@@ -19,7 +19,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -48,6 +47,7 @@ import com.rpeters.jellyfin.ui.components.tv.TvImmersiveBackground
 import androidx.tv.material3.Button as TvButton
 import androidx.tv.material3.Card as TvCard
 import androidx.tv.material3.CardDefaults as TvCardDefaults
+import androidx.tv.material3.Icon as TvIcon
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text as TvText
 
@@ -164,7 +164,7 @@ fun TvServerConnectionScreen(
                     visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
                         IconButton(onClick = { showPassword = !showPassword }) {
-                            Icon(
+                            TvIcon(
                                 imageVector = if (showPassword) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
                                 contentDescription = if (showPassword) "Hide password" else "Show password",
                                 tint = if (passwordFocused) TvMaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.7f),

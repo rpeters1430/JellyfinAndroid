@@ -33,9 +33,6 @@ import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -699,7 +696,7 @@ private fun ControlButton(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(imageVector = icon, contentDescription = null)
+            TvIcon(imageVector = icon, contentDescription = null)
             TvText(text = text, style = TvMaterialTheme.typography.bodyLarge)
         }
     }
@@ -718,7 +715,7 @@ private fun TrackSelectionDialog(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.65f)),
+            .background(TvMaterialTheme.colorScheme.scrim.copy(alpha = 0.65f)),
         contentAlignment = Alignment.Center,
     ) {
         TvSurface(
@@ -794,18 +791,18 @@ private fun TrackSelectionDialog(
                                         overflow = TextOverflow.Ellipsis,
                                     )
                                     track.format.language?.takeIf { it.isNotBlank() }?.let { language ->
-                                        Text(
+                                        TvText(
                                             text = language,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            style = TvMaterialTheme.typography.bodyMedium,
+                                            color = TvMaterialTheme.colorScheme.onSurfaceVariant,
                                         )
                                     }
                                 }
                                 if (isSelected) {
-                                    Text(
+                                    TvText(
                                         text = "Selected",
-                                        style = MaterialTheme.typography.labelLarge,
-                                        color = MaterialTheme.colorScheme.primary,
+                                        style = TvMaterialTheme.typography.labelLarge,
+                                        color = TvMaterialTheme.colorScheme.primary,
                                     )
                                 }
                             }

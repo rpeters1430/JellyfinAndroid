@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -45,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.tv.material3.Text
+import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.image.rememberCoilSize
@@ -120,8 +120,8 @@ fun TvAudioPlayerScreen(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                MaterialTheme.colorScheme.scrim.copy(alpha = 0.7f),
-                                MaterialTheme.colorScheme.scrim.copy(alpha = 0.9f),
+                                TvMaterialTheme.colorScheme.scrim.copy(alpha = 0.7f),
+                                TvMaterialTheme.colorScheme.scrim.copy(alpha = 0.9f),
                             ),
                         ),
                     ),
@@ -138,11 +138,11 @@ fun TvAudioPlayerScreen(
                 // Header with "Now Playing" text
                 Text(
                     text = "Now Playing",
-                    style = MaterialTheme.typography.headlineMedium.copy(
+                    style = TvMaterialTheme.typography.headlineMedium.copy(
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Light,
                     ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = TvMaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 24.dp),
                 )
 
@@ -172,11 +172,11 @@ fun TvAudioPlayerScreen(
                         Text(
                             text = playbackState.currentMediaItem?.mediaMetadata?.title?.toString()
                                 ?: "No track playing",
-                            style = MaterialTheme.typography.displayMedium.copy(
+                            style = TvMaterialTheme.typography.displayMedium.copy(
                                 fontSize = 48.sp,
                                 fontWeight = FontWeight.Bold,
                             ),
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color = TvMaterialTheme.colorScheme.onSurface,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -185,11 +185,11 @@ fun TvAudioPlayerScreen(
                         Text(
                             text = playbackState.currentMediaItem?.mediaMetadata?.artist?.toString()
                                 ?: "",
-                            style = MaterialTheme.typography.headlineLarge.copy(
+                            style = TvMaterialTheme.typography.headlineLarge.copy(
                                 fontSize = 32.sp,
                                 fontWeight = FontWeight.Normal,
                             ),
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color = TvMaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -198,11 +198,11 @@ fun TvAudioPlayerScreen(
                         Text(
                             text = playbackState.currentMediaItem?.mediaMetadata?.albumTitle?.toString()
                                 ?: "",
-                            style = MaterialTheme.typography.headlineSmall.copy(
+                            style = TvMaterialTheme.typography.headlineSmall.copy(
                                 fontSize = 24.sp,
                                 fontWeight = FontWeight.Light,
                             ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = TvMaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -213,10 +213,10 @@ fun TvAudioPlayerScreen(
                         if (queue.isNotEmpty()) {
                             Text(
                                 text = "${queue.size} tracks in queue",
-                                style = MaterialTheme.typography.bodyLarge.copy(
+                                style = TvMaterialTheme.typography.bodyLarge.copy(
                                     fontSize = 18.sp,
                                 ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = TvMaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -324,14 +324,14 @@ private fun AlbumArtDisplay(
                 modifier = Modifier
                     .size(480.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                    .background(TvMaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center,
             ) {
                 androidx.tv.material3.Icon(
                     imageVector = androidx.compose.material.icons.Icons.Default.MusicNote,
                     contentDescription = "No artwork",
                     modifier = Modifier.size(120.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                    tint = TvMaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
                 )
             }
         }

@@ -33,22 +33,37 @@ object TvKeyboardHandler {
         onSearch: (() -> Unit)? = null,
         onSeekForward: (() -> Unit)? = null,
         onSeekBackward: (() -> Unit)? = null,
+        onQuickAccess: ((Int) -> Unit)? = null,
     ): Boolean {
         if (keyEvent.type != KeyEventType.KeyDown) return false
 
         return when (keyEvent.key) {
             // Navigation keys
             Key.Back, Key.Escape -> {
-                onBack?.invoke() ?: navController?.navigateUp() ?: false
-                true
+                when {
+                    onBack != null -> {
+                        onBack.invoke()
+                        true
+                    }
+                    navController != null -> navController.navigateUp()
+                    else -> false
+                }
             }
             Key.H -> {
-                onHome?.invoke()
-                true
+                if (onHome != null) {
+                    onHome.invoke()
+                    true
+                } else {
+                    false
+                }
             }
             Key.Menu -> {
-                onMenu?.invoke()
-                true
+                if (onMenu != null) {
+                    onMenu.invoke()
+                    true
+                } else {
+                    false
+                }
             }
 
             // Media control keys
@@ -79,8 +94,12 @@ object TvKeyboardHandler {
 
             // Search key
             Key.Search, Key.F -> {
-                onSearch?.invoke()
-                true
+                if (onSearch != null) {
+                    onSearch.invoke()
+                    true
+                } else {
+                    false
+                }
             }
 
             // Info/Details key
@@ -107,24 +126,44 @@ object TvKeyboardHandler {
 
             // Number keys for quick navigation
             Key.One -> {
-                // Quick access to home
-                true
+                if (onQuickAccess != null) {
+                    onQuickAccess.invoke(1)
+                    true
+                } else {
+                    false
+                }
             }
             Key.Two -> {
-                // Quick access to movies
-                true
+                if (onQuickAccess != null) {
+                    onQuickAccess.invoke(2)
+                    true
+                } else {
+                    false
+                }
             }
             Key.Three -> {
-                // Quick access to TV shows
-                true
+                if (onQuickAccess != null) {
+                    onQuickAccess.invoke(3)
+                    true
+                } else {
+                    false
+                }
             }
             Key.Four -> {
-                // Quick access to music
-                true
+                if (onQuickAccess != null) {
+                    onQuickAccess.invoke(4)
+                    true
+                } else {
+                    false
+                }
             }
             Key.Five -> {
-                // Quick access to settings
-                true
+                if (onQuickAccess != null) {
+                    onQuickAccess.invoke(5)
+                    true
+                } else {
+                    false
+                }
             }
 
             // Color keys (red, green, yellow, blue)
@@ -186,6 +225,7 @@ fun Modifier.tvKeyboardHandler(
     onMore: (() -> Unit)? = null,
     onSeekForward: (() -> Unit)? = null,
     onSeekBackward: (() -> Unit)? = null,
+    onQuickAccess: ((Int) -> Unit)? = null,
 ): Modifier {
     return this.onKeyEvent { keyEvent ->
         // First try global TV keys
@@ -200,6 +240,7 @@ fun Modifier.tvKeyboardHandler(
             onSearch = onSearch,
             onSeekForward = onSeekForward,
             onSeekBackward = onSeekBackward,
+            onQuickAccess = onQuickAccess,
         )
 
         if (globalHandled) {

@@ -6,8 +6,8 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -118,12 +118,14 @@ class TvFocusManager {
     }
 }
 
+val LocalTvFocusManager = compositionLocalOf<TvFocusManager?> { null }
+
 /**
  * Composable that provides TV focus management capabilities
  */
 @Composable
 fun rememberTvFocusManager(): TvFocusManager {
-    return remember { TvFocusManager() }
+    return LocalTvFocusManager.current ?: remember { TvFocusManager() }
 }
 
 /**
@@ -136,11 +138,16 @@ fun TvFocusableCarousel(
     lazyListState: LazyListState,
     itemCount: Int,
     focusRequester: FocusRequester? = null,
+    onExitLeft: (() -> Boolean)? = null,
+    onExitRight: (() -> Boolean)? = null,
+    onExitUp: (() -> Boolean)? = null,
+    onExitDown: (() -> Boolean)? = null,
     onFocusChanged: (Boolean, Int) -> Unit = { _, _ -> },
-    content: @Composable (Modifier) -> Unit,
+    content: @Composable (Modifier, Int, List<FocusRequester>) -> Unit,
 ) {
     val actualFocusRequester = remember(focusRequester) { focusRequester ?: FocusRequester() }
-    var isFocused by remember { mutableStateOf(false) }
+    val itemFocusRequesters = remember(itemCount) { List(itemCount) { FocusRequester() } }
+    var hasFocus by remember { mutableStateOf(false) }
     var focusedIndex by rememberSaveable { mutableIntStateOf(0) }
 
     // Restore focus state when carousel is created
@@ -153,10 +160,16 @@ fun TvFocusableCarousel(
     }
 
     // Auto-scroll to keep focused item visible
-    LaunchedEffect(focusedIndex, isFocused) {
-        if (isFocused && focusedIndex >= 0) {
+    LaunchedEffect(focusedIndex, hasFocus, itemCount) {
+        if (hasFocus && focusedIndex in 0 until itemCount) {
             lazyListState.animateScrollToItem(focusedIndex)
             focusManager.saveFocusState(carouselId, focusedIndex, lazyListState.firstVisibleItemIndex)
+            delay(50)
+            try {
+                itemFocusRequesters[focusedIndex].requestFocus()
+            } catch (e: CancellationException) {
+                throw e
+            }
         }
     }
 
@@ -164,25 +177,29 @@ fun TvFocusableCarousel(
         .focusRequester(actualFocusRequester)
         .focusable()
         .onFocusChanged { focusState ->
-            isFocused = focusState.isFocused
-            onFocusChanged(isFocused, focusedIndex)
-            if (isFocused) {
+            hasFocus = focusState.hasFocus
+            onFocusChanged(hasFocus, focusedIndex)
+            if (hasFocus) {
                 focusManager.saveFocusState(carouselId, focusedIndex, lazyListState.firstVisibleItemIndex)
             }
         }
         .onKeyEvent { keyEvent ->
             handleCarouselKeyEvent(
                 keyEvent = keyEvent,
-                isFocused = isFocused,
+                isFocused = hasFocus,
                 focusedIndex = focusedIndex,
                 itemCount = itemCount,
+                onExitLeft = onExitLeft,
+                onExitRight = onExitRight,
+                onExitUp = onExitUp,
+                onExitDown = onExitDown,
                 onIndexChanged = { newIndex ->
                     focusedIndex = newIndex.coerceIn(0, itemCount - 1)
                 },
             )
         }
 
-    content(focusModifier)
+    content(focusModifier, focusedIndex, itemFocusRequesters)
 }
 
 /**
@@ -196,11 +213,16 @@ fun TvFocusableGrid(
     itemCount: Int,
     columnsCount: Int,
     focusRequester: FocusRequester? = null,
+    onExitLeft: (() -> Boolean)? = null,
+    onExitRight: (() -> Boolean)? = null,
+    onExitUp: (() -> Boolean)? = null,
+    onExitDown: (() -> Boolean)? = null,
     onFocusChanged: (Boolean, Int) -> Unit = { _, _ -> },
-    content: @Composable (Modifier) -> Unit,
+    content: @Composable (Modifier, Int, List<FocusRequester>) -> Unit,
 ) {
     val actualFocusRequester = remember(focusRequester) { focusRequester ?: FocusRequester() }
-    var isFocused by remember { mutableStateOf(false) }
+    val itemFocusRequesters = remember(itemCount) { List(itemCount) { FocusRequester() } }
+    var hasFocus by remember { mutableStateOf(false) }
     var focusedIndex by rememberSaveable { mutableIntStateOf(0) }
 
     // Restore focus state when grid is created
@@ -213,10 +235,16 @@ fun TvFocusableGrid(
     }
 
     // Auto-scroll to keep focused item visible
-    LaunchedEffect(focusedIndex, isFocused) {
-        if (isFocused && focusedIndex >= 0) {
+    LaunchedEffect(focusedIndex, hasFocus, itemCount) {
+        if (hasFocus && focusedIndex in 0 until itemCount) {
             lazyGridState.animateScrollToItem(focusedIndex)
             focusManager.saveFocusState(gridId, focusedIndex, lazyGridState.firstVisibleItemIndex)
+            delay(50)
+            try {
+                itemFocusRequesters[focusedIndex].requestFocus()
+            } catch (e: CancellationException) {
+                throw e
+            }
         }
     }
 
@@ -224,26 +252,30 @@ fun TvFocusableGrid(
         .focusRequester(actualFocusRequester)
         .focusable()
         .onFocusChanged { focusState ->
-            isFocused = focusState.isFocused
-            onFocusChanged(isFocused, focusedIndex)
-            if (isFocused) {
+            hasFocus = focusState.hasFocus
+            onFocusChanged(hasFocus, focusedIndex)
+            if (hasFocus) {
                 focusManager.saveFocusState(gridId, focusedIndex, lazyGridState.firstVisibleItemIndex)
             }
         }
         .onKeyEvent { keyEvent ->
             handleGridKeyEvent(
                 keyEvent = keyEvent,
-                isFocused = isFocused,
+                isFocused = hasFocus,
                 focusedIndex = focusedIndex,
                 itemCount = itemCount,
                 columnsCount = columnsCount,
+                onExitLeft = onExitLeft,
+                onExitRight = onExitRight,
+                onExitUp = onExitUp,
+                onExitDown = onExitDown,
                 onIndexChanged = { newIndex ->
                     focusedIndex = newIndex.coerceIn(0, itemCount - 1)
                 },
             )
         }
 
-    content(focusModifier)
+    content(focusModifier, focusedIndex, itemFocusRequesters)
 }
 
 /**
@@ -254,6 +286,10 @@ private fun handleCarouselKeyEvent(
     isFocused: Boolean,
     focusedIndex: Int,
     itemCount: Int,
+    onExitLeft: (() -> Boolean)?,
+    onExitRight: (() -> Boolean)?,
+    onExitUp: (() -> Boolean)?,
+    onExitDown: (() -> Boolean)?,
     onIndexChanged: (Int) -> Unit,
 ): Boolean {
     if (!isFocused || keyEvent.type != KeyEventType.KeyDown || itemCount == 0) {
@@ -266,7 +302,7 @@ private fun handleCarouselKeyEvent(
                 onIndexChanged(focusedIndex - 1)
                 true
             } else {
-                false
+                onExitLeft?.invoke() ?: false
             }
         }
         Key.DirectionRight -> {
@@ -274,9 +310,11 @@ private fun handleCarouselKeyEvent(
                 onIndexChanged(focusedIndex + 1)
                 true
             } else {
-                false
+                onExitRight?.invoke() ?: false
             }
         }
+        Key.DirectionUp -> onExitUp?.invoke() ?: false
+        Key.DirectionDown -> onExitDown?.invoke() ?: false
         else -> false
     }
 }
@@ -290,6 +328,10 @@ private fun handleGridKeyEvent(
     focusedIndex: Int,
     itemCount: Int,
     columnsCount: Int,
+    onExitLeft: (() -> Boolean)?,
+    onExitRight: (() -> Boolean)?,
+    onExitUp: (() -> Boolean)?,
+    onExitDown: (() -> Boolean)?,
     onIndexChanged: (Int) -> Unit,
 ): Boolean {
     if (!isFocused || keyEvent.type != KeyEventType.KeyDown || itemCount == 0) {
@@ -302,7 +344,7 @@ private fun handleGridKeyEvent(
                 onIndexChanged(focusedIndex - 1)
                 true
             } else {
-                false
+                onExitLeft?.invoke() ?: false
             }
         }
         Key.DirectionRight -> {
@@ -310,7 +352,7 @@ private fun handleGridKeyEvent(
                 onIndexChanged(focusedIndex + 1)
                 true
             } else {
-                false
+                onExitRight?.invoke() ?: false
             }
         }
         Key.DirectionUp -> {
@@ -318,7 +360,7 @@ private fun handleGridKeyEvent(
                 onIndexChanged(focusedIndex - columnsCount)
                 true
             } else {
-                false
+                onExitUp?.invoke() ?: false
             }
         }
         Key.DirectionDown -> {
@@ -326,7 +368,7 @@ private fun handleGridKeyEvent(
                 onIndexChanged(focusedIndex + columnsCount)
                 true
             } else {
-                false
+                onExitDown?.invoke() ?: false
             }
         }
         else -> false
@@ -344,12 +386,6 @@ fun TvScreenFocusScope(
 ) {
     LaunchedEffect(screenKey) {
         focusManager.setCurrentScreen(screenKey)
-    }
-
-    DisposableEffect(screenKey) {
-        onDispose {
-            focusManager.clearScreenFocusStates(screenKey)
-        }
     }
 
     content()

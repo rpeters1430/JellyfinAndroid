@@ -1,13 +1,13 @@
 package com.rpeters.jellyfin.ui.screens.tv
 
-import androidx.compose.ui.test.assertDoesNotExist
-import androidx.compose.ui.test.assertExists
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -124,7 +124,7 @@ class TvQuickConnectScreenTest {
         }
 
         composeTestRule.onNodeWithTag(STATUS_CARD).assertIsDisplayed()
-        composeTestRule.onNodeWithContentDescription("Waiting").assertExists()
+        composeTestRule.onNodeWithContentDescription("Waiting").assertIsDisplayed()
         composeTestRule.onNodeWithText("Waiting").assertIsDisplayed()
     }
 
@@ -144,6 +144,6 @@ class TvQuickConnectScreenTest {
             )
         }
 
-        composeTestRule.onNodeWithTag(STATUS_CARD).assertDoesNotExist()
+        composeTestRule.onAllNodesWithTag(STATUS_CARD).assertCountEquals(0)
     }
 }

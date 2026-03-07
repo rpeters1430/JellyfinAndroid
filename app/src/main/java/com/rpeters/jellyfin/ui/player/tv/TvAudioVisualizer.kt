@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -26,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.dp
+import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import kotlin.math.abs
 import kotlin.math.sin
 
@@ -73,8 +73,8 @@ private fun AnimatedWaveformVisualizer(
         ),
         label = "waveform_phase",
     )
-    val playingColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
-    val pausedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+    val playingColor = TvMaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+    val pausedColor = TvMaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
 
     Box(
         modifier = modifier
@@ -119,9 +119,9 @@ private fun AnimatedSpectrumVisualizer(
     )
 
     val barCount = 32
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val secondaryColor = MaterialTheme.colorScheme.secondary
-    val pausedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+    val primaryColor = TvMaterialTheme.colorScheme.primary
+    val secondaryColor = TvMaterialTheme.colorScheme.secondary
+    val pausedColor = TvMaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
 
     Box(
         modifier = modifier
@@ -176,7 +176,7 @@ private fun AnimatedCircularVisualizer(
         ),
         label = "circular_pulse",
     )
-    val activeColor = MaterialTheme.colorScheme.primary
+    val activeColor = TvMaterialTheme.colorScheme.primary
 
     Box(
         modifier = modifier

@@ -26,7 +26,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -57,6 +56,7 @@ import androidx.tv.material3.ButtonDefaults
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.Icon
+import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
@@ -93,7 +93,7 @@ fun TvAudioQueueDisplay(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.85f))
+            .background(TvMaterialTheme.colorScheme.scrim.copy(alpha = 0.85f))
             .onKeyEvent { keyEvent ->
                 if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.Back) {
                     onDismiss()
@@ -110,7 +110,7 @@ fun TvAudioQueueDisplay(
                 .fillMaxWidth(0.7f)
                 .fillMaxHeight(0.8f),
             colors = CardDefaults.colors(
-                containerColor = MaterialTheme.colorScheme.surface,
+                containerColor = TvMaterialTheme.colorScheme.surface,
             ),
             shape = CardDefaults.shape(RoundedCornerShape(16.dp)),
         ) {
@@ -127,7 +127,7 @@ fun TvAudioQueueDisplay(
                 ) {
                     Text(
                         text = "Queue (${queue.size} tracks)",
-                        style = MaterialTheme.typography.headlineMedium.copy(
+                        style = TvMaterialTheme.typography.headlineMedium.copy(
                             fontSize = 32.sp,
                             fontWeight = FontWeight.Bold,
                         ),
@@ -142,7 +142,7 @@ fun TvAudioQueueDisplay(
                                 onClick = onClearQueue,
                                 modifier = Modifier.focusRequester(clearQueueFocusRequester),
                                 colors = ButtonDefaults.colors(
-                                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                                    containerColor = TvMaterialTheme.colorScheme.errorContainer,
                                 ),
                             ) {
                                 Icon(
@@ -153,7 +153,7 @@ fun TvAudioQueueDisplay(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = "Clear Queue",
-                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                    style = TvMaterialTheme.typography.bodyLarge.copy(
                                         fontSize = 18.sp,
                                     ),
                                 )
@@ -173,7 +173,7 @@ fun TvAudioQueueDisplay(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = "Close",
-                                style = MaterialTheme.typography.bodyLarge.copy(
+                                style = TvMaterialTheme.typography.bodyLarge.copy(
                                     fontSize = 18.sp,
                                 ),
                             )
@@ -199,14 +199,14 @@ fun TvAudioQueueDisplay(
                                 imageVector = Icons.Default.MusicNote,
                                 contentDescription = "Empty queue",
                                 modifier = Modifier.size(64.dp),
-                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                                tint = TvMaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                             )
                             Text(
                                 text = "Queue is empty",
-                                style = MaterialTheme.typography.headlineSmall.copy(
+                                style = TvMaterialTheme.typography.headlineSmall.copy(
                                     fontSize = 24.sp,
                                 ),
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                color = TvMaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                             )
                         }
                     }
@@ -278,16 +278,16 @@ private fun QueueTrackItem(
             },
         colors = CardDefaults.colors(
             containerColor = when {
-                isCurrentTrack -> MaterialTheme.colorScheme.primaryContainer
-                localFocused -> MaterialTheme.colorScheme.surfaceVariant
-                else -> MaterialTheme.colorScheme.surface
+                isCurrentTrack -> TvMaterialTheme.colorScheme.primaryContainer
+                localFocused -> TvMaterialTheme.colorScheme.surfaceVariant
+                else -> TvMaterialTheme.colorScheme.surface
             },
         ),
         border = CardDefaults.border(
             focusedBorder = Border(
                 border = androidx.compose.foundation.BorderStroke(
                     width = 3.dp,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = TvMaterialTheme.colorScheme.primary,
                 ),
                 shape = RoundedCornerShape(8.dp),
             ),
@@ -308,7 +308,7 @@ private fun QueueTrackItem(
             ) {
                 Text(
                     text = mediaItem.mediaMetadata.title?.toString() ?: stringResource(R.string.unknown),
-                    style = MaterialTheme.typography.bodyLarge.copy(
+                    style = TvMaterialTheme.typography.bodyLarge.copy(
                         fontSize = 20.sp,
                         fontWeight = if (isCurrentTrack) FontWeight.Bold else FontWeight.Normal,
                     ),
@@ -317,10 +317,10 @@ private fun QueueTrackItem(
                 )
                 Text(
                     text = mediaItem.mediaMetadata.artist?.toString() ?: "",
-                    style = MaterialTheme.typography.bodyMedium.copy(
+                    style = TvMaterialTheme.typography.bodyMedium.copy(
                         fontSize = 16.sp,
                     ),
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    color = TvMaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -332,7 +332,7 @@ private fun QueueTrackItem(
                     imageVector = Icons.Default.MusicNote,
                     contentDescription = "Now playing",
                     modifier = Modifier.size(32.dp),
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = TvMaterialTheme.colorScheme.primary,
                 )
             }
         }

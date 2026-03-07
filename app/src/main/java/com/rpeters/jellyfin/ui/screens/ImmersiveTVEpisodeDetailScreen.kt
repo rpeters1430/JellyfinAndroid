@@ -76,12 +76,14 @@ import coil3.request.crossfade
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
+import com.rpeters.jellyfin.ui.components.AiSummaryCard
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
 import com.rpeters.jellyfin.ui.components.PerformanceOptimizedLazyRow
 import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
 import com.rpeters.jellyfin.ui.components.QualitySelectionDialog
 import com.rpeters.jellyfin.ui.components.WatchStatusBanner
+import com.rpeters.jellyfin.ui.components.sanitizedAiSummary
 import com.rpeters.jellyfin.ui.components.immersive.AudioInfoCard
 import com.rpeters.jellyfin.ui.components.immersive.HdrType
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize
@@ -620,25 +622,23 @@ private fun EpisodeOverviewSection(
         }
 
         // AI Summary Display
-        if (aiSummary != null || isLoadingAiSummary) {
+        val summaryText = aiSummary?.sanitizedAiSummary()
+        if (isLoadingAiSummary) {
             Surface(
-                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f),
+                color = MaterialTheme.colorScheme.surfaceVariant,
                 shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                if (isLoadingAiSummary) {
-                    Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                        ExpressiveCircularLoading(size = 24.dp)
-                    }
-                } else {
-                    Text(
-                        text = aiSummary ?: "",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(16.dp),
-                        textAlign = TextAlign.Center, // ✅ Centered
-                    )
+                Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                    ExpressiveCircularLoading(size = 24.dp)
                 }
             }
+        } else if (!summaryText.isNullOrBlank()) {
+            AiSummaryCard(
+                summary = summaryText,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
 
         // Playback Capability

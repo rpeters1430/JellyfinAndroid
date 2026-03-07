@@ -56,7 +56,9 @@ fun RecentlyAddedSection(
             focusManager = tvFocusManager,
             lazyListState = listState,
             itemCount = items.size,
-        ) { focusModifier ->
+        ) { focusModifier, wrapperFocusedIndex, itemFocusRequesters ->
+            val ignoredIndex = wrapperFocusedIndex
+            val ignoredRequesterCount = itemFocusRequesters.size
             LazyRow(
                 state = listState,
                 contentPadding = PaddingValues(horizontal = 16.dp),

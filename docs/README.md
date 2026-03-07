@@ -7,8 +7,7 @@ Welcome to the central documentation repository for the Jellyfin Android client.
 
 - [Adaptive Navigation Summary](features/ADAPTIVE_NAVIGATION_SUMMARY.md)
 - [AI Multimodal Integration](features/AI_MULTIMODAL.md)
-- [Chromecast Issue Template](features/CAST_ISSUE_TEMPLATE.md)
-- [Chromecast Rebuild Summary](features/CAST_REBUILD_SUMMARY.md)
+- [Chromecast Unified Plan](features/CAST_SYSTEM_UNIFIED_PLAN.md)
 - [Feature Flags Summary](features/feature-flags-summary.md)
 - [Homescreen Tablet Summary](features/HOMESCREEN_TABLET_SUMMARY.md)
 - [Immersive UI Fixes](features/IMMERSIVE_UI_FIXES.md)

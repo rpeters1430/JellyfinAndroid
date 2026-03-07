@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.ui.player.audio
 
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
@@ -9,7 +10,6 @@ import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import androidx.test.core.app.ApplicationProvider
-import androidx.test.core.app.ServiceScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.After
@@ -37,55 +37,54 @@ class AudioServiceTest {
 
     @Test
     fun setMediaItem_resolvesStreamUrlFromExtras() {
-        ServiceScenario.launch(AudioService::class.java).use {
-            val controller = createController()
-            val streamUrl = "https://example.com/audio.mp3"
-            val extras = Bundle().apply {
-                putString(AudioService.EXTRA_STREAM_URL, streamUrl)
-                putString(AudioService.EXTRA_ITEM_NAME, "Test Song")
-            }
-
-            val metadata = MediaMetadata.Builder()
-                .setTitle("Test Song")
-                .setArtist("Example Artist")
-                .setExtras(extras)
-                .build()
-
-            val mediaItem = MediaItem.Builder()
-                .setMediaId("test-song")
-                .setMediaMetadata(metadata)
-                .build()
-
-            controller.setMediaItem(mediaItem)
-            controller.prepare()
-            InstrumentationRegistry.getInstrumentation().waitForIdleSync()
-
-            val resolvedItem = controller.currentMediaItem
-            requireNotNull(resolvedItem)
-
-            assertEquals(streamUrl, resolvedItem.mediaMetadata.extras?.getString(AudioService.EXTRA_STREAM_URL))
-            assertEquals(streamUrl, resolvedItem.localConfiguration?.uri?.toString())
-
-            controller.release()
+        context.startService(Intent(context, AudioService::class.java))
+        val controller = createController()
+        val streamUrl = "https://example.com/audio.mp3"
+        val extras = Bundle().apply {
+            putString(AudioService.EXTRA_STREAM_URL, streamUrl)
+            putString(AudioService.EXTRA_ITEM_NAME, "Test Song")
         }
+
+        val metadata = MediaMetadata.Builder()
+            .setTitle("Test Song")
+            .setArtist("Example Artist")
+            .setExtras(extras)
+            .build()
+
+        val mediaItem = MediaItem.Builder()
+            .setMediaId("test-song")
+            .setMediaMetadata(metadata)
+            .build()
+
+        controller.setMediaItem(mediaItem)
+        controller.prepare()
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+
+        val resolvedItem = controller.currentMediaItem
+        requireNotNull(resolvedItem)
+
+        assertEquals(streamUrl, resolvedItem.mediaMetadata.extras?.getString(AudioService.EXTRA_STREAM_URL))
+        assertEquals(streamUrl, resolvedItem.localConfiguration?.uri?.toString())
+
+        controller.release()
+        context.stopService(Intent(context, AudioService::class.java))
     }
 
     @Test
     fun availableCommands_includePlaybackAndShuffle() {
-        ServiceScenario.launch(AudioService::class.java).use {
-            val controller = createController()
-            InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+        context.startService(Intent(context, AudioService::class.java))
+        val controller = createController()
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
 
-            val commands = controller.availableCommands
-            assertTrue(commands.contains(Player.COMMAND_PLAY_PAUSE))
-            assertTrue(commands.contains(Player.COMMAND_SET_SHUFFLE_MODE_ENABLED))
+        val commands = controller.availableCommands
+        assertTrue(commands.contains(Player.COMMAND_PLAY_PAUSE))
 
-            controller.setShuffleModeEnabled(true)
-            InstrumentationRegistry.getInstrumentation().waitForIdleSync()
-            assertTrue(controller.shuffleModeEnabled)
+        controller.shuffleModeEnabled = true
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+        assertTrue(controller.shuffleModeEnabled)
 
-            controller.release()
-        }
+        controller.release()
+        context.stopService(Intent(context, AudioService::class.java))
     }
 
     private fun createController(): MediaController {

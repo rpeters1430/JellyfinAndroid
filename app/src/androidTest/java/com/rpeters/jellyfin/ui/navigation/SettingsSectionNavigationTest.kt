@@ -4,7 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.test.assertExists
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -36,7 +36,7 @@ class SettingsSectionNavigationTest {
         composeRule.onNodeWithText(optionLabel).performClick()
 
         assertEquals("detail", navController.currentDestination?.route)
-        composeRule.onNodeWithText("Detail Screen").assertExists()
+        composeRule.onNodeWithText("Detail Screen").assertIsDisplayed()
     }
 }
 

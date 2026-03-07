@@ -1,7 +1,7 @@
 package com.rpeters.jellyfin.ui.screens
 
 import androidx.activity.ComponentActivity
-import androidx.compose.ui.test.assertDoesNotExist
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
@@ -15,6 +15,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
 import com.rpeters.jellyfin.ui.utils.NetworkType
 import com.rpeters.jellyfin.ui.utils.OfflineManager
+import com.rpeters.jellyfin.ui.utils.OfflineLibraryItem
 import com.rpeters.jellyfin.ui.utils.OfflineStorageInfo
 import io.mockk.every
 import io.mockk.mockk
@@ -47,7 +48,7 @@ class OfflineScreenTest {
 
         composeTestRule.onNodeWithText("No downloaded content").assertIsDisplayed()
         composeTestRule.onNodeWithText("Download content when online to watch offline").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Clear All").assertDoesNotExist()
+        composeTestRule.onAllNodesWithText("Clear All").assertCountEquals(0)
     }
 
     @Test
@@ -71,8 +72,8 @@ class OfflineScreenTest {
         composeTestRule.onNodeWithContentDescription("Play").performClick()
         composeTestRule.onNodeWithContentDescription("Delete").performClick()
 
-        verify(exactly = 1) { onPlay(item) }
-        verify(exactly = 1) { onDelete(item) }
+        verify(exactly = 1) { onPlay(item.item) }
+        verify(exactly = 1) { onDelete(item.item) }
     }
 
     @Test
@@ -92,24 +93,32 @@ class OfflineScreenTest {
 
         composeTestRule.onAllNodesWithText("Clear All").onLast().performClick()
 
-        composeTestRule.onNodeWithText("Clear All Downloads").assertDoesNotExist()
+        composeTestRule.onAllNodesWithText("Clear All Downloads").assertCountEquals(0)
         verify(exactly = 1) { offlineManagerFake.offlineManager.clearOfflineContent() }
     }
 
     private fun createOfflineItem(
         name: String,
         kind: BaseItemKind = BaseItemKind.MOVIE,
-    ): BaseItemDto {
-        return mockk(relaxed = true) {
-            every { id } returns UUID.randomUUID().toString()
+    ): OfflineLibraryItem {
+        val item = mockk<org.jellyfin.sdk.model.api.BaseItemDto>(relaxed = true) {
+            every { id } returns UUID.randomUUID()
             every { type } returns kind
             every { this@mockk.name } returns name
             every { seriesName } returns if (kind == BaseItemKind.EPISODE) "Series Name" else null
         }
+        return OfflineLibraryItem(
+            item = item,
+            localFilePath = "/tmp/${name.lowercase().replace(' ', '_')}.mp4",
+            posterLocalPath = null,
+            qualityLabel = "HD",
+            fileSizeBytes = 1024L,
+            downloadDateMs = System.currentTimeMillis(),
+        )
     }
 
     private class OfflineManagerFake(
-        initialContent: List<BaseItemDto> = emptyList(),
+        initialContent: List<OfflineLibraryItem> = emptyList(),
     ) {
         private val isOnlineFlow = MutableStateFlow(true)
         private val networkTypeFlow = MutableStateFlow(NetworkType.WIFI)

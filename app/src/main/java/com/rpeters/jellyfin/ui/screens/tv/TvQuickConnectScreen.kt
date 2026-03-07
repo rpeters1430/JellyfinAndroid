@@ -24,9 +24,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Sync
-import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -47,6 +45,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Button
+import androidx.tv.material3.Icon as TvIcon
+import androidx.tv.material3.Text as TvText
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
@@ -113,14 +113,14 @@ fun TvQuickConnectScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             // Header
-            Text(
+            TvText(
                 text = "Quick Connect",
                 style = TvMaterialTheme.typography.displayLarge,
                 color = TvMaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold,
             )
 
-            Text(
+            TvText(
                 text = "Sign in without typing your password",
                 style = TvMaterialTheme.typography.titleMedium,
                 color = TvMaterialTheme.colorScheme.onSurface,
@@ -136,9 +136,9 @@ fun TvQuickConnectScreen(
                     localServerUrl = it
                     onServerUrlChange(it)
                 },
-                label = { Text(stringResource(id = R.string.server_url_label), style = TvMaterialTheme.typography.bodyLarge) },
+                label = { TvText(stringResource(id = R.string.server_url_label), style = TvMaterialTheme.typography.bodyLarge) },
                 placeholder = {
-                    Text(
+                    TvText(
                         "https://jellyfin.example.com",
                         style = TvMaterialTheme.typography.bodyLarge,
                     )
@@ -184,7 +184,7 @@ fun TvQuickConnectScreen(
                             .fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Text(
+                        TvText(
                             text = "Enter this code on your server:",
                             style = TvMaterialTheme.typography.titleLarge,
                             color = TvMaterialTheme.colorScheme.onPrimaryContainer,
@@ -194,7 +194,7 @@ fun TvQuickConnectScreen(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         // LARGE code display - 96sp for readability from 10 feet
-                        Text(
+                        TvText(
                             text = quickConnectCode,
                             fontSize = 96.sp,
                             fontWeight = FontWeight.Bold,
@@ -207,7 +207,7 @@ fun TvQuickConnectScreen(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         // Instructions with server URL
-                        Text(
+                        TvText(
                             text = "1. Go to: $localServerUrl/web\n2. Navigate to Dashboard → Users → Quick Connect\n3. Enter the code above",
                             style = TvMaterialTheme.typography.bodyLarge,
                             color = TvMaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f),
@@ -253,7 +253,7 @@ fun TvQuickConnectScreen(
                                 label = "rotation",
                             )
 
-                            Icon(
+                            TvIcon(
                                 imageVector = Icons.Default.Sync,
                                 contentDescription = "Waiting",
                                 modifier = Modifier
@@ -264,7 +264,7 @@ fun TvQuickConnectScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                         }
 
-                        Text(
+                        TvText(
                             text = status,
                             color = if (isPolling) {
                                 TvMaterialTheme.colorScheme.onSecondaryContainer
@@ -287,7 +287,7 @@ fun TvQuickConnectScreen(
                     ),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(
+                    TvText(
                         text = errorMessage,
                         color = TvMaterialTheme.colorScheme.error,
                         style = TvMaterialTheme.typography.titleMedium,
@@ -324,7 +324,7 @@ fun TvQuickConnectScreen(
                                 color = TvMaterialTheme.colorScheme.onPrimary,
                             )
                             Spacer(modifier = Modifier.width(12.dp))
-                            Text(
+                            TvText(
                                 "Connecting...",
                                 style = TvMaterialTheme.typography.titleMedium,
                             )
@@ -339,13 +339,13 @@ fun TvQuickConnectScreen(
                                 color = TvMaterialTheme.colorScheme.onPrimary,
                             )
                             Spacer(modifier = Modifier.width(12.dp))
-                            Text(
+                            TvText(
                                 "Waiting for approval...",
                                 style = TvMaterialTheme.typography.titleMedium,
                             )
                         }
                     } else {
-                        Text(
+                        TvText(
                             if (quickConnectCode.isNotBlank()) "Get New Code" else "Get Quick Connect Code",
                             style = TvMaterialTheme.typography.titleMedium,
                         )
@@ -362,7 +362,7 @@ fun TvQuickConnectScreen(
                         .focusRequester(cancelButtonFocusRequester)
                         .testTag(TvQuickConnectTestTags.CANCEL_BUTTON),
                 ) {
-                    Text(
+                    TvText(
                         if (isPolling) "Cancel" else "Back",
                         style = TvMaterialTheme.typography.titleMedium,
                     )
@@ -371,7 +371,7 @@ fun TvQuickConnectScreen(
 
             // Help text
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
+            TvText(
                 text = "Quick Connect allows you to sign in without typing your password on the TV. " +
                     "Use your phone, tablet, or computer to authorize this connection.",
                 style = TvMaterialTheme.typography.bodyMedium,

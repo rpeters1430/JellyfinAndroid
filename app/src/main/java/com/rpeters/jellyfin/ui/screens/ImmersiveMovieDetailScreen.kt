@@ -99,10 +99,12 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
+import com.rpeters.jellyfin.ui.components.AiSummaryCard
 import com.rpeters.jellyfin.ui.components.PerformanceOptimizedLazyRow
 import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
 import com.rpeters.jellyfin.ui.components.QualitySelectionDialog
 import com.rpeters.jellyfin.ui.components.WatchStatusBanner
+import com.rpeters.jellyfin.ui.components.sanitizedAiSummary
 import com.rpeters.jellyfin.ui.components.immersive.AudioInfoCard
 import com.rpeters.jellyfin.ui.components.immersive.HdrType
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize
@@ -353,18 +355,9 @@ fun ImmersiveMovieDetailScreen(
                                     }
 
                                     // Show AI summary if available
-                                    aiSummary?.let { summary ->
-                                        Surface(
-                                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                                            shape = RoundedCornerShape(12.dp),
-                                        ) {
-                                            Text(
-                                                text = summary,
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                                modifier = Modifier.padding(12.dp),
-                                            )
-                                        }
+                                    val summaryText = aiSummary?.sanitizedAiSummary()
+                                    if (!summaryText.isNullOrBlank()) {
+                                        AiSummaryCard(summary = summaryText)
                                     }
                                 }
                             }
