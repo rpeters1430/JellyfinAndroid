@@ -128,4 +128,4 @@ jobs:
                 ]
               }
             }
-          prompt: '${{ inputs.prompt || "/gemini-plan-execute" }}'
+          prompt: '${{ inputs.prompt }}'

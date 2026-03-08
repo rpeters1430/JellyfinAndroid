@@ -43,7 +43,7 @@ import androidx.tv.material3.CardDefaults as TvCardDefaults
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Glow
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
-import androidx.tv.material3.StandardCardLayout
+import androidx.tv.material3.StandardCardContainer
 import androidx.tv.material3.Text as TvText
 import coil3.request.crossfade
 import com.rpeters.jellyfin.R
@@ -171,7 +171,7 @@ fun TvContentCard(
     val progressRatio = item.playbackProgressRatio()
     val isInProgress = progressRatio > 0f && !isPlayed
 
-    StandardCardLayout(
+    StandardCardContainer(
         modifier = modifier
             .width(posterWidth)
             .onFocusChanged { focusState ->

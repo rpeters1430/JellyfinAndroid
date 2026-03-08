@@ -5,6 +5,7 @@ import android.app.PictureInPictureParams
 import android.os.Build
 import android.util.Rational
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -25,6 +26,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -43,11 +45,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -67,6 +72,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import androidx.tv.material3.ClickableSurfaceDefaults
+import androidx.tv.material3.SurfaceDefaults
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.preferences.SubtitleAppearancePreferences
 import com.rpeters.jellyfin.ui.player.TrackInfo
@@ -165,6 +171,81 @@ fun TvVideoPlayerRoute(
     )
 }
 
+@Composable
+fun TvNextEpisodeOverlay(
+    nextItemName: String,
+    onPlayNext: () -> Unit,
+    onCancel: () -> Unit,
+    autoPlayDelayMs: Long = 10_000L,
+    modifier: Modifier = Modifier,
+) {
+    var timeLeft by remember { mutableStateOf(autoPlayDelayMs / 1000) }
+    
+    LaunchedEffect(Unit) {
+        while (timeLeft > 0) {
+            delay(1000)
+            timeLeft -= 1
+        }
+        onPlayNext()
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.5f)),
+        contentAlignment = Alignment.BottomEnd
+    ) {
+        TvSurface(
+            onClick = onPlayNext,
+            modifier = Modifier
+                .padding(64.dp)
+                .width(400.dp)
+                .clip(TvMaterialTheme.shapes.medium),
+            colors = ClickableSurfaceDefaults.colors(
+                containerColor = Color(0xFF1A1A1A),
+                focusedContainerColor = TvMaterialTheme.colorScheme.primaryContainer
+            )
+        ) {
+            Row(
+                modifier = Modifier.padding(24.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Countdown Circle
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .background(TvMaterialTheme.colorScheme.primary, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    TvText(
+                        text = timeLeft.toString(),
+                        style = TvMaterialTheme.typography.titleLarge,
+                        color = TvMaterialTheme.colorScheme.onPrimary
+                    )
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    TvText(
+                        text = "Up Next",
+                        style = TvMaterialTheme.typography.labelMedium,
+                        color = TvMaterialTheme.colorScheme.primary
+                    )
+                    TvText(
+                        text = nextItemName,
+                        style = TvMaterialTheme.typography.titleMedium,
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                
+                TvIcon(Icons.Default.PlayArrow, null, tint = Color.White)
+            }
+        }
+    }
+}
+
 @UnstableApi
 @Composable
 fun TvVideoPlayerScreen(
@@ -184,9 +265,20 @@ fun TvVideoPlayerScreen(
 ) {
     var controlsVisible by remember { mutableStateOf(true) }
     var showQuickSettings by remember { mutableStateOf(false) }
+    var showNextEpisodeOverlay by remember { mutableStateOf(false) }
 
     val playPauseRequester = remember { FocusRequester() }
     val quickSettingsCloseRequester = remember { FocusRequester() }
+
+    // Logic to show "Next Episode" overlay near end
+    LaunchedEffect(state.currentPosition, state.duration) {
+        val remainingMs = state.duration - state.currentPosition
+        // Show overlay if less than 30 seconds remains
+        if (state.duration > 60_000 && remainingMs in 1..30_000 && !showNextEpisodeOverlay) {
+            // Note: This would need real "next item" info from ViewModel
+            // showNextEpisodeOverlay = true 
+        }
+    }
 
     LaunchedEffect(Unit) {
         delay(300)
@@ -226,14 +318,18 @@ fun TvVideoPlayerScreen(
             .onKeyEvent { keyEvent ->
                 if (keyEvent.type != KeyEventType.KeyDown) return@onKeyEvent false
 
-                // If settings is open, let it handle keys or close it on back
+                if (showNextEpisodeOverlay) {
+                    if (keyEvent.key == Key.Back) {
+                        showNextEpisodeOverlay = false
+                        return@onKeyEvent true
+                    }
+                }
+
                 if (showQuickSettings) {
                     if (keyEvent.key == Key.Back) {
                         showQuickSettings = false
                         return@onKeyEvent true
                     }
-                    // Trap unhandled keys while settings is open so playback controls
-                    // underneath do not react unexpectedly.
                     return@onKeyEvent true
                 }
 
@@ -406,6 +502,15 @@ fun TvVideoPlayerScreen(
                 closeButtonFocusRequester = quickSettingsCloseRequester,
             )
         }
+
+        // Next Episode Overlay
+        if (showNextEpisodeOverlay) {
+            TvNextEpisodeOverlay(
+                nextItemName = "Next Episode", // Placeholder
+                onPlayNext = { /* Logic to play next */ },
+                onCancel = { showNextEpisodeOverlay = false }
+            )
+        }
     }
 }
 
@@ -416,12 +521,18 @@ fun TvSeekBar(
     bufferedPosition: Long,
     onSeekTo: (Long) -> Unit,
     modifier: Modifier = Modifier,
+    chapters: List<Long> = emptyList(),
 ) {
     val safeDuration = duration.coerceAtLeast(1L)
     var isFocused by remember { mutableStateOf(false) }
     var pendingPosition by remember(duration) { mutableStateOf(currentPosition.coerceIn(0L, safeDuration)) }
     val progress = if (duration > 0) pendingPosition.toFloat() / duration else 0f
     val bufferedProgress = if (duration > 0) bufferedPosition.toFloat() / duration else 0f
+
+    val height by animateDpAsState(
+        targetValue = if (isFocused) 16.dp else 8.dp,
+        label = "seekBarHeight"
+    )
 
     LaunchedEffect(currentPosition, safeDuration, isFocused) {
         if (!isFocused) {
@@ -454,18 +565,18 @@ fun TvSeekBar(
                     else -> false
                 }
             },
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Box(modifier = Modifier.fillMaxWidth().height(12.dp)) {
+        Box(modifier = Modifier.fillMaxWidth().height(height), contentAlignment = Alignment.CenterStart) {
             // Background
-            Box(modifier = Modifier.fillMaxSize().background(Color.White.copy(alpha = 0.2f), TvMaterialTheme.shapes.small))
+            Box(modifier = Modifier.fillMaxSize().background(Color.White.copy(alpha = 0.2f), TvMaterialTheme.shapes.extraSmall))
 
             // Buffered
             Box(
                 modifier = Modifier
                     .fillMaxWidth(bufferedProgress.coerceIn(0f, 1f))
                     .fillMaxHeight()
-                    .background(Color.White.copy(alpha = 0.3f), TvMaterialTheme.shapes.small),
+                    .background(Color.White.copy(alpha = 0.3f), TvMaterialTheme.shapes.extraSmall),
             )
 
             // Progress
@@ -473,16 +584,47 @@ fun TvSeekBar(
                 modifier = Modifier
                     .fillMaxWidth(progress.coerceIn(0f, 1f))
                     .fillMaxHeight()
-                    .background(TvMaterialTheme.colorScheme.primary, TvMaterialTheme.shapes.small),
+                    .background(TvMaterialTheme.colorScheme.primary, TvMaterialTheme.shapes.extraSmall),
             )
+            
+            // Chapter Markers
+            Box(modifier = Modifier.fillMaxSize()) {
+                chapters.forEach { chapterPos ->
+                    val chapterProgress = chapterPos.toFloat() / safeDuration
+                    if (chapterProgress in 0f..1f) {
+                        Spacer(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .width(3.dp)
+                                .align(Alignment.CenterStart)
+                                .graphicsLayer(translationX = (chapterProgress * 1).toFloat())
+                                .background(Color.Black.copy(alpha = 0.3f))
+                        )
+                    }
+                }
+            }
         }
 
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp), 
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             TvText(
                 text = formatTime(pendingPosition),
-                style = TvMaterialTheme.typography.labelMedium,
-                color = Color.White.copy(alpha = 0.8f),
+                style = if (isFocused) TvMaterialTheme.typography.titleLarge else TvMaterialTheme.typography.labelMedium,
+                color = if (isFocused) Color.White else Color.White.copy(alpha = 0.8f),
+                fontWeight = if (isFocused) FontWeight.Bold else FontWeight.Normal
             )
+            
+            if (isFocused) {
+                TvText(
+                    text = "-${formatTime(safeDuration - pendingPosition)}",
+                    style = TvMaterialTheme.typography.labelMedium,
+                    color = Color.White.copy(alpha = 0.6f)
+                )
+            }
+
             TvText(
                 text = formatTime(duration),
                 style = TvMaterialTheme.typography.labelMedium,
@@ -548,10 +690,10 @@ fun TvQuickSettingsDrawer(
         modifier = Modifier
             .fillMaxHeight()
             .width(400.dp),
-        colors = androidx.tv.material3.SurfaceDefaults.colors(
+        colors = SurfaceDefaults.colors(
             containerColor = Color(0xFF1A1A1A).copy(alpha = 0.95f),
         ),
-        shape = androidx.compose.ui.graphics.RectangleShape,
+        shape = RectangleShape,
     ) {
         Column(modifier = Modifier.fillMaxSize().padding(32.dp)) {
             TvText(
@@ -671,186 +813,6 @@ private fun formatTime(ms: Long): String {
     } else {
         String.format("%02d:%02d", minutes, seconds)
     }
-}
-
-@Composable
-private fun ControlButton(
-    text: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-) {
-    TvButton(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = modifier.focusable(),
-        colors = TvButtonDefaults.colors(
-            containerColor = TvMaterialTheme.colorScheme.surfaceVariant,
-            contentColor = TvMaterialTheme.colorScheme.onSurface,
-            disabledContainerColor = TvMaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
-            disabledContentColor = TvMaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-        ),
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            TvIcon(imageVector = icon, contentDescription = null)
-            TvText(text = text, style = TvMaterialTheme.typography.bodyLarge)
-        }
-    }
-}
-
-@Composable
-private fun TrackSelectionDialog(
-    title: String,
-    options: List<TrackInfo>,
-    selectedId: String?,
-    onSelect: (TrackInfo) -> Unit,
-    onDismiss: () -> Unit,
-    includeNoneOption: Boolean = false,
-    onNoneSelected: (() -> Unit)? = null,
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(TvMaterialTheme.colorScheme.scrim.copy(alpha = 0.65f)),
-        contentAlignment = Alignment.Center,
-    ) {
-        TvSurface(
-            modifier = Modifier
-                .width(600.dp)
-                .padding(24.dp),
-            shape = TvMaterialTheme.shapes.large,
-            colors = androidx.tv.material3.SurfaceDefaults.colors(
-                containerColor = TvMaterialTheme.colorScheme.surface,
-            ),
-        ) {
-            Column(
-                modifier = Modifier.padding(32.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp),
-            ) {
-                TvText(
-                    text = title,
-                    style = TvMaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
-
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    if (includeNoneOption && onNoneSelected != null) {
-                        item("none") {
-                            TvCard(
-                                onClick = onNoneSelected,
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = TvCardDefaults.colors(
-                                    containerColor = TvMaterialTheme.colorScheme.surfaceVariant,
-                                ),
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(20.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    TvText(text = "Off", style = TvMaterialTheme.typography.bodyLarge)
-                                }
-                            }
-                        }
-                    }
-                    items(
-                        items = options,
-                        key = { track -> "${track.groupIndex}-${track.trackIndex}-${track.displayName}" },
-                        contentType = { "audio_track_option" },
-                    ) { track ->
-                        val isSelected = selectedId == track.displayName
-                        TvCard(
-                            onClick = { onSelect(track) },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = TvCardDefaults.colors(
-                                containerColor = if (isSelected) {
-                                    TvMaterialTheme.colorScheme.primaryContainer
-                                } else {
-                                    TvMaterialTheme.colorScheme.surfaceVariant
-                                },
-                            ),
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(20.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    TvText(
-                                        text = track.displayName,
-                                        style = TvMaterialTheme.typography.bodyLarge,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                    track.format.language?.takeIf { it.isNotBlank() }?.let { language ->
-                                        TvText(
-                                            text = language,
-                                            style = TvMaterialTheme.typography.bodyMedium,
-                                            color = TvMaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                    }
-                                }
-                                if (isSelected) {
-                                    TvText(
-                                        text = "Selected",
-                                        style = TvMaterialTheme.typography.labelLarge,
-                                        color = TvMaterialTheme.colorScheme.primary,
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    ControlButton(
-                        text = "Close",
-                        icon = Icons.Default.Close,
-                        onClick = onDismiss,
-                    )
-                }
-            }
-        }
-    }
-}
-
-private fun formatPlaybackPosition(positionMs: Long, durationMs: Long): String {
-    fun Long.toTimeComponents(): Triple<Long, Long, Long> {
-        val totalSeconds = this / 1000
-        val hours = totalSeconds / 3600
-        val minutes = (totalSeconds % 3600) / 60
-        val seconds = totalSeconds % 60
-        return Triple(hours, minutes, seconds)
-    }
-
-    val (currentH, currentM, currentS) = positionMs.toTimeComponents()
-    val (totalH, totalM, totalS) = durationMs.toTimeComponents()
-
-    val currentFormatted = if (currentH > 0) {
-        String.format("%d:%02d:%02d", currentH, currentM, currentS)
-    } else {
-        String.format("%02d:%02d", currentM, currentS)
-    }
-    val totalFormatted = if (durationMs <= 0L) {
-        "--:--"
-    } else if (totalH > 0) {
-        String.format("%d:%02d:%02d", totalH, totalM, totalS)
-    } else {
-        String.format("%02d:%02d", totalM, totalS)
-    }
-
-    return "$currentFormatted / $totalFormatted"
 }
 
 @Composable

@@ -76,6 +76,18 @@ import androidx.tv.material3.Text as TvText
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import com.rpeters.jellyfin.ui.adaptive.rememberWindowLayoutInfo
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.tv.material3.ExperimentalTvMaterial3Api
+import androidx.tv.material3.Surface as TvSurface
+import androidx.tv.material3.ClickableSurfaceDefaults
+import com.rpeters.jellyfin.ui.components.MediaInfoIcons
+
+@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun TvItemDetailScreen(
     itemId: String?,
@@ -92,10 +104,9 @@ fun TvItemDetailScreen(
     val userPrefs: UserPreferencesViewModel = hiltViewModel()
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
-    val playerVm: com.rpeters.jellyfin.ui.player.VideoPlayerViewModel = hiltViewModel()
     val tvFocusManager = rememberTvFocusManager()
     
-    val windowSizeClass = calculateWindowSizeClass(context as android.app.Activity)
+    val windowSizeClass = calculateWindowSizeClass(context as androidx.activity.ComponentActivity)
     val windowLayoutInfo = rememberWindowLayoutInfo()
     val layoutConfig = rememberAdaptiveLayoutConfig(windowSizeClass, windowLayoutInfo)
 
@@ -107,6 +118,9 @@ fun TvItemDetailScreen(
             ?: seasonState.seriesDetails?.takeIf { it.id.toString() == id }
             ?: appState.selectedItem?.takeIf { it.id.toString() == id }
     }
+
+    // AI Summary state
+    val aiSummary = appState.viewingMood // Reusing viewingMood for now, or could be a specific field
 
     // Fetch item from server when it's not already in local state
     LaunchedEffect(itemId, item) {
@@ -129,6 +143,19 @@ fun TvItemDetailScreen(
     val playButtonFocusRequester = remember { FocusRequester() }
     val nextContentFocusRequester = remember { FocusRequester() }
 
+    // Backdrop animation
+    var isReady by remember { mutableStateOf(false) }
+    LaunchedEffect(focusedBackdrop) {
+        if (focusedBackdrop != null) {
+            isReady = true
+        }
+    }
+    val backdropScale by animateFloatAsState(
+        targetValue = if (isReady) 1.1f else 1.0f,
+        animationSpec = tween(durationMillis = 10000),
+        label = "backdropZoom"
+    )
+
     TvScreenFocusScope(
         screenKey = "tv_item_${itemId ?: "unknown"}",
         focusManager = tvFocusManager,
@@ -142,27 +169,45 @@ fun TvItemDetailScreen(
                     onSearch = onSearch,
                 ),
         ) {
-            // Full-screen Immersive Backdrop
-            TvImmersiveBackground(
-                backdropUrl = focusedBackdrop,
-                dimAmount = 0.7f,
-                blurRadius = 15
-            )
-
-        // Gradient overlay for bottom-heavy content
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color.Black.copy(alpha = 0.8f)
-                        ),
-                        startY = 300f
-                    )
+            // Full-screen Immersive Backdrop with zoom
+            Box(modifier = Modifier.fillMaxSize().graphicsLayer(scaleX = backdropScale, scaleY = backdropScale)) {
+                TvImmersiveBackground(
+                    backdropUrl = focusedBackdrop,
+                    dimAmount = 0.6f,
+                    blurRadius = 10
                 )
-        )
+            }
+
+            // Enhanced Cinematic Gradients
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Black.copy(alpha = 0.4f),
+                                Color.Black.copy(alpha = 0.0f),
+                                Color.Black.copy(alpha = 0.9f)
+                            ),
+                            startY = 0f,
+                            endY = 1000f
+                        )
+                    )
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = Brush.horizontalGradient(
+                            colors = listOf(
+                                Color.Black.copy(alpha = 0.8f),
+                                Color.Black.copy(alpha = 0.0f)
+                            ),
+                            startX = 0f,
+                            endX = 1200f
+                        )
+                    )
+            )
 
             val scrollState = rememberScrollState()
 
@@ -172,19 +217,19 @@ fun TvItemDetailScreen(
                     .verticalScroll(scrollState)
                     .padding(horizontal = 56.dp)
                     .padding(top = 80.dp, bottom = 56.dp),
-                verticalArrangement = Arrangement.spacedBy(32.dp)
+                verticalArrangement = Arrangement.spacedBy(48.dp)
             ) {
             // Main Info Section
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
                 horizontalArrangement = Arrangement.spacedBy(48.dp),
                 verticalAlignment = Alignment.Top
             ) {
                 val isVideo = item?.type == BaseItemKind.VIDEO
 
-                // Poster / Backdrop Card — landscape for video items, portrait for movies/series
-                val cardWidth = if (isVideo) 390.dp else 260.dp
-                val cardHeight = if (isVideo) 220.dp else 390.dp
+                // Poster / Backdrop Card
+                val cardWidth = if (isVideo) 400.dp else 280.dp
+                val cardHeight = if (isVideo) 225.dp else 420.dp
                 val cardImageUrl = if (isVideo) {
                     item.let { viewModel.getBackdropUrl(it) ?: viewModel.getImageUrl(it) }
                 } else {
@@ -196,6 +241,11 @@ fun TvItemDetailScreen(
                     modifier = Modifier.size(cardWidth, cardHeight),
                     scale = TvCardDefaults.scale(focusedScale = 1.05f),
                     colors = TvCardDefaults.colors(containerColor = Color.DarkGray),
+                    border = TvCardDefaults.border(
+                        focusedBorder = androidx.tv.material3.Border(
+                            border = androidx.compose.foundation.BorderStroke(2.dp, Color.White.copy(alpha = 0.5f))
+                        )
+                    )
                 ) {
                     JellyfinAsyncImage(
                         model = cardImageUrl,
@@ -227,29 +277,21 @@ fun TvItemDetailScreen(
                     val official = item?.officialRating?.let { normalizeOfficialRating(it) }
                     val year = item?.productionYear?.toString()
                     
-                    val metaPieces = listOfNotNull(year, official, durationText, community)
-                    if (metaPieces.isNotEmpty()) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            metaPieces.forEach { text ->
-                                Box(
-                                    modifier = Modifier
-                                        .background(
-                                            Color.White.copy(alpha = 0.15f),
-                                            TvMaterialTheme.shapes.small
-                                        )
-                                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                                ) {
-                                    TvText(
-                                        text = text,
-                                        style = TvMaterialTheme.typography.labelLarge,
-                                        color = Color.White
-                                    )
-                                }
-                            }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        listOfNotNull(year, official, durationText, community).forEach { text ->
+                            TvText(
+                                text = text,
+                                style = TvMaterialTheme.typography.titleMedium,
+                                color = TvMaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
+                        
+                        // Technical Media Info (4K, HDR, etc)
+                        MediaInfoIcons(item = item, iconSize = 20.dp)
                     }
 
                     // Genres
@@ -257,8 +299,49 @@ fun TvItemDetailScreen(
                         TvText(
                             text = genres.joinToString(" • "),
                             style = TvMaterialTheme.typography.titleMedium,
-                            color = Color.White.copy(alpha = 0.7f)
+                            color = Color.White.copy(alpha = 0.6f)
                         )
+                    }
+
+                    // AI Summary Card (Cinefin AI)
+                    if (!aiSummary.isNullOrBlank()) {
+                        TvCard(
+                            onClick = {},
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                            colors = TvCardDefaults.colors(
+                                containerColor = TvMaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                                contentColor = Color.White
+                            ),
+                            shape = TvCardDefaults.shape(shape = TvMaterialTheme.shapes.medium)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                TvIcon(
+                                    Icons.Default.AutoAwesome,
+                                    contentDescription = null,
+                                    tint = TvMaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Column {
+                                    TvText(
+                                        text = "CINEFIN AI SUMMARY",
+                                        style = TvMaterialTheme.typography.labelMedium,
+                                        color = TvMaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.ExtraBold
+                                    )
+                                    TvText(
+                                        text = aiSummary,
+                                        style = TvMaterialTheme.typography.bodyMedium,
+                                        color = Color.White,
+                                        maxLines = 3,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                        }
                     }
 
                     // Overview
@@ -267,13 +350,13 @@ fun TvItemDetailScreen(
                             text = overview,
                             style = TvMaterialTheme.typography.bodyLarge,
                             color = Color.White.copy(alpha = 0.9f),
-                            maxLines = 5,
+                            maxLines = 4,
                             overflow = TextOverflow.Ellipsis,
-                            lineHeight = TvMaterialTheme.typography.bodyLarge.lineHeight * 1.2f
+                            lineHeight = TvMaterialTheme.typography.bodyLarge.lineHeight * 1.3f
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     // Action Buttons
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
