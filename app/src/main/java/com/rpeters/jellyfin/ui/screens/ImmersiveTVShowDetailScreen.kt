@@ -78,7 +78,8 @@ import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
 import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
 import com.rpeters.jellyfin.ui.components.PerformanceOptimizedLazyRow
-import com.rpeters.jellyfin.ui.components.sanitizedAiSummary
+import com.rpeters.jellyfin.ui.components.WatchProgressBar
+import com.rpeters.jellyfin.ui.components.WatchedIndicatorBadge
 import com.rpeters.jellyfin.ui.components.immersive.AudioInfoCard
 import com.rpeters.jellyfin.ui.components.immersive.HdrType
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize
@@ -87,6 +88,7 @@ import com.rpeters.jellyfin.ui.components.immersive.ResolutionQuality
 import com.rpeters.jellyfin.ui.components.immersive.StaticHeroSection
 import com.rpeters.jellyfin.ui.components.immersive.VideoInfoCard
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
+import com.rpeters.jellyfin.ui.components.sanitizedAiSummary
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.theme.Dimens
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
@@ -99,6 +101,7 @@ import com.rpeters.jellyfin.ui.viewmodel.TVSeasonState
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonViewModel
 import com.rpeters.jellyfin.utils.getItemKey
 import com.rpeters.jellyfin.utils.isCompletelyWatched
+import com.rpeters.jellyfin.utils.isWatched
 import com.rpeters.jellyfin.utils.normalizeOfficialRating
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemPerson
@@ -793,21 +796,35 @@ private fun EpisodeRow(
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(8.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        color = if (episode.isWatched()) {
+            MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.6f)
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerLow
+        },
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Thumbnail
-            Surface(
-                shape = RoundedCornerShape(4.dp),
-                modifier = Modifier.size(width = 100.dp, height = 56.dp),
-            ) {
-                JellyfinAsyncImage(
-                    model = getImageUrl(episode),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
+            // Thumbnail with watch status overlay
+            Box(modifier = Modifier.size(width = 100.dp, height = 56.dp)) {
+                Surface(
+                    shape = RoundedCornerShape(4.dp),
+                    modifier = Modifier.matchParentSize(),
+                ) {
+                    JellyfinAsyncImage(
+                        model = getImageUrl(episode),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                    )
+                }
+                // Watch progress bar at bottom of thumbnail
+                WatchProgressBar(
+                    item = episode,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp, vertical = 2.dp),
                 )
             }
 
@@ -829,6 +846,12 @@ private fun EpisodeRow(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
+
+            // Watch status indicator at end
+            WatchedIndicatorBadge(
+                item = episode,
+                modifier = Modifier.padding(start = 8.dp),
+            )
         }
     }
 }
