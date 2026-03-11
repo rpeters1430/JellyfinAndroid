@@ -47,6 +47,7 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.ShimmerBox
 import com.rpeters.jellyfin.ui.components.MaterialText
+import com.rpeters.jellyfin.ui.components.UnwatchedEpisodeCountBadge
 import com.rpeters.jellyfin.ui.components.WatchProgressBar
 import com.rpeters.jellyfin.ui.components.WatchedIndicatorBadge
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -145,20 +146,27 @@ fun LibraryItemCard(
                             }
                         )
                         
-                        // Indicators
-                        if (item.userData?.isFavorite == true) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = "Favorite",
-                                tint = Color(0xFFFFD700),
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(8.dp)
-                                    .size(20.dp)
-                            )
+                        // Indicators in top-right corner
+                        Column(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(4.dp),
+                            horizontalAlignment = Alignment.End,
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            if (item.userData?.isFavorite == true) {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = "Favorite",
+                                    tint = Color(0xFFFFD700),
+                                    modifier = Modifier
+                                        .padding(4.dp)
+                                        .size(20.dp),
+                                )
+                            }
+                            UnwatchedEpisodeCountBadge(item = item)
+                            WatchedIndicatorBadge(item = item)
                         }
-                        
-                        WatchedIndicatorBadge(item = item, modifier = Modifier.align(Alignment.TopStart))
                         WatchProgressBar(item = item, modifier = Modifier.align(Alignment.BottomCenter))
                     }
                     

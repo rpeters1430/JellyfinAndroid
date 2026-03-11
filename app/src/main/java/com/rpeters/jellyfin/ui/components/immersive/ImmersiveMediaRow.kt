@@ -13,6 +13,8 @@ import androidx.compose.ui.text.font.FontWeight
 import com.rpeters.jellyfin.ui.components.PerformanceOptimizedLazyRow
 import com.rpeters.jellyfin.ui.theme.Dimens
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
+import com.rpeters.jellyfin.utils.getUnwatchedEpisodeCount
+import com.rpeters.jellyfin.utils.isWatched
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
@@ -69,7 +71,9 @@ fun ImmersiveMediaRow(
                 subtitle = itemSubtitle(item),
                 rating = item.communityRating,
                 isFavorite = item.userData?.isFavorite == true,
+                isWatched = item.isWatched(),
                 watchProgress = (item.userData?.playedPercentage ?: 0.0).toFloat() / 100f,
+                unwatchedEpisodeCount = item.getUnwatchedEpisodeCount().takeIf { it > 0 },
                 cardSize = size,
                 loadImage = isVisible, // ✅ Performance: Only load images for visible items
                 imageQuality = performanceConfig.imageQuality, // ✅ Performance: Adaptive quality

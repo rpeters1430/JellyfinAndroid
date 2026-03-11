@@ -90,10 +90,6 @@ fun ImmersiveHomeScreen(
     val managementEnabled = libraryActionPrefs.enableManagementActions
     val managementDisabledMessage = stringResource(id = R.string.library_actions_management_disabled)
 
-    // AI Status
-    val aiDownloadState by viewModel.aiDownloadState.collectAsStateWithLifecycle(com.rpeters.jellyfin.data.ai.AiDownloadState.IDLE)
-    val isNanoActive by viewModel.isNanoActive.collectAsStateWithLifecycle(false)
-
     // ✅ Performance: Stabilize internal callbacks
     val handleItemLongPress = remember(managementEnabled, coroutineScope, managementDisabledMessage) {
         { item: BaseItemDto ->
@@ -220,9 +216,6 @@ fun ImmersiveHomeScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.End,
             ) {
-                // Show AI Mode Chip above the AI button
-                AiStatusChip(state = aiDownloadState, isNanoActive = isNanoActive)
-
                 FloatingActionButton(
                     onClick = onAiAssistantClick,
                     containerColor = MaterialTheme.colorScheme.tertiaryContainer,
