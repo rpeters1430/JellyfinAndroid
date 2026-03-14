@@ -51,6 +51,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import com.rpeters.jellyfin.ui.image.ImageQuality
 import com.rpeters.jellyfin.ui.image.ImageSize
 import com.rpeters.jellyfin.ui.image.OptimizedImage
@@ -283,12 +287,21 @@ private fun MediaCardContent(
                     }
                 } else if (unwatchedEpisodeCount != null && unwatchedEpisodeCount > 0) {
                     // Unwatched episode count chip for series
+                    val countText = if (unwatchedEpisodeCount > 99) "99+" else unwatchedEpisodeCount.toString()
+                    val contentDesc = if (unwatchedEpisodeCount == 1) {
+                        "1 unwatched episode"
+                    } else {
+                        "$countText unwatched episodes"
+                    }
                     Surface(
                         shape = RoundedCornerShape(50),
                         color = MaterialTheme.colorScheme.secondaryContainer,
                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.semantics {
+                            contentDescription = contentDesc
+                            role = Role.Status
+                        },
                     ) {
-                        val countText = if (unwatchedEpisodeCount > 99) "99+" else unwatchedEpisodeCount.toString()
                         Text(
                             text = countText,
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
