@@ -34,6 +34,7 @@ Welcome to the central documentation repository for the Jellyfin Android client.
 - [Phase 5 Status](plans/PHASE_5_STATUS.md)
 - [UI Plan](plans/ui%20plan.md)
 - [Upgrade Path](plans/UPGRADE_PATH.md)
+- [2026-03-16 Upgrade Plan](plans/2026-03-16-upgrade-plan.md)
 - [Session 1 Fixes Summary](plans/SESSION_1_FIXES_SUMMARY.md)
 - [Session 2 Material Icons Summary](plans/SESSION_2_MATERIAL_ICONS_SUMMARY.md)
 - [Session 3 Detail Polish Summary](plans/SESSION_3_DETAIL_POLISH_SUMMARY.md)
