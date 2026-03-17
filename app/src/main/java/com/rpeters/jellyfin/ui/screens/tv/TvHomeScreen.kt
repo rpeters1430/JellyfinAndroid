@@ -202,7 +202,7 @@ fun TvHomeScreen(
                                         .padding(bottom = 24.dp)
                                         .onPreviewKeyEvent { keyEvent ->
                                             if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionLeft) {
-                                                focusManager?.moveFocus(FocusDirection.Left) ?: false
+                                                focusManager.moveFocus(FocusDirection.Left)
                                                 true
                                             } else {
                                                 false
@@ -260,7 +260,7 @@ fun TvHomeScreen(
                                         .padding(bottom = 24.dp)
                                         .onPreviewKeyEvent { keyEvent ->
                                             if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionLeft) {
-                                                focusManager?.moveFocus(FocusDirection.Left) ?: false
+                                                focusManager.moveFocus(FocusDirection.Left)
                                                 true
                                             } else {
                                                 false

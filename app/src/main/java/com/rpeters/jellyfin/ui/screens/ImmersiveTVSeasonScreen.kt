@@ -93,6 +93,7 @@ import com.rpeters.jellyfin.ui.viewmodel.TVSeasonState
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonViewModel
 import com.rpeters.jellyfin.utils.getItemKey
 import com.rpeters.jellyfin.utils.isCompletelyWatched
+import com.rpeters.jellyfin.utils.isWatched
 import com.rpeters.jellyfin.utils.normalizeOfficialRating
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemPerson
@@ -817,38 +818,37 @@ private fun ImmersiveEpisodeCard(
                             modifier = Modifier.fillMaxSize(),
                         )
                         // Watch progress indicator
-                        episode.userData?.playedPercentage?.let { progress ->
-                            if (progress > 0.0 && progress < 100.0) {
+                        val progress = episode.userData?.playedPercentage
+                        if (progress != null && progress > 0.0 && progress < 100.0) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(4.dp)
+                                    .align(Alignment.BottomCenter)
+                                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)),
+                            ) {
                                 Box(
                                     modifier = Modifier
-                                        .fillMaxWidth()
+                                        .fillMaxWidth((progress / 100.0).toFloat())
                                         .height(4.dp)
-                                        .align(Alignment.BottomCenter)
-                                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)),
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth((progress / 100.0).toFloat())
-                                            .height(4.dp)
-                                            .background(MaterialTheme.colorScheme.primary),
-                                    )
-                                }
-                            } else if (progress >= 100.0) {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = "Watched",
-                                    tint = Color.White,
-                                    modifier = Modifier
-                                        .align(Alignment.TopEnd)
-                                        .padding(8.dp)
-                                        .size(20.dp)
-                                        .background(
-                                            MaterialTheme.colorScheme.tertiary,
-                                            CircleShape,
-                                        )
-                                        .padding(2.dp),
+                                        .background(MaterialTheme.colorScheme.primary),
                                 )
                             }
+                        } else if (episode.isWatched()) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "Watched",
+                                tint = Color.White,
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(8.dp)
+                                    .size(20.dp)
+                                    .background(
+                                        MaterialTheme.colorScheme.tertiary,
+                                        CircleShape,
+                                    )
+                                    .padding(2.dp),
+                            )
                         }
                     }
                 } else {

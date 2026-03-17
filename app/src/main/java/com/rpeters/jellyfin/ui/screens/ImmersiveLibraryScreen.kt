@@ -139,7 +139,7 @@ fun ImmersiveLibraryScreen(
                 verticalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
             ) {
                 item(key = "header") {
-                    Spacer(modifier = Modifier.height(56.dp))
+                    Spacer(modifier = Modifier.height(120.dp))
                     Text(
                         text = stringResource(id = R.string.your_libraries),
                         style = MaterialTheme.typography.displaySmall,

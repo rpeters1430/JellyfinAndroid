@@ -597,7 +597,7 @@ fun TvSeekBar(
                                 .fillMaxHeight()
                                 .width(3.dp)
                                 .align(Alignment.CenterStart)
-                                .graphicsLayer(translationX = (chapterProgress * 1).toFloat())
+                                .graphicsLayer(translationX = chapterProgress)
                                 .background(Color.Black.copy(alpha = 0.3f))
                         )
                     }

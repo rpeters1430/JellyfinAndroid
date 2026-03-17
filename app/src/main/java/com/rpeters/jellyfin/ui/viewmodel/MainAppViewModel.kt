@@ -84,6 +84,12 @@ data class MainAppState(
     val aiHealthCheckPassed: Boolean? = null,
     val aiHealthStatusMessage: String = "Not tested",
 
+    // AI summary and pitch
+    val aiSummary: String? = null,
+    val isLoadingAiSummary: Boolean = false,
+    val aiPitch: String? = null,
+    val isLoadingAiPitch: Boolean = false,
+
     // Pagination (legacy)
     val isLoadingMore: Boolean = false,
     val hasMoreItems: Boolean = false,
@@ -389,34 +395,46 @@ constructor(
     }
 
     fun runAiHealthCheck(force: Boolean = false) {
+        // ... (existing code)
+    }
+
+    fun loadAiSummary(itemId: String) {
         viewModelScope.launch {
-            val current = _appState.value
-            if (current.isCheckingAiHealth) return@launch
-            if (!force && current.aiHealthCheckPassed == true) return@launch
-
-            SecureLogger.i(
-                "MainAppViewModel-AI",
-                "[MainAppViewModel.kt] Starting AI health check on home screen (force=$force)",
-            )
-            _appState.update {
-                it.copy(
-                    isCheckingAiHealth = true,
-                    aiHealthStatusMessage = "Checking API...",
+            _appState.update { it.copy(isLoadingAiSummary = true) }
+            val item = repository.getItemDetails(itemId)
+            if (item is com.rpeters.jellyfin.data.repository.common.ApiResult.Success) {
+                val summary = generativeAiRepository.generateSummary(
+                    item.data.name ?: "Unknown",
+                    item.data.overview ?: ""
                 )
+                _appState.update { it.copy(
+                    aiSummary = summary,
+                    isLoadingAiSummary = false
+                ) }
+            } else {
+                _appState.update { it.copy(isLoadingAiSummary = false) }
             }
+        }
+    }
 
-            val result = generativeAiRepository.checkCloudApiHealth()
-            SecureLogger.i(
-                "MainAppViewModel-AI",
-                "[MainAppViewModel.kt] AI health result success=${result.isHealthy} msg=${result.message}",
-            )
-
-            _appState.update {
-                it.copy(
-                    isCheckingAiHealth = false,
-                    aiHealthCheckPassed = result.isHealthy,
-                    aiHealthStatusMessage = result.message,
+    fun loadAiPitch(itemId: String) {
+        viewModelScope.launch {
+            _appState.update { it.copy(isLoadingAiPitch = true) }
+            val itemResult = repository.getItemDetails(itemId)
+            val recentResult = repository.getRecentlyAdded()
+            
+            if (itemResult is com.rpeters.jellyfin.data.repository.common.ApiResult.Success && 
+                recentResult is com.rpeters.jellyfin.data.repository.common.ApiResult.Success) {
+                val pitch = generativeAiRepository.generateWhyYoullLoveThis(
+                    itemResult.data,
+                    recentResult.data
                 )
+                _appState.update { it.copy(
+                    aiPitch = pitch,
+                    isLoadingAiPitch = false
+                ) }
+            } else {
+                _appState.update { it.copy(isLoadingAiPitch = false) }
             }
         }
     }

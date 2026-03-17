@@ -622,24 +622,11 @@ private fun EpisodeOverviewSection(
         }
 
         // AI Summary Display
-        val summaryText = aiSummary?.sanitizedAiSummary()
-        if (isLoadingAiSummary) {
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                    ExpressiveCircularLoading(size = 24.dp)
-                }
-            }
-        } else if (!summaryText.isNullOrBlank()) {
-            AiSummaryCard(
-                summary = summaryText,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
+        AiSummaryCard(
+            summary = aiSummary,
+            isLoading = isLoadingAiSummary,
+            modifier = Modifier.fillMaxWidth(),
+        )
 
         // Playback Capability
         playbackAnalysis?.let { PlaybackStatusBadge(analysis = it) }

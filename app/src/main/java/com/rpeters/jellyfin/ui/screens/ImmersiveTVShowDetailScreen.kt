@@ -34,6 +34,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
@@ -587,10 +588,10 @@ private fun ShowMetadataSection(
                 }
 
                 // Show AI summary if available
-                val summaryText = aiSummary?.sanitizedAiSummary()
-                if (!summaryText.isNullOrBlank()) {
-                    AiSummaryCard(summary = summaryText)
-                }
+                AiSummaryCard(
+                    summary = aiSummary,
+                    isLoading = isLoadingAiSummary
+                )
 
                 // ✨ Beautiful Material 3 Expressive Media Info Cards
                 series.mediaSources?.firstOrNull()?.mediaStreams?.let { streams ->
@@ -740,21 +741,56 @@ private fun SeasonItem(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                     )
-                    // ✅ Fixed: Only show episode count when we have reliable data
-                    // If episodes are loaded, use that count. Otherwise try metadata.
-                    // Don't show "0 Episodes" if we simply haven't loaded yet.
-                    val episodeCount = if (episodes.isNotEmpty()) {
-                        episodes.size
+                    
+                    val unwatchedCount = season.userData?.unplayedItemCount ?: 0
+                    if (unwatchedCount > 0) {
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 4.dp)
+                        ) {
+                            Text(
+                                text = "$unwatchedCount unwatched",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    } else if (season.isCompletelyWatched()) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(top = 4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Watched",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.tertiary
+                            )
+                        }
                     } else {
-                        season.childCount?.takeIf { it > 0 }
-                    }
+                        // Fallback to total episode count
+                        val episodeCount = if (episodes.isNotEmpty()) {
+                            episodes.size
+                        } else {
+                            season.childCount?.takeIf { it > 0 }
+                        }
 
-                    episodeCount?.let { count ->
-                        Text(
-                            text = "$count Episode${if (count != 1) "s" else ""}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        episodeCount?.let { count ->
+                            Text(
+                                text = "$count Episode${if (count != 1) "s" else ""}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
 
@@ -826,6 +862,24 @@ private fun EpisodeRow(
                         .fillMaxWidth()
                         .padding(horizontal = 4.dp, vertical = 2.dp),
                 )
+                
+                // Watched checkmark on thumbnail if completely watched
+                if (episode.isWatched()) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Watched",
+                        tint = Color.White,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(4.dp)
+                            .size(16.dp)
+                            .background(
+                                MaterialTheme.colorScheme.tertiary,
+                                CircleShape,
+                            )
+                            .padding(1.dp),
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(12.dp))

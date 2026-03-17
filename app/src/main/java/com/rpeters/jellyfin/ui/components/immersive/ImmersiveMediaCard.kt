@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -243,7 +244,7 @@ private fun ImmersiveCardContent(
                 .padding(12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            // Rating or watch status badge
+            // Rating on the left
             if (rating != null) {
                 Surface(
                     shape = RoundedCornerShape(ImmersiveDimens.CornerRadiusCard),
@@ -268,7 +269,12 @@ private fun ImmersiveCardContent(
                         )
                     }
                 }
-            } else if (unwatchedEpisodeCount != null && unwatchedEpisodeCount > 0) {
+            } else {
+                Spacer(modifier = Modifier.width(1.dp))
+            }
+
+            // Watch status on the right
+            if (unwatchedEpisodeCount != null && unwatchedEpisodeCount > 0) {
                 Badge(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -283,15 +289,15 @@ private fun ImmersiveCardContent(
                 Surface(
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(28.dp),
+                    modifier = Modifier.size(24.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = "Watched",
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier
-                            .size(28.dp)
-                            .padding(6.dp),
+                            .size(24.dp)
+                            .padding(4.dp),
                     )
                 }
             }

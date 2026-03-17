@@ -57,6 +57,8 @@ import com.rpeters.jellyfin.ui.components.immersive.ImmersiveHeroCarousel
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveMediaCard
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveScaffold
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
+import com.rpeters.jellyfin.utils.getUnwatchedEpisodeCount
+import com.rpeters.jellyfin.utils.isWatched
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -240,6 +242,8 @@ fun ImmersiveLibraryBrowserScreen(
                                     imageUrl = getImageUrl(item) ?: "",
                                     onCardClick = { onItemClick(item.id.toString()) },
                                     onPlayClick = { onItemClick(item.id.toString()) },
+                                    isWatched = item.isWatched(),
+                                    unwatchedEpisodeCount = item.getUnwatchedEpisodeCount().takeIf { it > 0 },
                                     cardSize = ImmersiveCardSize.SMALL,
                                 )
                             }
