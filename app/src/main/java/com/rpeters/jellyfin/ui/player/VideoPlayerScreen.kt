@@ -137,19 +137,6 @@ fun VideoPlayerScreen(
         }
     }
 
-    // Control visibility timers
-    LaunchedEffect(controlsVisible, playerState.isPlaying) {
-        if (controlsVisible && playerState.isPlaying) {
-            delay(5000)
-            controlsVisible = false
-        }
-    }
-    LaunchedEffect(playerState.isPlaying, playerState.isLoading) {
-        // Show controls when paused/stopped (not playing and not mid-seek buffering),
-        // or during initial load before playback begins (loading but not yet playing).
-        if (!playerState.isPlaying) controlsVisible = true
-    }
-
     // Errors
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(playerState.error) {
@@ -166,6 +153,21 @@ fun VideoPlayerScreen(
         while (isActive) {
             currentPosMs = player.currentPosition
             delay(500)
+        }
+    }
+
+    // Control visibility timers
+    LaunchedEffect(controlsVisible, playerState.isPlaying) {
+        if (controlsVisible && playerState.isPlaying) {
+            delay(5000)
+            controlsVisible = false
+        }
+    }
+    LaunchedEffect(playerState.isPlaying, playerState.isLoading, currentPosMs) {
+        // Show controls when paused/stopped (not playing and not mid-seek buffering),
+        // or during initial load before playback begins (loading but not yet playing).
+        if (!playerState.isPlaying && (!playerState.isLoading || currentPosMs == 0L)) {
+            controlsVisible = true
         }
     }
 
