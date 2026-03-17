@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -100,7 +101,7 @@ fun ExpressiveVideoControls(
         exit = fadeOut(animationSpec = MotionTokens.mediaControlsExit),
         modifier = modifier,
     ) {
-        Box {
+        Box(modifier = Modifier.fillMaxSize()) {
             // Background gradient overlay
             Box(
                 modifier = Modifier
@@ -119,7 +120,7 @@ fun ExpressiveVideoControls(
                     ),
             )
 
-            Column {
+            Column(modifier = Modifier.fillMaxSize()) {
                 // Top Controls Bar
                 ExpressiveTopControls(
                     playerState = playerState,
