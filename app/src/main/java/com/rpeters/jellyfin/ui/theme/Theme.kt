@@ -1,3 +1,5 @@
+@file:OptInAppExperimentalApis
+
 package com.rpeters.jellyfin.ui.theme
 
 import android.os.Build
@@ -8,6 +10,7 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.data.preferences.ContrastLevel
 import com.rpeters.jellyfin.data.preferences.ThemeMode
 import com.rpeters.jellyfin.data.preferences.ThemePreferences
@@ -104,6 +107,7 @@ fun JellyfinAndroidTheme(
 
     MaterialTheme(
         colorScheme = tunedColorScheme,
+        motionScheme = MotionTokens.expressiveMotionScheme,
         typography = Typography,
         shapes = JellyfinShapes,
         content = content,
