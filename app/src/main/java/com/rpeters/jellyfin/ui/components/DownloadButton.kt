@@ -1,3 +1,5 @@
+@file:OptInAppExperimentalApis
+
 package com.rpeters.jellyfin.ui.components
 
 import android.Manifest
@@ -21,10 +23,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.offline.DownloadStatus
 import com.rpeters.jellyfin.data.offline.OfflineDownload
 import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
+import com.rpeters.jellyfin.ui.components.ExpressiveWavyCircularLoading
+import com.rpeters.jellyfin.ui.components.ExpressiveWavyCircularProgress
+import com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearProgress
 import com.rpeters.jellyfin.utils.SecureLogger
 import org.jellyfin.sdk.model.api.BaseItemDto
 import kotlin.math.roundToInt
@@ -196,13 +202,13 @@ private fun selectPreferredDownloadForItem(
 private fun PendingDownloadButton(showText: Boolean) {
     if (showText) {
         OutlinedButton(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) {
-            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+            ExpressiveWavyCircularLoading(modifier = Modifier.size(16.dp))
             Spacer(modifier = Modifier.width(8.dp))
             Text(stringResource(id = R.string.download_queued))
         }
     } else {
         Box(contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(modifier = Modifier.size(40.dp), strokeWidth = 3.dp)
+            ExpressiveWavyCircularLoading(modifier = Modifier.size(40.dp))
         }
     }
 }
@@ -283,17 +289,16 @@ private fun DownloadingButton(
                     )
                 }
             }
-            LinearProgressIndicator(
-                progress = { displayProgress },
+            ExpressiveWavyLinearProgress(
+                progress = displayProgress,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
     } else {
         Box(contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(
-                progress = { displayProgress },
+            ExpressiveWavyCircularProgress(
+                progress = displayProgress,
                 modifier = Modifier.size(40.dp),
-                strokeWidth = 3.dp,
             )
             IconButton(
                 onClick = onPause,

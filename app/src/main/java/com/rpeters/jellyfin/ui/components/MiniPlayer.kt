@@ -27,7 +27,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.LinearProgressIndicator
+import com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearProgress
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -124,8 +124,8 @@ private fun MiniPlayerContent(
         Column {
             // Progress bar at the top
             if (duration > 0) {
-                LinearProgressIndicator(
-                    progress = { currentPosition.toFloat() / duration.toFloat() },
+                ExpressiveWavyLinearProgress(
+                    progress = currentPosition.toFloat() / duration.toFloat(),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(2.dp),

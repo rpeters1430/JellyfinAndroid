@@ -1,3 +1,5 @@
+@file:OptInAppExperimentalApis
+
 package com.rpeters.jellyfin.ui.screens.details.components
 
 import androidx.compose.foundation.layout.Arrangement
@@ -11,8 +13,9 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearLoading
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -65,7 +68,7 @@ fun WhyYoullLoveThisCard(
             // Content
             when {
                 isLoading -> {
-                    LinearProgressIndicator(
+                    ExpressiveWavyLinearLoading(
                         modifier = Modifier.fillMaxWidth(),
                         color = MaterialTheme.colorScheme.tertiary,
                     )

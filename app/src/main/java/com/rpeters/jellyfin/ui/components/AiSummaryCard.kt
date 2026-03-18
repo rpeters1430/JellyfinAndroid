@@ -1,3 +1,5 @@
+@file:OptInAppExperimentalApis
+
 package com.rpeters.jellyfin.ui.components
 
 import androidx.compose.foundation.BorderStroke
@@ -12,7 +14,8 @@ import androidx.compose.ui.unit.dp
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.LinearProgressIndicator
+import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearLoading
 
 @Composable
 fun AiSummaryCard(
@@ -32,7 +35,7 @@ fun AiSummaryCard(
                 .padding(12.dp)
         ) {
             if (isLoading) {
-                LinearProgressIndicator(
+                ExpressiveWavyLinearLoading(
                     modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.primary
                 )

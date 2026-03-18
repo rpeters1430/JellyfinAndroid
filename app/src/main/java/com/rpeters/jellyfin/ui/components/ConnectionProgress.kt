@@ -1,3 +1,5 @@
+@file:OptInAppExperimentalApis
+
 package com.rpeters.jellyfin.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
@@ -16,8 +18,9 @@ import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearProgress
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -139,8 +142,8 @@ private fun ConnectionPhaseContent(
 
             if (progress != null) {
                 // Linear progress for operations with known progress
-                LinearProgressIndicator(
-                    progress = { progress },
+                ExpressiveWavyLinearProgress(
+                    progress = progress,
                     modifier = Modifier.fillMaxWidth(),
                 )
             } else {

@@ -31,6 +31,8 @@ import com.rpeters.jellyfin.data.offline.DownloadStatus
 import com.rpeters.jellyfin.data.offline.OfflineDownload
 import com.rpeters.jellyfin.data.offline.VideoQuality
 import com.rpeters.jellyfin.ui.components.ExpressiveSwitchListItem
+import com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearLoading
+import com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearProgress
 import kotlin.math.roundToInt
 
 @androidx.media3.common.util.UnstableApi
@@ -294,8 +296,8 @@ private fun ExpressiveStorageCard(
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                LinearProgressIndicator(
-                    progress = { storageInfo.usedSpacePercentage / 100f },
+                ExpressiveWavyLinearProgress(
+                    progress = storageInfo.usedSpacePercentage / 100f,
                     modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
                     trackColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                     color = MaterialTheme.colorScheme.primary,
@@ -638,8 +640,8 @@ fun DownloadStatusChipEnhanced(status: DownloadStatus) {
 @Composable
 fun DownloadProgressIndicatorEnhanced(progress: DownloadProgress) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        LinearProgressIndicator(
-            progress = { if (progress.isTranscoding) (progress.transcodingProgress ?: 0f) / 100f else progress.progressPercent / 100f },
+        ExpressiveWavyLinearProgress(
+            progress = if (progress.isTranscoding) (progress.transcodingProgress ?: 0f) / 100f else progress.progressPercent / 100f,
             modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
         )
 

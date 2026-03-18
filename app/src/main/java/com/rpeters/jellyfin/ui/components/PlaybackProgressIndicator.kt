@@ -1,3 +1,5 @@
+@file:OptInAppExperimentalApis
+
 package com.rpeters.jellyfin.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
@@ -10,8 +12,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearProgress
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -69,8 +72,8 @@ fun PlaybackProgressIndicator(
                 )
             }
 
-            LinearProgressIndicator(
-                progress = { progress.percentageWatched },
+            ExpressiveWavyLinearProgress(
+                progress = progress.percentageWatched,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)

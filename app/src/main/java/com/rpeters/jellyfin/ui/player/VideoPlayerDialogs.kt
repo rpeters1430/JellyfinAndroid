@@ -1,3 +1,5 @@
+@file:OptInAppExperimentalApis
+
 package com.rpeters.jellyfin.ui.player
 
 import androidx.compose.foundation.layout.Box
@@ -18,7 +20,8 @@ import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.ui.components.ExpressiveWavyCircularLoading
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -267,9 +270,8 @@ fun CastDeviceSelectionDialog(
                 Text(stringResource(id = R.string.cast_to_device))
                 if (discoveryState == DiscoveryState.DISCOVERING) {
                     Spacer(modifier = Modifier.width(12.dp))
-                    CircularProgressIndicator(
+                    ExpressiveWavyCircularLoading(
                         modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp,
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }

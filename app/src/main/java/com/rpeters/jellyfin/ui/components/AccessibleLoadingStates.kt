@@ -1,3 +1,5 @@
+@file:OptInAppExperimentalApis
+
 package com.rpeters.jellyfin.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
@@ -6,8 +8,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearProgress
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -124,8 +127,8 @@ fun ProgressLoadingState(
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.padding(32.dp),
         ) {
-            LinearProgressIndicator(
-                progress = { progress },
+            ExpressiveWavyLinearProgress(
+                progress = progress,
                 modifier = Modifier.progressSemantics(
                     description = message,
                     progress = progress,
