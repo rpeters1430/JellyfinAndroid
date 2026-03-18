@@ -121,7 +121,7 @@ fun ExpressiveHeroCarousel(
                     onPlayClick = { onPlayClick(item) },
                     isActive = isActive,
                     modifier = Modifier
-                        .maskClip(shape = RoundedCornerShape(16.dp))
+                        .maskClip(shape = MaterialTheme.shapes.large)
                         .height(heroHeight),
                 )
             }
@@ -206,7 +206,7 @@ private fun ExpressiveHeroCard(
         elevation = CardDefaults.cardElevation(
             defaultElevation = if (isActive) 8.dp else 4.dp,
         ),
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
     ) {
         Box(
             modifier = Modifier
@@ -222,7 +222,7 @@ private fun ExpressiveHeroCard(
                 cornerRadius = 16.dp,
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(16.dp)),
+                    .clip(MaterialTheme.shapes.large),
             )
 
             // ✅ Performance: Use drawWithCache for gradient to avoid recomposition
@@ -291,7 +291,7 @@ private fun ExpressiveMediaCard(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
     ) {
         Column(
             modifier = Modifier

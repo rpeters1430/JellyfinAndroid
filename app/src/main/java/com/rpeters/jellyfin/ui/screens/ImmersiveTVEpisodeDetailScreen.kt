@@ -402,7 +402,7 @@ fun ImmersiveTVEpisodeDetailScreen(
                                     isWatched = item.isWatched(),
                                     modifier = Modifier.width(280.dp).height(160.dp).then(
                                         if (isCurrent) {
-                                            Modifier.background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                                            Modifier.background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f), MaterialTheme.shapes.medium)
                                         } else {
                                             Modifier
                                         },
@@ -633,7 +633,7 @@ private fun EpisodeOverviewSection(
 
         // ✅ Enhanced Metadata Section
         Surface(
-            shape = RoundedCornerShape(12.dp),
+            shape = MaterialTheme.shapes.medium,
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
             modifier = Modifier.fillMaxWidth(),
         ) {
@@ -758,7 +758,7 @@ private fun MetadataTag(
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        shape = RoundedCornerShape(4.dp),
+        shape = MaterialTheme.shapes.extraSmall,
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
         modifier = modifier,
@@ -876,7 +876,7 @@ private fun DetailActionButton(
 ) {
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         color = if (active) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
         modifier = modifier,
     ) {
@@ -908,13 +908,13 @@ private fun SeriesInfoCard(
 ) {
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainer,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Surface(
-                shape = RoundedCornerShape(8.dp),
+                shape = MaterialTheme.shapes.small,
                 modifier = Modifier.size(width = 60.dp, height = 90.dp),
             ) {
                 JellyfinAsyncImage(

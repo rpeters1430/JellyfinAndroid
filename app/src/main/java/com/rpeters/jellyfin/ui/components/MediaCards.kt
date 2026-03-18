@@ -77,7 +77,7 @@ fun MediaCard(
                 onLongClick = { onLongPress?.invoke(item) },
             )
             .focusable(),
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         elevation = CardDefaults.cardElevation(
             defaultElevation = 6.dp,
             pressedElevation = 2.dp,
@@ -100,7 +100,7 @@ fun MediaCard(
                 loading = {
                     ShimmerBox(
                         modifier = Modifier.fillMaxSize(),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = MaterialTheme.shapes.medium,
                     )
                 },
                 error = {
@@ -128,7 +128,7 @@ fun MediaCard(
                 colors = CardDefaults.cardColors(
                     containerColor = contentTypeColor.copy(alpha = 0.9f),
                 ),
-                shape = RoundedCornerShape(8.dp),
+                shape = MaterialTheme.shapes.small,
             ) {
                 Text(
                     text = when (item.type) {
@@ -313,7 +313,7 @@ fun PosterMediaCard(
                 onLongClick = { onLongPress?.invoke(item) },
             )
             .focusable(),
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         elevation = CardDefaults.cardElevation(
             defaultElevation = 6.dp,
             pressedElevation = 2.dp,
@@ -515,7 +515,7 @@ fun RecentlyAddedCard(
                 onLongClick = { onLongPress?.invoke(item) },
             )
             .focusable(),
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         elevation = CardDefaults.cardElevation(
             defaultElevation = 6.dp,
             pressedElevation = 2.dp,
@@ -581,7 +581,7 @@ fun RecentlyAddedCard(
                     colors = CardDefaults.cardColors(
                         containerColor = contentTypeColor.copy(alpha = 0.9f),
                     ),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = MaterialTheme.shapes.small,
                 ) {
                     Text(
                         text = when (item.type) {

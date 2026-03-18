@@ -249,7 +249,7 @@ private fun QueueItem(
                 Box(
                     modifier = Modifier
                         .size(48.dp)
-                        .clip(RoundedCornerShape(4.dp))
+                        .clip(MaterialTheme.shapes.extraSmall)
                         .background(MaterialTheme.colorScheme.surfaceVariant),
                 ) {
                     val artworkUri = mediaItem.mediaMetadata.artworkUri

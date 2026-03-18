@@ -273,7 +273,7 @@ fun ImmersiveMovieDetailScreen(
                                     AssistChip(
                                         onClick = { /* Navigate to genre */ },
                                         label = { Text(genre) },
-                                        shape = RoundedCornerShape(8.dp),
+                                        shape = MaterialTheme.shapes.small,
                                     )
                                 }
                             }
@@ -483,7 +483,7 @@ private fun MovieActionRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
-            shape = RoundedCornerShape(12.dp),
+            shape = MaterialTheme.shapes.medium,
             colors = ButtonDefaults.textButtonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -558,7 +558,7 @@ private fun MovieTechSpecsSection(movie: BaseItemDto) {
             colors = CardDefaults.elevatedCardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             ),
-            shape = RoundedCornerShape(16.dp),
+            shape = MaterialTheme.shapes.large,
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),

@@ -89,7 +89,7 @@ private fun LibraryCard(
     val contentTypeColor = getContentTypeColor(library.type.toString())
     Card(
         modifier = modifier.width(200.dp).clickable { onClick(library) },
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {

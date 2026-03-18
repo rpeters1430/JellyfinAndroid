@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.Download
@@ -244,9 +243,9 @@ fun ExpressiveVideoToolbar(
                     .padding(16.dp)
                     .shadow(
                         elevation = 8.dp,
-                        shape = RoundedCornerShape(28.dp),
+                        shape = MaterialTheme.shapes.extraLarge,
                     ),
-                shape = RoundedCornerShape(28.dp),
+                shape = MaterialTheme.shapes.extraLarge,
                 color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.6f),
             ) {
                 Row(

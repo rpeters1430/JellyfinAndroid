@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Error
@@ -140,7 +139,7 @@ private fun ErrorContent(
                 .fillMaxWidth()
                 .padding(32.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-            shape = RoundedCornerShape(16.dp),
+            shape = MaterialTheme.shapes.large,
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
@@ -203,7 +202,7 @@ private fun ErrorContent(
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary,
                             ),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = MaterialTheme.shapes.medium,
                         ) {
                             AnimatedVisibility(
                                 visible = isRetrying,
@@ -239,7 +238,7 @@ private fun ErrorContent(
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = MaterialTheme.shapes.medium,
                         ) {
                             Text(
                                 text = action.label,
@@ -277,7 +276,7 @@ fun ErrorBanner(
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.errorContainer,
             ),
-            shape = RoundedCornerShape(12.dp),
+            shape = MaterialTheme.shapes.medium,
         ) {
             Row(
                 modifier = Modifier
@@ -378,7 +377,7 @@ fun EmptyStateScreen(
 
                 Button(
                     onClick = onAction,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = MaterialTheme.shapes.medium,
                 ) {
                     Text(text = actionLabel)
                 }

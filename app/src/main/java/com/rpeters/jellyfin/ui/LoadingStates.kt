@@ -7,7 +7,6 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,12 +24,12 @@ import androidx.compose.ui.unit.dp
  * Uses drawWithCache to avoid recomposition and slower animation for reduced GPU load.
  *
  * Usage:
- * ShimmerBox(modifier = Modifier.size(120.dp, 180.dp), shape = RoundedCornerShape(12.dp))
+ * ShimmerBox(modifier = Modifier.size(120.dp, 180.dp), shape = MaterialTheme.shapes.medium)
  */
 @Composable
 fun ShimmerBox(
     modifier: Modifier = Modifier,
-    shape: Shape = RoundedCornerShape(8.dp),
+    shape: Shape = MaterialTheme.shapes.small,
     baseColor: Color = MaterialTheme.colorScheme.surfaceContainer,
     highlightColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
 ) {

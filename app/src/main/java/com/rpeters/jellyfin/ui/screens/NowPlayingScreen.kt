@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -207,7 +206,7 @@ private fun AlbumArtSection(
             modifier = Modifier
                 .fillMaxWidth(0.85f)
                 .aspectRatio(1f),
-            shape = RoundedCornerShape(16.dp),
+            shape = MaterialTheme.shapes.large,
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         ) {
             if (currentMediaItem != null) {

@@ -101,7 +101,7 @@ fun ExpressiveMediaCard(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer,
                 ),
                 elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp),
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialTheme.shapes.large,
             ) {
                 MediaCardContent(
                     title = title,
@@ -126,7 +126,7 @@ fun ExpressiveMediaCard(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                 ),
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialTheme.shapes.large,
             ) {
                 MediaCardContent(
                     title = title,
@@ -153,7 +153,7 @@ fun ExpressiveMediaCard(
                 border = CardDefaults.outlinedCardBorder().copy(
                     width = 1.dp,
                 ),
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialTheme.shapes.large,
             ) {
                 MediaCardContent(
                     title = title,
@@ -249,7 +249,7 @@ private fun MediaCardContent(
                 // Rating or watch status badge
                 if (rating != null) {
                     Surface(
-                        shape = RoundedCornerShape(12.dp),
+                        shape = MaterialTheme.shapes.medium,
                         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
                     ) {
                         Row(
@@ -391,7 +391,7 @@ fun ExpressiveCompactCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ),
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
     ) {
         Row(
             modifier = Modifier
@@ -408,7 +408,7 @@ fun ExpressiveCompactCard(
                 quality = ImageQuality.MEDIUM,
                 modifier = Modifier
                     .size(60.dp)
-                    .clip(RoundedCornerShape(8.dp)),
+                    .clip(MaterialTheme.shapes.small),
             )
 
             // Content
@@ -465,7 +465,7 @@ fun ExpressiveContentCard(
     modifier: Modifier = Modifier,
     containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
-    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(16.dp),
+    shape: androidx.compose.ui.graphics.Shape = MaterialTheme.shapes.large,
     elevation: androidx.compose.material3.CardElevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
     content: @Composable ColumnScope.() -> Unit,
 ) {

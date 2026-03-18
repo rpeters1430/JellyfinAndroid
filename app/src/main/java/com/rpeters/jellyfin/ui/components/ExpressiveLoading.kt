@@ -218,7 +218,7 @@ fun ExpressiveLoadingCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ),
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
     ) {
         Column {
             if (showImage) {
@@ -250,7 +250,7 @@ fun ExpressiveLoadingCard(
                         modifier = Modifier
                             .fillMaxWidth(0.8f)
                             .height(16.dp)
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(MaterialTheme.shapes.small)
                             .background(
                                 Brush.linearGradient(
                                     colors = listOf(
@@ -336,7 +336,7 @@ fun ExpressiveMediaLoading(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
         ),
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
     ) {
         Column(
             modifier = Modifier.padding(20.dp),

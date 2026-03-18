@@ -276,7 +276,7 @@ private fun ImmersiveCardContent(
             // Watch status on the right
             if (unwatchedEpisodeCount != null && unwatchedEpisodeCount > 0) {
                 Surface(
-                    shape = RoundedCornerShape(16.dp),
+                    shape = MaterialTheme.shapes.large,
                     color = MaterialTheme.colorScheme.primary,
                 ) {
                     val countText = if (unwatchedEpisodeCount > 99) "99+" else unwatchedEpisodeCount.toString()

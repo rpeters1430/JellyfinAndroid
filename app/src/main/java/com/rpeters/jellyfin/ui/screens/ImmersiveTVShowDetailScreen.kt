@@ -714,7 +714,7 @@ private fun SeasonItem(
     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
         Surface(
             onClick = onExpand,
-            shape = RoundedCornerShape(12.dp),
+            shape = MaterialTheme.shapes.medium,
             color = MaterialTheme.colorScheme.surfaceContainer,
         ) {
             Row(
@@ -723,7 +723,7 @@ private fun SeasonItem(
             ) {
                 // Season Poster
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
+                    shape = MaterialTheme.shapes.small,
                     modifier = Modifier.size(width = 60.dp, height = 90.dp),
                 ) {
                     JellyfinAsyncImage(
@@ -745,7 +745,7 @@ private fun SeasonItem(
                     val unwatchedCount = season.userData?.unplayedItemCount ?: 0
                     if (unwatchedCount > 0) {
                         Surface(
-                            shape = RoundedCornerShape(4.dp),
+                            shape = MaterialTheme.shapes.extraSmall,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(top = 4.dp)
                         ) {
@@ -831,7 +831,7 @@ private fun EpisodeRow(
 ) {
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(8.dp),
+        shape = MaterialTheme.shapes.small,
         color = if (episode.isWatched()) {
             MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.6f)
         } else {
@@ -845,7 +845,7 @@ private fun EpisodeRow(
             // Thumbnail with watch status overlay
             Box(modifier = Modifier.size(width = 100.dp, height = 56.dp)) {
                 Surface(
-                    shape = RoundedCornerShape(4.dp),
+                    shape = MaterialTheme.shapes.extraSmall,
                     modifier = Modifier.matchParentSize(),
                 ) {
                     JellyfinAsyncImage(

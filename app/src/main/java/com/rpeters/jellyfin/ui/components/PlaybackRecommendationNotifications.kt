@@ -105,7 +105,7 @@ fun PlaybackRecommendationCard(
                 .fillMaxWidth()
                 .padding(vertical = 4.dp),
             colors = CardDefaults.cardColors(containerColor = backgroundColor),
-            shape = RoundedCornerShape(12.dp),
+            shape = MaterialTheme.shapes.medium,
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         ) {
             Row(
@@ -177,7 +177,7 @@ fun FloatingPlaybackRecommendations(
                 .fillMaxWidth()
                 .padding(16.dp),
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-            shape = RoundedCornerShape(16.dp),
+            shape = MaterialTheme.shapes.large,
             shadowElevation = 8.dp,
         ) {
             PlaybackRecommendationNotification(
@@ -271,7 +271,7 @@ fun InContextPlaybackRecommendation(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
         border = androidx.compose.foundation.BorderStroke(1.dp, borderColor),
-        shape = RoundedCornerShape(8.dp),
+        shape = MaterialTheme.shapes.small,
     ) {
         Row(
             modifier = Modifier.padding(12.dp),

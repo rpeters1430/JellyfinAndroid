@@ -3,7 +3,6 @@ package com.rpeters.jellyfin.ui.components
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -39,9 +38,9 @@ fun BottomNavBar(
                 .padding(16.dp)
                 .shadow(
                     elevation = 3.dp,
-                    shape = RoundedCornerShape(28.dp),
+                    shape = MaterialTheme.shapes.extraLarge,
                 )
-                .clip(RoundedCornerShape(28.dp)),
+                .clip(MaterialTheme.shapes.extraLarge),
         ) {
             NavigationBar(
                 containerColor = MaterialTheme.colorScheme.surface,

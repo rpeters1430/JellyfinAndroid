@@ -637,7 +637,7 @@ private fun ImmersiveSeasonListItem(
 ) {
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceVariant,
         modifier = modifier.fillMaxWidth(),
     ) {
@@ -651,7 +651,7 @@ private fun ImmersiveSeasonListItem(
             // Season poster (smaller in immersive)
             val posterUrl = getImageUrl(season)
             Surface(
-                shape = RoundedCornerShape(8.dp),
+                shape = MaterialTheme.shapes.small,
                 modifier = Modifier.size(width = 80.dp, height = 120.dp),
             ) {
                 if (posterUrl != null) {
@@ -793,7 +793,7 @@ private fun ImmersiveEpisodeCard(
 ) {
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         modifier = modifier.fillMaxWidth(),
     ) {
@@ -806,7 +806,7 @@ private fun ImmersiveEpisodeCard(
             // Episode thumbnail (16:9 aspect ratio)
             val thumbnailUrl = getImageUrl(episode)
             Surface(
-                shape = RoundedCornerShape(8.dp),
+                shape = MaterialTheme.shapes.small,
                 modifier = Modifier.size(width = 140.dp, height = 79.dp),
             ) {
                 if (thumbnailUrl != null) {

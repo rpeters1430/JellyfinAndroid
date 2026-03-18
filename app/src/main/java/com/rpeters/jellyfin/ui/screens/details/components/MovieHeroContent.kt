@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.ButtonDefaults
@@ -112,7 +111,7 @@ fun MovieHeroContent(
             // Official Rating
             movie.officialRating?.let { rating ->
                 Surface(
-                    shape = RoundedCornerShape(4.dp),
+                    shape = MaterialTheme.shapes.extraSmall,
                     color = getOfficialRatingColor(rating).copy(alpha = 0.2f),
                     modifier = Modifier,
                 ) {
@@ -167,7 +166,7 @@ fun ActionButton(
     TextButton(
         onClick = onClick,
         modifier = modifier.height(56.dp),
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         colors = ButtonDefaults.textButtonColors(
             containerColor = containerColor,
             contentColor = contentColor,

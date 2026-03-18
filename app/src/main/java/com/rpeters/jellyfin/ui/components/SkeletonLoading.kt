@@ -59,7 +59,7 @@ fun SkeletonMovieCard(
     Card(
         modifier = modifier.width(160.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
     ) {
         Column(
             modifier = Modifier.padding(8.dp),
@@ -105,7 +105,7 @@ fun SkeletonTVShowCard(
     Card(
         modifier = modifier.width(160.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
     ) {
         Column(
             modifier = Modifier.padding(8.dp),

@@ -500,7 +500,7 @@ private fun ImmersiveHomeVideoTechnicalDetails(
                     )
                     Surface(
                         color = color,
-                        shape = RoundedCornerShape(8.dp),
+                        shape = MaterialTheme.shapes.small,
                     ) {
                         Text(
                             text = label,

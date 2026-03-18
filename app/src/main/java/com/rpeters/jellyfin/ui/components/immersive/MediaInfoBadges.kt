@@ -67,7 +67,7 @@ fun QualityBadge(
 
     Surface(
         modifier = modifier.scale(scale),
-        shape = RoundedCornerShape(8.dp),
+        shape = MaterialTheme.shapes.small,
         color = Color.Transparent,
     ) {
         Box(
@@ -114,7 +114,7 @@ fun HdrBadge(
 ) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(8.dp),
+        shape = MaterialTheme.shapes.small,
         color = Color.Transparent,
     ) {
         Box(
@@ -162,7 +162,7 @@ fun AtmosBadge(
 ) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(8.dp),
+        shape = MaterialTheme.shapes.small,
         color = Color.Transparent,
     ) {
         Box(
@@ -268,7 +268,7 @@ fun MediaInfoCard(
 
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = containerColor,
         ),
@@ -284,7 +284,7 @@ fun MediaInfoCard(
         ) {
             // Icon container with elevation
             Surface(
-                shape = RoundedCornerShape(12.dp),
+                shape = MaterialTheme.shapes.medium,
                 color = iconChipColor,
                 tonalElevation = if (isDarkTheme) 4.dp else 0.dp,
                 modifier = Modifier
@@ -296,7 +296,7 @@ fun MediaInfoCard(
                             Modifier.border(
                                 width = 1.dp,
                                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-                                shape = RoundedCornerShape(12.dp),
+                                shape = MaterialTheme.shapes.medium,
                             )
                         },
                     ),
