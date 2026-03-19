@@ -17,19 +17,19 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.OptInAppExperimentalApis
@@ -39,14 +39,14 @@ import com.rpeters.jellyfin.ui.components.tv.TvContentCard
 import com.rpeters.jellyfin.ui.components.tv.TvEmptyState
 import com.rpeters.jellyfin.ui.components.tv.TvFullScreenLoading
 import com.rpeters.jellyfin.ui.components.tv.TvImmersiveBackground
+import com.rpeters.jellyfin.ui.screens.LibraryType
 import com.rpeters.jellyfin.ui.tv.TvFocusableGrid
 import com.rpeters.jellyfin.ui.tv.TvScreenFocusScope
 import com.rpeters.jellyfin.ui.tv.rememberTvFocusManager
 import com.rpeters.jellyfin.ui.tv.tvKeyboardHandler
-import com.rpeters.jellyfin.ui.screens.LibraryType
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
-import kotlin.math.min
 import org.jellyfin.sdk.model.api.CollectionType
+import kotlin.math.min
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text as TvText
 
@@ -71,13 +71,13 @@ fun TvLibraryScreen(
     val appState by viewModel.appState.collectAsState()
     val library = appState.libraries.firstOrNull { it.id.toString() == libraryId }
         ?: when (libraryId) {
-            "movies"     -> appState.libraries.firstOrNull {
+            "movies" -> appState.libraries.firstOrNull {
                 it.collectionType == CollectionType.MOVIES
             }
-            "tvshows"    -> appState.libraries.firstOrNull {
+            "tvshows" -> appState.libraries.firstOrNull {
                 it.collectionType == CollectionType.TVSHOWS
             }
-            "music"      -> appState.libraries.firstOrNull {
+            "music" -> appState.libraries.firstOrNull {
                 it.collectionType == CollectionType.MUSIC
             }
             "homevideos" -> appState.libraries.firstOrNull {
@@ -86,7 +86,7 @@ fun TvLibraryScreen(
             } ?: appState.libraries.firstOrNull { it.collectionType == null }
             else -> null
         }
-    
+
     var focusedBackdrop by remember { mutableStateOf<String?>(null) }
 
     // Ensure libraries are loaded first
@@ -162,12 +162,12 @@ fun TvLibraryScreen(
             ) {
                 TvText(
                     text = library?.name ?: when (libraryId) {
-                        "movies"    -> "Movies"
-                        "tvshows"   -> "TV Shows"
-                        "music"     -> "Music"
+                        "movies" -> "Movies"
+                        "tvshows" -> "TV Shows"
+                        "music" -> "Music"
                         "homevideos" -> "Stuff"
                         "favorites" -> "Favorites"
-                        else        -> "Library"
+                        else -> "Library"
                     },
                     style = TvMaterialTheme.typography.displaySmall,
                     color = Color.White,
@@ -178,7 +178,7 @@ fun TvLibraryScreen(
                         } else {
                             false
                         }
-                    }
+                    },
                 )
 
                 if (isLibraryLoading && items.isEmpty()) {
@@ -227,7 +227,7 @@ fun TvLibraryScreen(
                             if (isFocused && index in items.indices) {
                                 focusedBackdrop = viewModel.getBackdropUrl(items[index])
                             }
-                        }
+                        },
                     ) { focusModifier, wrapperFocusedIndex, itemFocusRequesters ->
                         LazyVerticalGrid(
                             columns = GridCells.Fixed(columns),

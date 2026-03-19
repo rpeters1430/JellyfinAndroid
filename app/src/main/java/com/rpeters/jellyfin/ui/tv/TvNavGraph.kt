@@ -19,11 +19,11 @@ import androidx.navigation.navArgument
 import com.rpeters.jellyfin.ui.player.tv.TvAudioPlayerScreen
 import com.rpeters.jellyfin.ui.player.tv.TvVideoPlayerRoute
 import com.rpeters.jellyfin.ui.screens.tv.TvHomeScreen
-import com.rpeters.jellyfin.ui.screens.tv.TvServerConnectionScreen
 import com.rpeters.jellyfin.ui.screens.tv.TvItemDetailScreen
 import com.rpeters.jellyfin.ui.screens.tv.TvLibraryScreen
 import com.rpeters.jellyfin.ui.screens.tv.TvQuickConnectScreen
 import com.rpeters.jellyfin.ui.screens.tv.TvSearchScreen
+import com.rpeters.jellyfin.ui.screens.tv.TvServerConnectionScreen
 import com.rpeters.jellyfin.ui.screens.tv.TvSettingsScreen
 import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
 
@@ -54,7 +54,6 @@ private object TvRoutes {
 
 private fun libraryScreenKey(libraryId: String?): String =
     libraryId?.let { "tv_library_$it" } ?: "tv_library_all"
-
 
 @Composable
 fun TvNavGraph(
