@@ -313,8 +313,11 @@ fun VideoPlayerScreen(
                 onPlaybackSpeedChange = onPlaybackSpeedChange,
                 onBackClick = onClose,
                 onPictureInPictureClick = onPictureInPictureClick,
+                onPlayNextEpisode = onPlayNextEpisode,
                 supportsPip = supportsPip,
                 isVisible = controlsVisible,
+                overlayContent = playerColors.overlayContent,
+                overlayScrim = playerColors.overlayScrim,
             )
         }
 

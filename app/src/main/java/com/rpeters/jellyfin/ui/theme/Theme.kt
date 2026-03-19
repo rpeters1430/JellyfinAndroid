@@ -107,7 +107,6 @@ fun JellyfinAndroidTheme(
 
     MaterialTheme(
         colorScheme = tunedColorScheme,
-        motionScheme = MotionTokens.expressiveMotionScheme,
         typography = Typography,
         shapes = JellyfinShapes,
         content = content,

@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.data.paging
 
 import androidx.paging.PagingSource
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
+import com.rpeters.jellyfin.data.repository.LibraryItemsResult
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
@@ -57,7 +58,7 @@ class LibraryItemPagingSourceTest {
                 startIndex = 0,
                 limit = 20,
             )
-        } returns ApiResult.Success(mockItems)
+        } returns ApiResult.Success(LibraryItemsResult(mockItems, mockItems.size))
 
         // When
         val result = pagingSource.load(
@@ -124,7 +125,7 @@ class LibraryItemPagingSourceTest {
                 startIndex = 20, // Second page
                 limit = 20,
             )
-        } returns ApiResult.Success(mockItems)
+        } returns ApiResult.Success(LibraryItemsResult(mockItems, 40))
 
         // When
         val result = pagingSource.load(
@@ -161,7 +162,7 @@ class LibraryItemPagingSourceTest {
                 startIndex = 0,
                 limit = 20,
             )
-        } returns ApiResult.Success(mockItems)
+        } returns ApiResult.Success(LibraryItemsResult(mockItems, mockItems.size))
 
         // When
         val result = pagingSource.load(
@@ -190,7 +191,7 @@ class LibraryItemPagingSourceTest {
                 startIndex = 0,
                 limit = 20,
             )
-        } returns ApiResult.Success(emptyList())
+        } returns ApiResult.Success(LibraryItemsResult(emptyList(), 0))
 
         // When
         val result = pagingSource.load(
@@ -227,7 +228,7 @@ class LibraryItemPagingSourceTest {
                 startIndex = 0, // First page before current
                 limit = 20,
             )
-        } returns ApiResult.Success(mockItems)
+        } returns ApiResult.Success(LibraryItemsResult(mockItems, mockItems.size))
 
         // When
         val result = pagingSource.load(
@@ -297,7 +298,7 @@ class LibraryItemPagingSourceTest {
                 startIndex = 0,
                 limit = 20,
             )
-        } returns ApiResult.Success(mockItems)
+        } returns ApiResult.Success(LibraryItemsResult(mockItems, 0))
 
         // When
         pagingSourceWithMusicTypes.load(

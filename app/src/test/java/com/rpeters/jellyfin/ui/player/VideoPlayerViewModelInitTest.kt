@@ -2,8 +2,7 @@ package com.rpeters.jellyfin.ui.player
 
 import android.content.Context
 import androidx.media3.common.util.UnstableApi
-import com.rpeters.jellyfin.data.offline.OfflinePlaybackManager
-import com.rpeters.jellyfin.data.playback.EnhancedPlaybackManager
+import com.rpeters.jellyfin.data.playback.AdaptiveBitrateMonitor
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.ui.player.cast.CastState
 import io.mockk.every
@@ -26,10 +25,6 @@ import org.junit.Test
 
 /**
  * Test for VideoPlayerViewModel initialization race condition fix.
- *
- * This test validates that _playerState is initialized before the init block
- * can call handleCastState(), preventing the NullPointerException that occurred
- * when CastManager emitted a state immediately (e.g., existing Cast session).
  */
 @OptIn(ExperimentalCoroutinesApi::class, UnstableApi::class)
 class VideoPlayerViewModelInitTest {
@@ -38,16 +33,17 @@ class VideoPlayerViewModelInitTest {
 
     private lateinit var mockContext: Context
     private lateinit var mockRepository: JellyfinRepository
-    private lateinit var mockCastManager: CastManager
+    private lateinit var mockStateManager: VideoPlayerStateManager
+    private lateinit var mockPlaybackManager: VideoPlayerPlaybackManager
+    private lateinit var mockTrackManager: VideoPlayerTrackManager
+    private lateinit var mockVideoPlayerCastManager: VideoPlayerCastManager
+    private lateinit var mockMetadataManager: VideoPlayerMetadataManager
     private lateinit var mockPlaybackProgressManager: PlaybackProgressManager
-    private lateinit var mockEnhancedPlaybackManager: EnhancedPlaybackManager
-    private lateinit var mockAdaptiveBitrateMonitor: com.rpeters.jellyfin.data.playback.AdaptiveBitrateMonitor
-    private lateinit var mockAnalyticsHelper: com.rpeters.jellyfin.utils.AnalyticsHelper
-    private lateinit var mockOkHttpClient: okhttp3.OkHttpClient
     private lateinit var mockPlaybackPreferencesRepository: com.rpeters.jellyfin.data.preferences.PlaybackPreferencesRepository
-    private lateinit var mockOfflinePlaybackManager: OfflinePlaybackManager
-    private lateinit var castStateFlow: MutableStateFlow<CastState>
-    private lateinit var playbackProgressFlow: MutableStateFlow<PlaybackProgress>
+    private lateinit var mockAdaptiveBitrateMonitor: AdaptiveBitrateMonitor
+
+    private val playerStateFlow = MutableStateFlow(VideoPlayerState())
+    private val playbackProgressFlow = MutableStateFlow(PlaybackProgress())
 
     @Before
     fun setup() {
@@ -55,33 +51,19 @@ class VideoPlayerViewModelInitTest {
 
         mockContext = mockk(relaxed = true)
         mockRepository = mockk(relaxed = true)
-        mockCastManager = mockk(relaxed = true)
+        mockStateManager = mockk(relaxed = true)
+        mockPlaybackManager = mockk(relaxed = true)
+        mockTrackManager = mockk(relaxed = true)
+        mockVideoPlayerCastManager = mockk(relaxed = true)
+        mockMetadataManager = mockk(relaxed = true)
         mockPlaybackProgressManager = mockk(relaxed = true)
-        mockEnhancedPlaybackManager = mockk(relaxed = true)
-        mockAdaptiveBitrateMonitor = mockk(relaxed = true)
-        mockAnalyticsHelper = mockk(relaxed = true)
-        mockOkHttpClient = mockk(relaxed = true)
         mockPlaybackPreferencesRepository = mockk(relaxed = true)
-        mockOfflinePlaybackManager = mockk(relaxed = true)
+        mockAdaptiveBitrateMonitor = mockk(relaxed = true)
 
-        // Create flows that CastManager and PlaybackProgressManager will expose
-        castStateFlow = MutableStateFlow(CastState())
-        playbackProgressFlow = MutableStateFlow(
-            PlaybackProgress(
-                itemId = "",
-                positionMs = 0L,
-            ),
-        )
-
-        // Mock the flows
-        every { mockCastManager.castState } returns castStateFlow
+        every { mockStateManager.playerState } returns playerStateFlow
         every { mockPlaybackProgressManager.playbackProgress } returns playbackProgressFlow
         every { mockAdaptiveBitrateMonitor.qualityRecommendation } returns MutableStateFlow(null)
         every { mockPlaybackPreferencesRepository.preferences } returns MutableStateFlow(com.rpeters.jellyfin.data.preferences.PlaybackPreferences.DEFAULT)
-        every { mockOfflinePlaybackManager.isOfflinePlaybackAvailable(any()) } returns false
-
-        // Mock initialize method
-        every { mockCastManager.initialize() } returns Unit
     }
 
     @After
@@ -90,108 +72,73 @@ class VideoPlayerViewModelInitTest {
     }
 
     @Test
-    fun `viewModel initializes without NullPointerException when castState emits immediately`() = runTest(testDispatcher) {
-        // Given - CastManager emits an initial state immediately (simulates existing Cast session)
-        val initialCastState = CastState(
-            isInitialized = true,
-            isAvailable = true,
-            isConnected = true,
-            deviceName = "Test Cast Device",
-        )
-
-        // Emit state before ViewModel is created to simulate race condition
-        castStateFlow.value = initialCastState
-
-        // When - ViewModel is constructed (this previously would trigger NPE)
-        val viewModel = VideoPlayerViewModel(
-            context = mockContext,
-            repository = mockRepository,
-            castManager = mockCastManager,
-            playbackProgressManager = mockPlaybackProgressManager,
-            enhancedPlaybackManager = mockEnhancedPlaybackManager,
-            adaptiveBitrateMonitor = mockAdaptiveBitrateMonitor,
-            analytics = mockAnalyticsHelper,
-            okHttpClient = mockOkHttpClient,
-            playbackPreferencesRepository = mockPlaybackPreferencesRepository,
-            offlinePlaybackManager = mockOfflinePlaybackManager,
-        )
-
-        // Allow coroutines to process
-        advanceUntilIdle()
-
-        // Then - ViewModel should be initialized successfully without NPE
-        assertNotNull("playerState should not be null", viewModel.playerState)
-        assertNotNull("playerState value should not be null", viewModel.playerState.value)
-
-        // Verify Cast state was propagated to player state
-        val playerState = viewModel.playerState.value
-        assertNotNull("Player state should contain Cast information", playerState)
-    }
-
-    @Test
-    fun `viewModel initializes correctly with default castState`() = runTest(testDispatcher) {
-        // Given - Default CastState (not connected)
-        // castStateFlow already has default CastState()
-
+    fun `viewModel initializes without NullPointerException`() = runTest(testDispatcher) {
         // When
         val viewModel = VideoPlayerViewModel(
             context = mockContext,
             repository = mockRepository,
-            castManager = mockCastManager,
+            stateManager = mockStateManager,
+            playbackManager = mockPlaybackManager,
+            trackManager = mockTrackManager,
+            castManager = mockVideoPlayerCastManager,
+            metadataManager = mockMetadataManager,
             playbackProgressManager = mockPlaybackProgressManager,
-            enhancedPlaybackManager = mockEnhancedPlaybackManager,
-            adaptiveBitrateMonitor = mockAdaptiveBitrateMonitor,
-            analytics = mockAnalyticsHelper,
-            okHttpClient = mockOkHttpClient,
             playbackPreferencesRepository = mockPlaybackPreferencesRepository,
-            offlinePlaybackManager = mockOfflinePlaybackManager,
+            adaptiveBitrateMonitor = mockAdaptiveBitrateMonitor,
         )
 
         advanceUntilIdle()
 
         // Then
         assertNotNull(viewModel.playerState)
-        val playerState = viewModel.playerState.value
-        assertNotNull(playerState)
-
-        // Default state should not be casting
-        assertFalse("Should not be casting initially", playerState.isCasting)
-        assertFalse("Should not be connected to Cast initially", playerState.isCastConnected)
     }
 
     @Test
-    fun `viewModel handles castState updates after initialization`() = runTest(testDispatcher) {
+    fun `viewModel reflect initial state`() = runTest(testDispatcher) {
+        // When
+        val viewModel = VideoPlayerViewModel(
+            context = mockContext,
+            repository = mockRepository,
+            stateManager = mockStateManager,
+            playbackManager = mockPlaybackManager,
+            trackManager = mockTrackManager,
+            castManager = mockVideoPlayerCastManager,
+            metadataManager = mockMetadataManager,
+            playbackProgressManager = mockPlaybackProgressManager,
+            playbackPreferencesRepository = mockPlaybackPreferencesRepository,
+            adaptiveBitrateMonitor = mockAdaptiveBitrateMonitor,
+        )
+
+        advanceUntilIdle()
+
+        // Then
+        assertEquals(playerStateFlow.value, viewModel.playerState.value)
+    }
+
+    @Test
+    fun `viewModel handles state updates`() = runTest(testDispatcher) {
         // Given
         val viewModel = VideoPlayerViewModel(
             context = mockContext,
             repository = mockRepository,
-            castManager = mockCastManager,
+            stateManager = mockStateManager,
+            playbackManager = mockPlaybackManager,
+            trackManager = mockTrackManager,
+            castManager = mockVideoPlayerCastManager,
+            metadataManager = mockMetadataManager,
             playbackProgressManager = mockPlaybackProgressManager,
-            enhancedPlaybackManager = mockEnhancedPlaybackManager,
-            adaptiveBitrateMonitor = mockAdaptiveBitrateMonitor,
-            analytics = mockAnalyticsHelper,
-            okHttpClient = mockOkHttpClient,
             playbackPreferencesRepository = mockPlaybackPreferencesRepository,
-            offlinePlaybackManager = mockOfflinePlaybackManager,
+            adaptiveBitrateMonitor = mockAdaptiveBitrateMonitor,
         )
 
         advanceUntilIdle()
 
-        // When - CastState is updated after initialization
-        castStateFlow.value = CastState(
-            isInitialized = true,
-            isAvailable = true,
-            isConnected = true,
-            deviceName = "New Cast Device",
-            isCasting = true,
-        )
-
+        // When
+        val newState = VideoPlayerState(itemId = "test-item", isPlaying = true)
+        playerStateFlow.value = newState
         advanceUntilIdle()
 
-        // Then - Player state should reflect the update
-        val playerState = viewModel.playerState.value
-        assertTrue("Cast should be available", playerState.isCastAvailable)
-        assertTrue("Cast should be connected", playerState.isCastConnected)
-        assertEquals("Device name should match", "New Cast Device", playerState.castDeviceName)
+        // Then
+        assertEquals(newState, viewModel.playerState.value)
     }
 }

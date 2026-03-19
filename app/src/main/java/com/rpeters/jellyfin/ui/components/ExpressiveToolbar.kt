@@ -1,5 +1,3 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
-
 package com.rpeters.jellyfin.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
@@ -19,12 +17,11 @@ import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Queue
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingToolbarDefaults
-import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -39,10 +36,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 
-/**
- * Material 3 Expressive Floating Toolbar
- * Perfect for media player controls and contextual actions
- */
 @Composable
 fun ExpressiveFloatingToolbar(
     isVisible: Boolean,
@@ -62,25 +55,28 @@ fun ExpressiveFloatingToolbar(
 ) {
     AnimatedVisibility(
         visible = isVisible,
-        enter = slideInVertically(
-            initialOffsetY = { it },
-        ) + fadeIn(),
-        exit = slideOutVertically(
-            targetOffsetY = { it },
-        ) + fadeOut(),
+        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
         modifier = modifier,
     ) {
-        HorizontalFloatingToolbar(
-            expanded = true,
+        Surface(
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+            tonalElevation = 6.dp,
             modifier = Modifier.padding(16.dp),
-            colors = FloatingToolbarDefaults.standardFloatingToolbarColors(),
-            floatingActionButton = {
-                FloatingToolbarDefaults.StandardFloatingActionButton(
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                FloatingActionButton(
                     onClick = when (primaryAction) {
                         ToolbarAction.PLAY -> onPlayClick
                         ToolbarAction.DOWNLOAD -> onDownloadClick
                         ToolbarAction.FAVORITE -> onFavoriteClick
                     },
+                    modifier = Modifier.size(56.dp),
                 ) {
                     Icon(
                         imageVector = when (primaryAction) {
@@ -88,19 +84,10 @@ fun ExpressiveFloatingToolbar(
                             ToolbarAction.DOWNLOAD -> Icons.Default.Download
                             ToolbarAction.FAVORITE -> Icons.Default.Favorite
                         },
-                        contentDescription = when (primaryAction) {
-                            ToolbarAction.PLAY -> "Play"
-                            ToolbarAction.DOWNLOAD -> "Download"
-                            ToolbarAction.FAVORITE -> "Favorite"
-                        },
+                        contentDescription = null,
                     )
                 }
-            },
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+
                 if (showQueueAction) {
                     ExpressiveToolbarButton(
                         icon = Icons.Default.Queue,
@@ -108,7 +95,6 @@ fun ExpressiveFloatingToolbar(
                         onClick = onQueueClick,
                     )
                 }
-
                 if (showCastAction) {
                     ExpressiveToolbarButton(
                         icon = Icons.Default.Cast,
@@ -116,7 +102,6 @@ fun ExpressiveFloatingToolbar(
                         onClick = onCastClick,
                     )
                 }
-
                 if (showShareAction) {
                     ExpressiveToolbarButton(
                         icon = Icons.Default.Share,
@@ -124,7 +109,6 @@ fun ExpressiveFloatingToolbar(
                         onClick = onShareClick,
                     )
                 }
-
                 if (showMoreAction) {
                     ExpressiveToolbarButton(
                         icon = Icons.Default.MoreVert,
@@ -137,9 +121,6 @@ fun ExpressiveFloatingToolbar(
     }
 }
 
-/**
- * Compact floating toolbar for minimal contexts
- */
 @Composable
 fun ExpressiveCompactToolbar(
     isVisible: Boolean,
@@ -148,26 +129,29 @@ fun ExpressiveCompactToolbar(
 ) {
     AnimatedVisibility(
         visible = isVisible,
-        enter = slideInVertically(
-            initialOffsetY = { it },
-        ) + fadeIn(),
-        exit = slideOutVertically(
-            targetOffsetY = { it },
-        ) + fadeOut(),
+        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
         modifier = modifier,
     ) {
-        HorizontalFloatingToolbar(
-            expanded = true,
+        Surface(
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+            tonalElevation = 6.dp,
             modifier = Modifier.padding(16.dp),
-            colors = FloatingToolbarDefaults.standardFloatingToolbarColors(),
         ) {
-            actions.forEach { action ->
-                ExpressiveToolbarButton(
-                    icon = action.icon,
-                    contentDescription = action.contentDescription,
-                    onClick = action.onClick,
-                    isActive = action.isActive,
-                )
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                actions.forEach { action ->
+                    ExpressiveToolbarButton(
+                        icon = action.icon,
+                        contentDescription = action.contentDescription,
+                        onClick = action.onClick,
+                        isActive = action.isActive,
+                    )
+                }
             }
         }
     }
@@ -188,19 +172,12 @@ private fun ExpressiveToolbarButton(
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
-            tint = if (isActive) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.onSurface
-            },
+            tint = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.size(20.dp),
         )
     }
 }
 
-/**
- * Video player expressive toolbar
- */
 @Composable
 fun ExpressiveVideoToolbar(
     isVisible: Boolean,
@@ -214,12 +191,8 @@ fun ExpressiveVideoToolbar(
 ) {
     AnimatedVisibility(
         visible = isVisible,
-        enter = slideInVertically(
-            initialOffsetY = { it },
-        ) + fadeIn(),
-        exit = slideOutVertically(
-            targetOffsetY = { it },
-        ) + fadeOut(),
+        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
         modifier = modifier,
     ) {
         Box(
@@ -231,8 +204,6 @@ fun ExpressiveVideoToolbar(
                             Color.Transparent,
                             MaterialTheme.colorScheme.scrim.copy(alpha = 0.8f),
                         ),
-                        startY = 0f,
-                        endY = 200f,
                     ),
                 ),
         ) {
@@ -241,10 +212,7 @@ fun ExpressiveVideoToolbar(
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .padding(16.dp)
-                    .shadow(
-                        elevation = 8.dp,
-                        shape = MaterialTheme.shapes.extraLarge,
-                    ),
+                    .shadow(8.dp, MaterialTheme.shapes.extraLarge),
                 shape = MaterialTheme.shapes.extraLarge,
                 color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.6f),
             ) {
@@ -255,46 +223,27 @@ fun ExpressiveVideoToolbar(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    // Skip Previous
-                    SmallFloatingActionButton(
-                        onClick = onSkipPreviousClick,
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f),
-                        contentColor = MaterialTheme.colorScheme.onSurface,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow, // Replace with skip previous
-                            contentDescription = "Skip Previous",
-                        )
+                    SmallFloatingActionButton(onClick = onSkipPreviousClick) {
+                        Icon(Icons.Default.Queue, contentDescription = "Skip Previous")
                     }
-
-                    // Play/Pause (larger)
                     FloatingActionButton(
                         onClick = onPlayPauseClick,
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(64.dp),
                     ) {
                         Icon(
-                            imageVector = if (isPlaying) {
-                                Icons.Default.PlayArrow // Replace with pause icon
-                            } else {
-                                Icons.Default.PlayArrow
-                            },
+                            imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                             contentDescription = if (isPlaying) "Pause" else "Play",
                             modifier = Modifier.size(32.dp),
                         )
                     }
-
-                    // Skip Next
-                    SmallFloatingActionButton(
-                        onClick = onSkipNextClick,
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f),
-                        contentColor = MaterialTheme.colorScheme.onSurface,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow, // Replace with skip next
-                            contentDescription = "Skip Next",
-                        )
+                    SmallFloatingActionButton(onClick = onSkipNextClick) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Skip Next")
+                    }
+                    IconButton(onClick = onCastClick) {
+                        Icon(Icons.Default.Cast, contentDescription = "Cast")
+                    }
+                    IconButton(onClick = onPictureInPictureClick) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Picture in picture")
                     }
                 }
             }

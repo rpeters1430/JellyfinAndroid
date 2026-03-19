@@ -9,6 +9,7 @@ import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinSearchRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import com.rpeters.jellyfin.data.repository.JellyfinUserRepository
+import com.rpeters.jellyfin.data.repository.LibraryItemsResult
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.ui.player.CastManager
 import com.rpeters.jellyfin.ui.screens.LibraryType
@@ -40,20 +41,6 @@ import java.util.UUID
 
 /**
  * Tests for MainAppViewModel's loadLibraryTypeData method.
- *
- * This test demonstrates proper handling of:
- * 1. Test dispatcher configuration using DispatcherProvider pattern
- * 2. Repository mocking with default parameters using any() matchers
- * 3. StateFlow observation and assertion in tests
- * 4. Coroutine execution control with advanceUntilIdle()
- * 5. Flow property mocking using coEvery
- *
- * Key Learnings:
- * - Use StandardTestDispatcher with TestDispatcherProvider to control ALL dispatchers (Main, IO, etc.)
- * - Inject TestDispatcherProvider into ViewModel to make withContext(Dispatchers.IO) testable
- * - Use every() for properties (not coEvery), use coEvery only for suspend functions
- * - Use any() matchers for default parameters in repository method mocks
- * - Always call advanceUntilIdle() after triggering async ViewModel operations
  */
 @OptIn(ExperimentalCoroutinesApi::class, androidx.media3.common.util.UnstableApi::class)
 class MainAppViewModelLibraryLoadTest {
@@ -92,8 +79,6 @@ class MainAppViewModelLibraryLoadTest {
 
     private lateinit var viewModel: MainAppViewModel
 
-    // Use StandardTestDispatcher for deterministic coroutine execution
-    // This controls ALL coroutines including those using withContext(Dispatchers.IO)
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var testDispatchers: TestDispatcherProvider
 
@@ -101,27 +86,18 @@ class MainAppViewModelLibraryLoadTest {
     fun setup() {
         MockKAnnotations.init(this, relaxUnitFun = true)
 
-        // CRITICAL: Set test dispatcher for Main
-        // MainAppViewModel uses viewModelScope which delegates to Main dispatcher
         Dispatchers.setMain(testDispatcher)
 
-        // Create TestDispatcherProvider that uses the same dispatcher for all contexts
-        // This ensures withContext(Dispatchers.IO) uses our test dispatcher
         testDispatchers = TestDispatcherProvider(testDispatcher)
 
-        // Mock the JellyfinRepository as relaxed
         repository = mockk(relaxed = true)
 
-        // Mock Flow properties that repository delegates to
-        // Use every() for properties, not coEvery()
         every { repository.currentServer } returns MutableStateFlow(null)
         every { repository.isConnected } returns MutableStateFlow(false)
 
-        // Mock authentication to always succeed
         every { authRepository.isTokenExpired() } returns false
         coEvery { authRepository.reAuthenticate() } returns true
 
-        // Create ViewModel with TestDispatcherProvider injected
         viewModel = MainAppViewModel(
             context = context,
             repository = repository,
@@ -164,13 +140,10 @@ class MainAppViewModelLibraryLoadTest {
             type = BaseItemKind.MOVIE,
         )
 
-        // Pre-populate the ViewModel state with libraries using the test helper
         viewModel.setAppStateForTest(
             MainAppState(libraries = listOf(library)),
         )
 
-        // Mock getLibraryItems to return movies
-        // IMPORTANT: Use any() for parameters with defaults (startIndex, limit)
         coEvery {
             mediaRepository.getLibraryItems(
                 parentId = libraryId.toString(),
@@ -179,32 +152,27 @@ class MainAppViewModelLibraryLoadTest {
                 limit = any(),
                 collectionType = "movies",
             )
-        } returns ApiResult.Success(listOf(movie1, movie2))
+        } returns ApiResult.Success(LibraryItemsResult(listOf(movie1, movie2), 2))
 
         // Act
         viewModel.loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = false)
 
-        // CRITICAL: Must advance dispatcher to execute all pending coroutines
         advanceUntilIdle()
 
         // Assert
         val state = viewModel.appState.value
 
-        // Verify library items were loaded
         val items = state.itemsByLibrary[libraryId.toString()]
         assertNotNull("Items should be loaded for library $libraryId", items)
         assertEquals(2, items!!.size)
         assertEquals("Test Movie 1", items[0].name)
         assertEquals("Test Movie 2", items[1].name)
 
-        // Verify loading state is cleared
         assertFalse(state.isLoading)
         assertFalse(state.isLoadingMovies)
 
-        // Verify getUserLibraries was NOT called (libraries already in state)
         coVerify(exactly = 0) { mediaRepository.getUserLibraries(any()) }
 
-        // Verify getLibraryItems was called exactly once
         coVerify(exactly = 1) {
             mediaRepository.getLibraryItems(
                 parentId = libraryId.toString(),
@@ -232,12 +200,10 @@ class MainAppViewModelLibraryLoadTest {
             type = BaseItemKind.SERIES,
         )
 
-        // Pre-populate state
         viewModel.setAppStateForTest(
             MainAppState(libraries = listOf(library)),
         )
 
-        // Mock getLibraryItems to return series
         coEvery {
             mediaRepository.getLibraryItems(
                 parentId = libraryId.toString(),
@@ -246,7 +212,7 @@ class MainAppViewModelLibraryLoadTest {
                 limit = any(),
                 collectionType = "tvshows",
             )
-        } returns ApiResult.Success(listOf(series))
+        } returns ApiResult.Success(LibraryItemsResult(listOf(series), 1))
 
         // Act
         viewModel.loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh = false)
@@ -260,11 +226,9 @@ class MainAppViewModelLibraryLoadTest {
         assertEquals("Test Series", items[0].name)
         assertEquals(BaseItemKind.SERIES, items[0].type)
 
-        // Verify loading states
         assertFalse(state.isLoading)
         assertFalse(state.isLoadingTVShows)
 
-        // Verify correct itemTypes was used
         coVerify(exactly = 1) {
             mediaRepository.getLibraryItems(
                 parentId = libraryId.toString(),
@@ -314,11 +278,9 @@ class MainAppViewModelLibraryLoadTest {
             state.errorMessage?.contains("Network error") == true,
         )
 
-        // Verify loading stopped
         assertFalse(state.isLoading)
         assertFalse(state.isLoadingMovies)
 
-        // Verify no items were loaded
         assertTrue(
             "No items should be loaded on error",
             state.itemsByLibrary[libraryId.toString()]?.isEmpty() != false,
@@ -340,7 +302,6 @@ class MainAppViewModelLibraryLoadTest {
             MainAppState(libraries = listOf(library)),
         )
 
-        // Return exactly 100 items to simulate hasMore = true
         val movies = (1..100).map { index ->
             BaseItemDto(
                 id = UUID.randomUUID(),
@@ -357,7 +318,7 @@ class MainAppViewModelLibraryLoadTest {
                 limit = any(),
                 collectionType = "movies",
             )
-        } returns ApiResult.Success(movies)
+        } returns ApiResult.Success(LibraryItemsResult(movies, 100))
 
         // Act
         viewModel.loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = false)
@@ -367,7 +328,7 @@ class MainAppViewModelLibraryLoadTest {
         val state = viewModel.appState.value
         val paginationState = state.libraryPaginationState[libraryId.toString()]
         assertNotNull("Pagination state should exist", paginationState)
-        assertEquals(100, paginationState!!.loadedCount)
+        assertEquals(100, paginationState!!.nextStartIndex)
         assertTrue(
             "hasMore should be true when exactly 100 items returned",
             paginationState.hasMore,
@@ -398,7 +359,6 @@ class MainAppViewModelLibraryLoadTest {
         val state = viewModel.appState.value
         assertEquals("No items should be in itemsByLibrary", 0, state.itemsByLibrary.size)
 
-        // getLibraryItems should not be called since no matching library exists
         coVerify(exactly = 0) {
             mediaRepository.getLibraryItems(
                 parentId = any(),
@@ -442,7 +402,6 @@ class MainAppViewModelLibraryLoadTest {
             type = BaseItemKind.MOVIE,
         )
 
-        // Pre-populate with both library AND existing items
         viewModel.setAppStateForTest(
             MainAppState(
                 libraries = listOf(library),
@@ -454,7 +413,6 @@ class MainAppViewModelLibraryLoadTest {
         viewModel.loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = false)
         advanceUntilIdle()
 
-        // Assert - getLibraryItems should NOT be called since data is already present
         coVerify(exactly = 0) {
             mediaRepository.getLibraryItems(
                 parentId = any(),
@@ -465,7 +423,6 @@ class MainAppViewModelLibraryLoadTest {
             )
         }
 
-        // Existing items should be unchanged
         val state = viewModel.appState.value
         val items = state.itemsByLibrary[libraryId.toString()]
         assertNotNull("Items should still be present", items)
@@ -494,7 +451,6 @@ class MainAppViewModelLibraryLoadTest {
             type = BaseItemKind.MOVIE,
         )
 
-        // Pre-populate with library AND existing items
         viewModel.setAppStateForTest(
             MainAppState(
                 libraries = listOf(library),
@@ -502,7 +458,6 @@ class MainAppViewModelLibraryLoadTest {
             ),
         )
 
-        // Mock API to return a different set of items
         coEvery {
             mediaRepository.getLibraryItems(
                 parentId = libraryId.toString(),
@@ -511,13 +466,12 @@ class MainAppViewModelLibraryLoadTest {
                 limit = any(),
                 collectionType = "movies",
             )
-        } returns ApiResult.Success(listOf(newMovie))
+        } returns ApiResult.Success(LibraryItemsResult(listOf(newMovie), 1))
 
         // Act - call WITH forceRefresh
         viewModel.loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = true)
         advanceUntilIdle()
 
-        // Assert - getLibraryItems should be called even though data exists
         coVerify(exactly = 1) {
             mediaRepository.getLibraryItems(
                 parentId = libraryId.toString(),
@@ -528,7 +482,6 @@ class MainAppViewModelLibraryLoadTest {
             )
         }
 
-        // Items should be updated with new data
         val state = viewModel.appState.value
         val items = state.itemsByLibrary[libraryId.toString()]
         assertEquals(1, items?.size)

@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import com.rpeters.jellyfin.OptInAppExperimentalApis
@@ -49,6 +50,10 @@ fun AudioTrackSelectionDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+        titleContentColor = MaterialTheme.colorScheme.onSurface,
+        textContentColor = MaterialTheme.colorScheme.onSurface,
+        tonalElevation = AlertDialogDefaults.TonalElevation,
         title = { Text(stringResource(id = R.string.select_audio_track)) },
         text = {
             SelectionDialogContent(maxHeight = maxHeight) {
@@ -66,6 +71,7 @@ fun AudioTrackSelectionDialog(
                             Text(
                                 text = track.displayName,
                                 fontWeight = if (track.isSelected) FontWeight.Bold else FontWeight.Normal,
+                                color = MaterialTheme.colorScheme.onSurface,
                             )
                         }
                     }
@@ -73,7 +79,7 @@ fun AudioTrackSelectionDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(id = R.string.close)) }
+            TextButton(onClick = onDismiss) { Text(stringResource(id = R.string.close), color = MaterialTheme.colorScheme.primary) }
         },
     )
 }
@@ -89,6 +95,10 @@ fun QualitySelectionDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+        titleContentColor = MaterialTheme.colorScheme.onSurface,
+        textContentColor = MaterialTheme.colorScheme.onSurface,
+        tonalElevation = AlertDialogDefaults.TonalElevation,
         title = { Text(stringResource(id = R.string.select_quality)) },
         text = {
             SelectionDialogContent(maxHeight = maxHeight) {
@@ -102,6 +112,7 @@ fun QualitySelectionDialog(
                     Text(
                         text = stringResource(id = R.string.quality_auto),
                         fontWeight = if (selectedQuality == null) FontWeight.Bold else FontWeight.Normal,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
 
@@ -120,13 +131,14 @@ fun QualitySelectionDialog(
                         Text(
                             text = quality.label,
                             fontWeight = if (quality == selectedQuality) FontWeight.Bold else FontWeight.Normal,
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                     }
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(id = R.string.close)) }
+            TextButton(onClick = onDismiss) { Text(stringResource(id = R.string.close), color = MaterialTheme.colorScheme.primary) }
         },
     )
 }
@@ -142,6 +154,10 @@ fun SubtitleTrackSelectionDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+        titleContentColor = MaterialTheme.colorScheme.onSurface,
+        textContentColor = MaterialTheme.colorScheme.onSurface,
+        tonalElevation = AlertDialogDefaults.TonalElevation,
         title = { Text(stringResource(id = R.string.subtitles)) },
         text = {
             SelectionDialogContent(maxHeight = maxHeight) {
@@ -155,6 +171,7 @@ fun SubtitleTrackSelectionDialog(
                     Text(
                         text = "Off",
                         fontWeight = if (selectedTrack == null) FontWeight.Bold else FontWeight.Normal,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
 
@@ -173,13 +190,14 @@ fun SubtitleTrackSelectionDialog(
                         Text(
                             text = track.displayName,
                             fontWeight = if (track.isSelected) FontWeight.Bold else FontWeight.Normal,
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                     }
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(id = R.string.close)) }
+            TextButton(onClick = onDismiss) { Text(stringResource(id = R.string.close), color = MaterialTheme.colorScheme.primary) }
         },
     )
 }
@@ -224,8 +242,8 @@ private fun DialogScrollbar(
     val totalContentHeight = maxValue + viewportSize
     val visibleFraction = (viewportSize.toFloat() / totalContentHeight.toFloat()).coerceIn(0.15f, 1f)
     val offsetFraction = (scrollState.value.toFloat() / maxValue.toFloat()).coerceIn(0f, 1f)
-    val trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
-    val thumbColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+    val trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.24f)
+    val thumbColor = MaterialTheme.colorScheme.primary.copy(alpha = 1f)
 
     Box(
         modifier = modifier.drawWithContent {

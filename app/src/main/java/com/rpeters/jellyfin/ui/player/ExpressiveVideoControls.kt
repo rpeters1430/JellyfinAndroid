@@ -1,5 +1,3 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
-
 package com.rpeters.jellyfin.ui.player
 
 import androidx.compose.animation.AnimatedContent
@@ -41,12 +39,12 @@ import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material.icons.filled.Sd
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Speed
-import androidx.compose.material3.CircularWavyProgressIndicator
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -65,6 +63,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -89,8 +88,11 @@ fun ExpressiveVideoControls(
     onPlaybackSpeedChange: (Float) -> Unit,
     onBackClick: () -> Unit,
     onPictureInPictureClick: () -> Unit,
+    onPlayNextEpisode: () -> Unit,
     supportsPip: Boolean,
     isVisible: Boolean,
+    overlayContent: Color = Color.White,
+    overlayScrim: Color = Color.Black.copy(alpha = 0.7f),
     modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
@@ -124,6 +126,8 @@ fun ExpressiveVideoControls(
                     playerState = playerState,
                     onBackClick = onBackClick,
                     onCastClick = onCastClick,
+                    overlayContent = overlayContent,
+                    overlayScrim = overlayScrim,
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
@@ -140,13 +144,16 @@ fun ExpressiveVideoControls(
                     onAspectRatioChange = onAspectRatioChange,
                     onPlaybackSpeedChange = onPlaybackSpeedChange,
                     onPictureInPictureClick = onPictureInPictureClick,
+                    onPlayNextEpisode = onPlayNextEpisode,
                     supportsPip = supportsPip,
+                    overlayContent = overlayContent,
+                    overlayScrim = overlayScrim,
                 )
             }
 
             // Wavy Status Bar at the very bottom (visible when controls are hidden)
             if (!isVisible && playerState.duration > 0) {
-                LinearWavyProgressIndicator(
+                androidx.compose.material3.LinearWavyProgressIndicator(
                     progress = { playerState.currentPosition.toFloat() / playerState.duration.toFloat() },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -169,6 +176,8 @@ private fun ExpressiveTopControls(
     playerState: VideoPlayerState,
     onBackClick: () -> Unit,
     onCastClick: () -> Unit,
+    overlayContent: Color,
+    overlayScrim: Color,
     modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
@@ -204,7 +213,7 @@ private fun ExpressiveTopControls(
                     ) {
                         Text(
                             text = playerState.itemName,
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color = overlayContent,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                             maxLines = 1,
@@ -254,7 +263,7 @@ private fun ExpressiveTopControls(
                                 playerState.transcodingReason?.let { reason ->
                                     Text(
                                         text = "• $reason",
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                        color = overlayContent.copy(alpha = 0.7f),
                                         style = MaterialTheme.typography.labelSmall,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
@@ -264,7 +273,7 @@ private fun ExpressiveTopControls(
                         } else if (playerState.selectedQuality != null) {
                             Text(
                                 text = playerState.selectedQuality.label,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = overlayContent.copy(alpha = 0.85f),
                                 style = MaterialTheme.typography.bodySmall,
                             )
                         }
@@ -284,6 +293,8 @@ private fun ExpressiveTopControls(
                             contentDescription = if (isConnected) "Disconnect from ${playerState.castDeviceName ?: "Cast Device"}" else "Cast to Device",
                             onClick = onCastClick,
                             isActive = isConnected,
+                            contentColor = overlayContent,
+                            containerColor = overlayScrim.copy(alpha = 0.35f),
                         )
                     }
                 }
@@ -305,7 +316,10 @@ private fun ExpressiveBottomControls(
     onAspectRatioChange: (AspectRatioMode) -> Unit,
     onPlaybackSpeedChange: (Float) -> Unit,
     onPictureInPictureClick: () -> Unit,
+    onPlayNextEpisode: () -> Unit,
     supportsPip: Boolean,
+    overlayContent: Color,
+    overlayScrim: Color,
     modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
@@ -323,54 +337,109 @@ private fun ExpressiveBottomControls(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 12.dp),
             ) {
-                // Progress bar row (full width)
-                if (playerState.duration > 0) {
-                    var sliderPosition by remember { mutableFloatStateOf(0f) }
-                    var isDragging by remember { mutableStateOf(false) }
+                val effectiveDuration = playerState.duration.takeIf { it > 0L }
+                var sliderPosition by remember { mutableFloatStateOf(0f) }
+                var isDragging by remember { mutableStateOf(false) }
 
-                    LaunchedEffect(playerState.currentPosition, playerState.duration, isDragging) {
-                        if (playerState.duration > 0 && !isDragging) {
-                            sliderPosition =
-                                playerState.currentPosition.toFloat() / playerState.duration.toFloat()
-                        }
+                LaunchedEffect(playerState.currentPosition, playerState.duration, isDragging) {
+                    if (effectiveDuration != null && !isDragging) {
+                        sliderPosition =
+                            (playerState.currentPosition.toFloat() / effectiveDuration.toFloat()).coerceIn(0f, 1f)
                     }
+                }
 
-                    ExpressiveWavySlider(
-                        progress = sliderPosition,
-                        bufferedProgress = (playerState.bufferedPosition.toFloat() / playerState.duration.toFloat()).coerceIn(0f, 1f),
-                        onValueChange = { progress ->
-                            sliderPosition = progress
-                            isDragging = true
-                        },
-                        onValueChangeFinished = {
-                            val newPosition = (sliderPosition * playerState.duration).toLong()
+                ExpressiveWavySlider(
+                    progress = sliderPosition,
+                    bufferedProgress = if (effectiveDuration != null) {
+                        (playerState.bufferedPosition.toFloat() / effectiveDuration.toFloat()).coerceIn(0f, 1f)
+                    } else {
+                        0f
+                    },
+                    onValueChange = { progress ->
+                        sliderPosition = progress
+                        isDragging = true
+                    },
+                    onValueChangeFinished = {
+                        effectiveDuration?.let { duration ->
+                            val newPosition = (sliderPosition * duration).toLong()
                             onSeek(newPosition)
-                            isDragging = false
-                        },
-                        modifier = Modifier.fillMaxWidth(),
+                        }
+                        isDragging = false
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = formatTime(playerState.currentPosition),
+                        color = overlayContent,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontWeight = FontWeight.Medium,
+                        ),
                     )
 
-                    // Time indicators directly below the progress bar
+                    Text(
+                        text = effectiveDuration?.let(::formatTime) ?: "--:--",
+                        color = overlayContent.copy(alpha = 0.72f),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                val showSkipIntro = remember(playerState.introStartMs, playerState.introEndMs, playerState.currentPosition) {
+                    val start = playerState.introStartMs
+                    val end = playerState.introEndMs
+                    start != null && end != null && playerState.currentPosition in start..end
+                }
+                val showSkipCredits = remember(playerState.outroStartMs, playerState.currentPosition) {
+                    val start = playerState.outroStartMs
+                    start != null && playerState.currentPosition >= start
+                }
+                val showPlayNextEpisode = remember(playerState.nextEpisode, playerState.showNextEpisodeCountdown) {
+                    playerState.nextEpisode != null && !playerState.showNextEpisodeCountdown
+                }
+
+                if (showSkipIntro || showSkipCredits || showPlayNextEpisode) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Text(
-                            text = formatTime(playerState.currentPosition),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                fontWeight = FontWeight.Medium,
-                            ),
-                        )
-
-                        Text(
-                            text = formatTime(playerState.duration),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
+                        if (showSkipIntro) {
+                            PlayerActionChip(
+                                label = "Skip Intro",
+                                onClick = {
+                                    onSeek(playerState.introEndMs ?: (playerState.currentPosition + 10_000))
+                                },
+                                overlayContent = overlayContent,
+                                overlayScrim = overlayScrim,
+                            )
+                        }
+                        if (showSkipCredits) {
+                            PlayerActionChip(
+                                label = "Skip Credits",
+                                onClick = {
+                                    onSeek(playerState.outroEndMs ?: (playerState.currentPosition + 10_000))
+                                },
+                                overlayContent = overlayContent,
+                                overlayScrim = overlayScrim,
+                            )
+                        }
+                        if (showPlayNextEpisode) {
+                            PlayerActionChip(
+                                label = "Play Next Episode",
+                                onClick = onPlayNextEpisode,
+                                overlayContent = overlayContent,
+                                overlayScrim = overlayScrim,
+                                highlighted = true,
+                            )
+                        }
                     }
-
-                    Spacer(modifier = Modifier.height(8.dp))
                 }
 
                 // Play/Pause and action buttons row
@@ -394,6 +463,7 @@ private fun ExpressiveBottomControls(
                                 contentDescription = if (playing) "Pause" else "Play",
                                 onClick = onPlayPause,
                                 isLoading = showPrimaryLoadingUi,
+                                contentColor = overlayContent,
                             )
                         }
 
@@ -402,6 +472,8 @@ private fun ExpressiveBottomControls(
                             icon = Icons.Default.Replay10,
                             contentDescription = "Skip Backward 10s",
                             onClick = { onSeek((playerState.currentPosition - 10000L).coerceAtLeast(0L)) },
+                            contentColor = overlayContent,
+                            containerColor = overlayScrim.copy(alpha = 0.35f),
                         )
 
                         // Skip Forward 10s
@@ -409,6 +481,8 @@ private fun ExpressiveBottomControls(
                             icon = Icons.Default.Forward10,
                             contentDescription = "Skip Forward 10s",
                             onClick = { onSeek((playerState.currentPosition + 10000L).coerceAtMost(playerState.duration)) },
+                            contentColor = overlayContent,
+                            containerColor = overlayScrim.copy(alpha = 0.35f),
                         )
                     }
 
@@ -424,16 +498,19 @@ private fun ExpressiveBottomControls(
                                 icon = Icons.Default.AspectRatio,
                                 contentDescription = "Aspect Ratio",
                                 onClick = { showAspectRatioMenu = true },
+                                contentColor = overlayContent,
+                                containerColor = overlayScrim.copy(alpha = 0.35f),
                             )
 
                             DropdownMenu(
                                 expanded = showAspectRatioMenu,
                                 onDismissRequest = { showAspectRatioMenu = false },
+                                containerColor = overlayScrim.copy(alpha = 0.96f),
                             ) {
                                 Text(
                                     text = "Aspect Ratio",
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.primary,
+                                    color = overlayContent,
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                                 )
                                 playerState.availableAspectRatios.forEach { mode ->
@@ -444,6 +521,8 @@ private fun ExpressiveBottomControls(
                                             onAspectRatioChange(mode)
                                             showAspectRatioMenu = false
                                         },
+                                        textColor = overlayContent,
+                                        selectedColor = MaterialTheme.colorScheme.primary,
                                     )
                                 }
                             }
@@ -456,16 +535,19 @@ private fun ExpressiveBottomControls(
                                 icon = Icons.Default.Speed,
                                 contentDescription = "Playback Speed",
                                 onClick = { showSpeedMenu = true },
+                                contentColor = overlayContent,
+                                containerColor = overlayScrim.copy(alpha = 0.35f),
                             )
 
                             DropdownMenu(
                                 expanded = showSpeedMenu,
                                 onDismissRequest = { showSpeedMenu = false },
+                                containerColor = overlayScrim.copy(alpha = 0.96f),
                             ) {
                                 Text(
                                     text = "Playback Speed",
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.primary,
+                                    color = overlayContent,
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                                 )
                                 listOf(0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f).forEach { speed ->
@@ -476,6 +558,8 @@ private fun ExpressiveBottomControls(
                                             onPlaybackSpeedChange(speed)
                                             showSpeedMenu = false
                                         },
+                                        textColor = overlayContent,
+                                        selectedColor = MaterialTheme.colorScheme.primary,
                                     )
                                 }
                             }
@@ -486,6 +570,8 @@ private fun ExpressiveBottomControls(
                             icon = Icons.Default.MusicNote,
                             contentDescription = "Audio Selection",
                             onClick = onAudioClick,
+                            contentColor = overlayContent,
+                            containerColor = overlayScrim.copy(alpha = 0.35f),
                         )
 
                         // Quality button with dynamic icon based on current quality
@@ -493,6 +579,8 @@ private fun ExpressiveBottomControls(
                             icon = getQualityIcon(playerState.selectedQuality?.label),
                             contentDescription = "Quality",
                             onClick = onQualityClick,
+                            contentColor = overlayContent,
+                            containerColor = overlayScrim.copy(alpha = 0.35f),
                         )
 
                         // Subtitles button
@@ -500,6 +588,8 @@ private fun ExpressiveBottomControls(
                             icon = Icons.Default.ClosedCaption,
                             contentDescription = "Subtitles",
                             onClick = onSubtitlesClick,
+                            contentColor = overlayContent,
+                            containerColor = overlayScrim.copy(alpha = 0.35f),
                         )
 
                         // PiP button
@@ -508,6 +598,8 @@ private fun ExpressiveBottomControls(
                                 icon = Icons.Default.PictureInPictureAlt,
                                 contentDescription = "Picture in Picture",
                                 onClick = onPictureInPictureClick,
+                                contentColor = overlayContent,
+                                containerColor = overlayScrim.copy(alpha = 0.35f),
                             )
                         }
                     }
@@ -515,6 +607,33 @@ private fun ExpressiveBottomControls(
             }
         }
     }
+}
+
+@Composable
+private fun PlayerActionChip(
+    label: String,
+    onClick: () -> Unit,
+    overlayContent: Color,
+    overlayScrim: Color,
+    highlighted: Boolean = false,
+) {
+    AssistChip(
+        onClick = onClick,
+        label = {
+            Text(
+                text = label,
+                color = if (highlighted) MaterialTheme.colorScheme.onPrimary else overlayContent,
+            )
+        },
+        colors = AssistChipDefaults.assistChipColors(
+            containerColor = if (highlighted) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                overlayScrim.copy(alpha = 0.82f)
+            },
+            labelColor = if (highlighted) MaterialTheme.colorScheme.onPrimary else overlayContent,
+        ),
+    )
 }
 
 /**
@@ -527,6 +646,9 @@ private fun ExpressiveWavySlider(
     bufferedProgress: Float,
     onValueChange: (Float) -> Unit,
     onValueChangeFinished: () -> Unit,
+    trackColor: Color = Color.White.copy(alpha = 0.22f),
+    bufferedColor: Color = Color.White.copy(alpha = 0.38f),
+    progressColor: Color = MaterialTheme.colorScheme.primary,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -541,7 +663,7 @@ private fun ExpressiveWavySlider(
                 .fillMaxWidth()
                 .height(4.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f)),
+                .background(trackColor),
         )
 
         // Buffer Indicator
@@ -551,16 +673,16 @@ private fun ExpressiveWavySlider(
                 .height(4.dp)
                 .align(Alignment.CenterStart)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f)),
+                .background(bufferedColor),
         )
 
         // Wavy Progress Track
-        LinearWavyProgressIndicator(
+        androidx.compose.material3.LinearWavyProgressIndicator(
             progress = { progress },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(12.dp),
-            color = MaterialTheme.colorScheme.primary,
+            color = progressColor,
             trackColor = Color.Transparent,
             amplitude = { 0.2f },
             wavelength = 40.dp,
@@ -574,9 +696,9 @@ private fun ExpressiveWavySlider(
             onValueChangeFinished = onValueChangeFinished,
             modifier = Modifier.fillMaxWidth(),
             colors = SliderDefaults.colors(
-                thumbColor = MaterialTheme.colorScheme.primary,
-                activeTrackColor = Color.Transparent,
-                inactiveTrackColor = Color.Transparent,
+                thumbColor = progressColor,
+                activeTrackColor = progressColor.copy(alpha = 0.28f),
+                inactiveTrackColor = trackColor,
             ),
         )
     }
@@ -601,6 +723,8 @@ internal fun ExpressiveIconButton(
     contentDescription: String?,
     onClick: () -> Unit,
     isActive: Boolean = false,
+    contentColor: Color = Color.White,
+    containerColor: Color = Color.Black.copy(alpha = 0.3f),
     modifier: Modifier = Modifier,
 ) {
     val scale by animateFloatAsState(
@@ -619,16 +743,16 @@ internal fun ExpressiveIconButton(
                 onClick = onClick,
             ),
         color = if (isActive) {
-            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
+            lerp(containerColor, MaterialTheme.colorScheme.primary, 0.55f)
         } else {
-            MaterialTheme.colorScheme.surface.copy(alpha = 0.2f)
+            containerColor
         },
         shape = CircleShape,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
-            tint = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+            tint = contentColor,
             modifier = Modifier.padding(12.dp),
         )
     }
@@ -640,6 +764,7 @@ internal fun ExpressivePlayButton(
     contentDescription: String?,
     onClick: () -> Unit,
     isLoading: Boolean = false,
+    contentColor: Color = Color.White,
     modifier: Modifier = Modifier,
 ) {
     val scale by animateFloatAsState(
@@ -655,7 +780,7 @@ internal fun ExpressivePlayButton(
             .scale(scale),
         colors = IconButtonDefaults.filledIconButtonColors(
             containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
+            contentColor = contentColor,
         ),
     ) {
         AnimatedContent(
@@ -663,9 +788,9 @@ internal fun ExpressivePlayButton(
             label = "play_button_content",
         ) { loading ->
             if (loading) {
-                CircularWavyProgressIndicator(
+                androidx.compose.material3.CircularWavyProgressIndicator(
                     modifier = Modifier.size(40.dp),
-                    color = MaterialTheme.colorScheme.onPrimary,
+                    color = contentColor,
                     amplitude = 0.15f,
                     wavelength = 24.dp,
                 )

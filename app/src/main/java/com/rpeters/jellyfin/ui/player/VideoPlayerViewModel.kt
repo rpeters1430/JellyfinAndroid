@@ -190,7 +190,17 @@ class VideoPlayerViewModel @Inject constructor(
             // Get playback info for subtitles
             val playbackInfo = try { repository.getPlaybackInfo(itemId) } catch (_: Exception) { null }
             val subtitles = metadataManager.extractSubtitleSpecs(metadata, playbackInfo)
+            val fallbackSubtitleTracks = metadataManager.extractSubtitleTracks(playbackInfo, subtitleIndex)
             val mediaSourceId = playbackInfo?.mediaSources?.firstOrNull()?.id
+
+            if (fallbackSubtitleTracks.isNotEmpty()) {
+                stateManager.updateState {
+                    it.copy(
+                        availableSubtitleTracks = fallbackSubtitleTracks,
+                        selectedSubtitleTrack = fallbackSubtitleTracks.firstOrNull { track -> track.isSelected },
+                    )
+                }
+            }
 
             // Initialize ExoPlayer if needed, resetting playback state tracking
             // so stale state from a previous session doesn't affect the new player.
@@ -349,7 +359,7 @@ class VideoPlayerViewModel @Inject constructor(
             val audioIndex = track.format.id?.toIntOrNull()
             if (audioIndex != null) {
                 viewModelScope.launch {
-                    val currentPos = player.currentPosition
+                    val currentPos = stateManager.playerState.value.currentPosition
                     playbackManager.releasePlayer()
                     initializePlayer(
                         itemId = stateManager.playerState.value.itemId,
@@ -374,17 +384,23 @@ class VideoPlayerViewModel @Inject constructor(
 
     fun selectSubtitleTrack(track: TrackInfo?) {
         val player = exoPlayer ?: return
-        if (stateManager.playerState.value.isTranscoding && track != null) {
-            val subIndex = track.format.id?.toIntOrNull()
+        if (track != null && (stateManager.playerState.value.isTranscoding || track.groupIndex < 0)) {
+            val subIndex = track.format.id?.toIntOrNull() ?: track.trackIndex.takeIf { it >= 0 }
             if (subIndex != null) {
                 viewModelScope.launch {
-                    val currentPos = player.currentPosition
+                    val currentPos = stateManager.playerState.value.currentPosition
                     playbackManager.releasePlayer()
                     initializePlayer(
                         itemId = stateManager.playerState.value.itemId,
                         itemName = stateManager.playerState.value.itemName,
                         startPosition = currentPos,
                         subtitleIndex = subIndex,
+                    )
+                }
+                stateManager.updateState {
+                    it.copy(
+                        selectedSubtitleTrack = track,
+                        showSubtitleDialog = false,
                     )
                 }
                 return

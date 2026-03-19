@@ -229,6 +229,12 @@ fun ExpressiveSelectableMenuItem(
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
     enabled: Boolean = true,
+    textColor: androidx.compose.ui.graphics.Color = if (selected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    },
+    selectedColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.primary,
 ) {
     DropdownMenuItem(
         text = {
@@ -240,12 +246,13 @@ fun ExpressiveSelectableMenuItem(
                 Text(
                     text = text,
                     style = MaterialTheme.typography.bodyLarge,
+                    color = textColor,
                 )
                 if (selected) {
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = "Selected",
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = selectedColor,
                         modifier = Modifier.size(20.dp),
                     )
                 }
@@ -259,20 +266,18 @@ fun ExpressiveSelectableMenuItem(
                     imageVector = it,
                     contentDescription = null,
                     tint = if (selected) {
-                        MaterialTheme.colorScheme.primary
+                        selectedColor
                     } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
+                        textColor.copy(alpha = 0.72f)
                     },
                 )
             }
         },
         enabled = enabled,
         colors = MenuDefaults.itemColors(
-            textColor = if (selected) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.onSurface
-            },
+            textColor = textColor,
+            leadingIconColor = textColor.copy(alpha = 0.72f),
+            trailingIconColor = selectedColor,
         ),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
     )

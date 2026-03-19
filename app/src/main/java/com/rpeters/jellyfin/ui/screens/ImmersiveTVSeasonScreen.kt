@@ -1,5 +1,4 @@
 @file:OptInAppExperimentalApis
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 
 package com.rpeters.jellyfin.ui.screens
 
@@ -43,7 +42,6 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.Badge
-import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -222,7 +220,7 @@ fun ImmersiveTVSeasonScreen(
                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
             ) {
                 if (state.isLoading) {
-                    CircularWavyProgressIndicator(
+                    androidx.compose.material3.CircularWavyProgressIndicator(
                         modifier = Modifier.padding(12.dp).size(24.dp),
                         color = MaterialTheme.colorScheme.onSurface,
                         trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),

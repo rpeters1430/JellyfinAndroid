@@ -1,14 +1,10 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
-
 package com.rpeters.jellyfin.ui.components
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -50,7 +46,7 @@ fun ExpressiveWavyLinearProgress(
             trackColor = trackColor,
         )
     } else {
-        LinearWavyProgressIndicator(
+        androidx.compose.material3.LinearWavyProgressIndicator(
             progress = { progress.coerceIn(0f, 1f) },
             modifier = modifier,
             color = color,
@@ -82,7 +78,7 @@ fun ExpressiveWavyLinearLoading(
             trackColor = trackColor,
         )
     } else {
-        LinearWavyProgressIndicator(
+        androidx.compose.material3.LinearWavyProgressIndicator(
             modifier = modifier,
             color = color,
             trackColor = trackColor,
@@ -115,7 +111,7 @@ fun ExpressiveWavyCircularProgress(
             trackColor = trackColor,
         )
     } else {
-        CircularWavyProgressIndicator(
+        androidx.compose.material3.CircularWavyProgressIndicator(
             progress = { progress.coerceIn(0f, 1f) },
             modifier = modifier,
             color = color,
@@ -147,7 +143,7 @@ fun ExpressiveWavyCircularLoading(
             trackColor = trackColor,
         )
     } else {
-        CircularWavyProgressIndicator(
+        androidx.compose.material3.CircularWavyProgressIndicator(
             modifier = modifier,
             color = color,
             trackColor = trackColor,

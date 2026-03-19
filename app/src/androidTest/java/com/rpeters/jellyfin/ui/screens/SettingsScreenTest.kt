@@ -48,7 +48,7 @@ class SettingsScreenTest {
     }
 
     @Test
-    fun `pinning management card is shown and actionable`() {
+    fun pinningManagementCardIsShownAndActionable() {
         composeTestRule.setContent {
             JellyfinAndroidTheme {
                 SettingsScreen(

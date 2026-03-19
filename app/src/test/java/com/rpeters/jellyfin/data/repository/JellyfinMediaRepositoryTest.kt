@@ -66,11 +66,7 @@ class JellyfinMediaRepositoryTest {
             },
         )
 
-        val mockResult = mockk<BaseItemDtoQueryResult> {
-            coEvery { items } returns mockLibraries
-        }
-
-        // Mock repository methods via executeWithCache
+        // Mock repository methods
         coEvery {
             repository.getUserLibraries()
         } returns ApiResult.Success(mockLibraries)
@@ -106,7 +102,7 @@ class JellyfinMediaRepositoryTest {
                 startIndex = 0,
                 limit = 100,
             )
-        } returns ApiResult.Success(mockMovies)
+        } returns ApiResult.Success(LibraryItemsResult(mockMovies, 1))
 
         // When
         val result = repository.getLibraryItems(
@@ -117,11 +113,11 @@ class JellyfinMediaRepositoryTest {
         )
 
         // Then
-        assertTrue(result is ApiResult.Success<List<BaseItemDto>>)
-        val successResult = result as ApiResult.Success<List<BaseItemDto>>
-        assertEquals(1, successResult.data.size)
-        assertEquals("Test Movie", successResult.data[0].name)
-        assertEquals(BaseItemKind.MOVIE, successResult.data[0].type)
+        assertTrue(result is ApiResult.Success<LibraryItemsResult>)
+        val successResult = result as ApiResult.Success<LibraryItemsResult>
+        assertEquals(1, successResult.data.items.size)
+        assertEquals("Test Movie", successResult.data.items[0].name)
+        assertEquals(BaseItemKind.MOVIE, successResult.data.items[0].type)
     }
 
     @Test

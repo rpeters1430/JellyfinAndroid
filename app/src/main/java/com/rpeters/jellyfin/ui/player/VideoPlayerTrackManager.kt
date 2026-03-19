@@ -44,8 +44,12 @@ class VideoPlayerTrackManager @Inject constructor(
         stateManager.updateState { it.copy(
             availableAudioTracks = audio,
             selectedAudioTrack = audio.firstOrNull { it.isSelected },
-            availableSubtitleTracks = text,
-            selectedSubtitleTrack = text.firstOrNull { it.isSelected },
+            availableSubtitleTracks = if (text.isNotEmpty()) text else it.availableSubtitleTracks,
+            selectedSubtitleTrack = if (text.isNotEmpty()) {
+                text.firstOrNull { track -> track.isSelected } ?: it.selectedSubtitleTrack
+            } else {
+                it.selectedSubtitleTrack
+            },
             isHdrContent = isHdr
         ) }
 

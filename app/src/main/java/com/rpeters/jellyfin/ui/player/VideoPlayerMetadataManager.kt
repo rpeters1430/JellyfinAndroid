@@ -174,6 +174,39 @@ class VideoPlayerMetadataManager @Inject constructor(
         }
     }
 
+    fun extractSubtitleTracks(
+        playbackInfo: org.jellyfin.sdk.model.api.PlaybackInfoResponse?,
+        selectedSubtitleIndex: Int? = null,
+    ): List<TrackInfo> {
+        val mediaSource = playbackInfo?.mediaSources?.firstOrNull() ?: return emptyList()
+
+        return mediaSource.mediaStreams
+            ?.filter { stream -> stream.type == org.jellyfin.sdk.model.api.MediaStreamType.SUBTITLE }
+            ?.mapNotNull { stream ->
+                val streamIndex = stream.index ?: return@mapNotNull null
+                val language = stream.language ?: "und"
+                val displayTitle = stream.displayTitle ?: stream.title ?: language.uppercase()
+                val format = androidx.media3.common.Format.Builder()
+                    .setId(streamIndex.toString())
+                    .setLanguage(language)
+                    .setLabel(displayTitle)
+                    .build()
+
+                TrackInfo(
+                    groupIndex = -1,
+                    trackIndex = streamIndex,
+                    format = format,
+                    isSelected = if (selectedSubtitleIndex != null) {
+                        selectedSubtitleIndex == streamIndex
+                    } else {
+                        stream.isDefault == true
+                    },
+                    displayName = displayTitle,
+                )
+            }
+            .orEmpty()
+    }
+
     private fun buildServerUrl(serverUrl: String, path: String): String {
         if (path.startsWith("http://") || path.startsWith("https://")) {
             return path

@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dns
@@ -35,7 +34,6 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedSecureTextField
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
@@ -60,6 +58,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -107,21 +106,18 @@ fun ServerConnectionScreen(
 ) {
     var serverUrl by rememberSaveable(savedServerUrl) { mutableStateOf(savedServerUrl) }
     var username by rememberSaveable(savedUsername) { mutableStateOf(savedUsername) }
-    val passwordState = rememberTextFieldState()
+    var password by rememberSaveable { mutableStateOf("") }
 
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
-    val passwordText by remember {
-        derivedStateOf { passwordState.text.toString() }
-    }
     val isServerUrlValid by remember(serverUrl) {
         derivedStateOf { isValidServerUrl(serverUrl) }
     }
-    val canSubmit by remember {
+    val canSubmit by remember(serverUrl, username, password, isServerUrlValid) {
         derivedStateOf {
             isServerUrlValid &&
                 username.isNotBlank() &&
-                passwordText.isNotBlank()
+                password.isNotBlank()
         }
     }
     val showInvalidUrlError by remember(serverUrl, isServerUrlValid) {
@@ -130,7 +126,7 @@ fun ServerConnectionScreen(
     val submitIfValid: () -> Unit = {
         keyboardController?.hide()
         if (canSubmit) {
-            onConnect(serverUrl.trim(), username.trim(), passwordText)
+            onConnect(serverUrl.trim(), username.trim(), password)
         }
     }
 
@@ -214,7 +210,8 @@ fun ServerConnectionScreen(
                 onServerUrlChange = { serverUrl = it },
                 username = username,
                 onUsernameChange = { username = it },
-                passwordState = passwordState,
+                password = password,
+                onPasswordChange = { password = it },
                 rememberLogin = rememberLogin,
                 isConnecting = connectionState.isConnecting,
                 focusRequester = focusRequester,
@@ -495,7 +492,8 @@ private fun LoginFormCard(
     onServerUrlChange: (String) -> Unit,
     username: String,
     onUsernameChange: (String) -> Unit,
-    passwordState: androidx.compose.foundation.text.input.TextFieldState,
+    password: String,
+    onPasswordChange: (String) -> Unit,
     rememberLogin: Boolean,
     isConnecting: Boolean,
     focusRequester: FocusRequester,
@@ -547,21 +545,23 @@ private fun LoginFormCard(
             shape = ShapeTokens.ExtraLarge,
         )
 
-        OutlinedSecureTextField(
-            state = passwordState,
+        OutlinedTextField(
+            value = password,
+            onValueChange = onPasswordChange,
             label = { Text(stringResource(id = R.string.password_label)) },
             leadingIcon = { Icon(Icons.Rounded.Lock, contentDescription = null) },
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Password,
                 imeAction = ImeAction.Done,
             ),
-            onKeyboardAction = { performDefaultAction ->
-                onPasswordSubmit()
-                performDefaultAction()
-            },
+            keyboardActions = KeyboardActions(
+                onDone = { onPasswordSubmit() },
+            ),
+            visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
             enabled = !isConnecting,
             shape = ShapeTokens.ExtraLarge,
+            singleLine = true,
         )
 
         Row(
@@ -578,7 +578,7 @@ private fun LoginFormCard(
             Spacer(modifier = Modifier.width(16.dp))
             Text(
                 stringResource(id = R.string.remember_login),
-                style = MaterialTheme.typography.bodyMediumEmphasized,
+                style = MaterialTheme.typography.bodyMedium,
             )
         }
     }

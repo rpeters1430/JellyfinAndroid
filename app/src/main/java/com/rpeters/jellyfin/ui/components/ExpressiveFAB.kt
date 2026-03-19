@@ -1,5 +1,3 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
-
 package com.rpeters.jellyfin.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
@@ -7,6 +5,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -15,28 +15,22 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Queue
-import androidx.compose.material3.FloatingActionButtonMenu
-import androidx.compose.material3.FloatingActionButtonMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.ToggleFloatingActionButton
-import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 
-/**
- * Material 3 Expressive FAB Menu component
- * Follows the new M3 Expressive FAB Menu pattern from 2024-2025
- */
 @Composable
 fun ExpressiveFABMenu(
     modifier: Modifier = Modifier,
@@ -54,60 +48,65 @@ fun ExpressiveFABMenu(
         exit = scaleOut(MotionTokens.fabMenuCollapse) + fadeOut(),
         modifier = modifier,
     ) {
-        FloatingActionButtonMenu(
-            expanded = isExpanded,
-            button = {
-                ToggleFloatingActionButton(
-                    checked = isExpanded,
-                    onCheckedChange = { isExpanded = it },
-                ) {
-                    Icon(
-                        imageVector = if (checkedProgress > 0.5f) Icons.Default.Close else Icons.Default.Add,
-                        contentDescription = if (isExpanded) "Close menu" else "Open menu",
-                        modifier = Modifier.animateIcon(checkedProgress = { checkedProgress }),
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            AnimatedVisibility(visible = isExpanded, enter = fadeIn(), exit = fadeOut()) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    ExpressiveFabAction(
+                        icon = Icons.Default.PlayArrow,
+                        label = "Play Now",
+                        onClick = {
+                            onPlayClick()
+                            isExpanded = false
+                        },
+                    )
+                    ExpressiveFabAction(
+                        icon = Icons.Default.Queue,
+                        label = "Add to Queue",
+                        onClick = {
+                            onQueueClick()
+                            isExpanded = false
+                        },
+                    )
+                    ExpressiveFabAction(
+                        icon = Icons.Default.Download,
+                        label = "Download",
+                        onClick = {
+                            onDownloadClick()
+                            isExpanded = false
+                        },
+                    )
+                    ExpressiveFabAction(
+                        icon = Icons.Default.Favorite,
+                        label = "Add to Favorites",
+                        onClick = {
+                            onFavoriteClick()
+                            isExpanded = false
+                        },
                     )
                 }
-            },
-        ) {
-            FloatingActionButtonMenuItem(
-                onClick = {
-                    onPlayClick()
-                    isExpanded = false
-                },
-                text = { Text("Play Now") },
-                icon = { Icon(Icons.Default.PlayArrow, contentDescription = null) },
-            )
-            FloatingActionButtonMenuItem(
-                onClick = {
-                    onQueueClick()
-                    isExpanded = false
-                },
-                text = { Text("Add to Queue") },
-                icon = { Icon(Icons.Default.Queue, contentDescription = null) },
-            )
-            FloatingActionButtonMenuItem(
-                onClick = {
-                    onDownloadClick()
-                    isExpanded = false
-                },
-                text = { Text("Download") },
-                icon = { Icon(Icons.Default.Download, contentDescription = null) },
-            )
-            FloatingActionButtonMenuItem(
-                onClick = {
-                    onFavoriteClick()
-                    isExpanded = false
-                },
-                text = { Text("Add to Favorites") },
-                icon = { Icon(Icons.Default.Favorite, contentDescription = null) },
-            )
+            }
+
+            FloatingActionButton(onClick = { isExpanded = !isExpanded }) {
+                Icon(
+                    imageVector = if (isExpanded) Icons.Default.Close else Icons.Default.Add,
+                    contentDescription = if (isExpanded) "Close menu" else "Open menu",
+                )
+            }
         }
     }
 }
 
-/**
- * Extended FAB with expressive styling for main actions
- */
+@Composable
+private fun ExpressiveFabAction(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+) {
+    SmallFloatingActionButton(onClick = onClick) {
+        Icon(imageVector = icon, contentDescription = label, modifier = Modifier.size(20.dp))
+    }
+}
+
 @Composable
 fun ExpressiveExtendedFAB(
     text: String,

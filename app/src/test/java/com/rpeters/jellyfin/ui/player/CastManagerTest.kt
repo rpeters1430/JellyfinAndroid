@@ -9,6 +9,7 @@ import com.rpeters.jellyfin.ui.player.cast.CastPlaybackController
 import com.rpeters.jellyfin.ui.player.cast.CastSessionController
 import com.rpeters.jellyfin.ui.player.cast.CastState
 import com.rpeters.jellyfin.ui.player.cast.CastStateStore
+import com.rpeters.jellyfin.ui.player.dlna.DlnaPlaybackController
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -46,6 +47,9 @@ class CastManagerTest {
     lateinit var mediaLoadBuilder: CastMediaLoadBuilder
 
     @MockK(relaxUnitFun = true)
+    lateinit var dlnaPlaybackController: DlnaPlaybackController
+
+    @MockK(relaxUnitFun = true)
     lateinit var remoteConfigRepository: RemoteConfigRepository
 
     private lateinit var castManager: CastManager
@@ -66,6 +70,7 @@ class CastManagerTest {
             sessionController,
             playbackController,
             mediaLoadBuilder,
+            dlnaPlaybackController,
             remoteConfigRepository
         )
     }

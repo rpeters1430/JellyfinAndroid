@@ -1,5 +1,3 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
-
 package com.rpeters.jellyfin.ui.components
 
 import androidx.compose.animation.core.LinearEasing
@@ -25,7 +23,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -71,7 +68,7 @@ fun ExpressiveCircularLoading(
             strokeWidth = strokeWidth,
         )
     } else {
-        CircularWavyProgressIndicator(
+        androidx.compose.material3.CircularWavyProgressIndicator(
             modifier = modifier.size(size),
             color = color,
             trackColor = color.copy(alpha = 0.2f),

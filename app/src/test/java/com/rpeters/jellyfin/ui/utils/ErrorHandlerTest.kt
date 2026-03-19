@@ -58,7 +58,8 @@ class ErrorHandlerTest {
         assertFalse(shouldRetry)
     }
 
-
+    @Test
+    fun `processError handles ConnectException`() {
         // Given: ConnectException
         val exception = ConnectException("Failed to connect to server")
 
@@ -228,7 +229,7 @@ class ErrorHandlerTest {
         val exception = SocketException("Software caused connection abort")
 
         // When: Use extension function
-        val processedError = exception.toProcessedError(operation = "Test Operation")
+        val processedError = with(ErrorHandler) { exception.toProcessedError(operation = "Test Operation") }
 
         // Then: Should process correctly
         assertEquals(ErrorType.NETWORK, processedError.errorType)

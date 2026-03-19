@@ -11,6 +11,20 @@ plugins {
     alias(libs.plugins.google.firebase.perf)
 }
 
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if (requested.group in setOf(
+            "androidx.compose.ui",
+            "androidx.compose.foundation",
+            "androidx.compose.runtime",
+            "androidx.compose.animation",
+        )) {
+            useVersion(libs.versions.composeCore.get())
+            because("Align all core Compose libraries to prevent BOM internal version mismatches")
+        }
+    }
+}
+
 android {
     namespace = "com.rpeters.jellyfin"
     compileSdk = libs.versions.sdk.get().toInt()
@@ -30,8 +44,8 @@ android {
         applicationId = "com.rpeters.jellyfin"
         minSdk = 26
         targetSdk = 35
-        versionCode = 73
-        versionName = "14.41"
+        versionCode = 74
+        versionName = "14.42"
 
         testInstrumentationRunner = "com.rpeters.jellyfin.testing.HiltTestRunner"
 
@@ -296,20 +310,6 @@ dependencies {
     debugImplementation(libs.leakcanary.android)
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)
-}
-
-// Let the Compose BOM manage versions - it provides a curated set of compatible versions
-// Only force Material3 to ensure consistency across adaptive/expressive components
-configurations.all {
-    resolutionStrategy.eachDependency {
-        val group = requested.group
-
-        // Force Material3 to use a consistent version across all dependencies
-        if (group == "androidx.compose.material3") {
-            useVersion("1.5.0-alpha15")
-            because("Force consistent Material3 version across all adaptive and expressive components")
-        }
-    }
 }
 
 tasks.register<JacocoReport>("jacocoTestReport") {

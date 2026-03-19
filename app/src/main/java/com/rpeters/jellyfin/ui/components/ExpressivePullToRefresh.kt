@@ -1,5 +1,3 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
-
 package com.rpeters.jellyfin.ui.components
 
 import androidx.compose.animation.core.Animatable
@@ -10,7 +8,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshState
@@ -130,7 +127,7 @@ fun ExpressivePullToRefreshIndicator(
         contentAlignment = Alignment.Center,
     ) {
         if (isRefreshing || state.distanceFraction > 0f) {
-            CircularWavyProgressIndicator(
+            androidx.compose.material3.CircularWavyProgressIndicator(
                 progress = { if (isRefreshing) 0.8f else state.distanceFraction.coerceIn(0f, 1f) },
                 modifier = Modifier
                     .size(size)
@@ -200,7 +197,7 @@ fun ExpressiveWavyPullToRefreshIndicator(
     ) {
         if (isRefreshing) {
             // Indeterminate wavy loading when refreshing
-            CircularWavyProgressIndicator(
+            androidx.compose.material3.CircularWavyProgressIndicator(
                 modifier = Modifier.size(size),
                 color = color,
                 trackColor = color.copy(alpha = 0.2f),
@@ -210,7 +207,7 @@ fun ExpressiveWavyPullToRefreshIndicator(
             )
         } else if (state.distanceFraction > 0f) {
             // Determinate wavy progress while pulling
-            CircularWavyProgressIndicator(
+            androidx.compose.material3.CircularWavyProgressIndicator(
                 progress = { state.distanceFraction.coerceIn(0f, 1f) },
                 modifier = Modifier.size(size),
                 color = color,

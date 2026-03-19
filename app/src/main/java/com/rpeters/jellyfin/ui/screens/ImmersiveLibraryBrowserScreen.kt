@@ -20,8 +20,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -288,18 +288,34 @@ fun ImmersiveLibraryBrowserScreen(
                     )
                 }
 
-                DropdownMenu(
-                    expanded = showSortMenu,
-                    onDismissRequest = { showSortMenu = false },
-                ) {
-                    sortOptions.forEachIndexed { index, option ->
-                        DropdownMenuItem(
-                            text = { Text(stringResource(id = option.labelRes)) },
-                            onClick = {
-                                onSortSelected(index)
-                                showSortMenu = false
-                            },
-                        )
+                if (showSortMenu) {
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(top = 56.dp),
+                        shape = MaterialTheme.shapes.medium,
+                        tonalElevation = 6.dp,
+                        shadowElevation = 8.dp,
+                        color = MaterialTheme.colorScheme.surface,
+                    ) {
+                        Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                            sortOptions.forEachIndexed { index, option ->
+                                Text(
+                                    text = stringResource(id = option.labelRes),
+                                    color = if (index == selectedSortIndex) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurface
+                                    },
+                                    modifier = Modifier
+                                        .clickable {
+                                            onSortSelected(index)
+                                            showSortMenu = false
+                                        }
+                                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                                )
+                            }
+                        }
                     }
                 }
             }
