@@ -19,11 +19,11 @@ import androidx.navigation.navArgument
 import com.rpeters.jellyfin.ui.player.tv.TvAudioPlayerScreen
 import com.rpeters.jellyfin.ui.player.tv.TvVideoPlayerRoute
 import com.rpeters.jellyfin.ui.screens.tv.TvHomeScreen
-import com.rpeters.jellyfin.ui.screens.tv.TvServerConnectionScreen
 import com.rpeters.jellyfin.ui.screens.tv.TvItemDetailScreen
 import com.rpeters.jellyfin.ui.screens.tv.TvLibraryScreen
 import com.rpeters.jellyfin.ui.screens.tv.TvQuickConnectScreen
 import com.rpeters.jellyfin.ui.screens.tv.TvSearchScreen
+import com.rpeters.jellyfin.ui.screens.tv.TvServerConnectionScreen
 import com.rpeters.jellyfin.ui.screens.tv.TvSettingsScreen
 import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
 
@@ -51,6 +51,9 @@ private object TvRoutes {
 
     fun audioPlayerRoute(): String = AudioPlayer
 }
+
+private fun libraryScreenKey(libraryId: String?): String =
+    libraryId?.let { "tv_library_$it" } ?: "tv_library_all"
 
 @Composable
 fun TvNavGraph(
@@ -137,6 +140,7 @@ fun TvNavGraph(
 
         composable(TvRoutes.Home) {
             TvHomeScreen(
+                screenKey = TvRoutes.Home,
                 onItemSelect = { itemId ->
                     navController.navigate("tv_item/$itemId")
                 },
@@ -156,6 +160,7 @@ fun TvNavGraph(
             // Placeholder for TV Movies Screen
             TvLibraryScreen(
                 libraryId = "movies",
+                screenKey = libraryScreenKey("movies"),
                 onItemSelect = { itemId -> navController.navigate("tv_item/$itemId") },
                 onBack = { navController.popBackStack() },
                 onSearch = { navController.navigate(TvRoutes.Search) },
@@ -166,6 +171,7 @@ fun TvNavGraph(
             // Placeholder for TV Shows Screen
             TvLibraryScreen(
                 libraryId = "tvshows",
+                screenKey = libraryScreenKey("tvshows"),
                 onItemSelect = { itemId -> navController.navigate("tv_item/$itemId") },
                 onBack = { navController.popBackStack() },
                 onSearch = { navController.navigate(TvRoutes.Search) },
@@ -176,6 +182,7 @@ fun TvNavGraph(
             // Placeholder for TV Music Screen
             TvLibraryScreen(
                 libraryId = "music",
+                screenKey = libraryScreenKey("music"),
                 onItemSelect = { itemId -> navController.navigate("tv_item/$itemId") },
                 onBack = { navController.popBackStack() },
                 onSearch = { navController.navigate(TvRoutes.Search) },
@@ -185,6 +192,7 @@ fun TvNavGraph(
         composable(TvRoutes.Stuff) {
             TvLibraryScreen(
                 libraryId = "homevideos",
+                screenKey = libraryScreenKey("homevideos"),
                 onItemSelect = { itemId -> navController.navigate("tv_item/$itemId") },
                 onBack = { navController.popBackStack() },
                 onSearch = { navController.navigate(TvRoutes.Search) },
@@ -210,6 +218,7 @@ fun TvNavGraph(
         composable(TvRoutes.Favorites) {
             TvLibraryScreen(
                 libraryId = "favorites",
+                screenKey = libraryScreenKey("favorites"),
                 onItemSelect = { itemId -> navController.navigate("tv_item/$itemId") },
                 onBack = { navController.popBackStack() },
                 onSearch = { navController.navigate(TvRoutes.Search) },
@@ -230,6 +239,7 @@ fun TvNavGraph(
             val libraryId = backStackEntry.arguments?.getString("libraryId")
             TvLibraryScreen(
                 libraryId = libraryId,
+                screenKey = libraryScreenKey(libraryId),
                 onItemSelect = { itemId -> navController.navigate("tv_item/$itemId") },
                 onBack = { navController.popBackStack() },
                 onSearch = { navController.navigate(TvRoutes.Search) },

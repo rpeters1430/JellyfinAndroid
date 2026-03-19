@@ -1,6 +1,5 @@
 package com.rpeters.jellyfin.ui.screens.tv
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +27,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.tv.material3.ExperimentalTvMaterial3Api
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.adaptive.rememberAdaptiveLayoutConfig
 import com.rpeters.jellyfin.ui.adaptive.rememberWindowLayoutInfo
@@ -47,7 +47,6 @@ import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import org.jellyfin.sdk.model.api.BaseItemKind
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text as TvText
-import androidx.tv.material3.ExperimentalTvMaterial3Api
 
 private const val RECENT_MOVIES_ID = "recent_movies"
 private const val RECENT_TV_SHOW_EPISODES_ID = "recent_tv_show_episodes"
@@ -64,6 +63,7 @@ fun TvHomeScreen(
     onPlay: (itemId: String, itemName: String, startMs: Long) -> Unit = { _, _, _ -> },
     modifier: Modifier = Modifier,
     viewModel: MainAppViewModel = hiltViewModel(),
+    screenKey: String = "tv_home",
 ) {
     val appState by viewModel.appState.collectAsState()
     val focusManager = LocalFocusManager.current
@@ -85,10 +85,10 @@ fun TvHomeScreen(
     val continueWatching = appState.continueWatching
         .sortedWith(tvInProgressComparator())
         .take(10)
-    
+
     val recentMovies = appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name]?.take(10) ?: emptyList()
     val recentTvShowEpisodes = appState.recentlyAddedByTypes[BaseItemKind.EPISODE.name]?.take(10) ?: emptyList()
-    
+
     // "Stuff" (Home Videos) - usually BaseItemKind.VIDEO in recentlyAddedByTypes
     val recentStuff = appState.recentlyAddedByTypes[BaseItemKind.VIDEO.name]?.take(10) ?: emptyList()
 
@@ -129,7 +129,7 @@ fun TvHomeScreen(
     )
 
     TvScreenFocusScope(
-        screenKey = "tv_home",
+        screenKey = screenKey,
         focusManager = tvFocusManager,
     ) {
         Box(
@@ -210,7 +210,7 @@ fun TvHomeScreen(
                                         },
                                     focusRequester = initialFocusRequester,
                                 )
-                                
+
                                 // Library Cards under Carousel
                                 if (appState.libraries.isNotEmpty()) {
                                     TvLibrariesSection(
@@ -268,7 +268,7 @@ fun TvHomeScreen(
                                         },
                                     focusRequester = initialFocusRequester,
                                 )
-                                
+
                                 // Library Cards under Carousel
                                 if (appState.libraries.isNotEmpty()) {
                                     TvLibrariesSection(
