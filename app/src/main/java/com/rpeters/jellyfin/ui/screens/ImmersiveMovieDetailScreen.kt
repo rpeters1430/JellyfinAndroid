@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -65,10 +64,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.components.AiSummaryCard
 import com.rpeters.jellyfin.ui.components.QualitySelectionDialog
-import com.rpeters.jellyfin.ui.components.sanitizedAiSummary
 import com.rpeters.jellyfin.ui.components.immersive.StaticHeroSection
 import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
-import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.screens.details.components.ActionButton
 import com.rpeters.jellyfin.ui.screens.details.components.DetailCastAndCrewSection
 import com.rpeters.jellyfin.ui.screens.details.components.DetailSubtitleRow
@@ -77,6 +74,7 @@ import com.rpeters.jellyfin.ui.screens.details.components.MovieHeroContent
 import com.rpeters.jellyfin.ui.screens.details.components.WhyYoullLoveThisCard
 import com.rpeters.jellyfin.ui.screens.details.components.getResolutionBadge
 import com.rpeters.jellyfin.ui.screens.details.components.getResolutionIcon
+import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.JellyfinTeal80
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -144,17 +142,7 @@ fun ImmersiveMovieDetailScreen(
             // 1. Background Backdrop (Hero)
             StaticHeroSection(
                 imageUrl = getBackdropUrl(movie),
-                modifier = Modifier.height(400.dp),
-            )
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = 328.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.background,
-                        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-                    ),
+                height = ImmersiveDimens.HeroHeightPhone,
             )
 
             // 2. Main Content
@@ -171,110 +159,136 @@ fun ImmersiveMovieDetailScreen(
                     )
                 }
 
+                item(key = "background_spacer") {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(MaterialTheme.colorScheme.background),
+                    )
+                }
+
                 // Action Row
                 item {
-                    MovieActionRow(
-                        movie = movie,
-                        isFavorite = isFavorite,
-                        isWatched = isWatched,
-                        onPlayClick = {
-                            val resumePos = playbackProgress?.positionMs ?: 0L
-                            onPlayClick(movie, null, resumePos)
-                        },
-                        onFavoriteClick = {
-                            isFavorite = !isFavorite
-                            onFavoriteClick(movie)
-                        },
-                        onMarkWatchedClick = {
-                            isWatched = !isWatched
-                            onMarkWatchedClick(movie)
-                        },
-                        onDownloadClick = {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
-                                    showDownloadQualityDialog = true
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.background),
+                    ) {
+                        MovieActionRow(
+                            movie = movie,
+                            isFavorite = isFavorite,
+                            isWatched = isWatched,
+                            onPlayClick = {
+                                val resumePos = playbackProgress?.positionMs ?: 0L
+                                onPlayClick(movie, null, resumePos)
+                            },
+                            onFavoriteClick = {
+                                isFavorite = !isFavorite
+                                onFavoriteClick(movie)
+                            },
+                            onMarkWatchedClick = {
+                                isWatched = !isWatched
+                                onMarkWatchedClick(movie)
+                            },
+                            onDownloadClick = {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                                        showDownloadQualityDialog = true
+                                    } else {
+                                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    }
                                 } else {
-                                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    showDownloadQualityDialog = true
                                 }
-                            } else {
-                                showDownloadQualityDialog = true
-                            }
-                        },
-                        onShareClick = { onShareClick(movie) },
-                        onMoreClick = { showMoreOptions = true },
-                    )
+                            },
+                            onShareClick = { onShareClick(movie) },
+                            onMoreClick = { showMoreOptions = true },
+                        )
+                    }
                 }
 
                 // AI Features
                 item {
-                    Column(
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                            .background(MaterialTheme.colorScheme.background),
                     ) {
-                        WhyYoullLoveThisCard(
-                            pitch = whyYoullLoveThis,
-                            isLoading = isLoadingWhyYoullLoveThis,
-                        )
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
-                            Text(
-                                text = "AI Summary",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
+                            WhyYoullLoveThisCard(
+                                pitch = whyYoullLoveThis,
+                                isLoading = isLoadingWhyYoullLoveThis,
                             )
-                            TextButton(onClick = onGenerateAiSummary, enabled = !isLoadingAiSummary) {
-                                Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(if (aiSummary != null) "Regenerate" else "Generate")
-                            }
-                        }
 
-                        AiSummaryCard(
-                            summary = aiSummary,
-                            isLoading = isLoadingAiSummary,
-                        )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "AI Summary",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                TextButton(onClick = onGenerateAiSummary, enabled = !isLoadingAiSummary) {
+                                    Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(if (aiSummary != null) "Regenerate" else "Generate")
+                                }
+                            }
+
+                            AiSummaryCard(
+                                summary = aiSummary,
+                                isLoading = isLoadingAiSummary,
+                            )
+                        }
                     }
                 }
 
                 // Synopsis
                 item {
-                    Column(
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                            .background(MaterialTheme.colorScheme.background),
                     ) {
-                        Text(
-                            text = "Synopsis",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                        )
-                        Text(
-                            text = movie.overview ?: "No synopsis available.",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            lineHeight = MaterialTheme.typography.bodyLarge.lineHeight.times(1.4f),
-                        )
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(
+                                text = "Synopsis",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(
+                                text = movie.overview ?: "No synopsis available.",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                lineHeight = MaterialTheme.typography.bodyLarge.lineHeight.times(1.4f),
+                            )
 
-                        // Genres Tag Flow
-                        movie.genres?.let { genres ->
-                            FlowRow(
-                                modifier = Modifier.padding(top = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                genres.forEach { genre ->
-                                    AssistChip(
-                                        onClick = { /* Navigate to genre */ },
-                                        label = { Text(genre) },
-                                        shape = MaterialTheme.shapes.small,
-                                    )
+                            movie.genres?.let { genres ->
+                                FlowRow(
+                                    modifier = Modifier.padding(top = 8.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    genres.forEach { genre ->
+                                        AssistChip(
+                                            onClick = { /* Navigate to genre */ },
+                                            label = { Text(genre) },
+                                            shape = MaterialTheme.shapes.small,
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -283,52 +297,67 @@ fun ImmersiveMovieDetailScreen(
 
                 // Tech Specs / Detailed Info
                 item {
-                    MovieTechSpecsSection(movie)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.background),
+                    ) {
+                        MovieTechSpecsSection(movie)
+                    }
                 }
 
                 // Cast & Crew
                 item {
                     val people = movie.people ?: emptyList()
-                    DetailCastAndCrewSection(
-                        directors = people.filter { it.type == PersonKind.DIRECTOR },
-                        writers = people.filter { it.type == PersonKind.WRITER },
-                        producers = people.filter { it.type == PersonKind.PRODUCER },
-                        cast = people.filter { it.type == PersonKind.ACTOR },
-                        getPersonImageUrl = getPersonImageUrl,
-                        onPersonClick = onPersonClick,
-                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.background),
+                    ) {
+                        DetailCastAndCrewSection(
+                            directors = people.filter { it.type == PersonKind.DIRECTOR },
+                            writers = people.filter { it.type == PersonKind.WRITER },
+                            producers = people.filter { it.type == PersonKind.PRODUCER },
+                            cast = people.filter { it.type == PersonKind.ACTOR },
+                            getPersonImageUrl = getPersonImageUrl,
+                            onPersonClick = onPersonClick,
+                        )
+                    }
                 }
 
                 // Related Movies
                 if (relatedItems.isNotEmpty()) {
                     item {
-                        Column(
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                                .background(MaterialTheme.colorScheme.background),
                         ) {
-                            Text(
-                                text = "More Like This",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 16.dp)
-                            )
-                            // Use PerformanceOptimizedLazyRow or similar here if available
-                            androidx.compose.foundation.lazy.LazyRow(
-                                contentPadding = PaddingValues(horizontal = 16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
                             ) {
-                                items(relatedItems) { relatedMovie ->
-                                    com.rpeters.jellyfin.ui.components.immersive.ImmersiveMediaCard(
-                                        title = relatedMovie.name ?: "Unknown",
-                                        imageUrl = getImageUrl(relatedMovie) ?: "",
-                                        onCardClick = { onRelatedMovieClick(relatedMovie.id.toString()) },
-                                        cardSize = com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize.SMALL,
-                                        modifier = Modifier.width(
-                                            com.rpeters.jellyfin.ui.theme.ImmersiveDimens.CardWidthSmall
-                                        ),
-                                    )
+                                Text(
+                                    text = "More Like This",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 16.dp)
+                                )
+                                androidx.compose.foundation.lazy.LazyRow(
+                                    contentPadding = PaddingValues(horizontal = 16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    items(relatedItems) { relatedMovie ->
+                                        com.rpeters.jellyfin.ui.components.immersive.ImmersiveMediaCard(
+                                            title = relatedMovie.name ?: "Unknown",
+                                            imageUrl = getImageUrl(relatedMovie) ?: "",
+                                            onCardClick = { onRelatedMovieClick(relatedMovie.id.toString()) },
+                                            cardSize = com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize.SMALL,
+                                            modifier = Modifier.width(ImmersiveDimens.CardWidthSmall),
+                                        )
+                                    }
                                 }
                             }
                         }

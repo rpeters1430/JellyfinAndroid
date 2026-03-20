@@ -12,16 +12,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.OpenInBrowser
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -30,6 +25,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.components.ExpressiveBackNavigationIcon
+import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
+import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
+import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
+import com.rpeters.jellyfin.ui.theme.JellyfinExpressiveTheme
 
 @OptInAppExperimentalApis
 @Composable
@@ -41,21 +41,11 @@ fun PrivacyPolicyScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.privacy_policy_title)) },
+            ExpressiveTopAppBar(
+                title = stringResource(R.string.privacy_policy_title),
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(id = R.string.navigate_up),
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                ),
+                    ExpressiveBackNavigationIcon(onClick = onNavigateBack)
+                }
             )
         },
         modifier = modifier,
@@ -159,7 +149,7 @@ fun PrivacyPolicyScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Button(
+            ExpressiveFilledButton(
                 onClick = {
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://rpeters1430.github.io/Cinefin/privacy-policy.html"))
                     context.startActivity(intent)
@@ -185,10 +175,15 @@ private fun PrivacyPolicySection(
     content: String,
     modifier: Modifier = Modifier,
 ) {
-    Column(
+    ExpressiveContentCard(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        containerColor = JellyfinExpressiveTheme.colors.sectionContainer,
+        shape = JellyfinExpressiveTheme.shapes.section,
     ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
@@ -200,5 +195,6 @@ private fun PrivacyPolicySection(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        }
     }
 }

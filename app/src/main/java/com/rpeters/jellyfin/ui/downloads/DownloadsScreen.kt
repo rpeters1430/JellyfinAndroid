@@ -9,7 +9,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -30,9 +29,15 @@ import com.rpeters.jellyfin.data.offline.DownloadProgress
 import com.rpeters.jellyfin.data.offline.DownloadStatus
 import com.rpeters.jellyfin.data.offline.OfflineDownload
 import com.rpeters.jellyfin.data.offline.VideoQuality
+import com.rpeters.jellyfin.ui.components.ExpressiveBackNavigationIcon
+import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
+import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
+import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
+import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBarAction
 import com.rpeters.jellyfin.ui.components.ExpressiveSwitchListItem
 import com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearProgress
+import com.rpeters.jellyfin.ui.theme.JellyfinExpressiveTheme
 import kotlin.math.roundToInt
 
 @androidx.media3.common.util.UnstableApi
@@ -124,37 +129,35 @@ fun DownloadsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(id = R.string.downloads), fontWeight = FontWeight.Bold) },
+            ExpressiveTopAppBar(
+                title = stringResource(id = R.string.downloads),
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
+                    ExpressiveBackNavigationIcon(onClick = onNavigateBack)
                 },
                 actions = {
-                    IconButton(onClick = { downloadsViewModel.clearCompletedDownloads() }) {
-                        Icon(Icons.Default.ClearAll, contentDescription = "Clear completed")
-                    }
-                    IconButton(onClick = { downloadsViewModel.pauseAllDownloads() }) {
-                        Icon(Icons.Default.PauseCircle, contentDescription = "Pause all")
-                    }
-                    IconButton(
+                    ExpressiveTopAppBarAction(
+                        icon = Icons.Default.ClearAll,
+                        contentDescription = "Clear completed",
+                        onClick = { downloadsViewModel.clearCompletedDownloads() },
+                    )
+                    ExpressiveTopAppBarAction(
+                        icon = Icons.Default.PauseCircle,
+                        contentDescription = "Pause all",
+                        onClick = { downloadsViewModel.pauseAllDownloads() },
+                    )
+                    ExpressiveTopAppBarAction(
+                        icon = Icons.Default.DoneAll,
+                        contentDescription = "Clear watched downloads",
                         onClick = { },
                         enabled = downloads.any { it.status == DownloadStatus.COMPLETED },
-                    ) {
-                        Icon(Icons.Default.DoneAll, contentDescription = "Clear watched downloads")
-                    }
-                    IconButton(
+                    )
+                    ExpressiveTopAppBarAction(
+                        icon = Icons.Default.DeleteSweep,
+                        contentDescription = "Delete all downloads",
                         onClick = { },
                         enabled = downloads.isNotEmpty(),
-                    ) {
-                        Icon(Icons.Default.DeleteSweep, contentDescription = "Delete all downloads")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                ),
+                    )
+                }
             )
         },
     ) { paddingValues ->
@@ -255,10 +258,10 @@ fun DownloadsScreen(
 private fun ExpressiveStorageCard(
     storageInfo: com.rpeters.jellyfin.data.offline.OfflineStorageInfo,
 ) {
-    Surface(
+    ExpressiveContentCard(
         modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = MaterialTheme.shapes.extraLarge,
+        containerColor = JellyfinExpressiveTheme.colors.sectionContainer,
+        shape = JellyfinExpressiveTheme.shapes.section,
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
@@ -271,14 +274,14 @@ private fun ExpressiveStorageCard(
                 Box(
                     modifier = Modifier
                         .size(40.dp)
-                        .clip(MaterialTheme.shapes.medium)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
+                        .clip(JellyfinExpressiveTheme.shapes.control)
+                        .background(JellyfinExpressiveTheme.colors.sectionIconContainer),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = Icons.Default.Storage,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        tint = JellyfinExpressiveTheme.colors.sectionIconContent,
                         modifier = Modifier.size(20.dp),
                     )
                 }
@@ -465,10 +468,10 @@ private fun ExpressiveDownloadPreferencesCard(
     onAutoCleanMinFreeSpaceGbSelected: (Int) -> Unit,
     onRunAutoCleanNow: () -> Unit,
 ) {
-    Surface(
+    ExpressiveContentCard(
         modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = MaterialTheme.shapes.extraLarge,
+        containerColor = JellyfinExpressiveTheme.colors.sectionContainer,
+        shape = JellyfinExpressiveTheme.shapes.section,
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
@@ -481,14 +484,14 @@ private fun ExpressiveDownloadPreferencesCard(
                 Box(
                     modifier = Modifier
                         .size(40.dp)
-                        .clip(MaterialTheme.shapes.medium)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
+                        .clip(JellyfinExpressiveTheme.shapes.control)
+                        .background(JellyfinExpressiveTheme.colors.sectionIconContainer),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = Icons.Default.Settings,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        tint = JellyfinExpressiveTheme.colors.sectionIconContent,
                         modifier = Modifier.size(20.dp),
                     )
                 }
@@ -563,7 +566,7 @@ private fun ExpressiveDownloadPreferencesCard(
                         }
                     }
 
-                    Button(
+                    ExpressiveFilledButton(
                         onClick = onRunAutoCleanNow,
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(

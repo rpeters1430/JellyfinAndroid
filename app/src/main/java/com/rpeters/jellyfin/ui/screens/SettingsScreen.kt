@@ -26,15 +26,10 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -52,13 +47,17 @@ import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.FeatureFlags
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.model.CurrentUserDetails
+import com.rpeters.jellyfin.ui.components.ExpressiveBackNavigationIcon
 import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
 import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaListItem
 import com.rpeters.jellyfin.ui.components.ExpressiveSwitchListItem
+import com.rpeters.jellyfin.ui.components.ExpressiveTextButton
+import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
 import com.rpeters.jellyfin.ui.components.MiniPlayer
 import com.rpeters.jellyfin.ui.image.AvatarImage
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
+import com.rpeters.jellyfin.ui.theme.JellyfinExpressiveTheme
 import com.rpeters.jellyfin.ui.theme.ShapeTokens
 import com.rpeters.jellyfin.ui.viewmodel.LibraryActionsPreferencesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.RemoteConfigViewModel
@@ -142,22 +141,22 @@ private fun SettingsScreenContent(
 ) {
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(text = stringResource(id = R.string.settings)) },
+            ExpressiveTopAppBar(
+                title = stringResource(id = R.string.settings),
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    ExpressiveBackNavigationIcon(onClick = onBackClick)
+                },
+                actions = {
+                    ExpressiveTextButton(onClick = onAppearanceSettingsClick) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(id = R.string.navigate_up),
+                            imageVector = Icons.Default.Palette,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
                         )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = stringResource(id = R.string.settings_appearance_title))
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                    actionIconContentColor = MaterialTheme.colorScheme.onSurface,
-                ),
             )
         },
         bottomBar = {
@@ -325,6 +324,7 @@ private fun LibraryManagementCard(
 ) {
     ExpressiveContentCard(
         modifier = modifier.fillMaxWidth(),
+        containerColor = JellyfinExpressiveTheme.colors.sectionContainer,
         shape = ShapeTokens.Large,
     ) {
         Column(
@@ -354,6 +354,7 @@ private fun PinningManagementCard(
 ) {
     ExpressiveContentCard(
         modifier = modifier.fillMaxWidth(),
+        containerColor = JellyfinExpressiveTheme.colors.sectionContainer,
         shape = ShapeTokens.Large,
     ) {
         Column(
@@ -404,6 +405,7 @@ private fun AccountCard(
     val displayName = currentUser?.name?.takeIf(String::isNotBlank) ?: stringResource(R.string.default_username)
     ExpressiveContentCard(
         modifier = modifier.fillMaxWidth(),
+        containerColor = JellyfinExpressiveTheme.colors.sectionContainerHigh,
         shape = ShapeTokens.Large,
     ) {
         Row(
@@ -449,11 +451,9 @@ private fun AccountCard(
                     )
                 }
             }
-            Button(
+            ExpressiveFilledButton(
                 onClick = onLogout,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error,
-                ),
+                modifier = Modifier,
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Logout,

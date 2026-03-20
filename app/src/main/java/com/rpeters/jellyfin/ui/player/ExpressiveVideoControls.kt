@@ -88,7 +88,6 @@ fun ExpressiveVideoControls(
     onPlaybackSpeedChange: (Float) -> Unit,
     onBackClick: () -> Unit,
     onPictureInPictureClick: () -> Unit,
-    onPlayNextEpisode: () -> Unit,
     supportsPip: Boolean,
     isVisible: Boolean,
     overlayContent: Color = Color.White,
@@ -144,7 +143,6 @@ fun ExpressiveVideoControls(
                     onAspectRatioChange = onAspectRatioChange,
                     onPlaybackSpeedChange = onPlaybackSpeedChange,
                     onPictureInPictureClick = onPictureInPictureClick,
-                    onPlayNextEpisode = onPlayNextEpisode,
                     supportsPip = supportsPip,
                     overlayContent = overlayContent,
                     overlayScrim = overlayScrim,
@@ -316,7 +314,6 @@ private fun ExpressiveBottomControls(
     onAspectRatioChange: (AspectRatioMode) -> Unit,
     onPlaybackSpeedChange: (Float) -> Unit,
     onPictureInPictureClick: () -> Unit,
-    onPlayNextEpisode: () -> Unit,
     supportsPip: Boolean,
     overlayContent: Color,
     overlayScrim: Color,
@@ -399,11 +396,7 @@ private fun ExpressiveBottomControls(
                     val start = playerState.outroStartMs
                     start != null && playerState.currentPosition >= start
                 }
-                val showPlayNextEpisode = remember(playerState.nextEpisode, playerState.showNextEpisodeCountdown) {
-                    playerState.nextEpisode != null && !playerState.showNextEpisodeCountdown
-                }
-
-                if (showSkipIntro || showSkipCredits || showPlayNextEpisode) {
+                if (showSkipIntro || showSkipCredits) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -428,15 +421,6 @@ private fun ExpressiveBottomControls(
                                 },
                                 overlayContent = overlayContent,
                                 overlayScrim = overlayScrim,
-                            )
-                        }
-                        if (showPlayNextEpisode) {
-                            PlayerActionChip(
-                                label = "Play Next Episode",
-                                onClick = onPlayNextEpisode,
-                                overlayContent = overlayContent,
-                                overlayScrim = overlayScrim,
-                                highlighted = true,
                             )
                         }
                     }

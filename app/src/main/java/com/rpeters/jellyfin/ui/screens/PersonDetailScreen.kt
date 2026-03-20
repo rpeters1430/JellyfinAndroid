@@ -19,24 +19,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.rounded.Movie
 import androidx.compose.material.icons.rounded.Tv
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
@@ -44,8 +38,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -63,10 +55,15 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.components.ExpressiveBackNavigationIcon
+import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
+import com.rpeters.jellyfin.ui.components.ExpressiveLargeTopAppBar
+import com.rpeters.jellyfin.ui.components.ExpressivePullToRefreshBox
 import com.rpeters.jellyfin.ui.components.ExpressiveWavyCircularLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveWavyLinearLoading
-import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.MediaCard
+import com.rpeters.jellyfin.ui.theme.JellyfinExpressiveTheme
 import com.rpeters.jellyfin.ui.viewmodel.PersonDetailUiState
 import com.rpeters.jellyfin.ui.viewmodel.PersonDetailViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -86,47 +83,22 @@ fun PersonDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val pullToRefreshState = rememberPullToRefreshState()
 
     Scaffold(
         modifier = modifier
             .fillMaxSize()
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
-                title = {
-                    when (val state = uiState) {
-                        is PersonDetailUiState.Success -> {
-                            Text(
-                                text = state.personName,
-                                style = MaterialTheme.typography.headlineLarge,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
-                        is PersonDetailUiState.Loading -> {
-                            Text(stringResource(id = R.string.loading_dots))
-                        }
-                        is PersonDetailUiState.Error -> {
-                            Text(stringResource(id = R.string.actor))
-                        }
-                    }
+            ExpressiveLargeTopAppBar(
+                title = when (val state = uiState) {
+                    is PersonDetailUiState.Success -> state.personName
+                    is PersonDetailUiState.Loading -> stringResource(id = R.string.loading_dots)
+                    is PersonDetailUiState.Error -> stringResource(id = R.string.actor)
                 },
                 navigationIcon = {
-                    IconButton(
-                        onClick = onBackClick,
-                        modifier = Modifier.statusBarsPadding(),
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                            contentDescription = "Back",
-                        )
-                    }
+                    ExpressiveBackNavigationIcon(onClick = onBackClick)
                 },
                 scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                ),
             )
         },
     ) { paddingValues ->
@@ -170,8 +142,7 @@ fun PersonDetailScreen(
             }
 
             is PersonDetailUiState.Success -> {
-                PullToRefreshBox(
-                    state = pullToRefreshState,
+                ExpressivePullToRefreshBox(
                     isRefreshing = false,
                     onRefresh = { viewModel.refresh() },
                     modifier = Modifier
@@ -330,13 +301,10 @@ private fun AiBioCard(
     isLoading: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    Card(
+    ExpressiveContentCard(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-        ),
-        shape = MaterialTheme.shapes.large,
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
+        shape = JellyfinExpressiveTheme.shapes.section,
     ) {
         Column(
             modifier = Modifier
@@ -387,7 +355,7 @@ private fun AiBioCard(
                 // AI indicator badge
                 Surface(
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                    shape = MaterialTheme.shapes.medium,
+                    shape = JellyfinExpressiveTheme.shapes.control,
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),

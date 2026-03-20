@@ -31,7 +31,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Accessibility
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
@@ -40,19 +39,17 @@ import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tonality
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -74,14 +71,17 @@ import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.preferences.AccentColor
 import com.rpeters.jellyfin.data.preferences.ContrastLevel
 import com.rpeters.jellyfin.data.preferences.ThemeMode
-import com.rpeters.jellyfin.data.preferences.ThemePreferences
+import com.rpeters.jellyfin.ui.components.ExpressiveBackNavigationIcon
+import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
 import com.rpeters.jellyfin.ui.components.ExpressiveRadioListItem
 import com.rpeters.jellyfin.ui.components.ExpressiveSwitchListItem
+import com.rpeters.jellyfin.ui.components.ExpressiveTextButton
+import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
+import com.rpeters.jellyfin.ui.theme.JellyfinExpressiveTheme
 import com.rpeters.jellyfin.ui.theme.getAccentColorForPreview
 import com.rpeters.jellyfin.ui.theme.getAccentColorName
 import com.rpeters.jellyfin.ui.theme.getContrastLevelDescription
 import com.rpeters.jellyfin.ui.theme.getContrastLevelName
-import com.rpeters.jellyfin.ui.theme.getThemeModeDescription
 import com.rpeters.jellyfin.ui.theme.getThemeModeName
 import com.rpeters.jellyfin.ui.viewmodel.ThemePreferencesViewModel
 
@@ -99,26 +99,22 @@ fun AppearanceSettingsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { 
-                    Text(
-                        stringResource(R.string.settings_appearance_title),
-                        fontWeight = FontWeight.Bold
-                    ) 
-                },
+            ExpressiveTopAppBar(
+                title = stringResource(R.string.settings_appearance_title),
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    ExpressiveBackNavigationIcon(onClick = onNavigateBack)
+                },
+                actions = {
+                    ExpressiveTextButton(onClick = viewModel::resetToDefaults) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.navigate_up),
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
                         )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Reset")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                ),
             )
         },
     ) { paddingValues ->
@@ -131,7 +127,7 @@ fun AppearanceSettingsScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             // Theme Preview Card
-            ThemePreviewCard(themePreferences = themePreferences)
+            ThemePreviewCard()
 
             // Theme Mode Section
             ExpressiveSettingsCard(
@@ -236,6 +232,20 @@ fun AppearanceSettingsScreen(
                     onCheckedChange = { viewModel.setRespectReduceMotion(it) },
                 )
             }
+
+            ExpressiveSettingsCard(
+                title = "Layout",
+                icon = Icons.Default.AutoAwesome,
+                description = "System bar and surface treatment",
+            ) {
+                ExpressiveSwitchListItem(
+                    title = "Edge-to-Edge",
+                    subtitle = "Extend content behind the status and navigation bars",
+                    checked = themePreferences.enableEdgeToEdge,
+                    onCheckedChange = { viewModel.setEnableEdgeToEdge(it) },
+                    leadingIcon = Icons.Default.AutoAwesome,
+                )
+            }
             
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -244,18 +254,14 @@ fun AppearanceSettingsScreen(
 
 @Composable
 private fun ThemePreviewCard(
-    themePreferences: ThemePreferences,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    ExpressiveContentCard(
         modifier = modifier
             .fillMaxWidth()
             .height(180.dp),
-        shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        containerColor = JellyfinExpressiveTheme.colors.sectionContainerHigh,
+        shape = JellyfinExpressiveTheme.shapes.previewCard,
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             // Background mockup
@@ -394,9 +400,9 @@ private fun ThemePreviewCard(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(12.dp),
-                color = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = CircleShape,
+                color = JellyfinExpressiveTheme.colors.previewBadgeContainer,
+                contentColor = JellyfinExpressiveTheme.colors.previewBadgeContent,
+                shape = JellyfinExpressiveTheme.shapes.pill,
                 tonalElevation = 6.dp
             ) {
                 Text(
@@ -460,7 +466,7 @@ private fun ThemeModeCard(
 ) {
     val containerColor by animateColorAsState(
         targetValue = if (selected) MaterialTheme.colorScheme.primaryContainer 
-                    else MaterialTheme.colorScheme.surfaceContainerLow,
+                    else JellyfinExpressiveTheme.colors.sectionContainer,
         label = "container"
     )
     val contentColor by animateColorAsState(
@@ -469,14 +475,14 @@ private fun ThemeModeCard(
         label = "content"
     )
     val borderStroke = if (selected) 2.dp else 1.dp
-    val borderColor = if (selected) MaterialTheme.colorScheme.primary 
+    val borderColor = if (selected) JellyfinExpressiveTheme.colors.selectionOutline
                     else MaterialTheme.colorScheme.outlineVariant
 
     Column(
         modifier = modifier
-            .clip(MaterialTheme.shapes.medium)
+            .clip(JellyfinExpressiveTheme.shapes.control)
             .background(containerColor)
-            .border(borderStroke, borderColor, MaterialTheme.shapes.medium)
+            .border(borderStroke, borderColor, JellyfinExpressiveTheme.shapes.control)
             .clickable(onClick = onClick)
             .padding(vertical = 12.dp, horizontal = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -527,7 +533,7 @@ private fun AccentColorCircle(
     val previewColor = getAccentColorForPreview(color)
     val size by animateDpAsState(targetValue = if (selected) 56.dp else 48.dp, label = "size")
     val borderColor by animateColorAsState(
-        targetValue = if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
+        targetValue = if (selected) JellyfinExpressiveTheme.colors.selectionOutline else Color.Transparent,
         label = "border"
     )
 
@@ -576,10 +582,10 @@ private fun ExpressiveSettingsCard(
     description: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Surface(
+    ExpressiveContentCard(
         modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = MaterialTheme.shapes.extraLarge,
+        containerColor = JellyfinExpressiveTheme.colors.sectionContainer,
+        shape = JellyfinExpressiveTheme.shapes.section,
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
@@ -592,14 +598,14 @@ private fun ExpressiveSettingsCard(
                 Box(
                     modifier = Modifier
                         .size(40.dp)
-                        .clip(MaterialTheme.shapes.medium)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
+                        .clip(JellyfinExpressiveTheme.shapes.control)
+                        .background(JellyfinExpressiveTheme.colors.sectionIconContainer),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        tint = JellyfinExpressiveTheme.colors.sectionIconContent,
                         modifier = Modifier.size(20.dp),
                     )
                 }

@@ -109,8 +109,9 @@ fun JellyfinAndroidTheme(
         colorScheme = tunedColorScheme,
         typography = Typography,
         shapes = JellyfinShapes,
-        content = content,
-    )
+    ) {
+        ProvideJellyfinExpressiveTheme(content = content)
+    }
 }
 
 /**

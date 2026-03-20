@@ -176,6 +176,7 @@ class VideoPlayerViewModel @Inject constructor(
                 showSubtitleDialog = false,
                 qualityRecommendation = null,
                 nextEpisode = null,
+                isNextEpisodePromptDismissed = false,
                 showNextEpisodeCountdown = false,
                 nextEpisodeCountdown = 0,
             )
@@ -303,6 +304,10 @@ class VideoPlayerViewModel @Inject constructor(
 
     fun cancelNextEpisodeCountdown() {
         metadataManager.cancelNextEpisodeCountdown()
+    }
+
+    fun dismissNextEpisodePrompt() {
+        stateManager.updateState { it.copy(isNextEpisodePromptDismissed = true) }
     }
 
     fun handleCastButtonClick() {

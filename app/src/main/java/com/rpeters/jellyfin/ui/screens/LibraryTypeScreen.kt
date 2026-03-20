@@ -39,8 +39,6 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
@@ -65,6 +63,8 @@ import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.adaptive.rememberAdaptiveLayoutConfig
 import com.rpeters.jellyfin.ui.components.AlphabetScroller
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
+import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
+import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBarAction
 import com.rpeters.jellyfin.ui.components.MediaItemActionsSheet
 import com.rpeters.jellyfin.ui.components.shimmer
 import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
@@ -219,8 +219,9 @@ fun LibraryTypeScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
+            ExpressiveTopAppBar(
+                title = libraryType.displayName,
+                navigationIcon = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.FilterChipSpacing),
@@ -232,7 +233,6 @@ fun LibraryTypeScreen(
                         )
                         Text(
                             text = libraryType.displayName,
-                            style = MaterialTheme.typography.headlineSmall,
                         )
                     }
                 },
@@ -260,21 +260,22 @@ fun LibraryTypeScreen(
                             }
                         }
                     }
-                    IconButton(onClick = { 
-                        val library = appState.libraries.find { it.id.toString() == libraryId }
-                        if (library != null) {
-                            viewModel.loadLibraryTypeData(
-                                library = library,
-                                libraryType = libraryType,
-                                forceRefresh = true,
-                                parentId = folderId
-                            )
-                        }
-                    }) {
-                        Icon(imageVector = Icons.Default.Refresh, contentDescription = "Refresh")
-                    }
+                    ExpressiveTopAppBarAction(
+                        icon = Icons.Default.Refresh,
+                        contentDescription = "Refresh",
+                        onClick = {
+                            val library = appState.libraries.find { it.id.toString() == libraryId }
+                            if (library != null) {
+                                viewModel.loadLibraryTypeData(
+                                    library = library,
+                                    libraryType = libraryType,
+                                    forceRefresh = true,
+                                    parentId = folderId
+                                )
+                            }
+                        },
+                    )
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
             )
         },
         modifier = modifier,

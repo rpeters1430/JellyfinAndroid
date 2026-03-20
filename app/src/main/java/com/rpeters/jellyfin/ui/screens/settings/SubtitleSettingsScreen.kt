@@ -37,10 +37,14 @@ import com.rpeters.jellyfin.data.preferences.SubtitleAppearancePreferences
 import com.rpeters.jellyfin.data.preferences.SubtitleBackground
 import com.rpeters.jellyfin.data.preferences.SubtitleFont
 import com.rpeters.jellyfin.data.preferences.SubtitleTextSize
+import com.rpeters.jellyfin.ui.components.ExpressiveBackNavigationIcon
+import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
 import com.rpeters.jellyfin.ui.components.ExpressiveRadioListItem
 import com.rpeters.jellyfin.ui.theme.Dimens
+import com.rpeters.jellyfin.ui.theme.JellyfinExpressiveTheme
 import com.rpeters.jellyfin.ui.theme.SubtitlePreviewGradientEnd
 import com.rpeters.jellyfin.ui.theme.SubtitlePreviewGradientStart
+import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
 import com.rpeters.jellyfin.ui.viewmodel.SubtitleAppearancePreferencesViewModel
 
 /**
@@ -57,26 +61,11 @@ fun SubtitleSettingsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        stringResource(R.string.settings_subtitles_title),
-                        fontWeight = FontWeight.Bold,
-                    )
-                },
+            ExpressiveTopAppBar(
+                title = stringResource(R.string.settings_subtitles_title),
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(id = R.string.navigate_up),
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                ),
+                    ExpressiveBackNavigationIcon(onClick = onNavigateBack)
+                }
             )
         },
     ) { paddingValues ->
@@ -137,12 +126,12 @@ private fun SubtitlePreviewCard(
     preferences: SubtitleAppearancePreferences,
     modifier: Modifier = Modifier,
 ) {
-    Card(
+    ExpressiveContentCard(
         modifier = modifier
             .fillMaxWidth()
             .height(Dimens.Height200),
-        shape = MaterialTheme.shapes.extraLarge,
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        containerColor = JellyfinExpressiveTheme.colors.sectionContainerHigh,
+        shape = JellyfinExpressiveTheme.shapes.previewCard,
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             // Mock Movie Background (Gradient + Icon to simulate a scene)
@@ -203,9 +192,9 @@ private fun SubtitlePreviewCard(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(12.dp),
-                color = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = CircleShape,
+                color = JellyfinExpressiveTheme.colors.previewBadgeContainer,
+                contentColor = JellyfinExpressiveTheme.colors.previewBadgeContent,
+                shape = JellyfinExpressiveTheme.shapes.pill,
                 tonalElevation = 4.dp,
             ) {
                 Text(
@@ -353,10 +342,10 @@ private fun ExpressiveSubtitleSection(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Surface(
+    ExpressiveContentCard(
         modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = MaterialTheme.shapes.extraLarge,
+        containerColor = JellyfinExpressiveTheme.colors.sectionContainer,
+        shape = JellyfinExpressiveTheme.shapes.section,
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
@@ -369,14 +358,14 @@ private fun ExpressiveSubtitleSection(
                 Box(
                     modifier = Modifier
                         .size(40.dp)
-                        .clip(MaterialTheme.shapes.medium)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
+                        .clip(JellyfinExpressiveTheme.shapes.control)
+                        .background(JellyfinExpressiveTheme.colors.sectionIconContainer),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        tint = JellyfinExpressiveTheme.colors.sectionIconContent,
                         modifier = Modifier.size(20.dp),
                     )
                 }

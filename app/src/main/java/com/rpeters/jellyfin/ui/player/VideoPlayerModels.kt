@@ -116,6 +116,7 @@ data class VideoPlayerState(
     val outroEndMs: Long? = null,
     // Autoplay next episode
     val nextEpisode: BaseItemDto? = null,
+    val isNextEpisodePromptDismissed: Boolean = false,
     val showNextEpisodeCountdown: Boolean = false,
     val nextEpisodeCountdown: Int = 0, // seconds remaining
     val hasEnded: Boolean = false,

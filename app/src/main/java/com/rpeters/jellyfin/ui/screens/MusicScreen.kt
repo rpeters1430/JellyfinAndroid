@@ -41,9 +41,6 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -62,7 +59,11 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
+import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
+import com.rpeters.jellyfin.ui.components.ExpressivePullToRefreshBox
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
+import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
+import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBarAction
 import com.rpeters.jellyfin.ui.theme.MusicGreen
 import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
 import com.rpeters.jellyfin.ui.utils.ShareUtils
@@ -190,8 +191,9 @@ fun MusicScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
+            ExpressiveTopAppBar(
+                title = stringResource(id = R.string.music),
+                navigationIcon = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -202,7 +204,6 @@ fun MusicScreen(
                         )
                         Text(
                             text = stringResource(id = R.string.music),
-                            style = MaterialTheme.typography.titleLarge,
                         )
                     }
                 },
@@ -258,23 +259,17 @@ fun MusicScreen(
                         }
                     }
 
-                    IconButton(onClick = { viewModel.refreshLibraryItems() }) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = stringResource(id = R.string.refresh),
-                        )
-                    }
+                    ExpressiveTopAppBarAction(
+                        icon = Icons.Default.Refresh,
+                        contentDescription = stringResource(id = R.string.refresh),
+                        onClick = { viewModel.refreshLibraryItems() },
+                    )
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = if (useImmersiveUI) androidx.compose.ui.graphics.Color.Transparent else MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                ),
             )
         },
         modifier = modifier,
     ) { paddingValues ->
-        PullToRefreshBox(
+        ExpressivePullToRefreshBox(
             isRefreshing = appState.isLoading,
             onRefresh = { viewModel.refreshLibraryItems() },
             modifier = Modifier
@@ -285,13 +280,11 @@ fun MusicScreen(
                 modifier = Modifier.fillMaxSize(),
             ) {
                 if (playbackState.isConnected && (playbackState.currentMediaItem != null || playbackQueue.isNotEmpty())) {
-                    Card(
+                    ExpressiveContentCard(
                         modifier = Modifier
                             .padding(horizontal = 16.dp, vertical = 8.dp)
                             .fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        ),
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     ) {
                         Row(
                             modifier = Modifier
@@ -442,10 +435,8 @@ fun MusicScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Card(
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                                ),
+                            ExpressiveContentCard(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(16.dp),

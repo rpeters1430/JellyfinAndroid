@@ -136,6 +136,75 @@ fun ImmersiveHomeScreen(
             topBarTranslucent = false,
             // ...
             scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(),
+            overlayContent = {
+                // Floating settings icon based on scroll direction
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = topBarVisible,
+                    enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.expandVertically(),
+                    exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.shrinkVertically(),
+                    modifier = Modifier.align(Alignment.TopEnd),
+                ) {
+                    Surface(
+                        onClick = onSettingsClick,
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                        modifier = Modifier
+                            .statusBarsPadding()
+                            .padding(horizontal = 12.dp, vertical = 12.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = stringResource(id = R.string.settings),
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(12.dp).size(24.dp),
+                        )
+                    }
+                }
+
+                // Floating Search and AI Action Buttons
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = topBarVisible,
+                    enter = androidx.compose.animation.scaleIn() + androidx.compose.animation.fadeIn(),
+                    exit = androidx.compose.animation.scaleOut() + androidx.compose.animation.fadeOut(),
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 16.dp, bottom = 120.dp), // Height above mini player
+                ) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        horizontalAlignment = Alignment.End,
+                    ) {
+                        FloatingActionButton(
+                            onClick = onAiAssistantClick,
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = stringResource(id = R.string.ai_assistant),
+                            )
+                        }
+
+                        FloatingActionButton(
+                            onClick = onSearchClick,
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = stringResource(id = R.string.search),
+                            )
+                        }
+                    }
+                }
+
+                SnackbarHost(
+                    hostState = snackbarHostState,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 16.dp),
+                )
+            },
         ) { paddingValues ->
             PerformanceMetricsTracker(
                 enabled = com.rpeters.jellyfin.BuildConfig.DEBUG,
@@ -180,75 +249,6 @@ fun ImmersiveHomeScreen(
                 }
             }
         }
-
-        // ✅ Performance: Animated visibility for floating settings icon based on scroll direction
-        androidx.compose.animation.AnimatedVisibility(
-            visible = topBarVisible,
-            enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.expandVertically(),
-            exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.shrinkVertically(),
-            modifier = Modifier.align(Alignment.TopEnd),
-        ) {
-            Surface(
-                onClick = onSettingsClick,
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
-                modifier = Modifier
-                    .statusBarsPadding()
-                    .padding(horizontal = 12.dp, vertical = 12.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = stringResource(id = R.string.settings),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(12.dp).size(24.dp),
-                )
-            }
-        }
-
-        // Floating Search and AI Action Buttons
-        androidx.compose.animation.AnimatedVisibility(
-            visible = topBarVisible,
-            enter = androidx.compose.animation.scaleIn() + androidx.compose.animation.fadeIn(),
-            exit = androidx.compose.animation.scaleOut() + androidx.compose.animation.fadeOut(),
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 16.dp, bottom = 120.dp), // Height above mini player
-        ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalAlignment = Alignment.End,
-            ) {
-                FloatingActionButton(
-                    onClick = onAiAssistantClick,
-                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.AutoAwesome,
-                        contentDescription = stringResource(id = R.string.ai_assistant),
-                    )
-                }
-
-                FloatingActionButton(
-                    onClick = onSearchClick,
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = stringResource(id = R.string.search),
-                    )
-                }
-            }
-        }
-
-        // Snackbar host outside scaffold
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 16.dp),
-        )
     }
 
     selectedItem?.let { item ->

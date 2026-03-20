@@ -53,6 +53,9 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.EmptyStateComposable
 import com.rpeters.jellyfin.ui.components.EmptyStateType
+import com.rpeters.jellyfin.ui.components.ExpressiveBackNavigationIcon
+import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
+import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.viewmodel.AudioPlaybackViewModel
 
@@ -78,24 +81,10 @@ fun AudioQueueScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(stringResource(id = R.string.queue))
-                        Text(
-                            text = "${queue.size} tracks",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                },
+            ExpressiveTopAppBar(
+                title = stringResource(id = R.string.queue),
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                        )
-                    }
+                    ExpressiveBackNavigationIcon(onClick = onNavigateBack)
                 },
                 actions = {
                     if (queue.isNotEmpty()) {
@@ -111,10 +100,7 @@ fun AudioQueueScreen(
                             Text(stringResource(id = R.string.clear))
                         }
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                ),
+                }
             )
         },
         modifier = modifier,
@@ -136,6 +122,14 @@ fun AudioQueueScreen(
                     .padding(paddingValues),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
+                item {
+                    Text(
+                        text = "${queue.size} tracks",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
+                }
                 itemsIndexed(
                     items = queue,
                     key = { index, item -> "${item.mediaId}_$index" },
@@ -203,18 +197,16 @@ private fun QueueItem(
         enableDismissFromStartToEnd = false,
         modifier = modifier,
     ) {
-        Card(
+        ExpressiveContentCard(
+            onClick = onItemClick,
             modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onItemClick),
+                .fillMaxWidth(),
+            containerColor = if (isCurrentTrack) {
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+            } else {
+                MaterialTheme.colorScheme.surface
+            },
             shape = RoundedCornerShape(0.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = if (isCurrentTrack) {
-                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                } else {
-                    MaterialTheme.colorScheme.surface
-                },
-            ),
         ) {
             Row(
                 modifier = Modifier

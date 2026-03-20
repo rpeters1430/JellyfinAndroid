@@ -61,6 +61,7 @@ fun VideoPlayerScreen(
     onClose: () -> Unit = {},
     onPlayNextEpisode: () -> Unit = {},
     onCancelNextEpisode: () -> Unit = {},
+    onDismissNextEpisodePrompt: () -> Unit = {},
     onPlayerViewBoundsChanged: (android.graphics.Rect) -> Unit = {},
     onAcceptQualityRecommendation: () -> Unit = {},
     onDismissQualityRecommendation: () -> Unit = {},
@@ -115,6 +116,22 @@ fun VideoPlayerScreen(
         playerState.isPlaying,
     ) {
         playerState.isLoading && playerState.currentPosition <= 0L && !playerState.isPlaying
+    }
+    val showNextEpisodePrompt = remember(
+        playerState.nextEpisode,
+        playerState.isNextEpisodePromptDismissed,
+        playerState.showNextEpisodeCountdown,
+        playerState.outroStartMs,
+        playerState.currentPosition,
+        playerState.duration,
+    ) {
+        val remainingMs = playerState.duration - playerState.currentPosition
+        val reachedOutro = playerState.outroStartMs?.let { playerState.currentPosition >= it } == true
+        val inFallbackWindow = playerState.duration > 60_000 && remainingMs in 1..30_000
+        playerState.nextEpisode != null &&
+            !playerState.isNextEpisodePromptDismissed &&
+            !playerState.showNextEpisodeCountdown &&
+            (reachedOutro || inFallbackWindow)
     }
 
     // Gesture feedback states
@@ -289,14 +306,15 @@ fun VideoPlayerScreen(
             )
 
             NextEpisodeCountdownOverlay(
-                visible = playerState.showNextEpisodeCountdown,
+                visible = showNextEpisodePrompt || playerState.showNextEpisodeCountdown,
                 nextEpisode = playerState.nextEpisode,
                 countdown = playerState.nextEpisodeCountdown,
+                isCountdownActive = playerState.showNextEpisodeCountdown,
                 overlayScrim = playerColors.overlayScrim,
                 overlayContent = playerColors.overlayContent,
-                onCancel = onCancelNextEpisode,
+                onCancel = if (playerState.showNextEpisodeCountdown) onCancelNextEpisode else onDismissNextEpisodePrompt,
                 onPlayNow = onPlayNextEpisode,
-                modifier = Modifier.align(Alignment.BottomCenter),
+                modifier = Modifier.align(Alignment.CenterEnd),
             )
 
             ExpressiveVideoControls(
@@ -313,7 +331,6 @@ fun VideoPlayerScreen(
                 onPlaybackSpeedChange = onPlaybackSpeedChange,
                 onBackClick = onClose,
                 onPictureInPictureClick = onPictureInPictureClick,
-                onPlayNextEpisode = onPlayNextEpisode,
                 supportsPip = supportsPip,
                 isVisible = controlsVisible,
                 overlayContent = playerColors.overlayContent,

@@ -8,7 +8,6 @@ import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.*
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -171,7 +170,7 @@ fun HomeContent(
 
     val listState = rememberLazyListState()
 
-    PullToRefreshBox(
+    ExpressivePullToRefreshBox(
         isRefreshing = appState.isLoading,
         onRefresh = onRefresh,
         modifier = modifier,
@@ -293,13 +292,11 @@ fun HomeContent(
 
 @Composable
 private fun ViewingMoodWidget(viewingMood: String) {
-    ElevatedCard(
+    ExpressiveContentCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-        ),
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
     ) {
         Row(
             modifier = Modifier
@@ -487,6 +484,7 @@ private fun SectionHeader(title: String) {
         text = title,
         style = MaterialTheme.typography.titleLarge,
         fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
     )
 }

@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.ui.components.immersive
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
@@ -43,6 +44,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
  * @param containerColor Background color of the scaffold
  * @param contentColor Content color for the scaffold
  * @param scrollBehavior Scroll behavior for the top app bar
+ * @param overlayContent Additional overlay content rendered above scaffold content and bars
  * @param content Main content of the scaffold
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,6 +65,7 @@ fun ImmersiveScaffold(
     containerColor: Color = MaterialTheme.colorScheme.background,
     contentColor: Color = contentColorFor(containerColor),
     scrollBehavior: TopAppBarScrollBehavior? = null,
+    overlayContent: @Composable BoxScope.() -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
     val finalScrollBehavior = scrollBehavior ?: TopAppBarDefaults.pinnedScrollBehavior()
@@ -110,6 +113,8 @@ fun ImmersiveScaffold(
                 scrollBehavior = finalScrollBehavior,
             )
         }
+
+        overlayContent()
     }
 }
 
@@ -123,6 +128,7 @@ fun SimpleImmersiveScaffold(
     modifier: Modifier = Modifier,
     floatingActionButton: @Composable () -> Unit = {},
     containerColor: Color = MaterialTheme.colorScheme.background,
+    overlayContent: @Composable BoxScope.() -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
     ImmersiveScaffold(
@@ -131,6 +137,7 @@ fun SimpleImmersiveScaffold(
         bottomBarVisible = false,
         floatingActionButton = floatingActionButton,
         containerColor = containerColor,
+        overlayContent = overlayContent,
         content = content,
     )
 }

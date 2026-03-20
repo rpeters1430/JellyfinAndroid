@@ -17,6 +17,10 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.components.ExpressiveBackNavigationIcon
+import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
+import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
+import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
 import com.rpeters.jellyfin.ui.viewmodel.AiDiagnosticsViewModel
 
 @OptInAppExperimentalApis
@@ -58,21 +62,11 @@ private fun AiDiagnosticsScreenContent(
 ) {
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(id = R.string.ai_backend_diagnostics)) },
+            ExpressiveTopAppBar(
+                title = stringResource(id = R.string.ai_backend_diagnostics),
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(id = R.string.navigate_up),
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                ),
+                    ExpressiveBackNavigationIcon(onClick = onBackClick)
+                }
             )
         },
         modifier = modifier,
@@ -137,15 +131,13 @@ private fun StatusCard(
     isDownloading: Boolean,
     detailedStatus: String,
 ) {
-    Card(
+    ExpressiveContentCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = when {
-                isDownloading -> MaterialTheme.colorScheme.secondaryContainer
-                isUsingNano -> MaterialTheme.colorScheme.primaryContainer
-                else -> MaterialTheme.colorScheme.tertiaryContainer
-            },
-        ),
+        containerColor = when {
+            isDownloading -> MaterialTheme.colorScheme.secondaryContainer
+            isUsingNano -> MaterialTheme.colorScheme.primaryContainer
+            else -> MaterialTheme.colorScheme.tertiaryContainer
+        },
     ) {
         Row(
             modifier = Modifier
@@ -190,11 +182,9 @@ private fun BackendDetailsCard(
     downloadBytesProgress: String?,
     errorCode: Int?,
 ) {
-    Card(
+    ExpressiveContentCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        ),
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -234,11 +224,9 @@ private fun BackendDetailsCard(
 
 @Composable
 private fun ErrorExplanationCard(errorCode: Int) {
-    Card(
+    ExpressiveContentCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer,
-        ),
+        containerColor = MaterialTheme.colorScheme.errorContainer,
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -282,11 +270,9 @@ private fun RetryCard(
     onRetryClick: () -> Unit,
     errorCode: Int?,
 ) {
-    Card(
+    ExpressiveContentCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-        ),
+        containerColor = MaterialTheme.colorScheme.secondaryContainer,
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -309,7 +295,7 @@ private fun RetryCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            Button(
+            ExpressiveFilledButton(
                 onClick = onRetryClick,
                 modifier = Modifier.fillMaxWidth(),
             ) {
@@ -327,11 +313,9 @@ private fun RetryCard(
 
 @Composable
 private fun InfoCard() {
-    Card(
+    ExpressiveContentCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        ),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
         Column(
             modifier = Modifier.padding(16.dp),

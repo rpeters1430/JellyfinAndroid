@@ -20,7 +20,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.components.ExpressiveBackNavigationIcon
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
+import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
+import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
+import com.rpeters.jellyfin.ui.theme.JellyfinExpressiveTheme
 import com.rpeters.jellyfin.ui.viewmodel.PinnedHostState
 import com.rpeters.jellyfin.ui.viewmodel.PinningSettingsViewModel
 import java.text.DateFormat
@@ -40,26 +44,11 @@ fun PinningSettingsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { 
-                    Text(
-                        stringResource(id = R.string.pinning_settings_title),
-                        fontWeight = FontWeight.Bold
-                    ) 
-                },
+            ExpressiveTopAppBar(
+                title = stringResource(id = R.string.pinning_settings_title),
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(id = R.string.navigate_up),
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                ),
+                    ExpressiveBackNavigationIcon(onClick = onBackClick)
+                }
             )
         },
         modifier = modifier,
@@ -73,9 +62,9 @@ fun PinningSettingsScreen(
             contentPadding = PaddingValues(vertical = 16.dp)
         ) {
             item {
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                    shape = MaterialTheme.shapes.large,
+                ExpressiveContentCard(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                    shape = JellyfinExpressiveTheme.shapes.section,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
@@ -160,13 +149,10 @@ private fun PinEntryCardEnhanced(
     dateFormatter: DateFormat,
     onRevoke: () -> Unit,
 ) {
-    Card(
+    ExpressiveContentCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        ),
-        shape = MaterialTheme.shapes.extraLarge,
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        containerColor = JellyfinExpressiveTheme.colors.sectionContainer,
+        shape = JellyfinExpressiveTheme.shapes.section,
     ) {
         Column(
             modifier = Modifier.padding(20.dp),

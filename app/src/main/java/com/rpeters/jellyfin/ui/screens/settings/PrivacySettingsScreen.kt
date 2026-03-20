@@ -24,7 +24,11 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.components.ExpressiveBackNavigationIcon
+import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
 import com.rpeters.jellyfin.ui.components.ExpressiveSwitchListItem
+import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
+import com.rpeters.jellyfin.ui.theme.JellyfinExpressiveTheme
 import com.rpeters.jellyfin.ui.viewmodel.PrivacySettingsViewModel
 
 @OptInAppExperimentalApis
@@ -37,26 +41,11 @@ fun PrivacySettingsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { 
-                    Text(
-                        stringResource(R.string.settings_privacy_title),
-                        fontWeight = FontWeight.Bold
-                    ) 
-                },
+            ExpressiveTopAppBar(
+                title = stringResource(R.string.settings_privacy_title),
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.navigate_up),
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                ),
+                    ExpressiveBackNavigationIcon(onClick = onNavigateBack)
+                }
             )
         },
     ) { paddingValues ->
@@ -69,9 +58,9 @@ fun PrivacySettingsScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             // Intro section
-            Surface(
-                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                shape = MaterialTheme.shapes.large,
+            ExpressiveContentCard(
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                shape = JellyfinExpressiveTheme.shapes.section,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -186,10 +175,10 @@ private fun ExpressivePrivacySection(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Surface(
+    ExpressiveContentCard(
         modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = MaterialTheme.shapes.extraLarge,
+        containerColor = JellyfinExpressiveTheme.colors.sectionContainer,
+        shape = JellyfinExpressiveTheme.shapes.section,
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
@@ -202,14 +191,14 @@ private fun ExpressivePrivacySection(
                 Box(
                     modifier = Modifier
                         .size(40.dp)
-                        .clip(MaterialTheme.shapes.medium)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
+                        .clip(JellyfinExpressiveTheme.shapes.control)
+                        .background(JellyfinExpressiveTheme.colors.sectionIconContainer),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        tint = JellyfinExpressiveTheme.colors.sectionIconContent,
                         modifier = Modifier.size(20.dp),
                     )
                 }

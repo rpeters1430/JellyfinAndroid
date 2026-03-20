@@ -31,8 +31,12 @@ import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.preferences.AudioChannelPreference
 import com.rpeters.jellyfin.data.preferences.ResumePlaybackMode
 import com.rpeters.jellyfin.data.preferences.TranscodingQuality
+import com.rpeters.jellyfin.ui.components.ExpressiveBackNavigationIcon
+import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
 import com.rpeters.jellyfin.ui.components.ExpressiveRadioListItem
 import com.rpeters.jellyfin.ui.components.ExpressiveSwitchListItem
+import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
+import com.rpeters.jellyfin.ui.theme.JellyfinExpressiveTheme
 import com.rpeters.jellyfin.ui.viewmodel.PlaybackPreferencesViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,26 +50,11 @@ fun PlaybackSettingsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { 
-                    Text(
-                        "Playback Settings",
-                        fontWeight = FontWeight.Bold
-                    ) 
-                },
+            ExpressiveTopAppBar(
+                title = "Playback Settings",
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(id = R.string.navigate_up),
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                ),
+                    ExpressiveBackNavigationIcon(onClick = onBackClick)
+                }
             )
         },
         modifier = modifier,
@@ -426,10 +415,10 @@ private fun ExpressivePlaybackSection(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Surface(
+    ExpressiveContentCard(
         modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = MaterialTheme.shapes.extraLarge,
+        containerColor = JellyfinExpressiveTheme.colors.sectionContainer,
+        shape = JellyfinExpressiveTheme.shapes.section,
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
@@ -442,14 +431,14 @@ private fun ExpressivePlaybackSection(
                 Box(
                     modifier = Modifier
                         .size(40.dp)
-                        .clip(MaterialTheme.shapes.medium)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
+                        .clip(JellyfinExpressiveTheme.shapes.control)
+                        .background(JellyfinExpressiveTheme.colors.sectionIconContainer),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        tint = JellyfinExpressiveTheme.colors.sectionIconContent,
                         modifier = Modifier.size(20.dp),
                     )
                 }

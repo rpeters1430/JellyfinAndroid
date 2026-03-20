@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,6 +15,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.components.ExpressiveBackNavigationIcon
+import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
+import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
 import com.rpeters.jellyfin.ui.components.ExpressiveWavyCircularLoading
 import com.rpeters.jellyfin.ui.viewmodel.TranscodingDiagnosticsViewModel
 
@@ -34,13 +36,11 @@ fun TranscodingDiagnosticsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(id = R.string.transcoding_diagnostics)) },
+            ExpressiveTopAppBar(
+                title = stringResource(id = R.string.transcoding_diagnostics),
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
-                    }
-                },
+                    ExpressiveBackNavigationIcon(onClick = onNavigateBack)
+                }
             )
         },
     ) { paddingValues ->
@@ -109,11 +109,9 @@ private fun SummaryCard(
     directPlayCount: Int,
     transcodingCount: Int,
 ) {
-    Card(
+    ExpressiveContentCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-        ),
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
     ) {
         Column(
             modifier = Modifier
@@ -147,11 +145,9 @@ private fun SummaryCard(
 
 @Composable
 private fun LegendCard() {
-    Card(
+    ExpressiveContentCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        ),
+        containerColor = MaterialTheme.colorScheme.surfaceVariant,
     ) {
         Column(
             modifier = Modifier

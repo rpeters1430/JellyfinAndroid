@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.media3.common.util.UnstableApi
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.theme.MotionTokens
@@ -140,6 +141,7 @@ fun NextEpisodeCountdownOverlay(
     visible: Boolean,
     nextEpisode: BaseItemDto?,
     countdown: Int,
+    isCountdownActive: Boolean,
     overlayScrim: Color,
     overlayContent: Color,
     onCancel: () -> Unit,
@@ -158,15 +160,15 @@ fun NextEpisodeCountdownOverlay(
             ),
             shape = MaterialTheme.shapes.extraLarge,
             modifier = Modifier
-                .padding(bottom = 100.dp)
-                .fillMaxWidth(0.85f),
+                .padding(end = 20.dp)
+                .widthIn(max = 320.dp),
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
+                horizontalAlignment = Alignment.Start,
             ) {
                 Text(
-                    text = "Next Episode",
+                    text = if (isCountdownActive) "Next Episode" else "Up Next",
                     color = overlayContent,
                     style = MaterialTheme.typography.headlineSmall,
                 )
@@ -180,25 +182,31 @@ fun NextEpisodeCountdownOverlay(
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "Starting in $countdown...",
+                    text = if (isCountdownActive) {
+                        "Starting in $countdown..."
+                    } else {
+                        "Ready to play when you are."
+                    },
                     color = overlayContent.copy(alpha = 0.7f),
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     TextButton(
                         onClick = onCancel,
+                        modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.textButtonColors(
                             contentColor = overlayContent,
                         ),
                     ) {
-                        Text(stringResource(id = R.string.close))
+                        Text(if (isCountdownActive) stringResource(id = R.string.close) else "Hide")
                     }
                     Button(
                         onClick = onPlayNow,
+                        modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary,
                         ),

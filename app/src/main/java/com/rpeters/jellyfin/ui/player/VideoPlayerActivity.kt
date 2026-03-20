@@ -248,6 +248,7 @@ class VideoPlayerActivity : FragmentActivity() {
                             onClose = { finish() },
                             onPlayNextEpisode = playerViewModel::playNextEpisode,
                             onCancelNextEpisode = playerViewModel::cancelNextEpisodeCountdown,
+                            onDismissNextEpisodePrompt = playerViewModel::dismissNextEpisodePrompt,
                             onPlayerViewBoundsChanged = { pipSourceRect = it },
                             onAcceptQualityRecommendation = playerViewModel::acceptQualityRecommendation,
                             onDismissQualityRecommendation = playerViewModel::dismissQualityRecommendation,

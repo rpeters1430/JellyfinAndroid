@@ -23,8 +23,6 @@ import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,8 +32,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -57,6 +53,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.common.Player
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
+import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
+import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBarAction
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.image.rememberScreenWidthHeight
 import com.rpeters.jellyfin.ui.viewmodel.AudioPlaybackViewModel
@@ -101,27 +100,22 @@ fun NowPlayingScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(id = R.string.now_playing_title)) },
+            ExpressiveTopAppBar(
+                title = stringResource(id = R.string.now_playing_title),
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            Icons.Filled.KeyboardArrowDown,
-                            contentDescription = "Close",
-                        )
-                    }
+                    ExpressiveTopAppBarAction(
+                        icon = Icons.Filled.KeyboardArrowDown,
+                        contentDescription = "Close",
+                        onClick = onNavigateBack,
+                    )
                 },
                 actions = {
-                    IconButton(onClick = onOpenQueue) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.QueueMusic,
-                            contentDescription = "Queue",
-                        )
-                    }
+                    ExpressiveTopAppBarAction(
+                        icon = Icons.AutoMirrored.Filled.QueueMusic,
+                        contentDescription = "Queue",
+                        onClick = onOpenQueue,
+                    )
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                ),
             )
         },
         modifier = modifier,
@@ -202,12 +196,12 @@ private fun AlbumArtSection(
         modifier = modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center,
     ) {
-        Card(
+        ExpressiveContentCard(
             modifier = Modifier
                 .fillMaxWidth(0.85f)
                 .aspectRatio(1f),
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             shape = MaterialTheme.shapes.large,
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         ) {
             if (currentMediaItem != null) {
                 JellyfinAsyncImage(
