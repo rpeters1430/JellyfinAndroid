@@ -615,20 +615,20 @@ private fun LibraryRecentSection(
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 Text(
-                    text = library.name ?: "Library",
+                    text = library.name ?: "",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = "Recently added",
+                    text = stringResource(R.string.library_recently_added_section),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             FilledTonalButton(onClick = { onLibraryClick(library) }) {
-                Text(text = "Open")
+                Text(text = stringResource(R.string.open))
             }
         }
 
