@@ -7,18 +7,22 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
+import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -39,11 +43,13 @@ import com.rpeters.jellyfin.ui.viewmodel.LibraryActionsPreferencesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppState
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.ui.viewmodel.SurfaceCoordinatorViewModel
+import com.rpeters.jellyfin.utils.getItemKey
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.CollectionType
 
 /**
  * Immersive home screen with Netflix/Disney+ inspired design.
@@ -117,6 +123,17 @@ fun ImmersiveHomeScreen(
             } else {
                 coroutineScope.launch {
                     snackbarHostState.showSnackbar("Unable to start playback")
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(appState.libraries) {
+        appState.libraries.forEach { library ->
+            val libraryId = library.id?.toString() ?: return@forEach
+            if (appState.itemsByLibrary[libraryId].isNullOrEmpty()) {
+                library.toLibraryTypeOrNull()?.let { libraryType ->
+                    viewModel.loadLibraryTypeData(library = library, libraryType = libraryType)
                 }
             }
         }
@@ -382,16 +399,380 @@ private fun ImmersiveHomeContent(
         modifier = modifier,
         indicatorSize = 48.dp, // Standard expressive size
     ) {
-        ExpressiveBentoGrid(
-            contentLists = contentLists,
-            windowSizeClass = windowSizeClass,
-            getImageUrl = getImageUrl,
-            onItemClick = stableOnItemClick,
-            onItemLongPress = stableOnItemLongPress,
-            gridState = gridState,
-            contentPadding = contentPadding,
-            modifier = Modifier.fillMaxSize()
+        if (adaptiveConfig.isTablet) {
+            ExpressiveBentoGrid(
+                contentLists = contentLists,
+                windowSizeClass = windowSizeClass,
+                getImageUrl = getImageUrl,
+                onItemClick = stableOnItemClick,
+                onItemLongPress = stableOnItemLongPress,
+                gridState = gridState,
+                contentPadding = contentPadding,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            MobileExpressiveHomeContent(
+                appState = appState,
+                contentLists = contentLists,
+                getImageUrl = getImageUrl,
+                getBackdropUrl = getBackdropUrl,
+                getSeriesImageUrl = getSeriesImageUrl,
+                onItemClick = stableOnItemClick,
+                onItemLongPress = stableOnItemLongPress,
+                onLibraryClick = onLibraryClick,
+                viewingMood = viewingMood,
+                contentPadding = contentPadding,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MobileExpressiveHomeContent(
+    appState: MainAppState,
+    contentLists: HomeContentLists,
+    getImageUrl: (BaseItemDto) -> String?,
+    getBackdropUrl: (BaseItemDto) -> String?,
+    getSeriesImageUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit,
+    onItemLongPress: (BaseItemDto) -> Unit,
+    onLibraryClick: (BaseItemDto) -> Unit,
+    viewingMood: String?,
+    contentPadding: PaddingValues,
+    modifier: Modifier = Modifier,
+) {
+    val unknownText = stringResource(id = R.string.unknown)
+    val libraryRows = remember(appState.libraries, appState.itemsByLibrary) {
+        appState.libraries.mapNotNull { library ->
+            val libraryId = library.id?.toString() ?: return@mapNotNull null
+            val items = appState.itemsByLibrary[libraryId]
+                .orEmpty()
+                .sortedByDescending { it.dateCreated }
+                .take(10)
+            if (items.isEmpty()) null else library to items
+        }
+    }
+
+    LazyColumn(
+        modifier = modifier,
+        contentPadding = PaddingValues(
+            start = 0.dp,
+            top = contentPadding.calculateTopPadding(),
+            end = 0.dp,
+            bottom = contentPadding.calculateBottomPadding() + 96.dp,
+        ),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
+    ) {
+        if (contentLists.featuredItems.isNotEmpty()) {
+            item(key = "hero_carousel", contentType = "carousel") {
+                val featured = remember(contentLists.featuredItems, unknownText) {
+                    contentLists.featuredItems.map {
+                        it.toCarouselItem(
+                            titleOverride = it.name ?: unknownText,
+                            subtitleOverride = itemSubtitle(it),
+                            imageUrl = getBackdropUrl(it) ?: getSeriesImageUrl(it) ?: getImageUrl(it) ?: "",
+                        )
+                    }
+                }
+                ExpressiveHeroCarousel(
+                    items = featured,
+                    onItemClick = { selected ->
+                        contentLists.featuredItems.firstOrNull { it.id.toString() == selected.id }?.let(onItemClick)
+                    },
+                    onPlayClick = { selected ->
+                        contentLists.featuredItems.firstOrNull { it.id.toString() == selected.id }?.let(onItemClick)
+                    },
+                    heroHeight = 420.dp,
+                    horizontalPadding = 20.dp,
+                    pageSpacing = 12.dp,
+                )
+            }
+        }
+
+        item(key = "libraries", contentType = "libraries") {
+            LibraryNavigationCarousel(
+                libraries = appState.libraries,
+                getImageUrl = getImageUrl,
+                onLibraryClick = onLibraryClick,
+            )
+        }
+
+        if (!viewingMood.isNullOrBlank()) {
+            item(key = "viewing_mood", contentType = "viewing_mood") {
+                ViewingMoodWidget(
+                    viewingMood = viewingMood,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+            }
+        }
+
+        if (contentLists.continueWatching.isNotEmpty()) {
+            item(key = "continue_watching", contentType = "continue_watching") {
+                ContinueWatchingSection(
+                    items = contentLists.continueWatching,
+                    getImageUrl = { item -> getSeriesImageUrl(item) ?: getImageUrl(item) },
+                    onItemClick = onItemClick,
+                    onItemLongPress = onItemLongPress,
+                    cardWidth = 176.dp,
+                )
+            }
+        }
+
+        if (contentLists.recentEpisodes.isNotEmpty()) {
+            item(key = "next_up", contentType = "next_up") {
+                PosterRowSection(
+                    title = stringResource(id = R.string.home_next_up),
+                    items = contentLists.recentEpisodes,
+                    getImageUrl = { item -> getSeriesImageUrl(item) ?: getImageUrl(item) },
+                    onItemClick = onItemClick,
+                    onItemLongPress = onItemLongPress,
+                    cardWidth = 164.dp,
+                )
+            }
+        }
+
+        items(
+            items = libraryRows,
+            key = { (library, _) -> library.id.toString() },
+            contentType = { "library_recent_row" },
+        ) { (library, items) ->
+            LibraryRecentSection(
+                library = library,
+                items = items,
+                getImageUrl = { item ->
+                    when (item.type) {
+                        BaseItemKind.EPISODE -> getSeriesImageUrl(item) ?: getImageUrl(item)
+                        BaseItemKind.SERIES -> getSeriesImageUrl(item) ?: getBackdropUrl(item) ?: getImageUrl(item)
+                        BaseItemKind.VIDEO -> getBackdropUrl(item) ?: getImageUrl(item)
+                        else -> getImageUrl(item)
+                    }
+                },
+                onLibraryClick = onLibraryClick,
+                onItemClick = onItemClick,
+                onItemLongPress = onItemLongPress,
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LibraryNavigationCarousel(
+    libraries: List<BaseItemDto>,
+    getImageUrl: (BaseItemDto) -> String?,
+    onLibraryClick: (BaseItemDto) -> Unit,
+) {
+    if (libraries.isEmpty()) return
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        HomeSectionTitle(
+            title = stringResource(R.string.libraries),
+            modifier = Modifier.padding(top = 8.dp),
         )
+
+        val carouselState = rememberCarouselState { libraries.size }
+        HorizontalMultiBrowseCarousel(
+            state = carouselState,
+            preferredItemWidth = 176.dp,
+            itemSpacing = 12.dp,
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(188.dp),
+        ) { index ->
+            val library = libraries[index]
+            LibraryExpressiveCard(
+                library = library,
+                imageUrl = getImageUrl(library),
+                onClick = { onLibraryClick(library) },
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+    }
+}
+
+@Composable
+private fun LibraryRecentSection(
+    library: BaseItemDto,
+    items: List<BaseItemDto>,
+    getImageUrl: (BaseItemDto) -> String?,
+    onLibraryClick: (BaseItemDto) -> Unit,
+    onItemClick: (BaseItemDto) -> Unit,
+    onItemLongPress: (BaseItemDto) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = library.name ?: "",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = stringResource(R.string.library_recently_added_section),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            FilledTonalButton(onClick = { onLibraryClick(library) }) {
+                Text(text = stringResource(R.string.open))
+            }
+        }
+
+        when (library.toLibraryTypeOrNull()) {
+            LibraryType.STUFF, LibraryType.MUSIC -> HomeLibraryMediaRow(
+                items = items,
+                getImageUrl = getImageUrl,
+                onItemClick = onItemClick,
+                onItemLongPress = onItemLongPress,
+                cardWidth = 240.dp,
+            )
+            else -> HomeLibraryPosterRow(
+                items = items,
+                getImageUrl = getImageUrl,
+                onItemClick = onItemClick,
+                onItemLongPress = onItemLongPress,
+                cardWidth = 164.dp,
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeLibraryPosterRow(
+    items: List<BaseItemDto>,
+    getImageUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit,
+    onItemLongPress: (BaseItemDto) -> Unit,
+    cardWidth: androidx.compose.ui.unit.Dp,
+) {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        items(items = items, key = { it.getItemKey() }) { item ->
+            PosterMediaCard(
+                item = item,
+                getImageUrl = getImageUrl,
+                onClick = onItemClick,
+                onLongPress = onItemLongPress,
+                cardWidth = cardWidth,
+                showTitle = true,
+                showMetadata = true,
+                titleMinLines = 2,
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeLibraryMediaRow(
+    items: List<BaseItemDto>,
+    getImageUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit,
+    onItemLongPress: (BaseItemDto) -> Unit,
+    cardWidth: androidx.compose.ui.unit.Dp,
+) {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        items(items = items, key = { it.getItemKey() }) { item ->
+            MediaCard(
+                item = item,
+                getImageUrl = { getImageUrl(item) },
+                onClick = onItemClick,
+                onLongPress = onItemLongPress,
+                cardWidth = cardWidth,
+            )
+        }
+    }
+}
+
+@Composable
+private fun LibraryExpressiveCard(
+    library: BaseItemDto,
+    imageUrl: String?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ElevatedCard(
+        onClick = onClick,
+        modifier = modifier,
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ),
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            HeroImageWithGradient(
+                imageUrl = imageUrl,
+                contentDescription = library.name ?: "Library",
+                modifier = Modifier.fillMaxSize(),
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.82f),
+                ) {
+                    Icon(
+                        imageVector = library.toLibraryTypeOrNull()?.icon ?: Icons.Default.Folder,
+                        contentDescription = null,
+                        modifier = Modifier.padding(10.dp).size(20.dp),
+                    )
+                }
+
+                Column(
+                    modifier = Modifier.align(Alignment.BottomStart),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = library.name ?: "Library",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = library.collectionType?.toString()?.replace("_", " ") ?: "Collection",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White.copy(alpha = 0.85f),
+                        maxLines = 1,
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun BaseItemDto.toLibraryTypeOrNull(): LibraryType? = when (collectionType) {
+    CollectionType.MOVIES -> LibraryType.MOVIES
+    CollectionType.TVSHOWS -> LibraryType.TV_SHOWS
+    CollectionType.MUSIC -> LibraryType.MUSIC
+    CollectionType.HOMEVIDEOS, CollectionType.BOOKS -> LibraryType.STUFF
+    else -> when (collectionType?.toString()?.lowercase()?.replace(" ", "")) {
+        "movies" -> LibraryType.MOVIES
+        "tvshows" -> LibraryType.TV_SHOWS
+        "music" -> LibraryType.MUSIC
+        else -> LibraryType.STUFF
     }
 }
 
