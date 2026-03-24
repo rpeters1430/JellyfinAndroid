@@ -43,6 +43,7 @@ mockk = "1.14.9"
 kotlinxCoroutinesTest = "1.10.2"
 androidxArchCoreTest = "2.2.0"
 androidxTvMaterial = "1.1.0-beta01"
+androidxTvFoundation = "1.0.0-alpha12"
 paging = "3.5.0-alpha01"
 sdk = "36"
 work = "2.11.1"
@@ -148,6 +149,7 @@ kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 androidx-arch-core-testing = { group = "androidx.arch.core", name = "core-testing", version.ref = "androidxArchCoreTest" }
 # Android TV Compose
 androidx-tv-material = { group = "androidx.tv", name = "tv-material", version.ref = "androidxTvMaterial" }
+androidx-tv-foundation = { group = "androidx.tv", name = "tv-foundation", version.ref = "androidxTvFoundation" }
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 
 # Paging 3
