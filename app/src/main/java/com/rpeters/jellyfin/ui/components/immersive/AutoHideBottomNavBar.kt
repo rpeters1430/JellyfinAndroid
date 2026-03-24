@@ -68,13 +68,13 @@ fun AutoHideBottomNavBar(
     ) {
         Surface(
             shape = MaterialTheme.shapes.extraLarge,
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-            tonalElevation = 6.dp,
-            modifier = Modifier.padding(bottom = 12.dp, start = 16.dp, end = 16.dp, top = 0.dp),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
+            tonalElevation = 2.dp, // Reduced from 6dp
+            modifier = Modifier.padding(bottom = 8.dp, start = 16.dp, end = 16.dp, top = 0.dp),
         ) {
             Box(
                 modifier = Modifier
-                    .padding(horizontal = 6.dp, vertical = 6.dp)
+                    .padding(horizontal = 4.dp, vertical = 4.dp) // Reduced from 6dp
                     .animateContentSize(
                         animationSpec = spring(
                             dampingRatio = Spring.DampingRatioLowBouncy,
@@ -84,7 +84,7 @@ fun AutoHideBottomNavBar(
                 contentAlignment = Alignment.Center,
             ) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     items.forEachIndexed { index, item ->
@@ -94,10 +94,10 @@ fun AutoHideBottomNavBar(
                             onClick = { onItemSelected(index) },
                             shape = MaterialTheme.shapes.extraLarge,
                             color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-                            modifier = Modifier.size(height = 40.dp, width = if (isSelected) 110.dp else 40.dp)
+                            modifier = Modifier.size(height = 36.dp, width = if (isSelected) 100.dp else 36.dp) // Reduced height from 40dp
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 10.dp),
+                                modifier = Modifier.padding(horizontal = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.Center
                             ) {
@@ -105,14 +105,14 @@ fun AutoHideBottomNavBar(
                                     imageVector = if (isSelected) item.selectedIcon else item.icon,
                                     contentDescription = item.label,
                                     tint = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(18.dp) // Reduced from 20dp
                                 )
                                 if (isSelected) {
                                     Text(
                                         text = item.label,
-                                        style = MaterialTheme.typography.labelMedium,
+                                        style = MaterialTheme.typography.labelSmall, // Smaller text
                                         fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(start = 6.dp),
+                                        modifier = Modifier.padding(start = 4.dp),
                                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                                         maxLines = 1
                                     )

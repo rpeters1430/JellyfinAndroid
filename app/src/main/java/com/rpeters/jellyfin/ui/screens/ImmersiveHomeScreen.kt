@@ -465,29 +465,38 @@ private fun MobileExpressiveHomeContent(
         ),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        if (contentLists.featuredItems.isNotEmpty()) {
-            item(key = "hero_carousel", contentType = "carousel") {
-                val featured = remember(contentLists.featuredItems, unknownText) {
-                    contentLists.featuredItems.map {
-                        it.toCarouselItem(
-                            titleOverride = it.name ?: unknownText,
-                            subtitleOverride = itemSubtitle(it),
-                            imageUrl = getBackdropUrl(it) ?: getSeriesImageUrl(it) ?: getImageUrl(it) ?: "",
-                        )
+        // Replace wonky carousel with high-impact Recently Added Movies (Last 5)
+        val heroMovies = contentLists.recentMovies.take(5)
+        if (heroMovies.isNotEmpty()) {
+            item(key = "recently_added_hero", contentType = "hero_row") {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    HomeSectionTitle(
+                        title = "Recently Added Movies",
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                    
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(heroMovies, key = { it.id.toString() }) { movie ->
+                            MediaCard(
+                                item = movie,
+                                getImageUrl = getImageUrl,
+                                onClick = onItemClick,
+                                onLongPress = onItemLongPress,
+                                cardWidth = 340.dp, // High impact large card
+                                cardAspectRatio = 16f / 9f,
+                            )
+                        }
                     }
                 }
-                ExpressiveHeroCarousel(
-                    items = featured,
-                    onItemClick = { selected ->
-                        contentLists.featuredItems.firstOrNull { it.id.toString() == selected.id }?.let(onItemClick)
-                    },
-                    onPlayClick = { selected ->
-                        contentLists.featuredItems.firstOrNull { it.id.toString() == selected.id }?.let(onItemClick)
-                    },
-                    heroHeight = 440.dp, // Increased from 420dp
-                    horizontalPadding = 20.dp,
-                    pageSpacing = 12.dp,
-                )
             }
         }
 
