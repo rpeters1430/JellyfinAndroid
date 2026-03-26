@@ -297,8 +297,13 @@ dependencies {
     androidTestImplementation(libs.androidx.test.services)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
-    androidTestImplementation(libs.mockk)
-    androidTestImplementation(libs.robolectric)
+    androidTestImplementation(libs.mockk.android)
+    // Use only the Robolectric annotations module (not the full runtime) in androidTest.
+    // The full robolectric artifact registers LocalControlledLooper via META-INF/services which
+    // causes ClassCastException (Looper cannot be cast to ShadowedObject) on real devices when
+    // Espresso's onIdle() is called. The @Config annotation used in AppearanceSettingsScreenTest
+    // only requires the annotations submodule, which does not carry the service descriptor.
+    androidTestImplementation("org.robolectric:annotations:${libs.versions.robolectric.get()}")
     androidTestImplementation(libs.kotlinx.coroutines.test)
 
     androidTestImplementation(libs.dagger.hilt.android.testing)
@@ -350,3 +355,4 @@ tasks.register<JacocoReport>("jacocoTestReport") {
 }
 
 apply(plugin = "jacoco")
+
