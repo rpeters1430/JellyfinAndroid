@@ -282,15 +282,21 @@ fun ImmersiveHomeScreen(
                     showManageSheet = false
                 }
             }
-            val onDeleteFromSheet = remember(item, viewModel, deleteSuccessMessage) {
-                {
-                        dismissed: Boolean, _: Boolean ->
+            val onDeleteFromSheet = remember(item, viewModel, deleteSuccessMessage, deleteFailureTemplate) {
+                { dismissed: Boolean, errorMessage: String? ->
                     if (dismissed) {
-                        coroutineScope.launch {
-                            viewModel.deleteItem(item)
-                            snackbarHostState.showSnackbar(deleteSuccessMessage)
-                            onRefresh()
-                            showManageSheet = false
+                        viewModel.deleteItem(item) { success, error ->
+                            coroutineScope.launch {
+                                if (success) {
+                                    snackbarHostState.showSnackbar(deleteSuccessMessage)
+                                    onRefresh()
+                                } else {
+                                    snackbarHostState.showSnackbar(
+                                        deleteFailureTemplate.format(error ?: unknownErrorMessage)
+                                    )
+                                }
+                                showManageSheet = false
+                            }
                         }
                     } else {
                         showManageSheet = false
@@ -303,10 +309,7 @@ fun ImmersiveHomeScreen(
                 sheetState = sheetState,
                 onDismiss = onDismissSheet,
                 onPlay = onPlayFromSheet,
-                onDelete = { dismissed, _ ->
-                    onDeleteFromSheet(dismissed, true)
-                    Unit // Ensure Unit return type
-                },
+                onDelete = onDeleteFromSheet,
             )
         }
     }
@@ -468,34 +471,28 @@ private fun MobileExpressiveHomeContent(
         val heroMovies = contentLists.recentMovies.take(5)
         if (heroMovies.isNotEmpty()) {
             item(key = "recently_added_hero", contentType = "hero_row") {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    HomeSectionTitle(
-                        title = stringResource(R.string.home_recently_added_movies),
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                    )
-                    
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(heroMovies, key = { it.id.toString() }) { movie ->
-                            MediaCard(
-                                item = movie,
-                                getImageUrl = getImageUrl,
-                                onClick = onItemClick,
-                                onLongPress = onItemLongPress,
-                                cardWidth = 340.dp, // High impact large card
-                                cardAspectRatio = 16f / 9f,
-                            )
-                        }
+                val featuredItems = remember(heroMovies, unknownText) {
+                    heroMovies.map { movie ->
+                        CarouselItem(
+                            id = movie.id.toString(),
+                            title = movie.name ?: unknownText,
+                            subtitle = movie.productionYear?.toString() ?: "",
+                            imageUrl = getBackdropUrl(movie) ?: getImageUrl(movie) ?: "",
+                            type = MediaType.MOVIE
+                        )
                     }
                 }
+                
+                ImmersiveHeroCarousel(
+                    items = featuredItems,
+                    onItemClick = { selected ->
+                        heroMovies.firstOrNull { it.id.toString() == selected.id }?.let(onItemClick)
+                    },
+                    onPlayClick = { selected ->
+                        heroMovies.firstOrNull { it.id.toString() == selected.id }?.let(onItemClick)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
 
@@ -775,7 +772,7 @@ private fun LibraryExpressiveCard(
                                 maxLines = 1,
                             )
                         }
-                    )
+                    }
                 }
             }
         }
