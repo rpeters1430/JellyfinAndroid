@@ -52,7 +52,7 @@ class CastManager @Inject constructor(
     private val initializationLock = Any()
     private var initializationDeferred: CompletableDeferred<Boolean>? = null
     private val managerScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-    private val castExecutor by lazy { Executors.newSingleThreadExecutor() }
+    private val castExecutor = Executors.newSingleThreadExecutor()
     private var activeDlnaDevice: DlnaDevice? = null
 
     private val sessionListener by lazy { 
@@ -275,8 +275,10 @@ class CastManager @Inject constructor(
     fun pauseCasting() {
         val dlna = activeDlnaDevice
         if (dlna != null) {
-            dlnaPlaybackController.pause(dlna)
-            stateStore.update { it.copy(isRemotePlaying = false) }
+            managerScope.launch {
+                dlnaPlaybackController.pause(dlna)
+                stateStore.update { it.copy(isRemotePlaying = false) }
+            }
             return
         }
         playbackController.pause(castContext)
@@ -285,8 +287,10 @@ class CastManager @Inject constructor(
     fun resumeCasting() {
         val dlna = activeDlnaDevice
         if (dlna != null) {
-            dlnaPlaybackController.play(dlna)
-            stateStore.update { it.copy(isRemotePlaying = true) }
+            managerScope.launch {
+                dlnaPlaybackController.play(dlna)
+                stateStore.update { it.copy(isRemotePlaying = true) }
+            }
             return
         }
         playbackController.resume(castContext)
@@ -295,8 +299,10 @@ class CastManager @Inject constructor(
     fun stopCasting() {
         val dlna = activeDlnaDevice
         if (dlna != null) {
-            dlnaPlaybackController.stop(dlna)
-            stateStore.update { it.copy(isRemotePlaying = false) }
+            managerScope.launch {
+                dlnaPlaybackController.stop(dlna)
+                stateStore.update { it.copy(isRemotePlaying = false) }
+            }
             return
         }
         playbackController.stop(castContext)
@@ -305,8 +311,10 @@ class CastManager @Inject constructor(
     fun seekTo(positionMs: Long) {
         val dlna = activeDlnaDevice
         if (dlna != null) {
-            dlnaPlaybackController.seek(dlna, positionMs)
-            stateStore.update { it.copy(currentPosition = positionMs) }
+            managerScope.launch {
+                dlnaPlaybackController.seek(dlna, positionMs)
+                stateStore.update { it.copy(currentPosition = positionMs) }
+            }
             return
         }
         playbackController.seekTo(castContext, positionMs)
@@ -315,8 +323,11 @@ class CastManager @Inject constructor(
     fun setVolume(volume: Float) = playbackController.setVolume(castContext, volume)
 
     fun disconnectCastSession() {
-        activeDlnaDevice?.let { dlnaPlaybackController.stop(it) }
+        val dlna = activeDlnaDevice
         activeDlnaDevice = null
+        if (dlna != null) {
+            managerScope.launch { dlnaPlaybackController.stop(dlna) }
+        }
         castContext?.sessionManager?.endCurrentSession(true)
         stateStore.update { it.copy(isConnected = false, isCasting = false, deviceName = null) }
         stateStore.clearPersistedSession(managerScope)
@@ -332,5 +343,6 @@ class CastManager @Inject constructor(
         castContext?.sessionManager?.removeSessionManagerListener(sessionListener, CastSession::class.java)
         discoveryController.stopDiscovery()
         castContext = null
+        castExecutor.shutdown()
     }
 }

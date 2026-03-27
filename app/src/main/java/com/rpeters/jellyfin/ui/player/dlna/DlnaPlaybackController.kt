@@ -2,6 +2,8 @@ package com.rpeters.jellyfin.ui.player.dlna
 
 import androidx.media3.common.util.UnstableApi
 import com.rpeters.jellyfin.utils.SecureLogger
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -23,7 +25,7 @@ class DlnaPlaybackController @Inject constructor() {
         .readTimeout(8, TimeUnit.SECONDS)
         .build()
 
-    fun loadAndPlay(device: DlnaDevice, streamUrl: String, title: String): Boolean {
+    suspend fun loadAndPlay(device: DlnaDevice, streamUrl: String, title: String): Boolean {
         val metadata = buildDidlLite(title)
         val setUriBody = """
             <u:SetAVTransportURI xmlns:u="$SERVICE">
@@ -37,7 +39,7 @@ class DlnaPlaybackController @Inject constructor() {
         return play(device)
     }
 
-    fun play(device: DlnaDevice): Boolean {
+    suspend fun play(device: DlnaDevice): Boolean {
         val body = """
             <u:Play xmlns:u="$SERVICE">
                 <InstanceID>0</InstanceID>
@@ -47,7 +49,7 @@ class DlnaPlaybackController @Inject constructor() {
         return sendSoapAction(device, "Play", body)
     }
 
-    fun pause(device: DlnaDevice): Boolean {
+    suspend fun pause(device: DlnaDevice): Boolean {
         val body = """
             <u:Pause xmlns:u="$SERVICE">
                 <InstanceID>0</InstanceID>
@@ -56,7 +58,7 @@ class DlnaPlaybackController @Inject constructor() {
         return sendSoapAction(device, "Pause", body)
     }
 
-    fun stop(device: DlnaDevice): Boolean {
+    suspend fun stop(device: DlnaDevice): Boolean {
         val body = """
             <u:Stop xmlns:u="$SERVICE">
                 <InstanceID>0</InstanceID>
@@ -65,7 +67,7 @@ class DlnaPlaybackController @Inject constructor() {
         return sendSoapAction(device, "Stop", body)
     }
 
-    fun seek(device: DlnaDevice, positionMs: Long): Boolean {
+    suspend fun seek(device: DlnaDevice, positionMs: Long): Boolean {
         val target = toDlnaTime(positionMs)
         val body = """
             <u:Seek xmlns:u="$SERVICE">
@@ -77,7 +79,7 @@ class DlnaPlaybackController @Inject constructor() {
         return sendSoapAction(device, "Seek", body)
     }
 
-    private fun sendSoapAction(device: DlnaDevice, action: String, innerBody: String): Boolean {
+    private suspend fun sendSoapAction(device: DlnaDevice, action: String, innerBody: String): Boolean = withContext(Dispatchers.IO) {
         val envelope = """
             <?xml version="1.0" encoding="utf-8"?>
             <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
@@ -94,7 +96,7 @@ class DlnaPlaybackController @Inject constructor() {
             .post(envelope.toRequestBody("text/xml; charset=utf-8".toMediaType()))
             .build()
 
-        return runCatching {
+        runCatching {
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
                     SecureLogger.w(TAG, "DLNA action $action failed for ${device.friendlyName}: HTTP ${response.code}")

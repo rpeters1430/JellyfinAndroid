@@ -38,10 +38,12 @@ class CastPlaybackController @Inject constructor(
     }
 
     /**
-     * Unregisters status updates.
+     * Unregisters status updates and clears any pending seek so it doesn't
+     * fire unexpectedly on the next session.
      */
     fun unregisterCallback(client: RemoteMediaClient?) {
         client?.unregisterCallback(remoteMediaClientCallback)
+        pendingSeekPosition = -1L
     }
 
     fun setPendingSeek(positionMs: Long) {

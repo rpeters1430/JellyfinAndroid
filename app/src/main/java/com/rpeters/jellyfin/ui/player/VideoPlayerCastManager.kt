@@ -25,7 +25,6 @@ class VideoPlayerCastManager @Inject constructor(
 ) {
     private var castPositionJob: Job? = null
     private var hasSentCastLoad = false
-    private var wasPlayingBeforeCast = false
 
     fun initialize(
         scope: CoroutineScope,
@@ -80,7 +79,6 @@ class VideoPlayerCastManager @Inject constructor(
             if (itemId.isNotEmpty()) {
                 onStartPlayback(itemId, itemName, resumePosition)
             }
-            wasPlayingBeforeCast = false
         }
 
         if (castState.isCasting) {
@@ -93,7 +91,7 @@ class VideoPlayerCastManager @Inject constructor(
     private fun startCastPositionUpdates(scope: CoroutineScope) {
         if (castPositionJob?.isActive == true) return
         castPositionJob = scope.launch(Dispatchers.Main) {
-            while (true) {
+            while (isActive) {
                 castManager.updatePlaybackState()
                 delay(1000)
             }
