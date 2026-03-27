@@ -207,7 +207,7 @@ fun ImmersiveHomeScreen(
                     exit = androidx.compose.animation.scaleOut() + androidx.compose.animation.fadeOut(),
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(end = 16.dp, bottom = 120.dp), // Height above mini player
+                        .padding(end = 16.dp, bottom = 88.dp), // Just above navigation bar
                 ) {
                     Column(
                         verticalArrangement = Arrangement.spacedBy(16.dp),

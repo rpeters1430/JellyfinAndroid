@@ -85,7 +85,8 @@
       "Read(//home/rpeters1428/Cinefin/.worktrees/m3-expressive-fixes/$BASE/app/src/main/java/com/rpeters/jellyfin/ui/player/**)",
       "Read(//home/rpeters1428/Cinefin/.worktrees/m3-expressive-fixes/$BASE/app/src/main/java/com/rpeters/jellyfin/ui/screens/**)",
       "Bash(wc:*)",
-      "Bash(unzip:*)"
+      "Bash(unzip:*)",
+      "Bash(Up\" row, matching the behaviour of the standard HomeContent.kt.:*)"
     ],
     "deny": [],
     "ask": [],

@@ -388,28 +388,6 @@ fun VideoPlayerScreen(
             )
         }
 
-        // Thin wavy progress indicator at bottom when controls are hidden
-        if (!controlsVisible && !playerState.isCastConnected && playerState.duration > 0) {
-            androidx.compose.material3.LinearWavyProgressIndicator(
-                progress = {
-                    if (playerState.duration > 0) {
-                        playerState.currentPosition.toFloat() / playerState.duration.toFloat()
-                    } else {
-                        0f
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
-                    .height(3.dp),
-                color = playerColors.overlayContent.copy(alpha = 0.8f),
-                trackColor = Color.Transparent,
-                amplitude = { 0.15f },
-                wavelength = 48.dp,
-                waveSpeed = 24.dp,
-            )
-        }
-
         SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
     }
 }
