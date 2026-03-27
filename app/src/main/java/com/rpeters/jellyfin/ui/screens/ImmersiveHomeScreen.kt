@@ -568,7 +568,19 @@ internal fun MobileExpressiveHomeContent(
                     getImageUrl = { item -> getSeriesImageUrl(item) ?: getImageUrl(item) },
                     onItemClick = onItemClick,
                     onItemLongPress = onItemLongPress,
-                    cardWidth = 200.dp, // Increased from 164dp
+                    cardWidth = 200.dp,
+                )
+            }
+        }
+
+        if (contentLists.recentVideos.isNotEmpty()) {
+            item(key = "recent_stuff", contentType = "recent_stuff") {
+                MediaRowSection(
+                    title = stringResource(id = R.string.home_recently_added_stuff),
+                    items = contentLists.recentVideos,
+                    getImageUrl = { item -> getBackdropUrl(item) ?: getImageUrl(item) },
+                    onItemClick = onItemClick,
+                    onItemLongPress = onItemLongPress,
                 )
             }
         }
