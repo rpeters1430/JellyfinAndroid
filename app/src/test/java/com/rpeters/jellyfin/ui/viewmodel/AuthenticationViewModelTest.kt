@@ -4,6 +4,7 @@ import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinUserRepository
 import io.mockk.MockKAnnotations
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -56,5 +57,34 @@ class AuthenticationViewModelTest {
         // Internal state modification for test (via refresh failure) is better, but direct check for simplicity
         viewModel.clearError()
         assertNull(viewModel.authState.value.errorMessage)
+    }
+
+    @Test
+    fun `ensureValidTokenWithWait returns true if token not expired`() = runTest {
+        every { authRepository.isTokenExpired() } returns false
+        
+        val result = viewModel.ensureValidTokenWithWait()
+        
+        assertTrue(result)
+    }
+
+    @Test
+    fun `ensureValidTokenWithWait returns true after successful re-authentication`() = runTest {
+        every { authRepository.isTokenExpired() } returnsMany listOf(true, false)
+        coEvery { authRepository.reAuthenticate() } returns true
+        
+        val result = viewModel.ensureValidTokenWithWait()
+        
+        assertTrue(result)
+    }
+
+    @Test
+    fun `ensureValidTokenWithWait returns false after failed re-authentication`() = runTest {
+        every { authRepository.isTokenExpired() } returns true
+        coEvery { authRepository.reAuthenticate() } returns false
+        
+        val result = viewModel.ensureValidTokenWithWait()
+        
+        assertFalse(result)
     }
 }
