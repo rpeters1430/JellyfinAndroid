@@ -5,6 +5,7 @@ import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinUserRepository
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -86,5 +87,31 @@ class AuthenticationViewModelTest {
         val result = viewModel.ensureValidTokenWithWait()
         
         assertFalse(result)
+    }
+
+    @Test
+    fun `refreshAuthentication updates state and propagates error on failure`() = runTest {
+        coEvery { authRepository.forceReAuthenticate() } returns false
+        
+        viewModel.refreshAuthentication()
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+        
+        val state = viewModel.authState.value
+        assertFalse(state.isAuthenticating)
+        assertFalse(state.isAuthenticated)
+        assertEquals("Failed to refresh authentication", state.errorMessage)
+    }
+
+    @Test
+    fun `logout clears credentials and resets state`() = runTest {
+        viewModel.logout()
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+        
+        coVerify { userRepository.logout() }
+        coVerify { credentialManager.clearCredentials() }
+        
+        val state = viewModel.authState.value
+        assertFalse(state.isAuthenticated)
+        assertNull(state.errorMessage)
     }
 }
