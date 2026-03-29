@@ -34,8 +34,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -57,8 +57,8 @@ import com.rpeters.jellyfin.ui.components.tv.TvImmersiveBackground
 import com.rpeters.jellyfin.ui.theme.CinefinTvTheme
 import com.rpeters.jellyfin.ui.tv.TvFocusableGrid
 import com.rpeters.jellyfin.ui.tv.TvScreenFocusScope
-import com.rpeters.jellyfin.ui.tv.requestInitialFocus
 import com.rpeters.jellyfin.ui.tv.rememberTvFocusManager
+import com.rpeters.jellyfin.ui.tv.requestInitialFocus
 import com.rpeters.jellyfin.ui.tv.tvKeyboardHandler
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.ui.viewmodel.SearchViewModel
@@ -92,7 +92,7 @@ fun TvSearchScreen(
     val firstFilterFocusRequester = remember { FocusRequester() }
     val resultsFocusRequester = remember { FocusRequester() }
     searchFieldFocusRequester.requestInitialFocus(
-        condition = searchState.searchQuery.isBlank() && !searchState.hasSearched
+        condition = searchState.searchQuery.isBlank() && !searchState.hasSearched,
     )
 
     TvScreenFocusScope(
@@ -186,7 +186,7 @@ fun TvSearchScreen(
                                         Modifier.focusRequester(firstFilterFocusRequester)
                                     } else {
                                         Modifier
-                                    }
+                                    },
                                 )
                                 .onPreviewKeyEvent { keyEvent ->
                                     when {

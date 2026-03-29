@@ -63,7 +63,7 @@ fun TvHomeScreen(
                         modifier = Modifier.padding(
                             start = tvLayout.screenHorizontalPadding,
                             bottom = 8.dp,
-                        )
+                        ),
                     )
                 }
 
@@ -77,7 +77,7 @@ fun TvHomeScreen(
                             onItemClick = { onLibrarySelect(it.id.toString()) },
                             content = { library, isFocused ->
                                 LibraryCard(library, isFocused)
-                            }
+                            },
                         )
                     }
                 }
@@ -98,7 +98,7 @@ fun TvHomeScreen(
                                     aspectRatio = 16f / 9f,
                                     width = 320.dp,
                                 )
-                            }
+                            },
                         )
                     }
                 }
@@ -120,7 +120,7 @@ fun TvHomeScreen(
                                     aspectRatio = 2f / 3f,
                                     width = 180.dp,
                                 )
-                            }
+                            },
                         )
                     }
                 }
@@ -142,7 +142,7 @@ fun TvHomeScreen(
                                     aspectRatio = 2f / 3f,
                                     width = 180.dp,
                                 )
-                            }
+                            },
                         )
                     }
                 }
@@ -164,7 +164,7 @@ fun TvHomeScreen(
                                     aspectRatio = 16f / 9f,
                                     width = 280.dp,
                                 )
-                            }
+                            },
                         )
                     }
                 }
