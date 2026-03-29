@@ -229,8 +229,12 @@ fun TvItemDetailScreen(
                 return@Box
             }
 
-            // Full-screen Immersive Backdrop with zoom
-            Box(modifier = Modifier.fillMaxSize().graphicsLayer(scaleX = backdropScale, scaleY = backdropScale)) {
+            // Full-screen Immersive Backdrop with zoom (centered scale to avoid edge bleed)
+            Box(modifier = Modifier.fillMaxSize().graphicsLayer {
+                scaleX = backdropScale
+                scaleY = backdropScale
+                transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0.5f)
+            }) {
                 TvImmersiveBackground(
                     backdropUrl = focusedBackdrop,
                     dimAmount = 0.6f,

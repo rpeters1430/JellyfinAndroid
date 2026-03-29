@@ -246,7 +246,9 @@ fun TvSearchScreen(
                     val gridState = rememberLazyGridState()
                     val horizontalScreenPadding = tvLayout.screenHorizontalPadding * 2
                     val gridSpacing = tvLayout.cardSpacing
-                    val availableWidth = (configuration.screenWidthDp.dp - horizontalScreenPadding).coerceAtLeast(0.dp)
+                    // Subtract drawerWidth: configuration.screenWidthDp is the full physical screen
+                    // but the content area is already narrowed by the persistent sidebar.
+                    val availableWidth = (configuration.screenWidthDp.dp - tvLayout.drawerWidth - horizontalScreenPadding).coerceAtLeast(0.dp)
                     val maxColumnsForCardWidth =
                         ((availableWidth + gridSpacing) / (layoutConfig.carouselItemWidth + gridSpacing))
                             .toInt()
