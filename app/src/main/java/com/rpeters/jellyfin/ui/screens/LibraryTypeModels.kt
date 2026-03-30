@@ -25,10 +25,13 @@ import org.jellyfin.sdk.model.api.BaseItemKind
 object LibraryScreenDefaults {
     // Layout constants
     val GridMinItemSize = 160.dp
+    val PhoneGridMinItemSize = 156.dp
     val CardElevation = 4.dp
     val CardCornerRadius = 12.dp
     val ContentPadding = 16.dp
+    val PhoneGridContentPadding = 12.dp
     val ItemSpacing = 12.dp
+    val PhoneGridItemSpacing = 8.dp
     val SectionSpacing = 24.dp
     val FilterChipSpacing = 8.dp
 

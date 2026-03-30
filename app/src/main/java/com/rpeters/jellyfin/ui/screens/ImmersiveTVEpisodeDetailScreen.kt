@@ -118,6 +118,7 @@ fun ImmersiveTVEpisodeDetailScreen(
     seriesInfo: BaseItemDto? = null,
     seasonEpisodes: List<BaseItemDto> = emptyList(),
     getImageUrl: (BaseItemDto) -> String?,
+    getChapterImageUrl: (chapterIndex: Int, imageTag: String?) -> String?,
     getBackdropUrl: (BaseItemDto) -> String?,
     onBackClick: () -> Unit,
     onEpisodeClick: (BaseItemDto) -> Unit = {},
@@ -328,6 +329,9 @@ fun ImmersiveTVEpisodeDetailScreen(
                             ChapterListSection(
                                 chapters = chapters,
                                 onChapterClick = { positionMs -> onPlayClick(episode, null, positionMs) },
+                                getChapterImageUrl = { chapter, index ->
+                                    getChapterImageUrl(index, chapter.imageTag)
+                                },
                             )
                         }
                     }

@@ -104,7 +104,7 @@ fun HomeContent(
             HomeRowSectionConfig(
                 key = HomeSectionKeys.NEXT_UP,
                 contentType = HomeSectionContentTypes.POSTER_ROW,
-                titleRes = R.string.home_next_up,
+                titleRes = R.string.home_recently_added_tv_episodes,
                 items = contentLists.recentEpisodes,
                 rowKind = HomeRowKind.POSTER,
                 imageSelector = HomeImageSelector.SERIES_OR_DEFAULT,
@@ -114,14 +114,6 @@ fun HomeContent(
                 contentType = HomeSectionContentTypes.POSTER_ROW,
                 titleRes = R.string.home_recently_added_movies,
                 items = contentLists.recentMovies,
-                rowKind = HomeRowKind.POSTER,
-                imageSelector = HomeImageSelector.DEFAULT,
-            ),
-            HomeRowSectionConfig(
-                key = HomeSectionKeys.RECENT_TV_SHOWS,
-                contentType = HomeSectionContentTypes.POSTER_ROW,
-                titleRes = R.string.home_recently_added_tv_shows,
-                items = contentLists.recentTVShows,
                 rowKind = HomeRowKind.POSTER,
                 imageSelector = HomeImageSelector.DEFAULT,
             ),
@@ -426,7 +418,7 @@ private fun TabletHomeLayout(
         // Next Up Grid
         if (contentLists.recentEpisodes.isNotEmpty()) {
             item(key = "next_up_header", contentType = "section_header") {
-                SectionHeader(title = stringResource(id = R.string.home_next_up))
+                SectionHeader(title = stringResource(id = R.string.home_recently_added_tv_episodes))
             }
             item(key = "next_up_grid", contentType = "grid") {
                 val nextUpItems = contentLists.recentEpisodes.take(gridColumns * MAX_NEXT_UP_ROWS)
@@ -449,22 +441,6 @@ private fun TabletHomeLayout(
             item(key = "recent_movies_row", contentType = "row") {
                 PosterCardRow(
                     items = contentLists.recentMovies,
-                    getImageUrl = getImageUrl,
-                    onItemClick = onItemClick,
-                    onItemLongPress = onItemLongPress,
-                    cardWidth = adaptiveConfig.posterCardWidth,
-                )
-            }
-        }
-
-        // Recently Added TV Shows Row
-        if (contentLists.recentTVShows.isNotEmpty()) {
-            item(key = "recent_tv_header", contentType = "section_header") {
-                SectionHeader(title = stringResource(id = R.string.home_recently_added_tv_shows))
-            }
-            item(key = "recent_tv_row", contentType = "row") {
-                PosterCardRow(
-                    items = contentLists.recentTVShows,
                     getImageUrl = getImageUrl,
                     onItemClick = onItemClick,
                     onItemLongPress = onItemLongPress,

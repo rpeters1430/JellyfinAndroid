@@ -127,11 +127,11 @@ fun ExpressiveBentoGrid(
                 )
             }
 
-            // 6. Recent TV Shows
-            contentLists.recentTVShows.take(2).forEach { item ->
+            // 6. Recent Episodes
+            contentLists.recentEpisodes.take(2).forEach { item ->
                 add(
                     BentoGridItem(
-                        id = "recent_tv_${item.id}",
+                        id = "recent_episode_${item.id}",
                         type = BentoItemType.Action,
                         item = item,
                         onClick = { onItemClick(item) },

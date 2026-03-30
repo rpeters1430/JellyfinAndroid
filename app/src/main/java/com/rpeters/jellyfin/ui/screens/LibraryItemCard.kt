@@ -63,12 +63,14 @@ fun LibraryItemCard(
     onMoreClick: ((BaseItemDto) -> Unit)? = null,
     isCompact: Boolean,
     isTablet: Boolean = false,
+    useFixedCompactWidth: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
     // Use adaptive card dimensions
     val cardWidth = when {
+        !useFixedCompactWidth -> null
         isCompact && isTablet -> LibraryScreenDefaults.TabletCompactCardWidth
         isCompact -> LibraryScreenDefaults.CompactCardWidth
         else -> null

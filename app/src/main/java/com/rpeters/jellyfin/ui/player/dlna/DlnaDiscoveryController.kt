@@ -1,7 +1,10 @@
 package com.rpeters.jellyfin.ui.player.dlna
 
+import android.content.Context
+import android.net.wifi.WifiManager
 import androidx.media3.common.util.UnstableApi
 import com.rpeters.jellyfin.utils.SecureLogger
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -23,7 +26,9 @@ import javax.xml.parsers.DocumentBuilderFactory
 
 @UnstableApi
 @Singleton
-class DlnaDiscoveryController @Inject constructor() {
+class DlnaDiscoveryController @Inject constructor(
+    @ApplicationContext private val context: Context,
+) {
     companion object {
         private const val TAG = "DlnaDiscovery"
         private const val SSDP_ADDRESS = "239.255.255.250"
@@ -63,6 +68,7 @@ class DlnaDiscoveryController @Inject constructor() {
         val locations = linkedSetOf<String>()
         val request = buildMSearchRequest()
         val endAt = System.currentTimeMillis() + DISCOVERY_WINDOW_MS
+        val multicastLock = acquireMulticastLock()
 
         runCatching {
             DatagramSocket().use { socket ->
@@ -89,6 +95,12 @@ class DlnaDiscoveryController @Inject constructor() {
             }
         }.onFailure { e ->
             SecureLogger.w(TAG, "DLNA discovery failed", e)
+        }.also {
+            multicastLock?.let { lock ->
+                if (lock.isHeld) {
+                    lock.release()
+                }
+            }
         }
 
         val devices = locations.mapNotNull { location ->
@@ -99,6 +111,18 @@ class DlnaDiscoveryController @Inject constructor() {
 
         SecureLogger.d(TAG, "Discovered ${devices.size} DLNA device(s)")
         devices
+    }
+
+    private fun acquireMulticastLock(): WifiManager.MulticastLock? {
+        return runCatching {
+            val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+            wifiManager?.createMulticastLock("$TAG-lock")?.apply {
+                setReferenceCounted(false)
+                acquire()
+            }
+        }.onFailure { e ->
+            SecureLogger.w(TAG, "Failed to acquire multicast lock for DLNA discovery", e)
+        }.getOrNull()
     }
 
     private fun buildMSearchRequest(): ByteArray {
@@ -165,4 +189,3 @@ class DlnaDiscoveryController @Inject constructor() {
         }
     }
 }
-

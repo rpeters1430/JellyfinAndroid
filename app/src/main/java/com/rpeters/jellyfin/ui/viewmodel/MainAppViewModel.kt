@@ -1230,6 +1230,9 @@ constructor(
     fun getSeriesImageUrl(item: BaseItemDto): String? =
         streamRepository.getSeriesImageUrl(item)
 
+    fun getChapterImageUrl(itemId: String, chapterIndex: Int, imageTag: String?): String? =
+        streamRepository.getChapterImageUrl(itemId, chapterIndex, imageTag)
+
     fun getStreamUrl(item: BaseItemDto): String? =
         streamRepository.getStreamUrl(item.id.toString())
 

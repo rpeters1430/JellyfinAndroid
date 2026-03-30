@@ -466,6 +466,25 @@ class JellyfinStreamRepository @Inject constructor(
     }
 
     /**
+     * Get chapter image URL for a media item chapter.
+     */
+    fun getChapterImageUrl(itemId: String, chapterIndex: Int, tag: String?): String? {
+        return try {
+            val server = authRepository.getCurrentServer() ?: return null
+            if (server.accessToken.isNullOrBlank() || server.url.isNullOrBlank()) {
+                Log.w("JellyfinStreamRepository", "getChapterImageUrl: Server not available or missing credentials")
+                return null
+            }
+
+            val tagParam = tag?.let { "?tag=$it&maxHeight=$DEFAULT_IMAGE_MAX_HEIGHT&maxWidth=$DEFAULT_IMAGE_MAX_WIDTH" }
+                ?: "?maxHeight=$DEFAULT_IMAGE_MAX_HEIGHT&maxWidth=$DEFAULT_IMAGE_MAX_WIDTH"
+            "${server.url}/Items/$itemId/Images/Chapter/$chapterIndex$tagParam"
+        } catch (e: CancellationException) {
+            throw e
+        }
+    }
+
+    /**
      * Get logo URL for an item (for detail screens)
      */
     fun getLogoUrl(item: BaseItemDto): String? {

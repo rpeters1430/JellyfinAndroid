@@ -64,7 +64,12 @@ class CastDiscoveryController @Inject constructor(
             val selector = castContext.mergedSelector
             if (selector != null) {
                 if (!routeCallbackAdded) {
-                    router.addCallback(selector, routeCallback, MediaRouter.CALLBACK_FLAG_REQUEST_DISCOVERY)
+                    router.addCallback(
+                        selector,
+                        routeCallback,
+                        MediaRouter.CALLBACK_FLAG_REQUEST_DISCOVERY or
+                            MediaRouter.CALLBACK_FLAG_PERFORM_ACTIVE_SCAN,
+                    )
                     routeCallbackAdded = true
                 }
                 updateDiscoveredDevices(router)

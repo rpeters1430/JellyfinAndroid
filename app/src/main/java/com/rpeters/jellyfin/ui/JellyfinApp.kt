@@ -24,6 +24,7 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffo
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -207,6 +208,10 @@ fun JellyfinApp(
 
         // Only show navigation on main screens
         val shouldShowNavigation = shouldShowNavigation(currentDestination?.route)
+        val compactBottomChromePadding by animateDpAsState(
+            targetValue = if (navBarVisible.value) 148.dp else 12.dp,
+            label = "compactBottomChromePadding",
+        )
 
         // Pre-compute toggle item colors outside the non-composable navigationSuiteItems lambda.
         val toggleItemColors = NavigationSuiteDefaults.itemColors(
@@ -278,10 +283,9 @@ fun JellyfinApp(
                             .fillMaxSize()
                             .then(
                                 if (isCompactWidth) {
-                                    // Add padding for floating toolbar, mini player, and system navigation bars
+                                    // Collapse the reserved bottom space when the floating phone chrome hides.
                                     val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-                                    // Room for MiniPlayer (72dp) + ExpressiveNavBar (60dp) + Spacing (8dp) + Floating Gap (8dp)
-                                    Modifier.padding(bottom = 148.dp + navBarPadding)
+                                    Modifier.padding(bottom = compactBottomChromePadding + navBarPadding)
                                 } else {
                                     // Room for MiniPlayer on tablets
                                     Modifier.padding(bottom = 80.dp)
@@ -393,4 +397,3 @@ fun JellyfinApp(
         } // CompositionLocalProvider(LocalNavBarVisible)
     }
 }
-

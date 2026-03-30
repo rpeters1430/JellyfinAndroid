@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.screens.details.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,15 +20,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil3.compose.SubcomposeAsyncImage
+import com.rpeters.jellyfin.ui.ShimmerBox
 import org.jellyfin.sdk.model.api.ChapterInfo
 
 @Composable
 fun ChapterListSection(
     chapters: List<ChapterInfo>,
     onChapterClick: (positionMs: Long) -> Unit,
+    getChapterImageUrl: ((chapter: ChapterInfo, index: Int) -> String?)? = null,
     modifier: Modifier = Modifier,
 ) {
     if (chapters.isEmpty()) return
@@ -48,6 +54,7 @@ fun ChapterListSection(
                 ChapterCard(
                     name = chapter.name ?: "Chapter ${index + 1}",
                     startMs = startMs,
+                    imageUrl = getChapterImageUrl?.invoke(chapter, index),
                     onClick = { onChapterClick(startMs) },
                 )
             }
@@ -59,6 +66,7 @@ fun ChapterListSection(
 private fun ChapterCard(
     name: String,
     startMs: Long,
+    imageUrl: String?,
     onClick: () -> Unit,
 ) {
     val totalSeconds = startMs / 1000L
@@ -75,31 +83,63 @@ private fun ChapterCard(
         onClick = onClick,
         modifier = Modifier.widthIn(min = 120.dp, max = 200.dp),
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                imageVector = Icons.Default.PlayArrow,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = timestamp,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.SemiBold,
+        Column {
+            if (!imageUrl.isNullOrBlank()) {
+                SubcomposeAsyncImage(
+                    model = imageUrl,
+                    contentDescription = name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .size(width = 200.dp, height = 96.dp)
+                        .clip(MaterialTheme.shapes.medium),
+                    loading = { ShimmerBox() },
+                    error = {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .size(width = 200.dp, height = 96.dp)
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    },
                 )
-                Text(
-                    text = name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+            }
+
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.primary,
                 )
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        text = timestamp,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
     }

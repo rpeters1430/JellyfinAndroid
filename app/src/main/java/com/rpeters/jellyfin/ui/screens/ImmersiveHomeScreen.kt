@@ -15,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -424,6 +425,11 @@ private fun ImmersiveHomeContent(
     val stableOnItemClick = remember(onItemClick) { onItemClick }
     val stableOnItemLongPress = remember(onItemLongPress) { onItemLongPress }
     val viewingMood = appState.viewingMood
+    val isGlobalNavBarVisible = LocalNavBarVisible.current.value
+    val homeContentBottomPadding by animateDpAsState(
+        targetValue = if (isGlobalNavBarVisible) 24.dp else 8.dp,
+        label = "homeContentBottomPadding",
+    )
 
     ExpressivePullToRefreshBox(
         isRefreshing = appState.isLoading,
@@ -455,6 +461,7 @@ private fun ImmersiveHomeContent(
                 viewingMood = viewingMood,
                 listState = listState,
                 contentPadding = contentPadding,
+                bottomSpacing = homeContentBottomPadding,
                 animatedVisibilityScope = animatedVisibilityScope,
                 modifier = Modifier.fillMaxSize(),
             )
@@ -477,12 +484,14 @@ internal fun MobileExpressiveHomeContent(
     viewingMood: String?,
     listState: LazyListState,
     contentPadding: PaddingValues,
+    bottomSpacing: androidx.compose.ui.unit.Dp,
     animatedVisibilityScope: androidx.compose.animation.AnimatedVisibilityScope? = null,
     modifier: Modifier = Modifier,
 ) {
     val unknownText = stringResource(id = R.string.unknown)
     val libraryRows = remember(appState.libraries, appState.itemsByLibrary) {
         appState.libraries.mapNotNull { library ->
+            if (library.toLibraryTypeOrNull() == LibraryType.STUFF) return@mapNotNull null
             val libraryId = library.id.toString()
             val items = appState.itemsByLibrary[libraryId]
                 .orEmpty()
@@ -499,7 +508,7 @@ internal fun MobileExpressiveHomeContent(
             start = 0.dp,
             top = contentPadding.calculateTopPadding(),
             end = 0.dp,
-            bottom = contentPadding.calculateBottomPadding() + 96.dp,
+            bottom = contentPadding.calculateBottomPadding() + bottomSpacing,
         ),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
@@ -573,7 +582,7 @@ internal fun MobileExpressiveHomeContent(
         if (contentLists.recentEpisodes.isNotEmpty()) {
             item(key = "next_up", contentType = "next_up") {
                 PosterRowSection(
-                    title = stringResource(id = R.string.home_next_up),
+                    title = stringResource(id = R.string.home_recently_added_tv_episodes),
                     items = contentLists.recentEpisodes,
                     getImageUrl = { item -> getSeriesImageUrl(item) ?: getImageUrl(item) },
                     onItemClick = onItemClick,

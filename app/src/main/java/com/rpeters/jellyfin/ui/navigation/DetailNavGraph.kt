@@ -365,6 +365,9 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 whyYoullLoveThis = detailState.whyYoullLoveThis,
                 isLoadingWhyYoullLoveThis = detailState.isLoadingWhyYoullLoveThis,
                 getImageUrl = { item -> mainViewModel.getImageUrl(item) },
+                getChapterImageUrl = { chapterIndex, imageTag ->
+                    mainViewModel.getChapterImageUrl(resolvedMovie.id.toString(), chapterIndex, imageTag)
+                },
                 getBackdropUrl = { item -> mainViewModel.getBackdropUrl(item) },
                 getLogoUrl = { item -> mainViewModel.getLogoUrl(item) },
                 getPersonImageUrl = { person -> mainViewModel.getPersonImageUrl(person) },
@@ -448,6 +451,9 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                     seasonEpisodes = detailState.seasonEpisodes,
                     playbackProgress = detailState.playbackProgress,
                     getImageUrl = { mainViewModel.getImageUrl(it) },
+                    getChapterImageUrl = { chapterIndex, imageTag ->
+                        mainViewModel.getChapterImageUrl(episode.id.toString(), chapterIndex, imageTag)
+                    },
                     getBackdropUrl = { mainViewModel.getBackdropUrl(it) },
                     onBackClick = { navController.popBackStack() },
                     onEpisodeClick = { episodeItem ->

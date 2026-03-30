@@ -504,6 +504,22 @@ private fun GridContent(
     isTablet: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
+    val horizontalPadding = if (isTablet) {
+        LibraryScreenDefaults.ContentPadding
+    } else {
+        LibraryScreenDefaults.PhoneGridContentPadding
+    }
+    val itemSpacing = if (isTablet) {
+        LibraryScreenDefaults.ItemSpacing
+    } else {
+        LibraryScreenDefaults.PhoneGridItemSpacing
+    }
+    val gridMinItemSize = if (isTablet) {
+        LibraryScreenDefaults.GridMinItemSize
+    } else {
+        LibraryScreenDefaults.PhoneGridMinItemSize
+    }
+
     LaunchedEffect(gridState, items.size, hasMoreItems, isLoadingMore) {
         snapshotFlow { gridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
             .collect { lastVisibleIndex ->
@@ -514,15 +530,15 @@ private fun GridContent(
     }
 
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = LibraryScreenDefaults.GridMinItemSize),
+        columns = GridCells.Adaptive(minSize = gridMinItemSize),
         contentPadding = PaddingValues(
-            start = LibraryScreenDefaults.ContentPadding,
+            start = horizontalPadding,
             top = LibraryScreenDefaults.FilterChipSpacing,
-            end = LibraryScreenDefaults.ContentPadding,
+            end = horizontalPadding,
             bottom = 96.dp,
         ),
         verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ContentPadding),
-        horizontalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ItemSpacing),
+        horizontalArrangement = Arrangement.spacedBy(itemSpacing),
         modifier = modifier.fillMaxSize(),
         state = gridState,
     ) {
@@ -563,6 +579,7 @@ private fun GridContent(
                 onMoreClick = onItemLongPress,
                 isCompact = true,
                 isTablet = isTablet,
+                useFixedCompactWidth = false,
             )
         }
         if (hasMoreItems || isLoadingMore) {
