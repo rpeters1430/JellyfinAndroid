@@ -60,7 +60,7 @@ googleGmsGoogleServices = "4.4.4"
 googleFirebaseCrashlytics = "3.0.6"
 googleFirebasePerf = "2.0.2"
 mlkitGenaiPrompt = "1.0.0-beta1"
-orbit = "9.0.0"
+orbit = "11.0.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
