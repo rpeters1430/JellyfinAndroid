@@ -1,7 +1,7 @@
 package com.rpeters.jellyfin.ui.player
 
 import androidx.media3.common.util.UnstableApi
-import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -15,7 +15,7 @@ import javax.inject.Inject
  */
 @UnstableApi
 class VideoPlayerMetadataManager @Inject constructor(
-    private val repository: JellyfinRepository,
+    private val repository: IJellyfinRepository,
     private val stateManager: VideoPlayerStateManager
 ) {
     private var countdownJob: Job? = null

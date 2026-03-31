@@ -21,7 +21,7 @@ import androidx.work.WorkRequest
 import androidx.work.workDataOf
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.R
-import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.worker.DownloadActionReceiver
 import com.rpeters.jellyfin.data.worker.OfflineDownloadWorker
 import com.rpeters.jellyfin.utils.SecureLogger
@@ -61,7 +61,7 @@ import javax.inject.Singleton
 @Singleton
 class OfflineDownloadManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val repository: JellyfinRepository,
+    private val repository: IJellyfinRepository,
     private val okHttpClient: OkHttpClient,
     private val encryptedPreferences: com.rpeters.jellyfin.data.security.EncryptedPreferences,
     private val dispatchers: com.rpeters.jellyfin.data.common.DispatcherProvider,

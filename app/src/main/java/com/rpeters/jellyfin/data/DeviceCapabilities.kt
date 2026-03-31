@@ -307,16 +307,17 @@ class DeviceCapabilities @Inject constructor(
             }
         }
 
-        val canDirectPlay = score > 0
+        val normalizedScore = score.coerceIn(0, 100)
+        val canDirectPlay = normalizedScore > 0
         val recommendation = when {
-            score >= 90 -> "Excellent Direct Play compatibility"
-            score >= 70 -> "Good Direct Play compatibility"
-            score >= 50 -> "Fair Direct Play compatibility - may have performance issues"
-            score > 0 -> "Poor Direct Play compatibility - transcoding recommended"
+            normalizedScore >= 90 -> "Excellent Direct Play compatibility"
+            normalizedScore >= 70 -> "Good Direct Play compatibility"
+            normalizedScore >= 50 -> "Fair Direct Play compatibility - may have performance issues"
+            normalizedScore > 0 -> "Poor Direct Play compatibility - transcoding recommended"
             else -> "Direct Play not possible"
         }
 
-        return DirectPlayAnalysis(canDirectPlay, score, issues, recommendation)
+        return DirectPlayAnalysis(canDirectPlay, normalizedScore, issues, recommendation)
     }
 
     private fun getSupportedVideoCodecs(): List<String> {
@@ -352,7 +353,10 @@ class DeviceCapabilities @Inject constructor(
             }
         } catch (e: Exception) {
             SecureLogger.w(TAG, "Failed to detect supported codecs", e)
-            // Fallback to common codecs
+        }
+
+        if (supportedCodecs.isEmpty()) {
+            SecureLogger.w(TAG, "Codec detection returned no ${if (isVideo) "video" else "audio"} codecs, using fallback defaults")
             if (isVideo) {
                 supportedCodecs.addAll(setOf("h264", "mpeg4", "h263", "vp8"))
             } else {

@@ -97,6 +97,11 @@ class LibraryItemPagingSource(
             }
         } catch (exception: CancellationException) {
             throw exception
+        } catch (exception: Exception) {
+            if (BuildConfig.DEBUG) {
+                Log.e(TAG, "Unexpected paging failure for parentId=$parentId", exception)
+            }
+            LoadResult.Error(exception)
         }
     }
 

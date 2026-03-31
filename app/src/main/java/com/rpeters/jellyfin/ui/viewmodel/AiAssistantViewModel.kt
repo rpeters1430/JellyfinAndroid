@@ -3,7 +3,7 @@ package com.rpeters.jellyfin.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rpeters.jellyfin.data.repository.GenerativeAiRepository
-import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
@@ -35,7 +35,7 @@ data class AiAssistantState(
 @HiltViewModel
 class AiAssistantViewModel @Inject constructor(
     private val generativeAiRepository: GenerativeAiRepository,
-    private val jellyfinRepository: JellyfinRepository,
+    private val jellyfinRepository: IJellyfinRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AiAssistantState())

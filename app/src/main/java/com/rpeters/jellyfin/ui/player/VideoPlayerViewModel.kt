@@ -7,7 +7,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import com.rpeters.jellyfin.core.architecture.BaseMviViewModel
 import com.rpeters.jellyfin.data.playback.AdaptiveBitrateMonitor
-import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -27,7 +27,7 @@ import javax.inject.Inject
 @HiltViewModel
 class VideoPlayerViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val repository: JellyfinRepository,
+    private val repository: IJellyfinRepository,
     private val stateManager: VideoPlayerStateManager,
     private val playbackManager: VideoPlayerPlaybackManager,
     private val trackManager: VideoPlayerTrackManager,

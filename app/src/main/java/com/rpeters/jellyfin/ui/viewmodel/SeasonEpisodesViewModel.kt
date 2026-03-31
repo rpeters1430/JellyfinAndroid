@@ -2,7 +2,7 @@ package com.rpeters.jellyfin.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +20,7 @@ data class SeasonEpisodesState(
 
 @HiltViewModel
 class SeasonEpisodesViewModel @Inject constructor(
-    private val repository: JellyfinRepository,
+    private val repository: IJellyfinRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SeasonEpisodesState())

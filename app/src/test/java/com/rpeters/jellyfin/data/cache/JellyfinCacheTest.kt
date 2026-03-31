@@ -56,14 +56,16 @@ class JellyfinCacheTest {
         // Given - simulates first app launch scenario
         val key = "test_key"
         val testItems = listOf(
-            mockk<BaseItemDto>(relaxed = true) {
-                every { id } returns java.util.UUID.randomUUID()
-                every { name } returns "Test Item 1"
-            },
-            mockk<BaseItemDto>(relaxed = true) {
-                every { id } returns java.util.UUID.randomUUID()
-                every { name } returns "Test Item 2"
-            },
+            BaseItemDto(
+                id = java.util.UUID.randomUUID(),
+                name = "Test Item 1",
+                type = org.jellyfin.sdk.model.api.BaseItemKind.MOVIE
+            ),
+            BaseItemDto(
+                id = java.util.UUID.randomUUID(),
+                name = "Test Item 2",
+                type = org.jellyfin.sdk.model.api.BaseItemKind.MOVIE
+            ),
         )
 
         // When - cache items immediately (race condition test)
@@ -85,10 +87,11 @@ class JellyfinCacheTest {
         // Given - multiple cache operations happening concurrently
         val keys = (1..10).map { "concurrent_key_$it" }
         val testItems = listOf(
-            mockk<BaseItemDto>(relaxed = true) {
-                every { id } returns java.util.UUID.randomUUID()
-                every { name } returns "Concurrent Test Item"
-            },
+            BaseItemDto(
+                id = java.util.UUID.randomUUID(),
+                name = "Concurrent Test Item",
+                type = org.jellyfin.sdk.model.api.BaseItemKind.MOVIE
+            ),
         )
 
         // When - perform concurrent cache operations
@@ -135,10 +138,11 @@ class JellyfinCacheTest {
         // Given - items cached with very short TTL
         val key = "ttl_test_key"
         val testItems = listOf(
-            mockk<BaseItemDto>(relaxed = true) {
-                every { id } returns java.util.UUID.randomUUID()
-                every { name } returns "TTL Test Item"
-            },
+            BaseItemDto(
+                id = java.util.UUID.randomUUID(),
+                name = "TTL Test Item",
+                type = org.jellyfin.sdk.model.api.BaseItemKind.MOVIE
+            ),
         )
         val shortTtl = 1L // 1 millisecond
 
@@ -158,10 +162,11 @@ class JellyfinCacheTest {
         // Given - fresh cache instance
         val key = "directory_test_key"
         val testItems = listOf(
-            mockk<BaseItemDto>(relaxed = true) {
-                every { id } returns java.util.UUID.randomUUID()
-                every { name } returns "Directory Test Item"
-            },
+            BaseItemDto(
+                id = java.util.UUID.randomUUID(),
+                name = "Directory Test Item",
+                type = org.jellyfin.sdk.model.api.BaseItemKind.MOVIE
+            ),
         )
 
         // When - perform cache operation
@@ -179,10 +184,11 @@ class JellyfinCacheTest {
         // Given - items to cache
         val key = "memory_disk_test_key"
         val testItems = listOf(
-            mockk<BaseItemDto>(relaxed = true) {
-                every { id } returns java.util.UUID.randomUUID()
-                every { name } returns "Memory Disk Test Item"
-            },
+            BaseItemDto(
+                id = java.util.UUID.randomUUID(),
+                name = "Memory Disk Test Item",
+                type = org.jellyfin.sdk.model.api.BaseItemKind.MOVIE
+            ),
         )
 
         // When - cache items (should go to both memory and disk)
@@ -226,10 +232,11 @@ class JellyfinCacheTest {
         // Given - initial cached items
         val key = "concurrent_rw_key"
         val testItems = listOf(
-            mockk<BaseItemDto>(relaxed = true) {
-                every { id } returns java.util.UUID.randomUUID()
-                every { name } returns "Concurrent RW Test Item"
-            },
+            BaseItemDto(
+                id = java.util.UUID.randomUUID(),
+                name = "Concurrent RW Test Item",
+                type = org.jellyfin.sdk.model.api.BaseItemKind.MOVIE
+            ),
         )
         cache.cacheItems(key, testItems)
 

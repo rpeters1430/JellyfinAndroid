@@ -3,7 +3,7 @@ package com.rpeters.jellyfin.ui.player
 import android.content.Context
 import androidx.media3.common.util.UnstableApi
 import com.rpeters.jellyfin.data.playback.AdaptiveBitrateMonitor
-import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.ui.player.cast.CastState
 import io.mockk.every
 import io.mockk.mockk
@@ -32,7 +32,7 @@ class VideoPlayerViewModelInitTest {
     private val testDispatcher = StandardTestDispatcher()
 
     private lateinit var mockContext: Context
-    private lateinit var mockRepository: JellyfinRepository
+    private lateinit var mockRepository: IJellyfinRepository
     private lateinit var mockStateManager: VideoPlayerStateManager
     private lateinit var mockPlaybackManager: VideoPlayerPlaybackManager
     private lateinit var mockTrackManager: VideoPlayerTrackManager

@@ -4,7 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rpeters.jellyfin.data.repository.GenerativeAiRepository
-import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +19,7 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class PersonDetailViewModel @Inject constructor(
-    private val repository: JellyfinRepository,
+    private val repository: IJellyfinRepository,
     private val aiRepository: GenerativeAiRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {

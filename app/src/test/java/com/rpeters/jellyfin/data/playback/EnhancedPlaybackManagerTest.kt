@@ -5,6 +5,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import com.rpeters.jellyfin.data.DeviceCapabilities
+import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import io.mockk.clearMocks
@@ -40,7 +41,7 @@ class EnhancedPlaybackManagerTest {
 
     private lateinit var manager: EnhancedPlaybackManager
     private lateinit var context: Context
-    private lateinit var repository: JellyfinRepository
+    private lateinit var repository: IJellyfinRepository
     private lateinit var streamRepository: JellyfinStreamRepository
     private lateinit var deviceCapabilities: DeviceCapabilities
     private lateinit var connectivityChecker: com.rpeters.jellyfin.network.ConnectivityChecker
@@ -55,8 +56,17 @@ class EnhancedPlaybackManagerTest {
         repository = mockk(relaxed = true)
         streamRepository = mockk(relaxed = true)
         deviceCapabilities = mockk(relaxed = true)
+        every { deviceCapabilities.canPlayContainer(any()) } returns true
+        every { deviceCapabilities.canPlayVideoCodec(any(), any(), any()) } returns true
+        every { deviceCapabilities.canPlayAudioCodec(any(), any()) } returns true
+        every { deviceCapabilities.canPlayAudioCodecStrict(any(), any()) } returns true
+        
         connectivityChecker = mockk(relaxed = true)
         playbackPreferencesRepository = mockk(relaxed = true)
+        val prefs = com.rpeters.jellyfin.data.preferences.PlaybackPreferences.DEFAULT
+        every { playbackPreferencesRepository.preferences } returns kotlinx.coroutines.flow.MutableStateFlow(prefs)
+        every { connectivityChecker.getNetworkType() } returns com.rpeters.jellyfin.network.NetworkType.WIFI
+        every { connectivityChecker.getNetworkQuality() } returns com.rpeters.jellyfin.network.ConnectivityQuality.GOOD
         connectivityManager = mockk(relaxed = true)
         network = mockk(relaxed = true)
         networkCapabilities = mockk(relaxed = true)
@@ -67,9 +77,25 @@ class EnhancedPlaybackManagerTest {
         every { connectivityManager.getNetworkCapabilities(network) } returns networkCapabilities
         mockkStatic(android.util.Log::class)
         every { android.util.Log.v(any<String>(), any<String>()) } returns 0
-        every { android.util.Log.d(any<String>(), any<String>()) } returns 0
-        every { android.util.Log.w(any<String>(), any<String>()) } returns 0
-        every { android.util.Log.e(any<String>(), any<String>(), any()) } returns 0
+        every { android.util.Log.d(any<String>(), any<String>()) } answers {
+            println("DEBUG: ${args[0]}: ${args[1]}")
+            0
+        }
+        every { android.util.Log.w(any<String>(), any<String>()) } answers {
+            println("WARN: ${args[0]}: ${args[1]}")
+            0
+        }
+        every { android.util.Log.e(any<String>(), any<String>(), any()) } answers {
+            println("ERROR: ${args[0]}: ${args[1]}: ${args[2]}")
+            0
+        }
+
+        // Default repository stubs
+        every { repository.getCurrentServer() } returns com.rpeters.jellyfin.data.JellyfinServer(
+            id = "server-id",
+            name = "Test Server",
+            url = "https://server",
+        )
 
         manager = EnhancedPlaybackManager(
             context = context,
@@ -118,14 +144,15 @@ class EnhancedPlaybackManagerTest {
         every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) } returns false
 
         // Mock repository responses
-        coEvery { repository.getPlaybackInfo(itemId.toString()) } returns playbackInfo
+        coEvery { repository.getPlaybackInfo(itemId.toString(), any(), any()) } returns playbackInfo
         every { streamRepository.getDirectStreamUrl(itemId.toString(), "mp4") } returns "https://server/video.mp4"
 
         val result = manager.getOptimalPlaybackUrl(item)
 
         assertTrue("Expected DirectPlay result", result is PlaybackResult.DirectPlay)
         val directPlay = result as PlaybackResult.DirectPlay
-        assertEquals("https://server/video.mp4", directPlay.url)
+        assertTrue("URL should contain base path", directPlay.url.contains("https://server/Videos/${itemId}/stream.mp4"))
+        assertTrue("URL should contain static=true", directPlay.url.contains("static=true"))
         assertEquals("mp4", directPlay.container)
         assertEquals("h264", directPlay.videoCodec)
         assertEquals("aac", directPlay.audioCodec)
@@ -154,7 +181,7 @@ class EnhancedPlaybackManagerTest {
         every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) } returns false
 
         // Mock repository responses
-        coEvery { repository.getPlaybackInfo(itemId.toString()) } returns playbackInfo
+        coEvery { repository.getPlaybackInfo(itemId.toString(), any(), any()) } returns playbackInfo
         every {
             streamRepository.getTranscodedStreamUrl(
                 any(),
@@ -183,7 +210,7 @@ class EnhancedPlaybackManagerTest {
             container = "mp4",
             videoCodec = "h264",
             audioCodec = "aac",
-            bitrate = 60_000_000, // 60 Mbps - too high for WiFi threshold (50 Mbps)
+            bitrate = 90_000_000, // 90 Mbps - exceeds default WiFi preference threshold (80 Mbps)
         )
         val playbackInfo = buildPlaybackInfo(listOf(mediaSource))
 
@@ -193,12 +220,10 @@ class EnhancedPlaybackManagerTest {
         every { deviceCapabilities.canPlayAudioCodec("aac") } returns true
 
         // Mock network - WiFi (50 Mbps limit)
-        every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) } returns true
-        every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) } returns false
-        every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) } returns false
+        every { connectivityChecker.getNetworkType() } returns com.rpeters.jellyfin.network.NetworkType.WIFI
 
         // Mock repository responses
-        coEvery { repository.getPlaybackInfo(itemId.toString()) } returns playbackInfo
+        coEvery { repository.getPlaybackInfo(itemId.toString(), any(), any()) } returns playbackInfo
         every {
             streamRepository.getTranscodedStreamUrl(
                 any(),
@@ -239,7 +264,7 @@ class EnhancedPlaybackManagerTest {
         every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) } returns true
 
         // Mock repository responses
-        coEvery { repository.getPlaybackInfo(itemId.toString()) } returns playbackInfo
+        coEvery { repository.getPlaybackInfo(itemId.toString(), any(), any()) } returns playbackInfo
         every { streamRepository.getDirectStreamUrl(itemId.toString(), "mkv") } returns "https://server/video.mkv"
 
         val result = manager.getOptimalPlaybackUrl(item)
@@ -255,7 +280,7 @@ class EnhancedPlaybackManagerTest {
             container = "mp4",
             videoCodec = "h264",
             audioCodec = "aac",
-            bitrate = 20_000_000, // 20 Mbps - too high for cellular (15 Mbps limit)
+            bitrate = 30_000_000, // 30 Mbps - exceeds default cellular preference threshold (25 Mbps)
         )
         val playbackInfo = buildPlaybackInfo(listOf(mediaSource))
 
@@ -265,12 +290,11 @@ class EnhancedPlaybackManagerTest {
         every { deviceCapabilities.canPlayAudioCodec("aac") } returns true
 
         // Mock network - Cellular (15 Mbps limit)
-        every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) } returns false
-        every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) } returns true
-        every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) } returns false
+        every { connectivityChecker.getNetworkType() } returns com.rpeters.jellyfin.network.NetworkType.CELLULAR
+        every { connectivityChecker.getNetworkQuality() } returns com.rpeters.jellyfin.network.ConnectivityQuality.FAIR
 
         // Mock repository responses
-        coEvery { repository.getPlaybackInfo(itemId.toString()) } returns playbackInfo
+        coEvery { repository.getPlaybackInfo(itemId.toString(), any(), any()) } returns playbackInfo
         every {
             streamRepository.getTranscodedStreamUrl(
                 any(),
@@ -294,7 +318,7 @@ class EnhancedPlaybackManagerTest {
         val item = buildBaseItem(id = itemId)
 
         // Mock repository to throw so playback info retrieval fails
-        coEvery { repository.getPlaybackInfo(itemId.toString()) } throws RuntimeException("No playback info")
+        coEvery { repository.getPlaybackInfo(itemId.toString(), any(), any()) } throws RuntimeException("No playback info")
 
         val result = manager.getOptimalPlaybackUrl(item)
 
@@ -308,7 +332,7 @@ class EnhancedPlaybackManagerTest {
         val item = buildBaseItem(id = itemId)
 
         // Mock repository to throw exception
-        coEvery { repository.getPlaybackInfo(itemId.toString()) } throws RuntimeException("Network failure")
+        coEvery { repository.getPlaybackInfo(itemId.toString(), any(), any()) } throws RuntimeException("Network failure")
 
         val result = manager.getOptimalPlaybackUrl(item)
 
@@ -317,7 +341,7 @@ class EnhancedPlaybackManagerTest {
     }
 
     @Test
-    fun `getOptimalPlaybackUrl handles null connectivity manager gracefully`() = runTest {
+    fun `getOptimalPlaybackUrl falls back to transcoding when network type is unknown`() = runTest {
         val itemId = UUID.randomUUID()
         val item = buildBaseItem(id = itemId)
         val mediaSource = buildMediaSource(
@@ -333,11 +357,12 @@ class EnhancedPlaybackManagerTest {
         every { deviceCapabilities.canPlayVideoCodec("h264", any(), any()) } returns true
         every { deviceCapabilities.canPlayAudioCodec("aac") } returns true
 
-        // Mock connectivity manager unavailable
-        every { context.getSystemService(Context.CONNECTIVITY_SERVICE) } returns null
+        // Mock network status unavailable through the connectivity checker
+        every { connectivityChecker.getNetworkType() } returns com.rpeters.jellyfin.network.NetworkType.NONE
+        every { connectivityChecker.getNetworkQuality() } returns com.rpeters.jellyfin.network.ConnectivityQuality.POOR
 
         // Mock repository responses
-        coEvery { repository.getPlaybackInfo(itemId.toString()) } returns playbackInfo
+        coEvery { repository.getPlaybackInfo(itemId.toString(), any(), any()) } returns playbackInfo
         every {
             streamRepository.getTranscodedStreamUrl(
                 any(),
@@ -352,12 +377,11 @@ class EnhancedPlaybackManagerTest {
 
         val result = manager.getOptimalPlaybackUrl(item)
 
-        // Should fall back to transcoding when network status unknown
-        assertTrue("Expected fallback to transcoding when connectivity unavailable", result is PlaybackResult.Transcoding)
+        assertTrue("Expected fallback to transcoding when network status is unknown", result is PlaybackResult.Transcoding)
     }
 
     @Test
-    fun `getOptimalPlaybackUrl builds proper transcoding url when server recommends transcoding`() = runTest {
+    fun `getOptimalPlaybackUrl force-bypasses incorrect server transcoding recommendation when device can direct play`() = runTest {
         val itemId = UUID.randomUUID()
         val item = buildBaseItem(id = itemId)
         val mediaSource = buildMediaSource(
@@ -375,49 +399,22 @@ class EnhancedPlaybackManagerTest {
             every { supportedAudioCodecs } returns listOf("aac", "mp3")
             every { supports4K } returns false
         }
-        every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) } returns true
-        every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) } returns false
-        every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) } returns false
+        every { connectivityChecker.getNetworkType() } returns com.rpeters.jellyfin.network.NetworkType.WIFI
+        every { connectivityChecker.getNetworkQuality() } returns com.rpeters.jellyfin.network.ConnectivityQuality.GOOD
 
-        coEvery { repository.getPlaybackInfo(itemId.toString()) } returns playbackInfo
+        coEvery { repository.getPlaybackInfo(itemId.toString(), any(), any()) } returns playbackInfo
         every { repository.getCurrentServer() } returns com.rpeters.jellyfin.data.JellyfinServer(
             id = "server",
             name = "Test",
             url = "https://server",
         )
-        every {
-            streamRepository.getTranscodedStreamUrl(
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-            )
-        } returns "https://server/Videos/$itemId/stream?transcoding=params"
+        every { streamRepository.getDirectStreamUrl(itemId.toString(), "mkv") } returns "https://server/video.mkv"
 
         val result = manager.getOptimalPlaybackUrl(item)
 
-        assertTrue(result is PlaybackResult.Transcoding)
-        val transcoding = result as PlaybackResult.Transcoding
-        assertEquals("https://server/Videos/$itemId/stream?transcoding=params", transcoding.url)
-        // Verify that we built our own transcoding URL with proper parameters
-        verify(atLeast = 1) {
-            streamRepository.getTranscodedStreamUrl(
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-            )
-        }
+        assertTrue(result is PlaybackResult.DirectPlay)
+        val directPlay = result as PlaybackResult.DirectPlay
+        assertEquals("https://server/Videos/$itemId/stream.mkv?static=true&mediaSourceId=test-source-id", directPlay.url)
     }
 
     @Test
@@ -443,7 +440,7 @@ class EnhancedPlaybackManagerTest {
         every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) } returns true
 
         // Mock repository responses
-        coEvery { repository.getPlaybackInfo(itemId.toString()) } returns playbackInfo
+        coEvery { repository.getPlaybackInfo(itemId.toString(), any(), any()) } returns playbackInfo
         every { streamRepository.getDirectStreamUrl(itemId.toString(), "mkv") } returns "https://server/video.mkv"
 
         manager.getOptimalPlaybackUrl(item)
@@ -478,7 +475,7 @@ class EnhancedPlaybackManagerTest {
         every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) } returns false
 
         // Mock repository responses
-        coEvery { repository.getPlaybackInfo(itemId.toString()) } returns playbackInfo
+        coEvery { repository.getPlaybackInfo(itemId.toString(), any(), any()) } returns playbackInfo
         every { repository.getCurrentServer() } returns com.rpeters.jellyfin.data.JellyfinServer(
             id = "server",
             name = "Test",
@@ -520,7 +517,7 @@ class EnhancedPlaybackManagerTest {
         every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) } returns false
 
         // Mock repository responses
-        coEvery { repository.getPlaybackInfo(itemId.toString()) } returns playbackInfo
+        coEvery { repository.getPlaybackInfo(itemId.toString(), any(), any()) } returns playbackInfo
         every { repository.getCurrentServer() } returns com.rpeters.jellyfin.data.JellyfinServer(
             id = "server",
             name = "Test",
@@ -571,6 +568,7 @@ class EnhancedPlaybackManagerTest {
         supportsTranscoding: Boolean = true,
         supportsDirectStream: Boolean = true,
     ): MediaSourceInfo = mockk<MediaSourceInfo>(relaxed = true).also { mediaSource ->
+        every { mediaSource.id } returns "test-source-id"
         every { mediaSource.container } returns container
         every { mediaSource.bitrate } returns bitrate
         every { mediaSource.supportsDirectPlay } returns supportsDirectPlay

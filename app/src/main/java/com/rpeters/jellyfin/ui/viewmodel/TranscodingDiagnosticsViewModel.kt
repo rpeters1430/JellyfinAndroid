@@ -3,7 +3,7 @@ package com.rpeters.jellyfin.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rpeters.jellyfin.data.DeviceCapabilities
-import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,7 +19,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class TranscodingDiagnosticsViewModel @Inject constructor(
-    private val jellyfinRepository: JellyfinRepository,
+    private val jellyfinRepository: IJellyfinRepository,
     private val deviceCapabilities: DeviceCapabilities,
 ) : ViewModel() {
 

@@ -7,7 +7,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.rpeters.jellyfin.data.playback.AdaptiveBitrateMonitor
 import com.rpeters.jellyfin.data.preferences.PlaybackPreferences
 import com.rpeters.jellyfin.data.preferences.PlaybackPreferencesRepository
-import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import io.mockk.*
 import io.mockk.impl.annotations.MockK
@@ -40,7 +40,7 @@ class VideoPlayerViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
 
     @MockK
-    private lateinit var repository: JellyfinRepository
+    private lateinit var repository: IJellyfinRepository
 
     @MockK
     private lateinit var stateManager: VideoPlayerStateManager

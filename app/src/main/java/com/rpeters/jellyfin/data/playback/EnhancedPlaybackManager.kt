@@ -3,8 +3,10 @@ package com.rpeters.jellyfin.data.playback
 import android.content.Context
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.DeviceCapabilities
+import com.rpeters.jellyfin.data.preferences.PlaybackPreferences
 import com.rpeters.jellyfin.data.preferences.PlaybackPreferencesRepository
 import com.rpeters.jellyfin.data.preferences.TranscodingQuality
+import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import com.rpeters.jellyfin.network.ConnectivityChecker
@@ -19,6 +21,7 @@ import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.PlaybackInfoResponse
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
@@ -29,8 +32,8 @@ import kotlin.coroutines.cancellation.CancellationException
  */
 @Singleton
 class EnhancedPlaybackManager @Inject constructor(
-    private val context: Context,
-    private val repository: JellyfinRepository,
+    @ApplicationContext private val context: Context,
+    private val repository: IJellyfinRepository,
     private val streamRepository: JellyfinStreamRepository,
     private val deviceCapabilities: DeviceCapabilities,
     private val connectivityChecker: ConnectivityChecker,
@@ -87,8 +90,11 @@ class EnhancedPlaybackManager @Inject constructor(
                     return@withContext PlaybackResult.Error("Failed to get playback info")
                 }
 
+                // Get preferences once
+                val playbackPreferences = playbackPreferencesRepository.preferences.first()
+
                 // CENTRALIZED DECISION (Phase 2)
-                val decision = computePlaybackDecision(item, playbackInfo, audioStreamIndex, subtitleStreamIndex)
+                val decision = computePlaybackDecision(item, playbackInfo, playbackPreferences, audioStreamIndex, subtitleStreamIndex)
                 
                 if (decision is PlaybackResult.Error) {
                     SecureLogger.e(TAG, "Playback decision failed: ${decision.message}")
@@ -101,6 +107,11 @@ class EnhancedPlaybackManager @Inject constructor(
                 return@withContext decision
             } catch (e: CancellationException) {
                 throw e
+            } catch (e: Exception) {
+                println("DEBUG: getOptimalPlaybackUrl error: ${e.message}")
+                e.printStackTrace()
+                SecureLogger.e(TAG, "Error determining optimal playback URL", e)
+                PlaybackResult.Error(e.message ?: "Unknown error")
             }
         }
     }
@@ -128,6 +139,8 @@ class EnhancedPlaybackManager @Inject constructor(
                 val itemId = item.id.toString()
                 SecureLogger.d(TAG, "Getting fallback URL for: ${item.name} (Direct Play failed)")
 
+                val playbackPreferences = playbackPreferencesRepository.preferences.first()
+
                 val playbackInfo = getPlaybackInfo(itemId, audioStreamIndex, subtitleStreamIndex)
                 if (playbackInfo == null) {
                     return@withContext PlaybackResult.Error("Failed to get playback info for fallback")
@@ -138,10 +151,10 @@ class EnhancedPlaybackManager @Inject constructor(
 
                 // Try Direct Stream first — copies video, only transcodes audio.
                 // This avoids unnecessary video re-encoding when only the audio was the problem.
-                if (canDirectStreamMediaSource(anySource, item, null)) {
+                if (canDirectStreamMediaSource(anySource, item, playbackPreferences, null)) {
                     SecureLogger.d(TAG, "Direct Play fallback → trying Direct Stream (video copy, audio transcode)")
                     val directStreamResult = getDirectStreamWithAudioTranscode(
-                        item, anySource, playbackInfo, audioStreamIndex, subtitleStreamIndex,
+                        item, anySource, playbackInfo, playbackPreferences, audioStreamIndex, subtitleStreamIndex,
                     )
                     if (directStreamResult !is PlaybackResult.Error) {
                         return@withContext directStreamResult
@@ -151,7 +164,7 @@ class EnhancedPlaybackManager @Inject constructor(
 
                 // Full transcoding fallback
                 SecureLogger.d(TAG, "Using full transcoding fallback for: ${item.name}")
-                getOptimalTranscodingUrl(item, playbackInfo, audioStreamIndex, subtitleStreamIndex)
+                getOptimalTranscodingUrl(item, playbackInfo, playbackPreferences, audioStreamIndex, subtitleStreamIndex)
             } catch (e: CancellationException) {
                 throw e
             }
@@ -165,6 +178,7 @@ class EnhancedPlaybackManager @Inject constructor(
     private suspend fun computePlaybackDecision(
         item: BaseItemDto,
         playbackInfo: PlaybackInfoResponse,
+        playbackPreferences: PlaybackPreferences,
         audioStreamIndex: Int? = null,
         subtitleStreamIndex: Int? = null,
     ): PlaybackResult {
@@ -195,7 +209,7 @@ class EnhancedPlaybackManager @Inject constructor(
                 deviceCapabilities.canPlayAudioCodecStrict(audioCodec, audioChannels)
             } else true
 
-            if (audioCanBeDirectPlayed && canDirectPlayMediaSource(anySource, item, reasons, bypassServerDecision = true)) {
+            if (audioCanBeDirectPlayed && canDirectPlayMediaSource(anySource, item, playbackPreferences, reasons, bypassServerDecision = true)) {
                 // Audio is fine — server likely incorrectly rejected (e.g. 10-bit HEVC profile)
                 val container = anySource.container ?: "mkv"
                 val url = buildDirectPlayUrl(serverUrl, itemId, anySource.id, container, playSessionId)
@@ -220,7 +234,7 @@ class EnhancedPlaybackManager @Inject constructor(
 
         // Try standard Direct Play
         val directPlaySource = mediaSources.firstOrNull { it.supportsDirectPlay }
-        if (directPlaySource != null && canDirectPlayMediaSource(directPlaySource, item, reasons)) {
+        if (directPlaySource != null && canDirectPlayMediaSource(directPlaySource, item, playbackPreferences, reasons)) {
             val container = directPlaySource.container ?: "mkv"
             val url = buildDirectPlayUrl(serverUrl, itemId, directPlaySource.id, container, playSessionId)
             
@@ -241,9 +255,16 @@ class EnhancedPlaybackManager @Inject constructor(
         }
 
         // Try Direct Stream (audio transcode only)
-        if (canDirectStreamMediaSource(anySource, item, reasons)) {
+        if (canDirectStreamMediaSource(anySource, item, playbackPreferences, reasons)) {
             reasons.add(ReasonCodes.DIRECT_STREAM_VIDEO_COPY_OK)
-            val result = getDirectStreamWithAudioTranscode(item, anySource, playbackInfo, audioStreamIndex, subtitleStreamIndex)
+            val result = getDirectStreamWithAudioTranscode(
+                item,
+                anySource,
+                playbackInfo,
+                playbackPreferences,
+                audioStreamIndex,
+                subtitleStreamIndex,
+            )
             
             if (result is PlaybackResult.Transcoding) {
                 val trace = createTrace(sessionId, "DIRECT_STREAM", "AUDIO_ONLY_TRANSCODE", reasons, anySource, deviceCaps, networkClass, isDirectStream = true)
@@ -253,7 +274,7 @@ class EnhancedPlaybackManager @Inject constructor(
 
         // Fallback to Full Transcoding
         reasons.add(ReasonCodes.FULL_TRANSCODE_REQUIRED)
-        val result = getOptimalTranscodingUrl(item, playbackInfo, audioStreamIndex, subtitleStreamIndex)
+        val result = getOptimalTranscodingUrl(item, playbackInfo, playbackPreferences, audioStreamIndex, subtitleStreamIndex)
         if (result is PlaybackResult.Transcoding) {
             val trace = createTrace(sessionId, "TRANSCODING", "FULL_TRANSCODE", reasons, anySource, deviceCaps, networkClass)
             return result.copy(reasonCodes = reasons, decisionTrace = trace)
@@ -322,6 +343,7 @@ class EnhancedPlaybackManager @Inject constructor(
     private suspend fun canDirectPlayMediaSource(
         mediaSource: org.jellyfin.sdk.model.api.MediaSourceInfo,
         item: BaseItemDto,
+        playbackPreferences: PlaybackPreferences,
         reasons: MutableList<String>? = null,
         bypassServerDecision: Boolean = false,
     ): Boolean {
@@ -370,7 +392,8 @@ class EnhancedPlaybackManager @Inject constructor(
 
         // Check network conditions for high-bitrate content
         val bitrate = mediaSource.bitrate ?: 0
-        if (!isNetworkSuitableForDirectPlay(bitrate)) {
+        val isNetworkOk = isNetworkSuitableForDirectPlay(bitrate, playbackPreferences)
+        if (!isNetworkOk) {
             SecureLogger.d(TAG, "❌ Network conditions not suitable for Direct Play (bitrate: ${bitrate / 1_000_000} Mbps)")
             reasons?.add(ReasonCodes.NETWORK_BITRATE_EXCEEDED)
             return false
@@ -387,6 +410,7 @@ class EnhancedPlaybackManager @Inject constructor(
     private suspend fun canDirectStreamMediaSource(
         mediaSource: org.jellyfin.sdk.model.api.MediaSourceInfo,
         item: BaseItemDto,
+        playbackPreferences: PlaybackPreferences,
         reasons: MutableList<String>? = null,
     ): Boolean {
         // Check video codec support (REQUIRED for direct stream)
@@ -424,7 +448,7 @@ class EnhancedPlaybackManager @Inject constructor(
 
         // Check network conditions
         val bitrate = mediaSource.bitrate ?: 0
-        if (!isNetworkSuitableForDirectPlay(bitrate)) {
+        if (!isNetworkSuitableForDirectPlay(bitrate, playbackPreferences)) {
             SecureLogger.d(TAG, "❌ Network conditions not suitable for Direct Stream (bitrate: ${bitrate / 1_000_000} Mbps)")
             return false
         }
@@ -439,9 +463,8 @@ class EnhancedPlaybackManager @Inject constructor(
     /**
      * Check if network conditions are suitable for Direct Play
      */
-    private suspend fun isNetworkSuitableForDirectPlay(bitrate: Int): Boolean {
+    private suspend fun isNetworkSuitableForDirectPlay(bitrate: Int, prefs: PlaybackPreferences): Boolean {
         val type = connectivityChecker.getNetworkType()
-        val prefs = playbackPreferencesRepository.preferences.first()
 
         return when (type) {
             NetworkType.WIFI -> bitrate <= prefs.maxBitrateWifi
@@ -460,6 +483,7 @@ class EnhancedPlaybackManager @Inject constructor(
         item: BaseItemDto,
         mediaSource: org.jellyfin.sdk.model.api.MediaSourceInfo,
         playbackInfo: PlaybackInfoResponse,
+        playbackPreferences: PlaybackPreferences,
         audioStreamIndex: Int? = null,
         subtitleStreamIndex: Int? = null,
     ): PlaybackResult {
@@ -467,13 +491,11 @@ class EnhancedPlaybackManager @Inject constructor(
         val serverUrl = repository.getCurrentServer()?.url
         val mediaSourceId = mediaSource.id
         val playSessionId = playbackInfo.playSessionId
-        val prefs = playbackPreferencesRepository.preferences.first()
-
         // Get source video info (we're keeping this unchanged)
         val sourceVideoStream = mediaSource.mediaStreams?.findDefaultVideoStream()
         val sourceAudioStream = mediaSource.mediaStreams?.findDefaultAudioStream()
 
-        val maxAudioChannels = prefs.audioChannels.channels ?: 2
+        val maxAudioChannels = playbackPreferences.audioChannels.channels ?: 2
 
         // Build Direct Stream URL with audio transcoding parameters
         // VideoCodec=copy tells the server to NOT transcode video
@@ -524,6 +546,7 @@ class EnhancedPlaybackManager @Inject constructor(
     private suspend fun getOptimalTranscodingUrl(
         item: BaseItemDto,
         playbackInfo: PlaybackInfoResponse,
+        playbackPreferences: PlaybackPreferences,
         audioStreamIndex: Int? = null,
         subtitleStreamIndex: Int? = null,
     ): PlaybackResult {
@@ -534,7 +557,6 @@ class EnhancedPlaybackManager @Inject constructor(
         val mediaSourceId = transcodingSource?.id
         val playSessionId = playbackInfo.playSessionId
         val deviceCaps = deviceCapabilities.getDirectPlayCapabilities()
-        val prefs = playbackPreferencesRepository.preferences.first()
 
         // Get source video resolution and codec to prevent upscaling and unnecessary transcoding
         val sourceVideoStream = transcodingSource?.mediaStreams?.findDefaultVideoStream()
@@ -544,8 +566,8 @@ class EnhancedPlaybackManager @Inject constructor(
 
         // Determine effective quality based on network AND user preference
         val networkQuality = connectivityChecker.getNetworkQuality()
-        val effectiveQuality = if (prefs.transcodingQuality != TranscodingQuality.AUTO) {
-            prefs.transcodingQuality
+        val effectiveQuality = if (playbackPreferences.transcodingQuality != TranscodingQuality.AUTO) {
+            playbackPreferences.transcodingQuality
         } else {
             // Map ConnectivityQuality to TranscodingQuality
             when (networkQuality) {
@@ -595,7 +617,7 @@ class EnhancedPlaybackManager @Inject constructor(
             }
         }
 
-        val maxAudioChannels = prefs.audioChannels.channels ?: 2
+        val maxAudioChannels = playbackPreferences.audioChannels.channels ?: 2
 
         SecureLogger.d(
             TAG,
@@ -648,9 +670,11 @@ class EnhancedPlaybackManager @Inject constructor(
         subtitleStreamIndex: Int? = null,
     ): PlaybackInfoResponse? {
         return try {
-            repository.getPlaybackInfo(itemId, audioStreamIndex, subtitleStreamIndex)
+            val info = repository.getPlaybackInfo(itemId, audioStreamIndex, subtitleStreamIndex)
+            info
         } catch (e: Exception) {
             if (e is CancellationException) throw e
+            e.printStackTrace()
             SecureLogger.e(TAG, "Failed to get playback info for item $itemId", e)
             null
         }

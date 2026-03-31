@@ -7,7 +7,7 @@ import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
 import com.rpeters.jellyfin.data.offline.OfflinePlaybackManager
 import com.rpeters.jellyfin.data.preferences.DownloadPreferences
 import com.rpeters.jellyfin.data.preferences.DownloadPreferencesRepository
-import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.repository.OfflineProgressRepository
 import com.rpeters.jellyfin.network.ConnectivityChecker
 import com.rpeters.jellyfin.network.NetworkType
@@ -36,7 +36,7 @@ class DownloadsViewModelTest {
     lateinit var playbackManager: OfflinePlaybackManager
 
     @MockK(relaxUnitFun = true)
-    lateinit var repository: JellyfinRepository
+    lateinit var repository: IJellyfinRepository
 
     @MockK(relaxUnitFun = true)
     lateinit var downloadPreferencesRepository: DownloadPreferencesRepository

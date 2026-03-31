@@ -50,15 +50,15 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class JellyfinRepository @Inject constructor(
+open class JellyfinRepository @Inject constructor(
     private val sessionManager: JellyfinSessionManager,
     private val secureCredentialManager: SecureCredentialManager,
     @ApplicationContext private val context: Context,
     private val deviceCapabilities: DeviceCapabilities,
-    private val authRepository: JellyfinAuthRepository,
+    private val authRepository: IJellyfinAuthRepository,
     private val streamRepository: JellyfinStreamRepository,
     val connectivityChecker: com.rpeters.jellyfin.network.ConnectivityChecker,
-) {
+) : IJellyfinRepository {
     enum class CastReceiverProfile {
         CHROMECAST_STRICT,
         GOOGLE_TV_MODERATE,
@@ -209,7 +209,7 @@ class JellyfinRepository @Inject constructor(
             )
         }
 
-    suspend fun authenticateUser(
+    override suspend fun authenticateUser(
         serverUrl: String?,
         username: String?,
         password: String?,
@@ -269,12 +269,12 @@ class JellyfinRepository @Inject constructor(
         }
     }
 
-    suspend fun getLibraryItems(
-        parentId: String? = null,
-        itemTypes: String? = null,
-        startIndex: Int = DEFAULT_START_INDEX,
-        limit: Int = DEFAULT_LIMIT,
-        fields: List<ItemFields>? = null,
+    override suspend fun getLibraryItems(
+        parentId: String?,
+        itemTypes: String?,
+        startIndex: Int,
+        limit: Int,
+        fields: List<ItemFields>?,
     ): ApiResult<List<BaseItemDto>> {
         // ✅ FIX: Validate token before making requests
         if (isTokenExpired()) {
@@ -334,10 +334,10 @@ class JellyfinRepository @Inject constructor(
     /**
      * Get all movies and TV shows for a specific person (actor/director/etc)
      */
-    suspend fun getItemsByPerson(
+    override suspend fun getItemsByPerson(
         personId: String,
-        includeTypes: List<BaseItemKind>? = listOf(BaseItemKind.MOVIE, BaseItemKind.SERIES),
-        limit: Int = 100,
+        includeTypes: List<BaseItemKind>?,
+        limit: Int,
     ): ApiResult<List<BaseItemDto>> {
         if (isTokenExpired()) {
             Log.w("JellyfinRepository", "getItemsByPerson: Token expired, attempting proactive refresh")
@@ -754,7 +754,7 @@ class JellyfinRepository @Inject constructor(
      * @param seasonId The ID of the season to fetch episodes for.
      * @return [ApiResult] containing a list of episodes or an error.
      */
-    suspend fun getEpisodesForSeason(seasonId: String): ApiResult<List<BaseItemDto>> {
+    override suspend fun getEpisodesForSeason(seasonId: String): ApiResult<List<BaseItemDto>> {
         if (BuildConfig.DEBUG) {
             Log.d("JellyfinRepository", "getEpisodesForSeason: Fetching episodes for seasonId=$seasonId")
         }
@@ -806,15 +806,15 @@ class JellyfinRepository @Inject constructor(
         }
     }
 
-    suspend fun getSeriesDetails(seriesId: String): ApiResult<BaseItemDto> {
+    override suspend fun getSeriesDetails(seriesId: String): ApiResult<BaseItemDto> {
         return getItemDetailsById(seriesId, "series")
     }
 
-    suspend fun getMovieDetails(movieId: String): ApiResult<BaseItemDto> {
+    override suspend fun getMovieDetails(movieId: String): ApiResult<BaseItemDto> {
         return getItemDetailsById(movieId, "movie")
     }
 
-    suspend fun getEpisodeDetails(episodeId: String): ApiResult<BaseItemDto> {
+    override suspend fun getEpisodeDetails(episodeId: String): ApiResult<BaseItemDto> {
         return getItemDetailsById(episodeId, "episode")
     }
 
@@ -827,10 +827,10 @@ class JellyfinRepository @Inject constructor(
 
     // ===== SEARCH METHODS - Simplified implementation =====
 
-    suspend fun searchItems(
+    override suspend fun searchItems(
         query: String,
-        includeItemTypes: List<BaseItemKind>? = null,
-        limit: Int = SEARCH_LIMIT,
+        includeItemTypes: List<BaseItemKind>?,
+        limit: Int,
     ): ApiResult<List<BaseItemDto>> {
         if (query.isBlank()) {
             return ApiResult.Success(emptyList())
@@ -870,10 +870,10 @@ class JellyfinRepository @Inject constructor(
 
     // ===== IMAGE METHODS - Delegated to JellyfinStreamRepository =====
 
-    fun getImageUrl(itemId: String, imageType: String = "Primary", tag: String? = null): String? =
+    override fun getImageUrl(itemId: String, imageType: String, tag: String?): String? =
         streamRepository.getImageUrl(itemId, imageType, tag)
 
-    fun getSeriesImageUrl(item: BaseItemDto): String? =
+    override fun getSeriesImageUrl(item: BaseItemDto): String? =
         streamRepository.getSeriesImageUrl(item)
 
     fun getBackdropUrl(item: BaseItemDto): String? =
@@ -1027,20 +1027,20 @@ class JellyfinRepository @Inject constructor(
 
     // ===== STREAMING METHODS - Delegated to JellyfinStreamRepository =====
 
-    fun getStreamUrl(itemId: String): String? =
+    override fun getStreamUrl(itemId: String): String? =
         streamRepository.getStreamUrl(itemId)
 
-    fun getTranscodedStreamUrl(
+    override fun getTranscodedStreamUrl(
         itemId: String,
-        maxBitrate: Int? = null,
-        maxWidth: Int? = null,
-        maxHeight: Int? = null,
-        videoCodec: String = DEFAULT_VIDEO_CODEC,
-        audioCodec: String = DEFAULT_AUDIO_CODEC,
-        container: String = DEFAULT_CONTAINER,
-        audioBitrate: Int? = null,
-        audioChannels: Int = DEFAULT_MAX_AUDIO_CHANNELS,
-        allowVideoStreamCopy: Boolean = true,
+        maxBitrate: Int?,
+        maxWidth: Int?,
+        maxHeight: Int?,
+        videoCodec: String,
+        audioCodec: String,
+        container: String,
+        audioBitrate: Int?,
+        audioChannels: Int,
+        allowVideoStreamCopy: Boolean,
     ): String? =
         streamRepository.getTranscodedStreamUrl(
             itemId = itemId,
@@ -1061,10 +1061,10 @@ class JellyfinRepository @Inject constructor(
     fun getDashStreamUrl(itemId: String): String? =
         streamRepository.getDashStreamUrl(itemId)
 
-    suspend fun getPlaybackInfo(
+    override suspend fun getPlaybackInfo(
         itemId: String,
-        audioStreamIndex: Int? = null,
-        subtitleStreamIndex: Int? = null,
+        audioStreamIndex: Int?,
+        subtitleStreamIndex: Int?,
     ): PlaybackInfoResponse {
         val server = validateServer()
         val client = sessionManager.getClientForUrl(server.url)
@@ -1315,11 +1315,11 @@ class JellyfinRepository @Inject constructor(
         }
     }
 
-    fun getCurrentServer(): JellyfinServer? = authRepository.getCurrentServer()
+    override fun getCurrentServer(): JellyfinServer? = authRepository.getCurrentServer()
 
-    fun isUserAuthenticated(): Boolean = authRepository.isUserAuthenticated()
+    override fun isUserAuthenticated(): Boolean = authRepository.isUserAuthenticated()
 
-    fun getDownloadUrl(itemId: String): String? =
+    override fun getDownloadUrl(itemId: String): String? =
         streamRepository.getDownloadUrl(itemId)
 
     /**
@@ -1329,9 +1329,9 @@ class JellyfinRepository @Inject constructor(
      * @param jellyfinItemId Optional item ID to match specific transcoding session
      * @return TranscodingProgressInfo if an active transcoding session is found, null otherwise
      */
-    suspend fun getTranscodingProgress(
+    override suspend fun getTranscodingProgress(
         deviceId: String,
-        jellyfinItemId: String? = null,
+        jellyfinItemId: String?,
     ): TranscodingProgressInfo? {
         return try {
             val client = getCurrentAuthenticatedClient() ?: return null

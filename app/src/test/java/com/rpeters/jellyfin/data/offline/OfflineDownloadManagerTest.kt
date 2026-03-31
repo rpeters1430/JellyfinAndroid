@@ -7,7 +7,7 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import com.rpeters.jellyfin.data.common.TestDispatcherProvider
-import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
@@ -51,7 +51,7 @@ class OfflineDownloadManagerTest {
 
     private lateinit var manager: OfflineDownloadManager
     private lateinit var context: Context
-    private lateinit var repository: JellyfinRepository
+    private lateinit var repository: IJellyfinRepository
     private lateinit var okHttpClient: OkHttpClient
     private lateinit var dataStore: DataStore<Preferences>
     private lateinit var deviceCapabilities: com.rpeters.jellyfin.data.DeviceCapabilities

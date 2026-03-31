@@ -15,7 +15,7 @@ import com.rpeters.jellyfin.data.offline.VideoQuality
 import com.rpeters.jellyfin.data.preferences.DownloadPreferences
 import com.rpeters.jellyfin.data.preferences.DownloadPreferencesRepository
 import com.rpeters.jellyfin.data.DeviceCapabilities
-import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.repository.OfflineProgressRepository
 import com.rpeters.jellyfin.network.ConnectivityChecker
 import com.rpeters.jellyfin.network.NetworkType
@@ -46,7 +46,7 @@ class DownloadsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val downloadManager: OfflineDownloadManager,
     private val playbackManager: OfflinePlaybackManager,
-    private val repository: JellyfinRepository,
+    private val repository: IJellyfinRepository,
     private val downloadPreferencesRepository: DownloadPreferencesRepository,
     private val connectivityChecker: ConnectivityChecker,
     private val offlineProgressRepository: OfflineProgressRepository,

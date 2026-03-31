@@ -37,7 +37,7 @@ class JellyfinAuthRepository @Inject constructor(
     private val jellyfin: Jellyfin,
     private val secureCredentialManager: SecureCredentialManager,
     private val timeProvider: () -> Long = System::currentTimeMillis,
-) : TokenProvider {
+) : IJellyfinAuthRepository, TokenProvider {
     private val authMutex = Mutex()
 
     // Token state for TokenProvider implementation
@@ -45,13 +45,13 @@ class JellyfinAuthRepository @Inject constructor(
 
     // State flows for server connection status
     private val _currentServer = MutableStateFlow<JellyfinServer?>(null)
-    val currentServer: StateFlow<JellyfinServer?> = _currentServer.asStateFlow()
+    override val currentServer: StateFlow<JellyfinServer?> = _currentServer.asStateFlow()
 
     private val _isConnected = MutableStateFlow(false)
-    val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
+    override val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
 
     private val _isAuthenticating = MutableStateFlow(false)
-    val isAuthenticating: StateFlow<Boolean> = _isAuthenticating.asStateFlow()
+    override val isAuthenticating: StateFlow<Boolean> = _isAuthenticating.asStateFlow()
 
     companion object {
         private const val TAG = "JellyfinAuthRepository"
@@ -77,7 +77,7 @@ class JellyfinAuthRepository @Inject constructor(
         // Server state is also updated in authenticateUser method
     }
 
-    suspend fun testServerConnection(serverUrl: String): ApiResult<PublicSystemInfo> {
+    override suspend fun testServerConnection(serverUrl: String): ApiResult<PublicSystemInfo> {
         return try {
             SecureLogger.d(TAG, "testServerConnection: Attempting to connect to server")
             val client = createApiClient(serverUrl)
@@ -92,7 +92,7 @@ class JellyfinAuthRepository @Inject constructor(
         }
     }
 
-    suspend fun authenticateUser(
+    override suspend fun authenticateUser(
         serverUrl: String,
         username: String,
         password: String,
@@ -141,13 +141,13 @@ class JellyfinAuthRepository @Inject constructor(
         }
     }
 
-    suspend fun reAuthenticate(): Boolean {
+    override suspend fun reAuthenticate(): Boolean {
         return authMutex.withLock {
             reAuthenticateInternal()
         }
     }
 
-    suspend fun forceReAuthenticate(): Boolean {
+    override suspend fun forceReAuthenticate(): Boolean {
         return authMutex.withLock {
             Log.d(TAG, "forceReAuthenticate: Force refresh requested, checking if re-auth still needed")
 
@@ -193,11 +193,11 @@ class JellyfinAuthRepository @Inject constructor(
         }
     }
 
-    fun getCurrentServer(): JellyfinServer? = _currentServer.value
+    override fun getCurrentServer(): JellyfinServer? = _currentServer.value
 
-    fun isUserAuthenticated(): Boolean = _currentServer.value?.accessToken != null
+    override fun isUserAuthenticated(): Boolean = _currentServer.value?.accessToken != null
 
-    fun isTokenExpired(): Boolean {
+    override fun isTokenExpired(): Boolean {
         val server = _currentServer.value ?: return true
         val loginTimestamp = server.loginTimestamp ?: return true
         val currentTime = timeProvider()
@@ -210,7 +210,7 @@ class JellyfinAuthRepository @Inject constructor(
      * Returns true if the token is within the refresh threshold (5 minutes before expiration).
      * This allows the interceptor to refresh tokens before they expire, reducing blocking.
      */
-    fun shouldRefreshToken(): Boolean {
+    override fun shouldRefreshToken(): Boolean {
         val server = _currentServer.value ?: return false
         val loginTimestamp = server.loginTimestamp ?: return false
         val currentTime = timeProvider()
@@ -222,13 +222,13 @@ class JellyfinAuthRepository @Inject constructor(
     }
 
     @VisibleForTesting
-    fun seedCurrentServer(server: JellyfinServer?) {
+    override fun seedCurrentServer(server: JellyfinServer?) {
         _currentServer.update { server }
         _isConnected.update { server?.isConnected == true }
         _tokenState.update { server?.accessToken }
     }
 
-    suspend fun logout() {
+    override suspend fun logout() {
         authMutex.withLock {
             val server = _currentServer.value
             if (server != null && server.username != null) {
@@ -279,7 +279,7 @@ class JellyfinAuthRepository @Inject constructor(
         saveNewToken(authResult.accessToken)
     }
 
-    suspend fun initiateQuickConnect(serverUrl: String): ApiResult<QuickConnectResult> {
+    override suspend fun initiateQuickConnect(serverUrl: String): ApiResult<QuickConnectResult> {
         return try {
             val client = createApiClient(serverUrl)
             val response = client.quickConnectApi.initiateQuickConnect()
@@ -292,7 +292,7 @@ class JellyfinAuthRepository @Inject constructor(
         }
     }
 
-    suspend fun isQuickConnectEnabled(serverUrl: String): ApiResult<Boolean> {
+    override suspend fun isQuickConnectEnabled(serverUrl: String): ApiResult<Boolean> {
         return try {
             val client = createApiClient(serverUrl)
             val response = client.quickConnectApi.getQuickConnectEnabled()
@@ -315,7 +315,7 @@ class JellyfinAuthRepository @Inject constructor(
         }
     }
 
-    suspend fun getQuickConnectState(serverUrl: String, secret: String): ApiResult<QuickConnectState> {
+    override suspend fun getQuickConnectState(serverUrl: String, secret: String): ApiResult<QuickConnectState> {
         return try {
             val client = createApiClient(serverUrl)
             val response = client.quickConnectApi.getQuickConnectState(secret)
@@ -337,7 +337,7 @@ class JellyfinAuthRepository @Inject constructor(
             }
         }
     }
-    suspend fun authenticateWithQuickConnect(
+    override suspend fun authenticateWithQuickConnect(
         serverUrl: String,
         secret: String,
     ): ApiResult<AuthenticationResult> {

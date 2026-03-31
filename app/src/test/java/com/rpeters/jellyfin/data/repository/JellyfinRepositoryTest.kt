@@ -5,9 +5,12 @@ import com.rpeters.jellyfin.data.DeviceCapabilities
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.session.JellyfinSessionManager
+import com.rpeters.jellyfin.data.repository.common.ApiResult
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.spyk
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
@@ -27,23 +30,47 @@ class JellyfinRepositoryTest {
     private val mockDeviceCapabilities = mockk<DeviceCapabilities>(relaxed = true)
     private val serverFlow = MutableStateFlow<JellyfinServer?>(null)
     private val connectedFlow = MutableStateFlow(false)
-    private val mockAuthRepository = mockk<JellyfinAuthRepository>(relaxed = true) {
-        every { currentServer } returns serverFlow
-        every { isConnected } returns connectedFlow
-        every { getCurrentServer() } answers { serverFlow.value }
-        every { isUserAuthenticated() } answers { connectedFlow.value }
+    
+    private open class FakeAuthRepository(
+        override val currentServer: StateFlow<JellyfinServer?>,
+        override val isConnected: StateFlow<Boolean>
+    ) : IJellyfinAuthRepository {
+        override val isAuthenticating = MutableStateFlow(false)
+        override fun getCurrentServer(): JellyfinServer? = currentServer.value
+        override fun isUserAuthenticated(): Boolean = isConnected.value
+        override suspend fun token(): String? = currentServer.value?.accessToken
+        override fun isTokenExpired(): Boolean = false
+        override fun shouldRefreshToken(): Boolean = false
+        override fun seedCurrentServer(server: JellyfinServer?) {}
+        override suspend fun authenticateUser(s: String, u: String, p: String) = ApiResult.Error<org.jellyfin.sdk.model.api.AuthenticationResult>("Not implemented")
+        override suspend fun reAuthenticate(): Boolean = true
+        override suspend fun forceReAuthenticate(): Boolean = true
+        override suspend fun logout() {}
+        override suspend fun testServerConnection(s: String) = ApiResult.Error<org.jellyfin.sdk.model.api.PublicSystemInfo>("Not implemented")
+        override suspend fun initiateQuickConnect(s: String) = ApiResult.Error<com.rpeters.jellyfin.data.model.QuickConnectResult>("Not implemented")
+        override suspend fun getQuickConnectState(s: String, sc: String) = ApiResult.Error<com.rpeters.jellyfin.data.model.QuickConnectState>("Not implemented")
+        override suspend fun isQuickConnectEnabled(s: String) = ApiResult.Success(false)
+        override suspend fun authenticateWithQuickConnect(s: String, sc: String) = ApiResult.Error<org.jellyfin.sdk.model.api.AuthenticationResult>("Not implemented")
     }
+
+    private val mockAuthRepository = FakeAuthRepository(serverFlow, connectedFlow)
     private val mockStreamRepository = mockk<JellyfinStreamRepository>(relaxed = true)
     private val mockConnectivityChecker = mockk<com.rpeters.jellyfin.network.ConnectivityChecker>(relaxed = true)
-    private val repository = JellyfinRepository(
-        mockSessionManager,
-        mockCredentialManager,
-        mockContext,
-        mockDeviceCapabilities,
-        mockAuthRepository,
-        mockStreamRepository,
-        mockConnectivityChecker,
-    )
+
+    private lateinit var repository: JellyfinRepository
+
+    @org.junit.Before
+    fun setup() {
+        repository = JellyfinRepository(
+            mockSessionManager,
+            mockCredentialManager,
+            mockContext,
+            mockDeviceCapabilities,
+            mockAuthRepository,
+            mockStreamRepository,
+            mockConnectivityChecker,
+        )
+    }
 
     @Test
     fun `JellyfinRepository can be instantiated`() {

@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.network
 
+import com.rpeters.jellyfin.data.repository.IJellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.coroutines.runBlocking
@@ -28,7 +29,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class JellyfinAuthInterceptor @Inject constructor(
-    private val authRepositoryProvider: Provider<JellyfinAuthRepository>,
+    private val authRepositoryProvider: Provider<IJellyfinAuthRepository>,
     private val deviceIdentityProvider: DeviceIdentityProvider,
 ) : Interceptor, Authenticator {
 
@@ -81,7 +82,7 @@ class JellyfinAuthInterceptor @Inject constructor(
         return buildRequestWithHeaders(response.request, token)
     }
 
-    private fun ensureFreshToken(repository: JellyfinAuthRepository) {
+    private fun ensureFreshToken(repository: IJellyfinAuthRepository) {
         if (!repository.isUserAuthenticated()) {
             return
         }

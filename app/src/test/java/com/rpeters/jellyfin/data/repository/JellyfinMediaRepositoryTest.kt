@@ -7,6 +7,7 @@ import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.impl.annotations.MockK
 import io.mockk.mockk
+import io.mockk.spyk
 import kotlinx.coroutines.test.runTest
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.itemsApi
@@ -44,7 +45,7 @@ class JellyfinMediaRepositoryTest {
     @Before
     fun setup() {
         MockKAnnotations.init(this)
-        repository = JellyfinMediaRepository(authRepository, sessionManager, cache, healthChecker)
+        repository = spyk(JellyfinMediaRepository(authRepository, sessionManager, cache, healthChecker))
 
         // Mock API client setup
         coEvery { apiClient.itemsApi } returns itemsApi

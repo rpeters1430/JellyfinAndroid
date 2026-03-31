@@ -1,7 +1,7 @@
 package com.rpeters.jellyfin.ui.viewmodel
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
@@ -29,7 +29,7 @@ class SeasonEpisodesViewModelTest {
     val instantTaskExecutorRule = InstantTaskExecutorRule()
 
     @MockK
-    private lateinit var repository: JellyfinRepository
+    private lateinit var repository: IJellyfinRepository
 
     private lateinit var viewModel: SeasonEpisodesViewModel
     private val dispatcher = UnconfinedTestDispatcher()

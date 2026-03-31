@@ -1,8 +1,8 @@
 package com.rpeters.jellyfin.ui.viewmodel
 
 import app.cash.turbine.test
+import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
-import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -26,7 +26,7 @@ import java.util.UUID
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TVSeasonViewModelTest {
-    private val repository: JellyfinRepository = mockk()
+    private val repository: IJellyfinRepository = mockk()
     private val mediaRepository: JellyfinMediaRepository = mockk()
     private val generativeAiRepository: com.rpeters.jellyfin.data.repository.GenerativeAiRepository = mockk(relaxed = true)
     private val dispatcher = StandardTestDispatcher()

@@ -17,7 +17,6 @@ import com.rpeters.jellyfin.data.offline.OfflinePlaybackManager
 import com.rpeters.jellyfin.data.playback.AdaptiveBitrateMonitor
 import com.rpeters.jellyfin.data.playback.EnhancedPlaybackManager
 import com.rpeters.jellyfin.data.playback.PlaybackResult
-import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.utils.AnalyticsHelper
 import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.coroutines.CoroutineScope
@@ -43,7 +42,6 @@ class VideoPlayerPlaybackManager @Inject constructor(
     @ApplicationContext private val applicationContext: Context,
     private val stateManager: VideoPlayerStateManager,
     private val trackManager: VideoPlayerTrackManager,
-    private val repository: JellyfinRepository,
     private val enhancedPlaybackManager: EnhancedPlaybackManager,
     private val offlinePlaybackManager: OfflinePlaybackManager,
     private val playbackProgressManager: PlaybackProgressManager,

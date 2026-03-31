@@ -141,7 +141,7 @@ class LibraryItemPagingSourceTest {
         val pageResult = result as PagingSource.LoadResult.Page<Int, BaseItemDto>
         assertEquals(20, pageResult.data.size)
         assertEquals(0, pageResult.prevKey) // Previous start index
-        assertEquals(40, pageResult.nextKey) // Next start index
+        assertNull(pageResult.nextKey) // End of data when totalCount is reached exactly
     }
 
     @Test

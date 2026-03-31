@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.di
 import android.content.Context
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.data.repository.IJellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import okhttp3.Interceptor
@@ -21,7 +22,7 @@ import javax.inject.Singleton
 class OptimizedClientFactory @Inject constructor(
     @ApplicationContext private val context: Context,
     private val jellyfin: Jellyfin,
-    private val authRepositoryProvider: Provider<JellyfinAuthRepository>,
+    private val authRepositoryProvider: Provider<IJellyfinAuthRepository>,
 ) {
     private val clients = mutableMapOf<String, ApiClient>()
     private val clientLock = Any()

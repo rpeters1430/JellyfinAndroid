@@ -2,8 +2,8 @@ package com.rpeters.jellyfin.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rpeters.jellyfin.data.repository.IJellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
-import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.utils.isCompletelyWatched
 import com.rpeters.jellyfin.utils.isWatched
@@ -33,7 +33,7 @@ data class TVSeasonState(
 
 @HiltViewModel
 class TVSeasonViewModel @Inject constructor(
-    private val repository: JellyfinRepository,
+    private val repository: IJellyfinRepository,
     private val mediaRepository: JellyfinMediaRepository,
     private val generativeAiRepository: com.rpeters.jellyfin.data.repository.GenerativeAiRepository,
 ) : ViewModel() {

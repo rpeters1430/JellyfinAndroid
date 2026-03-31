@@ -2,7 +2,6 @@ package com.rpeters.jellyfin.ui.player
 
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
-import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.ui.player.cast.CastState
 import com.rpeters.jellyfin.utils.AnalyticsHelper
 import kotlinx.coroutines.CoroutineScope
@@ -21,7 +20,6 @@ import javax.inject.Inject
 class VideoPlayerCastManager @Inject constructor(
     private val castManager: CastManager,
     private val stateManager: VideoPlayerStateManager,
-    private val repository: JellyfinRepository,
     private val analytics: AnalyticsHelper
 ) {
     private var castPositionJob: Job? = null
