@@ -153,4 +153,16 @@ class VideoPlayerViewModelTest {
         // Assert
         verify { stateManager.updateState(any()) }
     }
+
+    @Test
+    fun `onIntent TogglePlayPause delegates correctly`() = runTest {
+        // Arrange
+        every { mockExoPlayer.isPlaying } returns true
+
+        // Act
+        viewModel.onIntent(VideoPlayerIntent.TogglePlayPause)
+
+        // Assert
+        verify { mockExoPlayer.pause() }
+    }
 }

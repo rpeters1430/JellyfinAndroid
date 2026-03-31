@@ -84,6 +84,7 @@ import com.rpeters.jellyfin.ui.player.AspectRatioMode
 import com.rpeters.jellyfin.ui.player.VideoQuality
 import com.rpeters.jellyfin.ui.player.VideoPlayerState
 import com.rpeters.jellyfin.ui.player.VideoPlayerViewModel
+import com.rpeters.jellyfin.ui.player.VideoPlayerIntent
 import com.rpeters.jellyfin.ui.player.applySubtitleAppearance
 import com.rpeters.jellyfin.ui.viewmodel.SubtitleAppearancePreferencesViewModel
 import kotlinx.coroutines.delay
@@ -127,12 +128,12 @@ fun TvVideoPlayerRoute(
     }
 
     LaunchedEffect(itemId) {
-        viewModel.initializePlayer(itemId, itemName, startPositionMs)
+        viewModel.onIntent(VideoPlayerIntent.Initialize(itemId, itemName, startPositionMs))
     }
 
     DisposableEffect(Unit) {
         onDispose {
-            viewModel.releasePlayerImmediate()
+            viewModel.onIntent(VideoPlayerIntent.ReleasePlayer)
         }
     }
 
@@ -144,13 +145,13 @@ fun TvVideoPlayerRoute(
             } else {
                 base
             }
-            viewModel.seekTo(target)
+            viewModel.onIntent(VideoPlayerIntent.SeekTo(target))
         }
     }
     val onSeekBackward = remember(playerState.currentPosition) {
         {
             val target = (playerState.currentPosition - SEEK_INTERVAL_MS).coerceAtLeast(0L)
-            viewModel.seekTo(target)
+            viewModel.onIntent(VideoPlayerIntent.SeekTo(target))
         }
     }
 
@@ -161,18 +162,18 @@ fun TvVideoPlayerRoute(
         subtitleAppearance = subtitleAppearance,
         pipState = pipState,
         onBack = onExit,
-        onPlayPause = viewModel::togglePlayPause,
+        onPlayPause = { viewModel.onIntent(VideoPlayerIntent.TogglePlayPause) },
         onSeekForward = onSeekForward,
         onSeekBackward = onSeekBackward,
-        onSeekTo = viewModel::seekTo,
-        onSetPlaybackSpeed = viewModel::setPlaybackSpeed,
-        onChangeAspectRatio = viewModel::changeAspectRatio,
-        onShowAudio = viewModel::selectAudioTrack,
-        onShowSubtitles = viewModel::selectSubtitleTrack,
-        onPlayNextEpisode = viewModel::playNextEpisode,
-        onDismissNextEpisodePrompt = viewModel::dismissNextEpisodePrompt,
-        onCancelNextEpisodeCountdown = viewModel::cancelNextEpisodeCountdown,
-        onErrorDismiss = viewModel::clearError,
+        onSeekTo = { viewModel.onIntent(VideoPlayerIntent.SeekTo(it)) },
+        onSetPlaybackSpeed = { viewModel.onIntent(VideoPlayerIntent.SetPlaybackSpeed(it)) },
+        onChangeAspectRatio = { viewModel.onIntent(VideoPlayerIntent.ChangeAspectRatio(it)) },
+        onShowAudio = { viewModel.onIntent(VideoPlayerIntent.SelectAudioTrack(it)) },
+        onShowSubtitles = { viewModel.onIntent(VideoPlayerIntent.SelectSubtitleTrack(it)) },
+        onPlayNextEpisode = { viewModel.onIntent(VideoPlayerIntent.PlayNextEpisode) },
+        onDismissNextEpisodePrompt = { viewModel.onIntent(VideoPlayerIntent.DismissNextEpisodePrompt) },
+        onCancelNextEpisodeCountdown = { viewModel.onIntent(VideoPlayerIntent.CancelNextEpisodeCountdown) },
+        onErrorDismiss = { viewModel.onIntent(VideoPlayerIntent.ClearError) },
     )
 }
 

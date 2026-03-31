@@ -1,6 +1,6 @@
 # Jellyfin Android - Current Status
 
-**Last Updated**: March 16, 2026
+**Last Updated**: March 30, 2026
 
 > **Quick Links**: [Feature Status](CURRENT_STATUS.md) | [Known Issues](../features/KNOWN_ISSUES.md) | [Roadmap](ROADMAP.md) | [Upgrade Path](UPGRADE_PATH.md)
 
@@ -92,17 +92,20 @@ This document provides a comprehensive snapshot of what works RIGHT NOW in the J
 | Component | Version | Status |
 |-----------|---------|--------|
 | **Kotlin** | 2.3.20 | ✅ Stable |
-| **Compose BOM** | 2026.03.00 | ✅ Latest |
-| **Material 3** | 1.5.0-alpha15 | ⚠️ Alpha (intentional for Expressive) |
+| **Compose BOM** | 2026.03.01 | ✅ Latest |
+| **Orbit MVI** | 9.0.0 | ✅ New Standard |
+| **Material 3** | 1.5.0-alpha16 | ⚠️ Alpha (intentional for Expressive) |
 | **Hilt** | 2.59.2 | ✅ Stable |
 | **Coroutines** | 1.10.2 | ✅ Stable |
 | **Retrofit** | 3.0.0 | ✅ Stable |
 | **OkHttp** | 5.3.2 | ✅ Stable |
 | **Coil** | 3.4.0 | ✅ Stable |
-| **Media3** | 1.10.0-rc02 | ⚠️ RC |
+| **Media3** | 1.10.0 | ✅ Stable (March 30 release) |
 | **Jellyfin SDK** | 1.8.6 | ✅ Stable |
-| **Navigation** | 2.10.0-alpha01 | ⚠️ Alpha |
+| **Navigation** | 2.9.7 | ✅ Stable |
+| **Lifecycle** | 2.10.0 | ✅ Stable |
 | **Paging** | 3.5.0-alpha01 | ⚠️ Alpha |
+
 
 **See**: [UPGRADE_PATH.md](UPGRADE_PATH.md) for full dependency upgrade strategy.
 

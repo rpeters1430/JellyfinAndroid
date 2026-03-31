@@ -81,6 +81,8 @@ data class VideoPlayerState(
     val isHdrContent: Boolean = false,
     val isControlsVisible: Boolean = true,
     val showSubtitleDialog: Boolean = false,
+    val showAudioDialog: Boolean = false,
+    val showQualityDialog: Boolean = false,
     val showCastDialog: Boolean = false,
     val availableCastDevices: List<String> = emptyList(),
     val castDiscoveryState: DiscoveryState = DiscoveryState.IDLE,
@@ -123,3 +125,55 @@ data class VideoPlayerState(
     // Adaptive bitrate quality recommendation
     val qualityRecommendation: com.rpeters.jellyfin.data.playback.QualityRecommendation? = null,
 )
+
+sealed class VideoPlayerIntent {
+    data class Initialize(
+        val itemId: String,
+        val itemName: String,
+        val startPosition: Long = 0,
+        val subtitleIndex: Int? = null,
+        val audioIndex: Int? = null,
+        val forceOffline: Boolean = false
+    ) : VideoPlayerIntent()
+    object TogglePlayPause : VideoPlayerIntent()
+    data class SeekTo(val positionMs: Long) : VideoPlayerIntent()
+    data class ChangeQuality(val quality: VideoQuality?) : VideoPlayerIntent()
+    data class SetPlaybackSpeed(val speed: Float) : VideoPlayerIntent()
+    data class ChangeAspectRatio(val aspectRatio: AspectRatioMode) : VideoPlayerIntent()
+    object PlayNextEpisode : VideoPlayerIntent()
+    object CancelNextEpisodeCountdown : VideoPlayerIntent()
+    object DismissNextEpisodePrompt : VideoPlayerIntent()
+    object ToggleControls : VideoPlayerIntent()
+    data class SetControlsVisible(val visible: Boolean) : VideoPlayerIntent()
+    object HandleCastButtonClick : VideoPlayerIntent()
+    object ShowCastDialog : VideoPlayerIntent()
+    object HideCastDialog : VideoPlayerIntent()
+    data class SelectCastDevice(val deviceName: String) : VideoPlayerIntent()
+    object PauseCast : VideoPlayerIntent()
+    object ResumeCast : VideoPlayerIntent()
+    object StopCast : VideoPlayerIntent()
+    object DisconnectCast : VideoPlayerIntent()
+    data class SeekCast(val positionMs: Long) : VideoPlayerIntent()
+    data class SetCastVolume(val volume: Float) : VideoPlayerIntent()
+    object ShowSubtitleDialog : VideoPlayerIntent()
+    object HideSubtitleDialog : VideoPlayerIntent()
+    object ShowAudioDialog : VideoPlayerIntent()
+    object HideAudioDialog : VideoPlayerIntent()
+    object ShowQualityDialog : VideoPlayerIntent()
+    object HideQualityDialog : VideoPlayerIntent()
+    data class SelectAudioTrack(val track: TrackInfo) : VideoPlayerIntent()
+    data class SelectSubtitleTrack(val track: TrackInfo?) : VideoPlayerIntent()
+    object AcceptQualityRecommendation : VideoPlayerIntent()
+    object DismissQualityRecommendation : VideoPlayerIntent()
+    object ClearError : VideoPlayerIntent()
+    object ClosePlayer : VideoPlayerIntent()
+    object ToggleOrientation : VideoPlayerIntent()
+    object EnterPip : VideoPlayerIntent()
+    object PausePlayback : VideoPlayerIntent()
+    object ReleasePlayer : VideoPlayerIntent()
+}
+
+sealed class VideoPlayerSideEffect {
+    object ClosePlayer : VideoPlayerSideEffect()
+    data class ShowToast(val message: String) : VideoPlayerSideEffect()
+}

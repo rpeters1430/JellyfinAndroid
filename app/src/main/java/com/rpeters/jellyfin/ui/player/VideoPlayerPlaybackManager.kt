@@ -369,6 +369,25 @@ class VideoPlayerPlaybackManager @Inject constructor(
         positionJob = null
     }
 
+    /**
+     * Release player immediately without blocking.
+     * Useful for activity destruction or backgrounding.
+     */
+    fun releasePlayerImmediate() {
+        stopPositionUpdates()
+        exoPlayer?.let { p ->
+            try {
+                p.stop()
+                p.clearVideoSurface()
+                p.release()
+            } catch (_: Exception) {}
+        }
+        exoPlayer = null
+        trackSelector = null
+        adaptiveBitrateMonitor.stopMonitoring()
+        playbackProgressManager.stopTrackingAsync(reportStop = false)
+    }
+
     fun handlePlaybackStateChanged(playbackState: Int, previousPlaybackState: Int, scope: CoroutineScope) {
         val player = exoPlayer ?: return
         

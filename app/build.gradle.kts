@@ -266,6 +266,13 @@ dependencies {
     implementation(libs.androidx.tv.material)
     implementation(libs.androidx.tv.foundation)
 
+    // Orbit MVI
+    implementation(project(":core:architecture"))
+    implementation(libs.orbit.core)
+    implementation(libs.orbit.viewmodel)
+    implementation(libs.orbit.compose)
+    testImplementation(libs.orbit.test)
+
     // Paging 3
     implementation(libs.androidx.paging.runtime)
     implementation(libs.androidx.paging.compose)

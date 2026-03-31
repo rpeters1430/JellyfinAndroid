@@ -15,3 +15,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Cinefin Android"
 include(":app")
+include(":core:architecture")

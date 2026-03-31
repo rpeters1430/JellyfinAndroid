@@ -1,11 +1,11 @@
 package com.rpeters.jellyfin.ui.player
 
 import android.content.Context
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import com.rpeters.jellyfin.core.architecture.BaseMviViewModel
 import com.rpeters.jellyfin.data.playback.AdaptiveBitrateMonitor
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.utils.SecureLogger
@@ -13,15 +13,15 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.PlayMethod
+import org.orbitmvi.orbit.syntax.*
 import javax.inject.Inject
 
 /**
- * Refactored VideoPlayerViewModel that delegates to specialized managers.
+ * Refactored VideoPlayerViewModel that delegates to specialized managers and uses MVI.
  */
 @UnstableApi
 @HiltViewModel
@@ -36,7 +36,9 @@ class VideoPlayerViewModel @Inject constructor(
     private val playbackProgressManager: PlaybackProgressManager,
     private val playbackPreferencesRepository: com.rpeters.jellyfin.data.preferences.PlaybackPreferencesRepository,
     private val adaptiveBitrateMonitor: AdaptiveBitrateMonitor,
-) : ViewModel() {
+) : BaseMviViewModel<VideoPlayerState, VideoPlayerSideEffect, VideoPlayerIntent>(
+    initialState = VideoPlayerState()
+) {
 
     val playerState: StateFlow<VideoPlayerState> = stateManager.playerState
     val playbackProgress: StateFlow<PlaybackProgress> = playbackProgressManager.playbackProgress
@@ -95,10 +97,19 @@ class VideoPlayerViewModel @Inject constructor(
     private var previousPlaybackState: Int = Player.STATE_IDLE
 
     init {
+        // Observe stateManager.playerState and sync with Orbit's container
+        viewModelScope.launch {
+            stateManager.playerState.collect { newState ->
+                intent {
+                    reduce { newState }
+                }
+            }
+        }
+
         castManager.initialize(
             scope = viewModelScope,
             onStartPlayback = { itemId, itemName, pos ->
-                viewModelScope.launch { initializePlayer(itemId, itemName, pos) }
+                onIntent(VideoPlayerIntent.Initialize(itemId, itemName, pos))
             },
             onReleasePlayer = {
                 viewModelScope.launch { playbackManager.releasePlayer(reportStop = false) }
@@ -131,7 +142,83 @@ class VideoPlayerViewModel @Inject constructor(
         }
     }
 
-    suspend fun initializePlayer(
+    override fun onIntent(intent: VideoPlayerIntent) {
+        when (intent) {
+            is VideoPlayerIntent.Initialize -> {
+                viewModelScope.launch {
+                    initializePlayerInternal(
+                        intent.itemId,
+                        intent.itemName,
+                        intent.startPosition,
+                        intent.subtitleIndex,
+                        intent.audioIndex,
+                        intent.forceOffline
+                    )
+                }
+            }
+            VideoPlayerIntent.TogglePlayPause -> togglePlayPause()
+            is VideoPlayerIntent.SeekTo -> seekTo(intent.positionMs)
+            is VideoPlayerIntent.ChangeQuality -> changeQuality(intent.quality)
+            is VideoPlayerIntent.SetPlaybackSpeed -> setPlaybackSpeed(intent.speed)
+            is VideoPlayerIntent.ChangeAspectRatio -> changeAspectRatio(intent.aspectRatio)
+            VideoPlayerIntent.PlayNextEpisode -> playNextEpisode()
+            VideoPlayerIntent.CancelNextEpisodeCountdown -> cancelNextEpisodeCountdown()
+            VideoPlayerIntent.DismissNextEpisodePrompt -> dismissNextEpisodePrompt()
+            VideoPlayerIntent.ToggleControls -> {
+                stateManager.updateState { it.copy(isControlsVisible = !it.isControlsVisible) }
+            }
+            is VideoPlayerIntent.SetControlsVisible -> {
+                stateManager.updateState { it.copy(isControlsVisible = intent.visible) }
+            }
+            VideoPlayerIntent.HandleCastButtonClick -> handleCastButtonClick()
+            VideoPlayerIntent.ShowCastDialog -> showCastDialog()
+            VideoPlayerIntent.HideCastDialog -> hideCastDialog()
+            is VideoPlayerIntent.SelectCastDevice -> selectCastDevice(intent.deviceName)
+            VideoPlayerIntent.PauseCast -> castManager.pauseCasting()
+            VideoPlayerIntent.ResumeCast -> castManager.resumeCasting()
+            VideoPlayerIntent.StopCast -> castManager.stopCasting()
+            VideoPlayerIntent.DisconnectCast -> castManager.disconnectCastSession()
+            is VideoPlayerIntent.SeekCast -> castManager.seekTo(intent.positionMs)
+            is VideoPlayerIntent.SetCastVolume -> castManager.setVolume(intent.volume)
+            VideoPlayerIntent.ShowSubtitleDialog -> {
+                stateManager.updateState { it.copy(showSubtitleDialog = true) }
+            }
+            VideoPlayerIntent.HideSubtitleDialog -> {
+                stateManager.updateState { it.copy(showSubtitleDialog = false) }
+            }
+            VideoPlayerIntent.ShowAudioDialog -> {
+                stateManager.updateState { it.copy(showAudioDialog = true) }
+            }
+            VideoPlayerIntent.HideAudioDialog -> {
+                stateManager.updateState { it.copy(showAudioDialog = false) }
+            }
+            VideoPlayerIntent.ShowQualityDialog -> {
+                stateManager.updateState { it.copy(showQualityDialog = true) }
+            }
+            VideoPlayerIntent.HideQualityDialog -> {
+                stateManager.updateState { it.copy(showQualityDialog = false) }
+            }
+            is VideoPlayerIntent.SelectAudioTrack -> selectAudioTrack(intent.track)
+            is VideoPlayerIntent.SelectSubtitleTrack -> selectSubtitleTrack(intent.track)
+            VideoPlayerIntent.AcceptQualityRecommendation -> acceptQualityRecommendation()
+            VideoPlayerIntent.DismissQualityRecommendation -> dismissQualityRecommendation()
+            VideoPlayerIntent.ClearError -> clearError()
+            VideoPlayerIntent.ClosePlayer -> {
+                intent { postSideEffect(VideoPlayerSideEffect.ClosePlayer) }
+            }
+            VideoPlayerIntent.ToggleOrientation -> {
+                // This is typically handled by the UI/Activity, but we can emit a side effect if needed
+                // For now, it's a no-op as the UI handles it directly in this pilot
+            }
+            VideoPlayerIntent.EnterPip -> {
+                // Similarly, Activity handles PIP, but we could emit a side effect
+            }
+            VideoPlayerIntent.PausePlayback -> pausePlayback()
+            VideoPlayerIntent.ReleasePlayer -> releasePlayerImmediate()
+        }
+    }
+
+    private suspend fun initializePlayerInternal(
         itemId: String,
         itemName: String,
         startPosition: Long = 0,
@@ -174,6 +261,8 @@ class VideoPlayerViewModel @Inject constructor(
                 availableSubtitleTracks = emptyList(),
                 selectedSubtitleTrack = null,
                 showSubtitleDialog = false,
+                showAudioDialog = false,
+                showQualityDialog = false,
                 qualityRecommendation = null,
                 nextEpisode = null,
                 isNextEpisodePromptDismissed = false,
@@ -248,34 +337,30 @@ class VideoPlayerViewModel @Inject constructor(
         }
     }
 
-    fun togglePlayPause() {
+    internal fun togglePlayPause() {
         exoPlayer?.let {
             if (it.isPlaying) it.pause() else it.play()
         }
     }
 
-    fun seekTo(positionMs: Long) {
-        exoPlayer?.seekTo(positionMs)
-    }
-
-    fun startPlayback() {
-        exoPlayer?.play()
-    }
-
-    fun pausePlayback() {
+    internal fun pausePlayback() {
         exoPlayer?.pause()
     }
 
-    fun changeQuality(videoQuality: VideoQuality?) {
+    internal fun seekTo(positionMs: Long) {
+        exoPlayer?.seekTo(positionMs)
+    }
+
+    internal fun changeQuality(videoQuality: VideoQuality?) {
         trackManager.changeQuality(videoQuality, playbackManager.trackSelector, exoPlayer)
     }
 
-    fun setPlaybackSpeed(speed: Float) {
+    internal fun setPlaybackSpeed(speed: Float) {
         exoPlayer?.setPlaybackSpeed(speed)
         stateManager.updateState { it.copy(playbackSpeed = speed) }
     }
 
-    fun changeAspectRatio(aspectRatio: AspectRatioMode) {
+    internal fun changeAspectRatio(aspectRatio: AspectRatioMode) {
         stateManager.updateState { it.copy(selectedAspectRatio = aspectRatio) }
     }
 
@@ -284,17 +369,17 @@ class VideoPlayerViewModel @Inject constructor(
         val nextEpisode = stateManager.playerState.value.nextEpisode
         if (nextEpisode != null) {
             metadataManager.startNextEpisodeCountdown(viewModelScope) {
-                playNextEpisode()
+                onIntent(VideoPlayerIntent.PlayNextEpisode)
             }
         }
     }
 
-    fun playNextEpisode() {
+    internal fun playNextEpisode() {
         val nextEpisode = stateManager.playerState.value.nextEpisode ?: return
         metadataManager.cancelNextEpisodeCountdown()
         viewModelScope.launch {
             playbackManager.releasePlayer()
-            initializePlayer(
+            initializePlayerInternal(
                 itemId = nextEpisode.id.toString(),
                 itemName = nextEpisode.name ?: "Next Episode",
                 startPosition = 0,
@@ -302,15 +387,15 @@ class VideoPlayerViewModel @Inject constructor(
         }
     }
 
-    fun cancelNextEpisodeCountdown() {
+    internal fun cancelNextEpisodeCountdown() {
         metadataManager.cancelNextEpisodeCountdown()
     }
 
-    fun dismissNextEpisodePrompt() {
+    internal fun dismissNextEpisodePrompt() {
         stateManager.updateState { it.copy(isNextEpisodePromptDismissed = true) }
     }
 
-    fun handleCastButtonClick() {
+    internal fun handleCastButtonClick() {
         if (stateManager.playerState.value.isCastConnected) {
             castManager.disconnectCastSession()
         } else {
@@ -318,7 +403,7 @@ class VideoPlayerViewModel @Inject constructor(
         }
     }
 
-    fun showCastDialog() {
+    internal fun showCastDialog() {
         viewModelScope.launch {
             val ready = castManager.awaitInitialization()
             if (!ready) {
@@ -330,12 +415,12 @@ class VideoPlayerViewModel @Inject constructor(
         }
     }
 
-    fun hideCastDialog() {
+    internal fun hideCastDialog() {
         castManager.stopDiscovery()
         stateManager.updateState { it.copy(showCastDialog = false) }
     }
 
-    fun selectCastDevice(deviceName: String) {
+    internal fun selectCastDevice(deviceName: String) {
         stateManager.updateState { it.copy(showCastDialog = false) }
         viewModelScope.launch {
             castManager.connectToDevice(deviceName)
@@ -343,22 +428,7 @@ class VideoPlayerViewModel @Inject constructor(
         }
     }
 
-    fun pauseCastPlayback() = castManager.pauseCasting()
-    fun resumeCastPlayback() = castManager.resumeCasting()
-    fun stopCastPlayback() = castManager.stopCasting()
-    fun disconnectCast() = castManager.disconnectCastSession()
-    fun seekCastPlayback(positionMs: Long) = castManager.seekTo(positionMs)
-    fun setCastVolume(volume: Float) = castManager.setVolume(volume)
-
-    fun showSubtitleDialog() {
-        stateManager.updateState { it.copy(showSubtitleDialog = true) }
-    }
-
-    fun hideSubtitleDialog() {
-        stateManager.updateState { it.copy(showSubtitleDialog = false) }
-    }
-
-    fun selectAudioTrack(track: TrackInfo) {
+    internal fun selectAudioTrack(track: TrackInfo) {
         val player = exoPlayer ?: return
         if (stateManager.playerState.value.isTranscoding) {
             val audioIndex = track.format.id?.toIntOrNull()
@@ -366,7 +436,7 @@ class VideoPlayerViewModel @Inject constructor(
                 viewModelScope.launch {
                     val currentPos = stateManager.playerState.value.currentPosition
                     playbackManager.releasePlayer()
-                    initializePlayer(
+                    initializePlayerInternal(
                         itemId = stateManager.playerState.value.itemId,
                         itemName = stateManager.playerState.value.itemName,
                         startPosition = currentPos,
@@ -387,7 +457,7 @@ class VideoPlayerViewModel @Inject constructor(
         stateManager.updateState { it.copy(selectedAudioTrack = track) }
     }
 
-    fun selectSubtitleTrack(track: TrackInfo?) {
+    internal fun selectSubtitleTrack(track: TrackInfo?) {
         val player = exoPlayer ?: return
         if (track != null && (stateManager.playerState.value.isTranscoding || track.groupIndex < 0)) {
             val subIndex = track.format.id?.toIntOrNull() ?: track.trackIndex.takeIf { it >= 0 }
@@ -395,7 +465,7 @@ class VideoPlayerViewModel @Inject constructor(
                 viewModelScope.launch {
                     val currentPos = stateManager.playerState.value.currentPosition
                     playbackManager.releasePlayer()
-                    initializePlayer(
+                    initializePlayerInternal(
                         itemId = stateManager.playerState.value.itemId,
                         itemName = stateManager.playerState.value.itemName,
                         startPosition = currentPos,
@@ -429,7 +499,7 @@ class VideoPlayerViewModel @Inject constructor(
         }
     }
 
-    fun acceptQualityRecommendation() {
+    internal fun acceptQualityRecommendation() {
         val recommendation = stateManager.playerState.value.qualityRecommendation ?: return
         SecureLogger.d("VideoPlayer", "Accepting quality recommendation: ${recommendation.recommendedQuality}")
         val currentPosition = exoPlayer?.currentPosition ?: 0L
@@ -439,7 +509,7 @@ class VideoPlayerViewModel @Inject constructor(
         adaptiveBitrateMonitor.resetBufferingTracking()
         viewModelScope.launch {
             playbackManager.releasePlayer(reportStop = false)
-            initializePlayer(
+            initializePlayerInternal(
                 itemId = itemId,
                 itemName = itemName,
                 startPosition = currentPosition,
@@ -447,22 +517,40 @@ class VideoPlayerViewModel @Inject constructor(
         }
     }
 
-    fun dismissQualityRecommendation() {
+    internal fun dismissQualityRecommendation() {
         adaptiveBitrateMonitor.clearRecommendation()
         adaptiveBitrateMonitor.resetBufferingTracking()
     }
 
-    fun releasePlayerImmediate(reportStop: Boolean = true) {
-        viewModelScope.launch {
-            playbackManager.releasePlayer(reportStop)
-        }
-    }
-
-    suspend fun releasePlayer(reportStop: Boolean = true) {
-        playbackManager.releasePlayer(reportStop)
-    }
-
-    fun clearError() {
+    internal fun clearError() {
         stateManager.updateState { it.copy(error = null) }
+    }
+
+    internal fun releasePlayerImmediate() {
+        playbackManager.releasePlayerImmediate()
+    }
+
+    internal fun showSubtitleDialog() {
+        stateManager.updateState { it.copy(showSubtitleDialog = true) }
+    }
+
+    internal fun hideSubtitleDialog() {
+        stateManager.updateState { it.copy(showSubtitleDialog = false) }
+    }
+
+    internal fun showAudioDialog() {
+        stateManager.updateState { it.copy(showAudioDialog = true) }
+    }
+
+    internal fun hideAudioDialog() {
+        stateManager.updateState { it.copy(showAudioDialog = false) }
+    }
+
+    internal fun showQualityDialog() {
+        stateManager.updateState { it.copy(showQualityDialog = true) }
+    }
+
+    internal fun hideQualityDialog() {
+        stateManager.updateState { it.copy(showQualityDialog = false) }
     }
 }

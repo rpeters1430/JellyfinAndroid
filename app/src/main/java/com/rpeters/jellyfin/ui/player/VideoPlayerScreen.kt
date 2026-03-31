@@ -1,10 +1,6 @@
 package com.rpeters.jellyfin.ui.player
 
 import android.content.res.Configuration
-import android.graphics.PixelFormat
-import android.os.Build
-import android.view.SurfaceView
-import android.view.View
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -15,61 +11,48 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.rpeters.jellyfin.data.preferences.SubtitleAppearancePreferences
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import org.orbitmvi.orbit.compose.collectAsState
+import org.orbitmvi.orbit.compose.collectSideEffect
 import java.lang.ref.WeakReference
 import kotlin.math.roundToInt
 
 @UnstableApi
 @Composable
 fun VideoPlayerScreen(
-    playerState: VideoPlayerState,
+    viewModel: VideoPlayerViewModel,
     subtitleAppearance: SubtitleAppearancePreferences,
-    onPlayPause: () -> Unit,
-    onSeek: (Long) -> Unit,
-    onQualityChange: (VideoQuality?) -> Unit,
-    onPlaybackSpeedChange: (Float) -> Unit,
-    onAspectRatioChange: (AspectRatioMode) -> Unit,
-    onCastClick: () -> Unit,
-    onCastPause: () -> Unit,
-    onCastResume: () -> Unit,
-    onCastStop: () -> Unit,
-    onCastDisconnect: () -> Unit,
-    onCastSeek: (Long) -> Unit,
-    onCastVolumeChange: (Float) -> Unit,
-    onSubtitlesClick: () -> Unit,
     onPictureInPictureClick: () -> Unit,
     onOrientationToggle: () -> Unit,
-    onAudioTrackSelect: (TrackInfo) -> Unit,
-    onSubtitleTrackSelect: (TrackInfo?) -> Unit,
-    onSubtitleDialogDismiss: () -> Unit,
-    onCastDeviceSelect: (String) -> Unit,
-    onCastDialogDismiss: () -> Unit,
-    onErrorDismiss: () -> Unit,
-    onClose: () -> Unit = {},
-    onPlayNextEpisode: () -> Unit = {},
-    onCancelNextEpisode: () -> Unit = {},
-    onDismissNextEpisodePrompt: () -> Unit = {},
     onPlayerViewBoundsChanged: (android.graphics.Rect) -> Unit = {},
-    onAcceptQualityRecommendation: () -> Unit = {},
-    onDismissQualityRecommendation: () -> Unit = {},
-    exoPlayer: ExoPlayer?,
+    onClose: () -> Unit = {},
     supportsPip: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val state by viewModel.collectAsState()
     val context = androidx.compose.ui.platform.LocalContext.current
+    
+    viewModel.collectSideEffect { sideEffect ->
+        when (sideEffect) {
+            is VideoPlayerSideEffect.ClosePlayer -> onClose()
+            is VideoPlayerSideEffect.ShowToast -> {
+                // In a real app, you'd show a toast or snackbar
+            }
+        }
+    }
+
     val activityRef = remember(context) { WeakReference(context as? android.app.Activity) }
     val isTvDevice = remember { com.rpeters.jellyfin.utils.DeviceTypeUtils.isTvDevice(context) }
 
@@ -80,8 +63,6 @@ fun VideoPlayerScreen(
     // Gesture State
     var currentBrightness by remember(context) { mutableStateOf(activityRef.get()?.window?.attributes?.screenBrightness ?: -1f) }
     var currentVolume by remember { mutableStateOf(audioManager.getStreamVolume(android.media.AudioManager.STREAM_MUSIC)) }
-    var lastBrightnessUpdateMs by remember { mutableLongStateOf(0L) }
-    var lastVolumeUpdateMs by remember { mutableLongStateOf(0L) }
 
     // TV Hand-off
     if (isTvDevice) {
@@ -89,53 +70,51 @@ fun VideoPlayerScreen(
             onPictureInPictureClick()
         }
         com.rpeters.jellyfin.ui.player.tv.TvVideoPlayerScreen(
-            state = playerState,
-            exoPlayer = exoPlayer,
+            state = state,
+            exoPlayer = viewModel.exoPlayer,
             subtitleAppearance = subtitleAppearance,
             pipState = pipState,
             onBack = { (context as? android.app.Activity)?.finish() },
-            onPlayPause = onPlayPause,
-            onSeekForward = { onSeek((playerState.currentPosition + 30_000).coerceAtMost(playerState.duration)) },
-            onSeekBackward = { onSeek((playerState.currentPosition - 30_000).coerceAtLeast(0L)) },
-            onSeekTo = onSeek,
-            onSetPlaybackSpeed = {},
-            onChangeAspectRatio = {},
-            onShowAudio = onAudioTrackSelect,
-            onShowSubtitles = onSubtitleTrackSelect,
-            onPlayNextEpisode = {},
-            onDismissNextEpisodePrompt = {},
-            onCancelNextEpisodeCountdown = {},
-            onErrorDismiss = onErrorDismiss,
+            onPlayPause = { viewModel.onIntent(VideoPlayerIntent.TogglePlayPause) },
+            onSeekForward = { viewModel.onIntent(VideoPlayerIntent.SeekTo((state.currentPosition + 30_000).coerceAtMost(state.duration))) },
+            onSeekBackward = { viewModel.onIntent(VideoPlayerIntent.SeekTo((state.currentPosition - 30_000).coerceAtLeast(0L))) },
+            onSeekTo = { viewModel.onIntent(VideoPlayerIntent.SeekTo(it)) },
+            onSetPlaybackSpeed = { viewModel.onIntent(VideoPlayerIntent.SetPlaybackSpeed(it)) },
+            onChangeAspectRatio = { viewModel.onIntent(VideoPlayerIntent.ChangeAspectRatio(it)) },
+            onShowAudio = { viewModel.onIntent(VideoPlayerIntent.SelectAudioTrack(it)) },
+            onShowSubtitles = { viewModel.onIntent(VideoPlayerIntent.SelectSubtitleTrack(it)) },
+            onPlayNextEpisode = { viewModel.onIntent(VideoPlayerIntent.PlayNextEpisode) },
+            onDismissNextEpisodePrompt = { viewModel.onIntent(VideoPlayerIntent.DismissNextEpisodePrompt) },
+            onCancelNextEpisodeCountdown = { viewModel.onIntent(VideoPlayerIntent.CancelNextEpisodeCountdown) },
+            onErrorDismiss = { viewModel.onIntent(VideoPlayerIntent.ClearError) },
             modifier = modifier,
         )
         return
     }
 
     val playerColors = rememberVideoPlayerColors()
-    var controlsVisible by remember { mutableStateOf(true) }
-    var showAudioDialog by remember { mutableStateOf(false) }
-    var showQualityDialog by remember { mutableStateOf(false) }
+    
     val showPrimaryLoadingUi = remember(
-        playerState.isLoading,
-        playerState.currentPosition,
-        playerState.isPlaying,
+        state.isLoading,
+        state.currentPosition,
+        state.isPlaying,
     ) {
-        playerState.isLoading && playerState.currentPosition <= 0L && !playerState.isPlaying
+        state.isLoading && state.currentPosition <= 0L && !state.isPlaying
     }
     val showNextEpisodePrompt = remember(
-        playerState.nextEpisode,
-        playerState.isNextEpisodePromptDismissed,
-        playerState.showNextEpisodeCountdown,
-        playerState.outroStartMs,
-        playerState.currentPosition,
-        playerState.duration,
+        state.nextEpisode,
+        state.isNextEpisodePromptDismissed,
+        state.showNextEpisodeCountdown,
+        state.outroStartMs,
+        state.currentPosition,
+        state.duration,
     ) {
-        val remainingMs = playerState.duration - playerState.currentPosition
-        val reachedOutro = playerState.outroStartMs?.let { playerState.currentPosition >= it } == true
-        val inFallbackWindow = playerState.duration > 60_000 && remainingMs in 1..30_000
-        playerState.nextEpisode != null &&
-            !playerState.isNextEpisodePromptDismissed &&
-            !playerState.showNextEpisodeCountdown &&
+        val remainingMs = state.duration - state.currentPosition
+        val reachedOutro = state.outroStartMs?.let { state.currentPosition >= it } == true
+        val inFallbackWindow = state.duration > 60_000 && remainingMs in 1..30_000
+        state.nextEpisode != null &&
+            !state.isNextEpisodePromptDismissed &&
+            !state.showNextEpisodeCountdown &&
             (reachedOutro || inFallbackWindow)
     }
 
@@ -146,12 +125,9 @@ fun VideoPlayerScreen(
     var lastPlayerViewBounds by remember { mutableStateOf<android.graphics.Rect?>(null) }
 
     // Coroutine scope for managing the gesture feedback dismiss timer.
-    // Using a cancellable Job ensures the timer resets on every new gesture event, preventing
-    // the indicator from sticking or dismissing prematurely during a continuous drag.
     val feedbackScope = rememberCoroutineScope()
     val feedbackDismissJobRef = remember { java.util.concurrent.atomic.AtomicReference<Job?>(null) }
 
-    // Memoize the showFeedback lambda so it is not recreated on every recomposition.
     val showFeedback: () -> Unit = remember(feedbackScope) {
         {
             showSeekFeedback = true
@@ -167,17 +143,17 @@ fun VideoPlayerScreen(
 
     // Errors
     val snackbarHostState = remember { SnackbarHostState() }
-    LaunchedEffect(playerState.error) {
-        playerState.error?.let {
+    LaunchedEffect(state.error) {
+        state.error?.let {
             snackbarHostState.showSnackbar(it, duration = SnackbarDuration.Short)
-            onErrorDismiss()
+            viewModel.onIntent(VideoPlayerIntent.ClearError)
         }
     }
 
     // Real-time position for gestures
     var currentPosMs by remember { mutableLongStateOf(0L) }
-    LaunchedEffect(exoPlayer, playerState.isPlaying, playerState.isLoading) {
-        val player = exoPlayer ?: return@LaunchedEffect
+    LaunchedEffect(viewModel.exoPlayer, state.isPlaying, state.isLoading) {
+        val player = viewModel.exoPlayer ?: return@LaunchedEffect
         while (isActive) {
             currentPosMs = player.currentPosition
             delay(500)
@@ -185,23 +161,18 @@ fun VideoPlayerScreen(
     }
 
     // Control visibility timers
-    LaunchedEffect(controlsVisible, playerState.isPlaying) {
-        if (controlsVisible && playerState.isPlaying) {
+    LaunchedEffect(state.isControlsVisible, state.isPlaying) {
+        if (state.isControlsVisible && state.isPlaying) {
             delay(5000)
-            controlsVisible = false
+            viewModel.onIntent(VideoPlayerIntent.SetControlsVisible(false))
         }
     }
-    LaunchedEffect(playerState.isPlaying, showPrimaryLoadingUi) {
-        // Keep controls visible whenever playback is paused/stopped, and during the initial
-        // startup buffer before the first frame is rendered.
-        if (!playerState.isPlaying || showPrimaryLoadingUi) {
-            controlsVisible = true
+    LaunchedEffect(state.isPlaying, showPrimaryLoadingUi) {
+        if (!state.isPlaying || showPrimaryLoadingUi) {
+            viewModel.onIntent(VideoPlayerIntent.SetControlsVisible(true))
         }
     }
 
-    // Brightness/volume swipe gestures are only reliable in landscape orientation.
-    // In portrait mode the gesture conflicts with system scroll/navigation and produces
-    // erratic behaviour, so we disable them.
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     Box(
@@ -212,21 +183,21 @@ fun VideoPlayerScreen(
                 enableVerticalDragGestures = isLandscape,
                 onTap = { isCenterTap ->
                     if (isCenterTap) {
-                        onPlayPause()
-                        seekFeedbackIcon = if (playerState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow
-                        seekFeedbackText = if (playerState.isPlaying) "Pause" else "Play"
+                        viewModel.onIntent(VideoPlayerIntent.TogglePlayPause)
+                        seekFeedbackIcon = if (state.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow
+                        seekFeedbackText = if (state.isPlaying) "Pause" else "Play"
                         showFeedback()
                     } else {
-                        controlsVisible = !controlsVisible
+                        viewModel.onIntent(VideoPlayerIntent.ToggleControls)
                     }
                 },
                 onDoubleTap = { isRightSide ->
                     val seekAmount = if (isRightSide) 10_000L else -10_000L
-                    onSeek((currentPosMs + seekAmount).coerceIn(0L, playerState.duration))
+                    viewModel.onIntent(VideoPlayerIntent.SeekTo((currentPosMs + seekAmount).coerceIn(0L, state.duration)))
                     seekFeedbackIcon = if (isRightSide) Icons.Default.FastForward else Icons.Default.FastRewind
                     seekFeedbackText = if (isRightSide) "+10s" else "-10s"
                     showFeedback()
-                    controlsVisible = false
+                    viewModel.onIntent(VideoPlayerIntent.SetControlsVisible(false))
                 },
                 onVerticalDrag = { isLeftSide, deltaY ->
                     val screenHeight = context.resources.displayMetrics.heightPixels.toFloat()
@@ -252,14 +223,14 @@ fun VideoPlayerScreen(
                 },
             ),
     ) {
-        if (playerState.isCastConnected) {
+        if (state.isCastConnected) {
             CastRemoteScreen(
-                playerState = playerState,
-                onPauseCast = onCastPause,
-                onResumeCast = onCastResume,
-                onStopCast = onCastStop,
-                onSeekCast = onCastSeek,
-                onDisconnectCast = onCastDisconnect,
+                playerState = state,
+                onPauseCast = { viewModel.onIntent(VideoPlayerIntent.PauseCast) },
+                onResumeCast = { viewModel.onIntent(VideoPlayerIntent.ResumeCast) },
+                onStopCast = { viewModel.onIntent(VideoPlayerIntent.StopCast) },
+                onSeekCast = { viewModel.onIntent(VideoPlayerIntent.SeekCast(it)) },
+                onDisconnectCast = { viewModel.onIntent(VideoPlayerIntent.DisconnectCast) },
                 modifier = Modifier.fillMaxSize(),
             )
         } else {
@@ -272,11 +243,10 @@ fun VideoPlayerScreen(
                     }
                 },
                 update = { view ->
-                    if (view.player != exoPlayer) view.player = exoPlayer
-                    view.resizeMode = playerState.selectedAspectRatio.resizeMode
+                    if (view.player != viewModel.exoPlayer) view.player = viewModel.exoPlayer
+                    view.resizeMode = state.selectedAspectRatio.resizeMode
                     applySubtitleAppearance(view, subtitleAppearance)
-                    // Configure HDR support when HDR content is detected
-                    configureHdrSupport(view, playerState.isHdrContent)
+                    configureHdrSupport(view, state.isHdrContent)
                 },
                 modifier = Modifier.fillMaxSize().onGloballyPositioned { coords ->
                     val bounds = coords.boundsInWindow()
@@ -303,87 +273,92 @@ fun VideoPlayerScreen(
             )
 
             SkipIntroOutroButtons(
-                playerState = playerState,
+                playerState = state,
                 currentPosMs = currentPosMs,
                 overlayScrim = playerColors.overlayScrim,
                 overlayContent = playerColors.overlayContent,
-                onSeek = onSeek,
+                onSeek = { viewModel.onIntent(VideoPlayerIntent.SeekTo(it)) },
             )
 
             NextEpisodeCountdownOverlay(
-                visible = showNextEpisodePrompt || playerState.showNextEpisodeCountdown,
-                nextEpisode = playerState.nextEpisode,
-                countdown = playerState.nextEpisodeCountdown,
-                isCountdownActive = playerState.showNextEpisodeCountdown,
+                visible = showNextEpisodePrompt || state.showNextEpisodeCountdown,
+                nextEpisode = state.nextEpisode,
+                countdown = state.nextEpisodeCountdown,
+                isCountdownActive = state.showNextEpisodeCountdown,
                 overlayScrim = playerColors.overlayScrim,
                 overlayContent = playerColors.overlayContent,
-                onCancel = if (playerState.showNextEpisodeCountdown) onCancelNextEpisode else onDismissNextEpisodePrompt,
-                onPlayNow = onPlayNextEpisode,
+                onCancel = { 
+                    if (state.showNextEpisodeCountdown) {
+                        viewModel.onIntent(VideoPlayerIntent.CancelNextEpisodeCountdown)
+                    } else {
+                        viewModel.onIntent(VideoPlayerIntent.DismissNextEpisodePrompt)
+                    }
+                },
+                onPlayNow = { viewModel.onIntent(VideoPlayerIntent.PlayNextEpisode) },
                 modifier = Modifier.align(Alignment.CenterEnd),
             )
 
             ExpressiveVideoControls(
-                playerState = playerState,
+                playerState = state,
                 showPrimaryLoadingUi = showPrimaryLoadingUi,
-                onPlayPause = onPlayPause,
-                onSeek = onSeek,
-                onSeekBy = { delta -> onSeek((playerState.currentPosition + delta).coerceIn(0L, playerState.duration)) },
-                onQualityClick = { showQualityDialog = true },
-                onAudioClick = { showAudioDialog = true },
-                onCastClick = onCastClick,
-                onSubtitlesClick = onSubtitlesClick,
-                onAspectRatioChange = onAspectRatioChange,
-                onPlaybackSpeedChange = onPlaybackSpeedChange,
+                onPlayPause = { viewModel.onIntent(VideoPlayerIntent.TogglePlayPause) },
+                onSeek = { viewModel.onIntent(VideoPlayerIntent.SeekTo(it)) },
+                onSeekBy = { delta -> viewModel.onIntent(VideoPlayerIntent.SeekTo((state.currentPosition + delta).coerceIn(0L, state.duration))) },
+                onQualityClick = { viewModel.onIntent(VideoPlayerIntent.ShowQualityDialog) },
+                onAudioClick = { viewModel.onIntent(VideoPlayerIntent.ShowAudioDialog) },
+                onCastClick = { viewModel.onIntent(VideoPlayerIntent.HandleCastButtonClick) },
+                onSubtitlesClick = { viewModel.onIntent(VideoPlayerIntent.ShowSubtitleDialog) },
+                onAspectRatioChange = { viewModel.onIntent(VideoPlayerIntent.ChangeAspectRatio(it)) },
+                onPlaybackSpeedChange = { viewModel.onIntent(VideoPlayerIntent.SetPlaybackSpeed(it)) },
                 onBackClick = onClose,
                 onPictureInPictureClick = onPictureInPictureClick,
                 supportsPip = supportsPip,
-                isVisible = controlsVisible,
+                isVisible = state.isControlsVisible,
                 overlayContent = playerColors.overlayContent,
                 overlayScrim = playerColors.overlayScrim,
             )
         }
 
-        if (showAudioDialog) {
+        if (state.showAudioDialog) {
             AudioTrackSelectionDialog(
-                availableTracks = playerState.availableAudioTracks,
-                onTrackSelect = onAudioTrackSelect,
-                onDismiss = { showAudioDialog = false },
+                availableTracks = state.availableAudioTracks,
+                onTrackSelect = { viewModel.onIntent(VideoPlayerIntent.SelectAudioTrack(it)) },
+                onDismiss = { viewModel.onIntent(VideoPlayerIntent.HideAudioDialog) },
             )
         }
 
-        if (showQualityDialog) {
+        if (state.showQualityDialog) {
             QualitySelectionDialog(
-                availableQualities = playerState.availableQualities,
-                selectedQuality = playerState.selectedQuality,
-                onQualitySelect = onQualityChange,
-                onDismiss = { showQualityDialog = false },
+                availableQualities = state.availableQualities,
+                selectedQuality = state.selectedQuality,
+                onQualitySelect = { viewModel.onIntent(VideoPlayerIntent.ChangeQuality(it)) },
+                onDismiss = { viewModel.onIntent(VideoPlayerIntent.HideQualityDialog) },
             )
         }
 
-        if (playerState.showSubtitleDialog) {
+        if (state.showSubtitleDialog) {
             SubtitleTrackSelectionDialog(
-                availableTracks = playerState.availableSubtitleTracks,
-                selectedTrack = playerState.selectedSubtitleTrack,
-                onTrackSelect = onSubtitleTrackSelect,
-                onDismiss = onSubtitleDialogDismiss,
+                availableTracks = state.availableSubtitleTracks,
+                selectedTrack = state.selectedSubtitleTrack,
+                onTrackSelect = { viewModel.onIntent(VideoPlayerIntent.SelectSubtitleTrack(it)) },
+                onDismiss = { viewModel.onIntent(VideoPlayerIntent.HideSubtitleDialog) },
             )
         }
 
-        if (playerState.showCastDialog) {
+        if (state.showCastDialog) {
             CastDeviceSelectionDialog(
-                availableDevices = playerState.availableCastDevices,
-                discoveryState = playerState.castDiscoveryState,
-                onDeviceSelect = onCastDeviceSelect,
-                onDismiss = onCastDialogDismiss,
+                availableDevices = state.availableCastDevices,
+                discoveryState = state.castDiscoveryState,
+                onDeviceSelect = { viewModel.onIntent(VideoPlayerIntent.SelectCastDevice(it)) },
+                onDismiss = { viewModel.onIntent(VideoPlayerIntent.HideCastDialog) },
             )
         }
 
-        // Show quality recommendation notification when adaptive bitrate monitor suggests a change
-        playerState.qualityRecommendation?.let { recommendation ->
+        state.qualityRecommendation?.let { recommendation ->
             QualityRecommendationNotification(
                 recommendation = recommendation,
-                onAccept = onAcceptQualityRecommendation,
-                onDismiss = onDismissQualityRecommendation,
+                onAccept = { viewModel.onIntent(VideoPlayerIntent.AcceptQualityRecommendation) },
+                onDismiss = { viewModel.onIntent(VideoPlayerIntent.DismissQualityRecommendation) },
                 modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp),
             )
         }
@@ -392,30 +367,20 @@ fun VideoPlayerScreen(
     }
 }
 
-/**
- * Configure HDR support on the PlayerView's SurfaceView.
- * When HDR content is detected, the SurfaceView needs to be configured to handle HDR color spaces.
- * Without this configuration, HDR video will show a black screen even though audio plays.
- */
 private fun configureHdrSupport(playerView: PlayerView, isHdrContent: Boolean) {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return
+    if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.N) return
 
     try {
-        // Find the SurfaceView inside PlayerView
         val surfaceView = findSurfaceView(playerView) ?: return
 
         if (isHdrContent) {
-            // Enable HDR rendering by setting the surface to support wide color gamut
-            // This allows the surface to display HDR10 and HLG content properly
-            surfaceView.holder.setFormat(PixelFormat.RGBA_1010102)
-
+            surfaceView.holder.setFormat(android.graphics.PixelFormat.RGBA_1010102)
             com.rpeters.jellyfin.utils.SecureLogger.d(
                 "VideoPlayerScreen",
                 "Configured SurfaceView for HDR content with RGBA_1010102 format",
             )
         } else {
-            // Use default format for SDR content
-            surfaceView.holder.setFormat(PixelFormat.RGBA_8888)
+            surfaceView.holder.setFormat(android.graphics.PixelFormat.RGBA_8888)
         }
     } catch (e: Exception) {
         com.rpeters.jellyfin.utils.SecureLogger.w(
@@ -425,11 +390,8 @@ private fun configureHdrSupport(playerView: PlayerView, isHdrContent: Boolean) {
     }
 }
 
-/**
- * Recursively find the SurfaceView within a PlayerView's view hierarchy.
- */
-private fun findSurfaceView(view: View): SurfaceView? {
-    if (view is SurfaceView) {
+private fun findSurfaceView(view: android.view.View): android.view.SurfaceView? {
+    if (view is android.view.SurfaceView) {
         return view
     }
 

@@ -180,12 +180,14 @@ class VideoPlayerActivity : FragmentActivity() {
             // Initialize player with error handling
             lifecycleScope.launch {
                 try {
-                    playerViewModel.initializePlayer(
-                        itemId = itemId,
-                        itemName = itemName,
-                        startPosition = startPosition,
-                        subtitleIndex = subtitleIndex,
-                        forceOffline = forceOffline,
+                    playerViewModel.onIntent(
+                        VideoPlayerIntent.Initialize(
+                            itemId = itemId,
+                            itemName = itemName,
+                            startPosition = startPosition,
+                            subtitleIndex = subtitleIndex,
+                            forceOffline = forceOffline,
+                        )
                     )
                 } catch (e: CancellationException) {
                     throw e
@@ -222,37 +224,12 @@ class VideoPlayerActivity : FragmentActivity() {
                         }
 
                         VideoPlayerScreen(
-                            playerState = playerState,
+                            viewModel = playerViewModel,
                             subtitleAppearance = subtitleAppearance,
-                            onPlayPause = playerViewModel::togglePlayPause,
-                            onSeek = playerViewModel::seekTo,
-                            onQualityChange = playerViewModel::changeQuality,
-                            onPlaybackSpeedChange = playerViewModel::setPlaybackSpeed,
-                            onAspectRatioChange = playerViewModel::changeAspectRatio,
-                            onCastClick = playerViewModel::handleCastButtonClick,
-                            onCastPause = playerViewModel::pauseCastPlayback,
-                            onCastResume = playerViewModel::resumeCastPlayback,
-                            onCastStop = playerViewModel::stopCastPlayback,
-                            onCastDisconnect = playerViewModel::disconnectCast,
-                            onCastSeek = playerViewModel::seekCastPlayback,
-                            onCastVolumeChange = playerViewModel::setCastVolume,
-                            onSubtitlesClick = playerViewModel::showSubtitleDialog,
                             onPictureInPictureClick = ::enterPictureInPictureModeCustom,
                             onOrientationToggle = ::toggleOrientation,
-                            onAudioTrackSelect = playerViewModel::selectAudioTrack,
-                            onSubtitleTrackSelect = playerViewModel::selectSubtitleTrack,
-                            onSubtitleDialogDismiss = playerViewModel::hideSubtitleDialog,
-                            onCastDeviceSelect = playerViewModel::selectCastDevice,
-                            onCastDialogDismiss = playerViewModel::hideCastDialog,
-                            onErrorDismiss = playerViewModel::clearError,
-                            onClose = { finish() },
-                            onPlayNextEpisode = playerViewModel::playNextEpisode,
-                            onCancelNextEpisode = playerViewModel::cancelNextEpisodeCountdown,
-                            onDismissNextEpisodePrompt = playerViewModel::dismissNextEpisodePrompt,
                             onPlayerViewBoundsChanged = { pipSourceRect = it },
-                            onAcceptQualityRecommendation = playerViewModel::acceptQualityRecommendation,
-                            onDismissQualityRecommendation = playerViewModel::dismissQualityRecommendation,
-                            exoPlayer = playerViewModel.exoPlayer,
+                            onClose = { finish() },
                             supportsPip = isPipSupported(),
                         )
                     }
