@@ -36,6 +36,11 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
             lifecycle = lifecycleOwner.lifecycle,
             minActiveState = Lifecycle.State.STARTED,
         )
+        val isConnected by viewModel.isConnected.collectAsStateWithLifecycle(
+            initialValue = false,
+            lifecycle = lifecycleOwner.lifecycle,
+            minActiveState = Lifecycle.State.STARTED,
+        )
 
         // ✅ Performance: Stabilize callbacks to prevent unnecessary recompositions
         val onRefresh = remember(viewModel) { { viewModel.loadInitialData() } }
@@ -110,21 +115,26 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
         val onNowPlayingClick = remember(navController) { { navController.navigate(Screen.NowPlaying.route) } }
         val onAiHealthCheck = remember(viewModel) { { viewModel.runAiHealthCheck(force = true) } }
 
-        // CRITICAL FIX: Wait for currentServer to be available before loading data
-        // During auto-login, the navigation happens before the session is fully established
-        // This ensures we only load data when we have a valid connection
-        LaunchedEffect(currentServer) {
+        // CRITICAL FIX: Load data once a session is connected, even if currentServer is temporarily null.
+        // On some devices, repository state restoration can report isConnected before currentServer emits.
+        // Without this fallback, Home can render chrome with empty content until a manual refresh.
+        LaunchedEffect(currentServer, isConnected) {
             val server = currentServer
-            if (server != null) {
+            val shouldLoad = isConnected && appState.libraries.isEmpty() && !appState.isLoading
+
+            if (server != null && (shouldLoad || appState.errorMessage != null)) {
                 if (BuildConfig.DEBUG) {
-                    Log.d("HomeScreen", "Current server available, loading initial data for: ${server.name}")
+                    Log.d("HomeScreen", "Session ready, loading initial data for: ${server.name}")
                 }
                 viewModel.loadInitialData()
                 viewModel.runAiHealthCheck()
-            } else {
+            } else if (server == null && shouldLoad) {
                 if (BuildConfig.DEBUG) {
-                    Log.d("HomeScreen", "Waiting for server connection before loading data")
+                    Log.d("HomeScreen", "Connected but server metadata pending, triggering fallback load")
                 }
+                viewModel.loadInitialData()
+            } else if (BuildConfig.DEBUG && !isConnected) {
+                Log.d("HomeScreen", "Waiting for server connection before loading data")
             }
         }
 
