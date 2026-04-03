@@ -5,6 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -39,6 +41,7 @@ import com.rpeters.jellyfin.ui.theme.Dimens
 import com.rpeters.jellyfin.ui.theme.getContentTypeColor
 import org.jellyfin.sdk.model.api.BaseItemDto
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun LibraryGridSection(
     libraries: List<BaseItemDto>,
@@ -56,9 +59,12 @@ fun LibraryGridSection(
         )
 
         // Note: This sits inside a parent LazyColumn; avoid nested vertical scrollables.
-        Column(
+        // FlowRow wraps into 2-column rows so all libraries are visible without scrolling.
+        FlowRow(
             modifier = Modifier.padding(horizontal = Dimens.Spacing16),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing8),
             verticalArrangement = Arrangement.spacedBy(Dimens.Spacing8),
+            maxItemsInEachRow = 2,
         ) {
             libraries.forEach { library ->
                 ExpressiveCompactCard(
@@ -73,6 +79,7 @@ fun LibraryGridSection(
                         "music" -> Icons.Default.MusicNote
                         else -> Icons.Default.Folder
                     },
+                    modifier = Modifier.weight(1f),
                 )
             }
         }

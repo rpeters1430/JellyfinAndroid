@@ -56,6 +56,7 @@ import com.rpeters.jellyfin.ui.navigation.navigateToMainDestination
 import com.rpeters.jellyfin.ui.navigation.shouldShowNavigation
 import com.rpeters.jellyfin.ui.shortcuts.DynamicShortcutManager
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
+import com.rpeters.jellyfin.ui.viewmodel.AudioPlaybackViewModel
 import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
 import com.rpeters.jellyfin.ui.viewmodel.ThemePreferencesViewModel
 import com.rpeters.jellyfin.utils.SecureLogger
@@ -91,6 +92,11 @@ fun JellyfinApp(
     // Collect theme preferences
     val themeViewModel: ThemePreferencesViewModel = hiltViewModel()
     val themePreferences by themeViewModel.themePreferences.collectAsStateWithLifecycle()
+
+    // Audio playback ViewModel for MiniPlayer visibility tracking
+    val audioPlaybackViewModel: AudioPlaybackViewModel = hiltViewModel()
+    val audioPlaybackState by audioPlaybackViewModel.playbackState.collectAsStateWithLifecycle()
+    val isMiniPlayerVisible = audioPlaybackState.currentMediaItem != null
 
     // Main app ViewModel for global state and sync tasks
     val mainAppViewModel: com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel = hiltViewModel()
@@ -227,7 +233,11 @@ fun JellyfinApp(
         // Only show navigation on main screens
         val shouldShowNavigation = shouldShowNavigation(currentDestination?.route)
         val compactBottomChromePadding by animateDpAsState(
-            targetValue = if (navBarVisible.value) 148.dp else 12.dp,
+            targetValue = when {
+                !navBarVisible.value -> 12.dp
+                isMiniPlayerVisible -> 148.dp  // nav bar + mini player
+                else -> 92.dp                  // nav bar only (~88dp + breathing room)
+            },
             label = "compactBottomChromePadding",
         )
 
