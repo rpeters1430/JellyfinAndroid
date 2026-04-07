@@ -59,7 +59,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.ui.draw.clip
@@ -191,17 +190,7 @@ private fun ExpressiveTopControls(
         Surface(
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.45f),
             modifier = Modifier
-                .fillMaxWidth()
-                .graphicsLayer {
-                    if (android.os.Build.VERSION.SDK_INT >= 31) {
-                        renderEffect = android.graphics.RenderEffect.createBlurEffect(
-                            16f, 16f, android.graphics.Shader.TileMode.CLAMP
-                        ).let { effect ->
-                            @Suppress("DEPRECATION")
-                            com.rpeters.jellyfin.ui.utils.asComposeRenderEffect(effect)
-                        }
-                    }
-                },
+                .fillMaxWidth(),
         ) {
             Row(
                 modifier = Modifier
@@ -344,17 +333,7 @@ private fun ExpressiveBottomControls(
         Surface(
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.45f),
             modifier = Modifier
-                .fillMaxWidth()
-                .graphicsLayer {
-                    if (android.os.Build.VERSION.SDK_INT >= 31) {
-                        renderEffect = android.graphics.RenderEffect.createBlurEffect(
-                            16f, 16f, android.graphics.Shader.TileMode.CLAMP
-                        ).let { effect ->
-                            @Suppress("DEPRECATION")
-                            com.rpeters.jellyfin.ui.utils.asComposeRenderEffect(effect)
-                        }
-                    }
-                },
+                .fillMaxWidth(),
         ) {
             Column(
                 modifier = Modifier

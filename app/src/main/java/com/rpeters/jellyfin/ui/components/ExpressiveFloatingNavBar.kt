@@ -59,16 +59,8 @@ fun ExpressiveFloatingNavBar(
             ExpressiveBlurSurface(
                 shape = MaterialTheme.shapes.extraLarge,
                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
-                blurRadius = 16.dp,
                 modifier = Modifier
-                    .wrapContentWidth()
-                    .expressiveGlow(
-                        color = MaterialTheme.colorScheme.primary,
-                        alpha = 0.08f,
-                        borderRadius = 32.dp,
-                        blurRadius = 12.dp,
-                        offsetY = 4.dp
-                    ),
+                    .wrapContentWidth(),
             ) {
                 Row(
                     modifier = Modifier

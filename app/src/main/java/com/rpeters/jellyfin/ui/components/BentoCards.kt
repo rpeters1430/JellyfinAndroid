@@ -26,7 +26,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -71,21 +70,6 @@ fun BentoFeaturedCard(
             .height(240.dp)
             .fillMaxWidth()
             .then(sharedElementModifier)
-            .expressiveGlow(
-                color = MaterialTheme.colorScheme.primary,
-                alpha = 0.12f,
-                borderRadius = 28.dp
-            )
-            .graphicsLayer {
-                if (android.os.Build.VERSION.SDK_INT >= 31) {
-                    renderEffect = android.graphics.RenderEffect.createBlurEffect(
-                        8f, 8f, android.graphics.Shader.TileMode.CLAMP
-                    ).let { effect ->
-                        @Suppress("DEPRECATION")
-                        com.rpeters.jellyfin.ui.utils.asComposeRenderEffect(effect)
-                    }
-                }
-            }
             .combinedClickable(
                 onClick = { 
                     haptics.lightClick()
@@ -203,21 +187,6 @@ fun BentoActionCard(
             .height(140.dp)
             .fillMaxWidth()
             .then(sharedElementModifier)
-            .expressiveGlow(
-                color = MaterialTheme.colorScheme.secondary,
-                alpha = 0.08f,
-                borderRadius = 28.dp
-            )
-            .graphicsLayer {
-                if (android.os.Build.VERSION.SDK_INT >= 31) {
-                    renderEffect = android.graphics.RenderEffect.createBlurEffect(
-                        6f, 6f, android.graphics.Shader.TileMode.CLAMP
-                    ).let { effect ->
-                        @Suppress("DEPRECATION")
-                        com.rpeters.jellyfin.ui.utils.asComposeRenderEffect(effect)
-                    }
-                }
-            }
             .combinedClickable(
                 onClick = { 
                     haptics.lightClick()
@@ -291,21 +260,6 @@ fun BentoWideCard(
         modifier = modifier
             .height(100.dp)
             .fillMaxWidth()
-            .expressiveGlow(
-                color = MaterialTheme.colorScheme.tertiary,
-                alpha = 0.1f,
-                borderRadius = 28.dp
-            )
-            .graphicsLayer {
-                if (android.os.Build.VERSION.SDK_INT >= 31) {
-                    renderEffect = android.graphics.RenderEffect.createBlurEffect(
-                        10f, 10f, android.graphics.Shader.TileMode.CLAMP
-                    ).let { effect ->
-                        @Suppress("DEPRECATION")
-                        com.rpeters.jellyfin.ui.utils.asComposeRenderEffect(effect)
-                    }
-                }
-            }
             .combinedClickable(
                 onClick = { 
                     haptics.lightClick()

@@ -19,7 +19,6 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -201,17 +200,7 @@ fun ImmersiveHomeScreen(
                         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
                         modifier = Modifier
                             .statusBarsPadding()
-                            .padding(horizontal = 12.dp, vertical = 12.dp)
-                            .graphicsLayer {
-                                if (android.os.Build.VERSION.SDK_INT >= 31) {
-                                    renderEffect = android.graphics.RenderEffect.createBlurEffect(
-                                        12f, 12f, android.graphics.Shader.TileMode.CLAMP
-                                    ).let { effect ->
-                                        @Suppress("DEPRECATION")
-                                        com.rpeters.jellyfin.ui.utils.asComposeRenderEffect(effect)
-                                    }
-                                }
-                            },
+                            .padding(horizontal = 12.dp, vertical = 12.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Settings,
@@ -836,18 +825,7 @@ private fun LibraryExpressiveCard(
             onClick()
         },
         modifier = modifier
-            .then(sharedElementModifier)
-            .graphicsLayer {
-                // Apply glassmorphism blur on Android 12+ (API 31+)
-                if (android.os.Build.VERSION.SDK_INT >= 31) {
-                    renderEffect = android.graphics.RenderEffect.createBlurEffect(
-                        8f, 8f, android.graphics.Shader.TileMode.CLAMP
-                    ).let { effect ->
-                        @Suppress("DEPRECATION")
-                        com.rpeters.jellyfin.ui.utils.asComposeRenderEffect(effect)
-                    }
-                }
-            },
+            .then(sharedElementModifier),
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.82f),
