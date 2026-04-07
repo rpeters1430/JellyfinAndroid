@@ -47,18 +47,18 @@ fun BentoFeaturedCard(
     getImageUrl: (BaseItemDto) -> String?,
     onClick: (BaseItemDto) -> Unit,
     onItemLongPress: (BaseItemDto) -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
     val sharedTransitionScope = com.rpeters.jellyfin.ui.navigation.LocalSharedTransitionScope.current
     val animatedVisibilityScope = com.rpeters.jellyfin.ui.navigation.LocalAnimatedVisibilityScope.current
     val itemId = item.id.toString()
-    
+
     val sharedElementModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
         with(sharedTransitionScope) {
             Modifier.sharedElement(
                 rememberSharedContentState(key = "media_$itemId"),
-                animatedVisibilityScope = animatedVisibilityScope
+                animatedVisibilityScope = animatedVisibilityScope,
             )
         }
     } else {
@@ -71,19 +71,19 @@ fun BentoFeaturedCard(
             .fillMaxWidth()
             .then(sharedElementModifier)
             .combinedClickable(
-                onClick = { 
+                onClick = {
                     haptics.lightClick()
-                    onClick(item) 
+                    onClick(item)
                 },
-                onLongClick = { 
+                onLongClick = {
                     haptics.heavyClick()
-                    onItemLongPress(item) 
-                }
+                    onItemLongPress(item)
+                },
             ),
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f)
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f),
+        ),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             // Background Image
@@ -93,7 +93,7 @@ fun BentoFeaturedCard(
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
                 size = ImageSize.BANNER,
-                quality = ImageQuality.HIGH
+                quality = ImageQuality.HIGH,
             )
 
             // Gradient Overlay for readability
@@ -104,30 +104,30 @@ fun BentoFeaturedCard(
                         Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                Color.Black.copy(alpha = 0.7f)
+                                Color.Black.copy(alpha = 0.7f),
                             ),
-                            startY = 100f
-                        )
-                    )
+                            startY = 100f,
+                        ),
+                    ),
             )
 
             // Content
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(20.dp)
+                    .padding(20.dp),
             ) {
                 // "Featured" Badge
                 Surface(
                     shape = MaterialTheme.shapes.small,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(bottom = 8.dp),
                 ) {
                     Text(
                         text = "Featured",
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onPrimary
+                        color = MaterialTheme.colorScheme.onPrimary,
                     )
                 }
 
@@ -137,7 +137,7 @@ fun BentoFeaturedCard(
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
 
                 val subtitle = item.productionYear?.toString() ?: item.type.toString()
@@ -146,7 +146,7 @@ fun BentoFeaturedCard(
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White.copy(alpha = 0.8f),
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
@@ -164,18 +164,18 @@ fun BentoActionCard(
     onClick: (BaseItemDto) -> Unit,
     onItemLongPress: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
-    description: String? = null
+    description: String? = null,
 ) {
     val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
     val sharedTransitionScope = com.rpeters.jellyfin.ui.navigation.LocalSharedTransitionScope.current
     val animatedVisibilityScope = com.rpeters.jellyfin.ui.navigation.LocalAnimatedVisibilityScope.current
     val itemId = item.id.toString()
-    
+
     val sharedElementModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
         with(sharedTransitionScope) {
             Modifier.sharedElement(
                 rememberSharedContentState(key = "media_$itemId"),
-                animatedVisibilityScope = animatedVisibilityScope
+                animatedVisibilityScope = animatedVisibilityScope,
             )
         }
     } else {
@@ -188,32 +188,32 @@ fun BentoActionCard(
             .fillMaxWidth()
             .then(sharedElementModifier)
             .combinedClickable(
-                onClick = { 
+                onClick = {
                     haptics.lightClick()
-                    onClick(item) 
+                    onClick(item)
                 },
-                onLongClick = { 
+                onLongClick = {
                     haptics.heavyClick()
-                    onItemLongPress(item) 
-                }
+                    onItemLongPress(item)
+                },
             ),
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f)
-        )
+            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
+        ),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp),
             verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 modifier = Modifier.size(32.dp),
-                tint = MaterialTheme.colorScheme.onSecondaryContainer
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -223,7 +223,7 @@ fun BentoActionCard(
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             val subtitle = description ?: item.productionYear?.toString() ?: ""
             if (subtitle.isNotEmpty()) {
@@ -233,7 +233,7 @@ fun BentoActionCard(
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
@@ -252,7 +252,7 @@ fun BentoWideCard(
     onClick: () -> Unit,
     onItemLongPress: (BaseItemDto) -> Unit = {},
     item: BaseItemDto? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
 
@@ -261,33 +261,33 @@ fun BentoWideCard(
             .height(100.dp)
             .fillMaxWidth()
             .combinedClickable(
-                onClick = { 
+                onClick = {
                     haptics.lightClick()
-                    onClick() 
+                    onClick()
                 },
-                onLongClick = { 
-                    item?.let { 
+                onLongClick = {
+                    item?.let {
                         haptics.heavyClick()
-                        onItemLongPress(it) 
-                    } 
-                }
+                        onItemLongPress(it)
+                    }
+                },
             ),
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.85f)
-        )
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.85f),
+        ),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 modifier = Modifier.size(40.dp),
-                tint = MaterialTheme.colorScheme.onTertiaryContainer
+                tint = MaterialTheme.colorScheme.onTertiaryContainer,
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column {
@@ -295,14 +295,14 @@ fun BentoWideCard(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
                 )
                 Text(
                     text = description,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f),
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }

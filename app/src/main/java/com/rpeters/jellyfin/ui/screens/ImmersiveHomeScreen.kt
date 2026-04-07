@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.ui.screens
 import android.app.Activity
 import androidx.annotation.OptIn
 import androidx.annotation.VisibleForTesting
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.lazy.grid.LazyGridState
@@ -12,10 +13,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,11 +32,10 @@ import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.ui.adaptive.rememberAdaptiveLayoutConfig
-import com.rpeters.jellyfin.ui.navigation.LocalNavBarVisible
 import com.rpeters.jellyfin.ui.components.*
 import com.rpeters.jellyfin.ui.components.aiAura
 import com.rpeters.jellyfin.ui.components.immersive.*
-import com.rpeters.jellyfin.ui.components.immersive.itemSubtitle
+import com.rpeters.jellyfin.ui.navigation.LocalNavBarVisible
 import com.rpeters.jellyfin.ui.screens.home.*
 import com.rpeters.jellyfin.ui.theme.Dimens
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
@@ -92,270 +90,272 @@ fun ImmersiveHomeScreen(
     animatedVisibilityScope: androidx.compose.animation.AnimatedVisibilityScope? = null,
 ) {
     androidx.compose.runtime.CompositionLocalProvider(
-        com.rpeters.jellyfin.ui.navigation.LocalAnimatedVisibilityScope provides animatedVisibilityScope
+        com.rpeters.jellyfin.ui.navigation.LocalAnimatedVisibilityScope provides animatedVisibilityScope,
     ) {
         val libraryActionPrefs by libraryActionsPreferencesViewModel.preferences.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
-    var selectedItem by remember { mutableStateOf<BaseItemDto?>(null) }
-    var showManageSheet by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        val snackbarHostState = remember { SnackbarHostState() }
+        val coroutineScope = rememberCoroutineScope()
+        val context = LocalContext.current
+        var selectedItem by remember { mutableStateOf<BaseItemDto?>(null) }
+        var showManageSheet by remember { mutableStateOf(false) }
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    val managementEnabled = libraryActionPrefs.enableManagementActions
-    val managementDisabledMessage = stringResource(id = R.string.library_actions_management_disabled)
+        val managementEnabled = libraryActionPrefs.enableManagementActions
+        val managementDisabledMessage = stringResource(id = R.string.library_actions_management_disabled)
 
-    // ✅ Performance: Stabilize internal callbacks
-    val handleItemLongPress = remember(managementEnabled, coroutineScope, managementDisabledMessage) {
-        {
-                item: BaseItemDto ->
-            if (managementEnabled) {
-                selectedItem = item
-                showManageSheet = true
-            } else {
-                coroutineScope.launch {
-                    snackbarHostState.showSnackbar(message = managementDisabledMessage)
-                }
-            }
-            Unit
-        }
-    }
-
-    val handlePlay = remember(viewModel, context, coroutineScope) {
-        {
-                item: BaseItemDto ->
-            val streamUrl = viewModel.getStreamUrl(item)
-            if (streamUrl != null) {
-                MediaPlayerUtils.playMedia(context, streamUrl, item)
-            } else {
-                coroutineScope.launch {
-                    snackbarHostState.showSnackbar("Unable to start playback")
-                }
-            }
-        }
-    }
-
-    LaunchedEffect(appState.libraries) {
-        appState.libraries.forEach { library ->
-            val libraryId = library.id.toString()
-            if (appState.itemsByLibrary[libraryId].isNullOrEmpty()) {
-                library.toLibraryTypeOrNull()?.let { libraryType ->
-                    viewModel.loadLibraryTypeData(library = library, libraryType = libraryType)
-                }
-            }
-        }
-    }
-
-    // Calculate window size class for adaptive layout
-    val windowSizeClass = calculateWindowSizeClass(activity = context as Activity)
-    val adaptiveConfig = rememberAdaptiveLayoutConfig(windowSizeClass)
-
-    // Track scroll state for auto-hiding navigation
-    val gridState = rememberLazyGridState()
-    val listState = rememberLazyListState()
-    
-    // Use hero height as threshold to avoid flickering within hero
-    val topBarVisible = if (adaptiveConfig.isTablet) {
-        rememberAutoHideTopBarVisible(
-            gridState = gridState,
-            nearTopOffsetPx = with(LocalDensity.current) { ImmersiveDimens.HeroHeightPhone.toPx().toInt() },
-        )
-    } else {
-        rememberAutoHideTopBarVisible(
-            listState = listState,
-            nearTopOffsetPx = with(LocalDensity.current) { ImmersiveDimens.HeroHeightPhone.toPx().toInt() },
-        )
-    }
-
-    // Drive global nav bar visibility from the same scroll state as the top bar.
-    val globalNavBarVisible = LocalNavBarVisible.current
-    LaunchedEffect(topBarVisible) {
-        globalNavBarVisible.value = topBarVisible
-    }
-
-    Box(modifier = modifier.fillMaxSize()) {
-        ImmersiveScaffold(
-            // No top bar title, but we pass the visibility state for consistent behavior
-            topBarVisible = topBarVisible,
-            topBarTitle = "",
-            topBarTranslucent = false,
-            // ...
-            scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(),
-            overlayContent = {
-                // Floating settings icon based on scroll direction
-                val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
-                
-                androidx.compose.animation.AnimatedVisibility(
-                    visible = topBarVisible,
-                    enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.expandVertically(),
-                    exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.shrinkVertically(),
-                    modifier = Modifier.align(Alignment.TopEnd),
-                ) {
-                    Surface(
-                        onClick = { 
-                            haptics.lightClick()
-                            onSettingsClick() 
-                        },
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
-                        modifier = Modifier
-                            .statusBarsPadding()
-                            .padding(horizontal = 12.dp, vertical = 12.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = stringResource(id = R.string.settings),
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(12.dp).size(24.dp),
-                        )
+        // ✅ Performance: Stabilize internal callbacks
+        val handleItemLongPress = remember(managementEnabled, coroutineScope, managementDisabledMessage) {
+            {
+                    item: BaseItemDto ->
+                if (managementEnabled) {
+                    selectedItem = item
+                    showManageSheet = true
+                } else {
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar(message = managementDisabledMessage)
                     }
                 }
+                Unit
+            }
+        }
 
-                // Floating Search and AI Action Buttons
-                androidx.compose.animation.AnimatedVisibility(
-                    visible = topBarVisible,
-                    enter = androidx.compose.animation.scaleIn() + androidx.compose.animation.fadeIn(),
-                    exit = androidx.compose.animation.scaleOut() + androidx.compose.animation.fadeOut(),
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(end = 16.dp, bottom = 88.dp), // Just above navigation bar
-                ) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        horizontalAlignment = Alignment.End,
+        val handlePlay = remember(viewModel, context, coroutineScope) {
+            {
+                    item: BaseItemDto ->
+                val streamUrl = viewModel.getStreamUrl(item)
+                if (streamUrl != null) {
+                    MediaPlayerUtils.playMedia(context, streamUrl, item)
+                } else {
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar("Unable to start playback")
+                    }
+                }
+            }
+        }
+
+        LaunchedEffect(appState.libraries) {
+            appState.libraries.forEach { library ->
+                val libraryId = library.id.toString()
+                if (appState.itemsByLibrary[libraryId].isNullOrEmpty()) {
+                    library.toLibraryTypeOrNull()?.let { libraryType ->
+                        viewModel.loadLibraryTypeData(library = library, libraryType = libraryType)
+                    }
+                }
+            }
+        }
+
+        // Calculate window size class for adaptive layout
+        val windowSizeClass = calculateWindowSizeClass(activity = context as Activity)
+        val adaptiveConfig = rememberAdaptiveLayoutConfig(windowSizeClass)
+
+        // Track scroll state for auto-hiding navigation
+        val gridState = rememberLazyGridState()
+        val listState = rememberLazyListState()
+
+        // Use hero height as threshold to avoid flickering within hero
+        val topBarVisible = if (adaptiveConfig.isTablet) {
+            rememberAutoHideTopBarVisible(
+                gridState = gridState,
+                nearTopOffsetPx = with(LocalDensity.current) { ImmersiveDimens.HeroHeightPhone.toPx().toInt() },
+            )
+        } else {
+            rememberAutoHideTopBarVisible(
+                listState = listState,
+                nearTopOffsetPx = with(LocalDensity.current) { ImmersiveDimens.HeroHeightPhone.toPx().toInt() },
+            )
+        }
+
+        // Drive global nav bar visibility from the same scroll state as the top bar.
+        val globalNavBarVisible = LocalNavBarVisible.current
+        LaunchedEffect(topBarVisible) {
+            globalNavBarVisible.value = topBarVisible
+        }
+
+        Box(modifier = modifier.fillMaxSize()) {
+            ImmersiveScaffold(
+                // No top bar title, but we pass the visibility state for consistent behavior
+                topBarVisible = topBarVisible,
+                topBarTitle = "",
+                topBarTranslucent = false,
+                // ...
+                scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(),
+                overlayContent = {
+                    // Floating settings icon based on scroll direction
+                    val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
+
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = topBarVisible,
+                        enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.expandVertically(),
+                        exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.shrinkVertically(),
+                        modifier = Modifier.align(Alignment.TopEnd),
                     ) {
-                        FloatingActionButton(
-                            onClick = { 
-                                haptics.heavyClick()
-                                onAiAssistantClick() 
-                            },
-                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                            modifier = Modifier.aiAura(),
-                        ) {                            Icon(
-                                imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = stringResource(id = R.string.ai_assistant),
-                            )
-                        }
-
-                        FloatingActionButton(
-                            onClick = { 
+                        Surface(
+                            onClick = {
                                 haptics.lightClick()
-                                onSearchClick() 
+                                onSettingsClick()
                             },
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                            modifier = Modifier
+                                .statusBarsPadding()
+                                .padding(horizontal = 12.dp, vertical = 12.dp),
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = stringResource(id = R.string.search),
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = stringResource(id = R.string.settings),
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(12.dp).size(24.dp),
                             )
                         }
                     }
-                }
 
-                SnackbarHost(
-                    hostState = snackbarHostState,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 16.dp),
-                )
-            },
-        ) { paddingValues ->
-            PerformanceMetricsTracker(
-                enabled = com.rpeters.jellyfin.BuildConfig.DEBUG,
-                intervalMs = 30000,
-            )
+                    // Floating Search and AI Action Buttons
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = topBarVisible,
+                        enter = androidx.compose.animation.scaleIn() + androidx.compose.animation.fadeIn(),
+                        exit = androidx.compose.animation.scaleOut() + androidx.compose.animation.fadeOut(),
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(end = 16.dp, bottom = 88.dp), // Just above navigation bar
+                    ) {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            horizontalAlignment = Alignment.End,
+                        ) {
+                            FloatingActionButton(
+                                onClick = {
+                                    haptics.heavyClick()
+                                    onAiAssistantClick()
+                                },
+                                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                                modifier = Modifier.aiAura(),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.AutoAwesome,
+                                    contentDescription = stringResource(id = R.string.ai_assistant),
+                                )
+                            }
 
-            LaunchedEffect(appState.continueWatching.size, appState.recentlyAdded.size) {
-                if (appState.viewingMood == null &&
-                    !appState.isLoadingViewingMood &&
-                    (appState.continueWatching.isNotEmpty() || appState.recentlyAdded.isNotEmpty())
-                ) {
-                    viewModel.generateViewingMood()
-                }
-            }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize(),
-            ) {
-                ImmersiveHomeContent(
-                    appState = appState,
-                    currentServer = currentServer,
-                    onRefresh = onRefresh,
-                    getImageUrl = getImageUrl,
-                    getBackdropUrl = getBackdropUrl,
-                    getSeriesImageUrl = getSeriesImageUrl,
-                    onItemClick = onItemClick,
-                    onItemLongPress = handleItemLongPress,
-                    onLibraryClick = onLibraryClick,
-                    onGenerateViewingMood = onGenerateViewingMood,
-                    gridState = gridState,
-                    listState = listState,
-                    windowSizeClass = windowSizeClass,
-                    adaptiveConfig = adaptiveConfig,
-                    contentPadding = paddingValues,
-                    animatedVisibilityScope = animatedVisibilityScope,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
-        }
-    }
-
-    selectedItem?.let { item ->
-        if (showManageSheet) {
-            val itemName = item.name ?: stringResource(id = R.string.unknown)
-            val deleteSuccessMessage = stringResource(id = R.string.library_actions_delete_success, itemName)
-            val deleteFailureTemplate = stringResource(id = R.string.library_actions_delete_failure, itemName, "%s")
-            val refreshRequestedMessage = stringResource(id = R.string.library_actions_refresh_requested)
-            val unknownErrorMessage = stringResource(id = R.string.unknown_error)
-
-            // ✅ Performance: Stabilize bottom sheet callbacks
-            val onDismissSheet = remember {
-                {
-                    showManageSheet = false
-                    selectedItem = null
-                }
-            }
-            val onPlayFromSheet = remember(item) {
-                {
-                    handlePlay(item)
-                    showManageSheet = false
-                }
-            }
-            val onDeleteFromSheet = remember(item, viewModel, deleteSuccessMessage, deleteFailureTemplate) {
-                { dismissed: Boolean, errorMessage: String? ->
-                    if (dismissed) {
-                        viewModel.deleteItem(item) { success, error ->
-                            coroutineScope.launch {
-                                if (success) {
-                                    snackbarHostState.showSnackbar(deleteSuccessMessage)
-                                    onRefresh()
-                                } else {
-                                    snackbarHostState.showSnackbar(
-                                        deleteFailureTemplate.format(error ?: unknownErrorMessage)
-                                    )
-                                }
-                                showManageSheet = false
+                            FloatingActionButton(
+                                onClick = {
+                                    haptics.lightClick()
+                                    onSearchClick()
+                                },
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Search,
+                                    contentDescription = stringResource(id = R.string.search),
+                                )
                             }
                         }
-                    } else {
+                    }
+
+                    SnackbarHost(
+                        hostState = snackbarHostState,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 16.dp),
+                    )
+                },
+            ) { paddingValues ->
+                PerformanceMetricsTracker(
+                    enabled = com.rpeters.jellyfin.BuildConfig.DEBUG,
+                    intervalMs = 30000,
+                )
+
+                LaunchedEffect(appState.continueWatching.size, appState.recentlyAdded.size) {
+                    if (appState.viewingMood == null &&
+                        !appState.isLoadingViewingMood &&
+                        (appState.continueWatching.isNotEmpty() || appState.recentlyAdded.isNotEmpty())
+                    ) {
+                        viewModel.generateViewingMood()
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                ) {
+                    ImmersiveHomeContent(
+                        appState = appState,
+                        currentServer = currentServer,
+                        onRefresh = onRefresh,
+                        getImageUrl = getImageUrl,
+                        getBackdropUrl = getBackdropUrl,
+                        getSeriesImageUrl = getSeriesImageUrl,
+                        onItemClick = onItemClick,
+                        onItemLongPress = handleItemLongPress,
+                        onLibraryClick = onLibraryClick,
+                        onGenerateViewingMood = onGenerateViewingMood,
+                        gridState = gridState,
+                        listState = listState,
+                        windowSizeClass = windowSizeClass,
+                        adaptiveConfig = adaptiveConfig,
+                        contentPadding = paddingValues,
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            }
+        }
+
+        selectedItem?.let { item ->
+            if (showManageSheet) {
+                val itemName = item.name ?: stringResource(id = R.string.unknown)
+                val deleteSuccessMessage = stringResource(id = R.string.library_actions_delete_success, itemName)
+                val deleteFailureTemplate = stringResource(id = R.string.library_actions_delete_failure, itemName, "%s")
+                val refreshRequestedMessage = stringResource(id = R.string.library_actions_refresh_requested)
+                val unknownErrorMessage = stringResource(id = R.string.unknown_error)
+
+                // ✅ Performance: Stabilize bottom sheet callbacks
+                val onDismissSheet = remember {
+                    {
+                        showManageSheet = false
+                        selectedItem = null
+                    }
+                }
+                val onPlayFromSheet = remember(item) {
+                    {
+                        handlePlay(item)
                         showManageSheet = false
                     }
                 }
-            }
+                val onDeleteFromSheet = remember(item, viewModel, deleteSuccessMessage, deleteFailureTemplate) {
+                    {
+                            dismissed: Boolean, errorMessage: String? ->
+                        if (dismissed) {
+                            viewModel.deleteItem(item) { success, error ->
+                                coroutineScope.launch {
+                                    if (success) {
+                                        snackbarHostState.showSnackbar(deleteSuccessMessage)
+                                        onRefresh()
+                                    } else {
+                                        snackbarHostState.showSnackbar(
+                                            deleteFailureTemplate.format(error ?: unknownErrorMessage),
+                                        )
+                                    }
+                                    showManageSheet = false
+                                }
+                            }
+                        } else {
+                            showManageSheet = false
+                        }
+                    }
+                }
 
-            MediaItemActionsSheet(
-                item = item,
-                sheetState = sheetState,
-                onDismiss = onDismissSheet,
-                onPlay = onPlayFromSheet,
-                onDelete = onDeleteFromSheet,
-            )
+                MediaItemActionsSheet(
+                    item = item,
+                    sheetState = sheetState,
+                    onDismiss = onDismissSheet,
+                    onPlay = onPlayFromSheet,
+                    onDelete = onDeleteFromSheet,
+                )
+            }
         }
     }
-}
 }
 
 /**
@@ -540,11 +540,11 @@ internal fun MobileExpressiveHomeContent(
                                 title = movie.name ?: unknownText,
                                 subtitle = movie.productionYear?.toString() ?: "",
                                 imageUrl = getBackdropUrl(movie) ?: getImageUrl(movie) ?: "",
-                                type = MediaType.MOVIE
+                                type = MediaType.MOVIE,
                             )
                         }
                     }
-                    
+
                     ImmersiveHeroCarousel(
                         items = featuredItems,
                         onItemClick = { selected ->
@@ -553,14 +553,14 @@ internal fun MobileExpressiveHomeContent(
                         onPlayClick = { selected ->
                             heroMovies.firstOrNull { it.id.toString() == selected.id }?.let(onItemClick)
                         },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 } else {
                     // Placeholder while loading to prevent layout jump
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(com.rpeters.jellyfin.ui.theme.ImmersiveDimens.HeroHeightPhone)
+                            .height(com.rpeters.jellyfin.ui.theme.ImmersiveDimens.HeroHeightPhone),
                     )
                 }
             }
@@ -690,7 +690,7 @@ private fun LibraryRecentSection(
     onItemLongPress: (BaseItemDto) -> Unit,
 ) {
     val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
-    
+
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(
             modifier = Modifier
@@ -717,10 +717,10 @@ private fun LibraryRecentSection(
                 )
             }
             FilledTonalButton(
-                onClick = { 
+                onClick = {
                     haptics.lightClick()
-                    onLibraryClick(library) 
-                }
+                    onLibraryClick(library)
+                },
             ) {
                 Text(text = stringResource(R.string.open))
             }
@@ -807,12 +807,12 @@ private fun LibraryExpressiveCard(
     val sharedTransitionScope = com.rpeters.jellyfin.ui.navigation.LocalSharedTransitionScope.current
     val animatedVisibilityScope = com.rpeters.jellyfin.ui.navigation.LocalAnimatedVisibilityScope.current
     val libraryId = library.id.toString()
-    
+
     val sharedElementModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
         with(sharedTransitionScope) {
             Modifier.sharedElement(
                 rememberSharedContentState(key = "library_$libraryId"),
-                animatedVisibilityScope = animatedVisibilityScope
+                animatedVisibilityScope = animatedVisibilityScope,
             )
         }
     } else {

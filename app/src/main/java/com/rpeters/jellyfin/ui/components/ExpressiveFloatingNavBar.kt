@@ -18,7 +18,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,7 +53,7 @@ fun ExpressiveFloatingNavBar(
         Box(
             modifier = Modifier
                 .wrapContentWidth()
-                .padding(horizontal = 24.dp, vertical = 12.dp)
+                .padding(horizontal = 24.dp, vertical = 12.dp),
         ) {
             ExpressiveBlurSurface(
                 shape = MaterialTheme.shapes.extraLarge,
@@ -68,8 +67,8 @@ fun ExpressiveFloatingNavBar(
                         .animateContentSize(
                             animationSpec = spring(
                                 dampingRatio = Spring.DampingRatioLowBouncy,
-                                stiffness = Spring.StiffnessLow
-                            )
+                                stiffness = Spring.StiffnessLow,
+                            ),
                         ),
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -78,18 +77,18 @@ fun ExpressiveFloatingNavBar(
                         val isSelected = currentDestination?.hierarchy?.any {
                             it.route == item.route
                         } == true
-                        
+
                         val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
-                        
+
                         ExpressiveNavBarButton(
                             icon = item.icon.icon,
                             contentDescription = item.title,
                             label = item.title,
                             selected = isSelected,
-                            onClick = { 
+                            onClick = {
                                 haptics.lightClick()
-                                onNavigate(item) 
-                            }
+                                onNavigate(item)
+                            },
                         )
                     }
                 }
@@ -110,18 +109,18 @@ private fun ExpressiveNavBarButton(
         onClick = onClick,
         shape = MaterialTheme.shapes.extraLarge,
         color = if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-        modifier = Modifier.size(height = 48.dp, width = if (selected) 130.dp else 48.dp)
+        modifier = Modifier.size(height = 48.dp, width = if (selected) 130.dp else 48.dp),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+            horizontalArrangement = Arrangement.Center,
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = contentDescription,
                 tint = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(24.dp),
             )
             if (selected) {
                 Text(
@@ -131,7 +130,7 @@ private fun ExpressiveNavBarButton(
                     modifier = Modifier.padding(start = 8.dp),
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }

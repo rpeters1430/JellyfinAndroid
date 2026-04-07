@@ -26,7 +26,7 @@ fun ExpressiveBlurSurface(
     modifier: Modifier = Modifier,
     shape: Shape = MaterialTheme.shapes.medium,
     color: Color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
-    content: @Composable BoxScope.() -> Unit
+    content: @Composable BoxScope.() -> Unit,
 ) {
     Surface(
         modifier = modifier.clip(shape),
@@ -36,4 +36,3 @@ fun ExpressiveBlurSurface(
         Box(content = content)
     }
 }
-

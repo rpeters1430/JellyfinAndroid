@@ -68,7 +68,7 @@ fun LibraryItemCard(
 ) {
     var showMenu by remember { mutableStateOf(false) }
     val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
-    
+
     val sharedTransitionScope = com.rpeters.jellyfin.ui.navigation.LocalSharedTransitionScope.current
     val animatedVisibilityScope = com.rpeters.jellyfin.ui.navigation.LocalAnimatedVisibilityScope.current
     val itemId = item.id.toString()
@@ -95,7 +95,7 @@ fun LibraryItemCard(
         with(sharedTransitionScope) {
             Modifier.sharedElement(
                 rememberSharedContentState(key = "media_$itemId"),
-                animatedVisibilityScope = animatedVisibilityScope
+                animatedVisibilityScope = animatedVisibilityScope,
             )
         }
     } else {

@@ -77,12 +77,12 @@ fun ContinueWatchingCard(
     val sharedTransitionScope = com.rpeters.jellyfin.ui.navigation.LocalSharedTransitionScope.current
     val animatedVisibilityScope = com.rpeters.jellyfin.ui.navigation.LocalAnimatedVisibilityScope.current
     val itemId = item.id.toString()
-    
+
     val sharedElementModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
         with(sharedTransitionScope) {
             Modifier.sharedElement(
                 rememberSharedContentState(key = "media_$itemId"),
-                animatedVisibilityScope = animatedVisibilityScope
+                animatedVisibilityScope = animatedVisibilityScope,
             )
         }
     } else {
@@ -104,13 +104,13 @@ fun ContinueWatchingCard(
     ) {
         Column(
             modifier = Modifier.combinedClickable(
-                onClick = { 
+                onClick = {
                     haptics.lightClick()
-                    onItemClick(item) 
+                    onItemClick(item)
                 },
-                onLongClick = { 
+                onLongClick = {
                     haptics.heavyClick()
-                    onItemLongPress(item) 
+                    onItemLongPress(item)
                 },
             ),
         ) {

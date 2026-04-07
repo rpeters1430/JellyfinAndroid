@@ -23,15 +23,15 @@ fun Modifier.aiAura(
     if (!enabled) return this
 
     val infiniteTransition = rememberInfiniteTransition(label = "ai_aura")
-    
+
     val pulseScale by infiniteTransition.animateFloat(
         initialValue = 1.0f,
         targetValue = 1.15f,
         animationSpec = infiniteRepeatable(
             animation = tween(2000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
+            repeatMode = RepeatMode.Reverse,
         ),
-        label = "pulse_scale"
+        label = "pulse_scale",
     )
 
     return this.drawBehind {
@@ -41,15 +41,15 @@ fun Modifier.aiAura(
                 primaryColor.copy(alpha = 0.2f),
                 secondaryColor.copy(alpha = 0.2f),
                 primaryColor.copy(alpha = 0.2f),
-            )
+            ),
         )
-        
+
         scale(pulseScale) {
             drawCircle(
                 brush = brush,
                 radius = radius,
                 center = center,
-                alpha = 0.15f
+                alpha = 0.15f,
             )
         }
     }
