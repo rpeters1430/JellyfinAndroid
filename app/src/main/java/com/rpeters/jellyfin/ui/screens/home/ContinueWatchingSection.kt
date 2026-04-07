@@ -14,10 +14,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
-import com.rpeters.jellyfin.ui.components.expressiveGlow
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.WatchProgressBar
 import com.rpeters.jellyfin.ui.image.ImageSize
@@ -79,12 +77,12 @@ fun ContinueWatchingCard(
     val sharedTransitionScope = com.rpeters.jellyfin.ui.navigation.LocalSharedTransitionScope.current
     val animatedVisibilityScope = com.rpeters.jellyfin.ui.navigation.LocalAnimatedVisibilityScope.current
     val itemId = item.id.toString()
-    
+
     val sharedElementModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
         with(sharedTransitionScope) {
             Modifier.sharedElement(
                 rememberSharedContentState(key = "media_$itemId"),
-                animatedVisibilityScope = animatedVisibilityScope
+                animatedVisibilityScope = animatedVisibilityScope,
             )
         }
     } else {
@@ -97,37 +95,22 @@ fun ContinueWatchingCard(
     ElevatedCard(
         modifier = modifier
             .width(cardWidth)
-            .then(sharedElementModifier)
-            .expressiveGlow(
-                color = MaterialTheme.colorScheme.primary,
-                alpha = 0.1f,
-                borderRadius = 20.dp
-            )
-            .graphicsLayer {
-                if (android.os.Build.VERSION.SDK_INT >= 31) {
-                    renderEffect = android.graphics.RenderEffect.createBlurEffect(
-                        8f, 8f, android.graphics.Shader.TileMode.CLAMP
-                    ).let { effect ->
-                        @Suppress("DEPRECATION")
-                        com.rpeters.jellyfin.ui.utils.asComposeRenderEffect(effect)
-                    }
-                }
-            },
+            .then(sharedElementModifier),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f),
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         ),
     ) {
         Column(
             modifier = Modifier.combinedClickable(
-                onClick = { 
+                onClick = {
                     haptics.lightClick()
-                    onItemClick(item) 
+                    onItemClick(item)
                 },
-                onLongClick = { 
+                onLongClick = {
                     haptics.heavyClick()
-                    onItemLongPress(item) 
+                    onItemLongPress(item)
                 },
             ),
         ) {

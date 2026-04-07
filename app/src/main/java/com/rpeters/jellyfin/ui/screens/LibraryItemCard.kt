@@ -33,7 +33,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -69,7 +68,7 @@ fun LibraryItemCard(
 ) {
     var showMenu by remember { mutableStateOf(false) }
     val haptics = com.rpeters.jellyfin.ui.utils.rememberExpressiveHaptics()
-    
+
     val sharedTransitionScope = com.rpeters.jellyfin.ui.navigation.LocalSharedTransitionScope.current
     val animatedVisibilityScope = com.rpeters.jellyfin.ui.navigation.LocalAnimatedVisibilityScope.current
     val itemId = item.id.toString()
@@ -96,7 +95,7 @@ fun LibraryItemCard(
         with(sharedTransitionScope) {
             Modifier.sharedElement(
                 rememberSharedContentState(key = "media_$itemId"),
-                animatedVisibilityScope = animatedVisibilityScope
+                animatedVisibilityScope = animatedVisibilityScope,
             )
         }
     } else {
@@ -267,18 +266,7 @@ fun LibraryItemCard(
         DropdownMenu(
             expanded = showMenu,
             onDismissRequest = { showMenu = false },
-            modifier = Modifier
-                .width(180.dp)
-                .graphicsLayer {
-                    if (android.os.Build.VERSION.SDK_INT >= 31) {
-                        renderEffect = android.graphics.RenderEffect.createBlurEffect(
-                            12f, 12f, android.graphics.Shader.TileMode.CLAMP
-                        ).let { effect ->
-                            @Suppress("DEPRECATION")
-                            com.rpeters.jellyfin.ui.utils.asComposeRenderEffect(effect)
-                        }
-                    }
-                },
+            modifier = Modifier.width(180.dp),
         ) {
             DropdownMenuItem(
                 text = { Text("Play") },

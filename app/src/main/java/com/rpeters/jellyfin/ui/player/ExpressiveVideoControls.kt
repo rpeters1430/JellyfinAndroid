@@ -18,8 +18,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -59,9 +61,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
@@ -99,7 +98,7 @@ fun ExpressiveVideoControls(
     modifier: Modifier = Modifier,
 ) {
     val haptics = rememberExpressiveHaptics()
-    
+
     val stableOnPlayPause = remember(onPlayPause, haptics, playerState.isPlaying) {
         {
             if (playerState.isPlaying) haptics.playbackPaused() else haptics.playbackStarted()
@@ -108,7 +107,8 @@ fun ExpressiveVideoControls(
     }
 
     val stableOnSeek = remember(onSeek, haptics) {
-        { position: Long ->
+        {
+                position: Long ->
             haptics.lightClick()
             onSeek(position)
         }
@@ -191,17 +191,7 @@ private fun ExpressiveTopControls(
         Surface(
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.45f),
             modifier = Modifier
-                .fillMaxWidth()
-                .graphicsLayer {
-                    if (android.os.Build.VERSION.SDK_INT >= 31) {
-                        renderEffect = android.graphics.RenderEffect.createBlurEffect(
-                            16f, 16f, android.graphics.Shader.TileMode.CLAMP
-                        ).let { effect ->
-                            @Suppress("DEPRECATION")
-                            com.rpeters.jellyfin.ui.utils.asComposeRenderEffect(effect)
-                        }
-                    }
-                },
+                .fillMaxWidth(),
         ) {
             Row(
                 modifier = Modifier
@@ -344,17 +334,7 @@ private fun ExpressiveBottomControls(
         Surface(
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.45f),
             modifier = Modifier
-                .fillMaxWidth()
-                .graphicsLayer {
-                    if (android.os.Build.VERSION.SDK_INT >= 31) {
-                        renderEffect = android.graphics.RenderEffect.createBlurEffect(
-                            16f, 16f, android.graphics.Shader.TileMode.CLAMP
-                        ).let { effect ->
-                            @Suppress("DEPRECATION")
-                            com.rpeters.jellyfin.ui.utils.asComposeRenderEffect(effect)
-                        }
-                    }
-                },
+                .fillMaxWidth(),
         ) {
             Column(
                 modifier = Modifier
