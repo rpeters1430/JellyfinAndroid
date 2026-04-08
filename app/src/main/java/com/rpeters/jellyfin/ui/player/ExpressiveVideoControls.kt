@@ -188,8 +188,7 @@ private fun ExpressiveTopControls(
         exit = slideOutVertically(targetOffsetY = { -it }),
         modifier = modifier,
     ) {
-        Surface(
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.45f),
+        Box(
             modifier = Modifier
                 .fillMaxWidth(),
         ) {
@@ -331,8 +330,7 @@ private fun ExpressiveBottomControls(
         exit = slideOutVertically(targetOffsetY = { it }),
         modifier = modifier,
     ) {
-        Surface(
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.45f),
+        Box(
             modifier = Modifier
                 .fillMaxWidth(),
         ) {
