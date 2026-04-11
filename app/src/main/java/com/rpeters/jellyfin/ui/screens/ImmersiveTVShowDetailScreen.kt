@@ -587,11 +587,12 @@ private fun ShowMetadataSection(
                     }
                 }
 
-                // Show AI summary if available
-                AiSummaryCard(
-                    summary = aiSummary,
-                    isLoading = isLoadingAiSummary
-                )
+                if (isLoadingAiSummary || !aiSummary.isNullOrBlank()) {
+                    AiSummaryCard(
+                        summary = aiSummary,
+                        isLoading = isLoadingAiSummary
+                    )
+                }
 
                 // App-styled media info cards built from shared card primitives
                 series.mediaSources?.firstOrNull()?.mediaStreams?.let { streams ->

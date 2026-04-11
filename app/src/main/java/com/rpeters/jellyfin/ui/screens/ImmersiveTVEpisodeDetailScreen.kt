@@ -639,12 +639,13 @@ private fun EpisodeOverviewSection(
             )
         }
 
-        // AI Summary Display
-        AiSummaryCard(
-            summary = aiSummary,
-            isLoading = isLoadingAiSummary,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        if (isLoadingAiSummary || !aiSummary.isNullOrBlank()) {
+            AiSummaryCard(
+                summary = aiSummary,
+                isLoading = isLoadingAiSummary,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
 
         // Playback Capability
         playbackAnalysis?.let { PlaybackStatusBadge(analysis = it) }

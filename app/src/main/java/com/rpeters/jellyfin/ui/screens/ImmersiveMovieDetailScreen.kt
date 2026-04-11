@@ -310,10 +310,12 @@ private fun ImmersiveMovieDetailContent(
                                     .padding(horizontal = 16.dp, vertical = 8.dp),
                                 verticalArrangement = Arrangement.spacedBy(16.dp),
                             ) {
-                                WhyYoullLoveThisCard(
-                                    pitch = whyYoullLoveThis,
-                                    isLoading = isLoadingWhyYoullLoveThis,
-                                )
+                                if (isLoadingWhyYoullLoveThis || !whyYoullLoveThis.isNullOrBlank()) {
+                                    WhyYoullLoveThisCard(
+                                        pitch = whyYoullLoveThis,
+                                        isLoading = isLoadingWhyYoullLoveThis,
+                                    )
+                                }
 
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -332,10 +334,12 @@ private fun ImmersiveMovieDetailContent(
                                     }
                                 }
 
-                                AiSummaryCard(
-                                    summary = aiSummary,
-                                    isLoading = isLoadingAiSummary,
-                                )
+                                if (isLoadingAiSummary || !aiSummary.isNullOrBlank()) {
+                                    AiSummaryCard(
+                                        summary = aiSummary,
+                                        isLoading = isLoadingAiSummary,
+                                    )
+                                }
                             }
                         }
                     }
