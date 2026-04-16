@@ -76,6 +76,10 @@ class VideoPlayerViewModel @Inject constructor(
             if (isPlaying) playbackManager.startPositionUpdates(viewModelScope) else playbackManager.stopPositionUpdates()
         }
 
+        override fun onVolumeChanged(volume: Float) {
+            stateManager.updateState { it.copy(isMuted = volume <= 0f) }
+        }
+
         override fun onTracksChanged(tracks: androidx.media3.common.Tracks) {
             trackManager.updateTracks(tracks)
         }
@@ -160,6 +164,7 @@ class VideoPlayerViewModel @Inject constructor(
             is VideoPlayerIntent.SeekTo -> seekTo(intent.positionMs)
             is VideoPlayerIntent.ChangeQuality -> changeQuality(intent.quality)
             is VideoPlayerIntent.SetPlaybackSpeed -> setPlaybackSpeed(intent.speed)
+            VideoPlayerIntent.ToggleMute -> toggleMute()
             is VideoPlayerIntent.ChangeAspectRatio -> changeAspectRatio(intent.aspectRatio)
             VideoPlayerIntent.PlayNextEpisode -> playNextEpisode()
             VideoPlayerIntent.CancelNextEpisodeCountdown -> cancelNextEpisodeCountdown()
@@ -260,6 +265,7 @@ class VideoPlayerViewModel @Inject constructor(
                 selectedAudioTrack = null,
                 availableSubtitleTracks = emptyList(),
                 selectedSubtitleTrack = null,
+                isMuted = false,
                 showSubtitleDialog = false,
                 showAudioDialog = false,
                 showQualityDialog = false,
@@ -298,6 +304,7 @@ class VideoPlayerViewModel @Inject constructor(
             if (playbackManager.exoPlayer == null) {
                 playbackManager.initializeExoPlayer(playerListener)
             }
+            stateManager.updateState { it.copy(isMuted = playbackManager.isMuted()) }
 
             // Start playback logic
             playbackManager.startPlayback(
@@ -359,6 +366,11 @@ class VideoPlayerViewModel @Inject constructor(
     internal fun setPlaybackSpeed(speed: Float) {
         exoPlayer?.setPlaybackSpeed(speed)
         stateManager.updateState { it.copy(playbackSpeed = speed) }
+    }
+
+    internal fun toggleMute() {
+        val isMuted = playbackManager.toggleMuted()
+        stateManager.updateState { it.copy(isMuted = isMuted) }
     }
 
     internal fun changeAspectRatio(aspectRatio: AspectRatioMode) {

@@ -20,6 +20,8 @@ class VideoPlayerTrackManager @Inject constructor(
         val audio = mutableListOf<TrackInfo>()
         val text = mutableListOf<TrackInfo>()
         var isHdr = false
+        val seenAudioTracks = mutableSetOf<String>()
+        val seenTextTracks = mutableSetOf<String>()
 
         tracks.groups.forEachIndexed { groupIndex, group ->
             val trackType = group.type
@@ -30,10 +32,19 @@ class VideoPlayerTrackManager @Inject constructor(
                 val display = buildTrackDisplayName(format, i, trackType)
 
                 val info = TrackInfo(groupIndex, i, format, isSelected, display)
+                val trackKey = buildTrackKey(group, format, trackType)
 
                 when (trackType) {
-                    androidx.media3.common.C.TRACK_TYPE_AUDIO -> audio += info
-                    androidx.media3.common.C.TRACK_TYPE_TEXT -> text += info
+                    androidx.media3.common.C.TRACK_TYPE_AUDIO -> {
+                        if (seenAudioTracks.add(trackKey)) {
+                            audio += info
+                        }
+                    }
+                    androidx.media3.common.C.TRACK_TYPE_TEXT -> {
+                        if (seenTextTracks.add(trackKey)) {
+                            text += info
+                        }
+                    }
                     androidx.media3.common.C.TRACK_TYPE_VIDEO -> {
                         if (isSelected && isHdrFormat(format)) isHdr = true
                     }
@@ -54,6 +65,28 @@ class VideoPlayerTrackManager @Inject constructor(
         ) }
 
         updateAvailableQualities(tracks)
+    }
+
+    private fun buildTrackKey(group: Tracks.Group, format: Format, trackType: Int): String {
+        val fallbackGroupId = group.mediaTrackGroup.id
+        val primaryGroupId = format.primaryTrackGroupId?.ifBlank { fallbackGroupId } ?: fallbackGroupId
+        return buildString {
+            append(trackType)
+            append('|')
+            append(primaryGroupId)
+            append('|')
+            append(format.id ?: "id-$trackType")
+            append('|')
+            append(format.language ?: "")
+            append('|')
+            append(format.label ?: "")
+            append('|')
+            append(format.bitrate)
+            append('|')
+            append(format.width)
+            append('x')
+            append(format.height)
+        }
     }
 
     private fun updateAvailableQualities(tracks: Tracks) {

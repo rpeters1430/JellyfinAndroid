@@ -98,6 +98,7 @@ class VideoPlayerPlaybackManager @Inject constructor(
             .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
             .setEnableDecoderFallback(true)
             .forceEnableMediaCodecAsynchronousQueueing()
+            .setEnableMediaCodecVideoRendererDurationToProgressUs(true)
             .setAllowedVideoJoiningTimeMs(5000)
 
         val httpFactory = androidx.media3.datasource.okhttp.OkHttpDataSource.Factory(okHttpClient)
@@ -458,6 +459,20 @@ class VideoPlayerPlaybackManager @Inject constructor(
         pendingSeekPositionMs = positionMs
         savedPositionBeforeFlush = null
         wasBufferingBeforeReady = false
+    }
+
+    fun toggleMuted(): Boolean {
+        val player = exoPlayer ?: return false
+        if (player.volume <= 0f) {
+            player.unmute()
+        } else {
+            player.mute()
+        }
+        return player.volume <= 0f
+    }
+
+    fun isMuted(): Boolean {
+        return (exoPlayer?.volume ?: 1f) <= 0f
     }
 
     fun handlePlayerError(error: PlaybackException, scope: CoroutineScope, metadata: BaseItemDto?, itemId: String?) {

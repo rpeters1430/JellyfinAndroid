@@ -29,6 +29,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -167,6 +169,7 @@ fun TvVideoPlayerRoute(
         onSeekBackward = onSeekBackward,
         onSeekTo = { viewModel.onIntent(VideoPlayerIntent.SeekTo(it)) },
         onSetPlaybackSpeed = { viewModel.onIntent(VideoPlayerIntent.SetPlaybackSpeed(it)) },
+        onToggleMute = { viewModel.onIntent(VideoPlayerIntent.ToggleMute) },
         onChangeAspectRatio = { viewModel.onIntent(VideoPlayerIntent.ChangeAspectRatio(it)) },
         onShowAudio = { viewModel.onIntent(VideoPlayerIntent.SelectAudioTrack(it)) },
         onShowSubtitles = { viewModel.onIntent(VideoPlayerIntent.SelectSubtitleTrack(it)) },
@@ -265,6 +268,7 @@ fun TvVideoPlayerScreen(
     onSeekBackward: () -> Unit,
     onSeekTo: (Long) -> Unit,
     onSetPlaybackSpeed: (Float) -> Unit,
+    onToggleMute: () -> Unit,
     onChangeAspectRatio: (AspectRatioMode) -> Unit,
     onShowAudio: (TrackInfo) -> Unit,
     onShowSubtitles: (TrackInfo?) -> Unit,
@@ -516,6 +520,12 @@ fun TvVideoPlayerScreen(
                         )
 
                         Spacer(modifier = Modifier.width(32.dp))
+
+                        TvPlayerButton(
+                            icon = if (state.isMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
+                            onClick = onToggleMute,
+                            label = if (state.isMuted) "Unmute" else "Mute",
+                        )
 
                         TvPlayerButton(
                             icon = Icons.Default.ClosedCaption,
@@ -1067,6 +1077,7 @@ private fun TvVideoPlayerScreenPreview() {
         onSeekBackward = {},
         onSeekTo = {},
         onSetPlaybackSpeed = {},
+        onToggleMute = {},
         onChangeAspectRatio = {},
         onShowAudio = {},
         onShowSubtitles = {},

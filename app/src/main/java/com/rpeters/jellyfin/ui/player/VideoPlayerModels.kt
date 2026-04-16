@@ -111,6 +111,7 @@ data class VideoPlayerState(
     val availableSubtitleTracks: List<TrackInfo> = emptyList(),
     val selectedSubtitleTrack: TrackInfo? = null,
     val playbackSpeed: Float = 1.0f,
+    val isMuted: Boolean = false,
     // Skip segment markers (ms)
     val introStartMs: Long? = null,
     val introEndMs: Long? = null,
@@ -139,6 +140,7 @@ sealed class VideoPlayerIntent {
     data class SeekTo(val positionMs: Long) : VideoPlayerIntent()
     data class ChangeQuality(val quality: VideoQuality?) : VideoPlayerIntent()
     data class SetPlaybackSpeed(val speed: Float) : VideoPlayerIntent()
+    object ToggleMute : VideoPlayerIntent()
     data class ChangeAspectRatio(val aspectRatio: AspectRatioMode) : VideoPlayerIntent()
     object PlayNextEpisode : VideoPlayerIntent()
     object CancelNextEpisodeCountdown : VideoPlayerIntent()

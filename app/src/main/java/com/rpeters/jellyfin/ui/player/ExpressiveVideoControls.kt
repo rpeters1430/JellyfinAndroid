@@ -25,6 +25,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.CastConnected
@@ -85,6 +87,7 @@ fun ExpressiveVideoControls(
     onSeekBy: (Long) -> Unit,
     onQualityClick: () -> Unit,
     onAudioClick: () -> Unit, // New audio selection callback
+    onToggleMute: () -> Unit,
     onCastClick: () -> Unit,
     onSubtitlesClick: () -> Unit,
     onAspectRatioChange: (AspectRatioMode) -> Unit,
@@ -158,6 +161,7 @@ fun ExpressiveVideoControls(
                     onSeek = stableOnSeek,
                     onPlayPause = stableOnPlayPause,
                     onAudioClick = onAudioClick,
+                    onToggleMute = onToggleMute,
                     onQualityClick = onQualityClick,
                     onSubtitlesClick = onSubtitlesClick,
                     onAspectRatioChange = onAspectRatioChange,
@@ -314,6 +318,7 @@ private fun ExpressiveBottomControls(
     onSeek: (Long) -> Unit,
     onPlayPause: () -> Unit,
     onAudioClick: () -> Unit,
+    onToggleMute: () -> Unit,
     onQualityClick: () -> Unit,
     onSubtitlesClick: () -> Unit,
     onAspectRatioChange: (AspectRatioMode) -> Unit,
@@ -559,6 +564,16 @@ private fun ExpressiveBottomControls(
                                 }
                             }
                         }
+
+                        // Audio selection button
+                        ExpressiveIconButton(
+                            icon = if (playerState.isMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
+                            contentDescription = if (playerState.isMuted) "Unmute" else "Mute",
+                            onClick = onToggleMute,
+                            isActive = playerState.isMuted,
+                            contentColor = overlayContent,
+                            containerColor = overlayScrim.copy(alpha = 0.35f),
+                        )
 
                         // Audio selection button
                         ExpressiveIconButton(
