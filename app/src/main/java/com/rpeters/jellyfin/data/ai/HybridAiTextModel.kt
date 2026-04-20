@@ -7,10 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.flow.onStart
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -67,7 +64,7 @@ class HybridAiTextModel(
     }
 
     private fun updateActiveState() {
-        _isNanoActive.value = !circuitBroken && 
+        _isNanoActive.value = !circuitBroken &&
             shouldUseOnDeviceAi() &&
             nanoModel.downloadState.value == AiDownloadState.READY
     }
@@ -102,7 +99,7 @@ class HybridAiTextModel(
     override suspend fun generateText(prompt: String): String {
         val model = getActiveModel()
         val isNano = model is MlKitAiTextModel
-        
+
         return try {
             val result = model.generateText(prompt)
             if (isNano) failureCount.set(0) // Reset on success
@@ -111,13 +108,13 @@ class HybridAiTextModel(
             if (isNano) {
                 val currentFailures = failureCount.incrementAndGet()
                 Log.w("HybridAi", "[$label] Nano failed ($currentFailures/3), falling back to cloud", e)
-                
+
                 if (currentFailures >= 3) {
                     Log.e("HybridAi", "[$label] Circuit broken for Nano! Switching to Cloud for this session.")
                     circuitBroken = true
                     updateActiveState()
                 }
-                
+
                 // Immediate fallback to cloud for this request
                 cloudModel.generateText(prompt)
             } else {
@@ -130,7 +127,7 @@ class HybridAiTextModel(
     override fun generateTextStream(prompt: String): Flow<String> {
         val model = getActiveModel()
         val isNano = model is MlKitAiTextModel
-        
+
         return if (isNano) {
             model.generateTextStream(prompt).catch { e ->
                 Log.w("HybridAi", "[$label] Nano stream failed, falling back to cloud", e)
