@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.data.ai
 
+import android.os.Build
 import android.util.Log
 import com.rpeters.jellyfin.data.repository.RemoteConfigRepository
 import kotlinx.coroutines.flow.Flow
@@ -36,7 +37,7 @@ class HybridAiTextModel(
      * Checks if Nano is available and starts download if necessary.
      */
     suspend fun initialize() {
-        if (remoteConfig.getBoolean("enable_on_device_ai")) {
+        if (shouldUseOnDeviceAi()) {
             try {
                 nanoModel.initialize()
                 updateActiveState()
@@ -44,7 +45,10 @@ class HybridAiTextModel(
                 Log.e("HybridAi", "[$label] Nano initialization failed: ${e.message}")
             }
         } else {
-            Log.d("HybridAi", "[$label] On-Device AI disabled via Remote Config")
+            Log.d(
+                "HybridAi",
+                "[$label] On-Device AI disabled (remoteConfig=${remoteConfig.getBoolean("enable_on_device_ai")}, supportedDevice=${isOnDeviceAiDeviceSupported()})",
+            )
         }
     }
 
@@ -52,6 +56,10 @@ class HybridAiTextModel(
      * Manually triggers a download retry.
      */
     suspend fun retryDownload() {
+        if (!shouldUseOnDeviceAi()) {
+            Log.d("HybridAi", "[$label] Skipping Nano retry on unsupported/disabled device")
+            return
+        }
         circuitBroken = false
         failureCount.set(0)
         nanoModel.downloadModel()
@@ -60,8 +68,30 @@ class HybridAiTextModel(
 
     private fun updateActiveState() {
         _isNanoActive.value = !circuitBroken && 
-            remoteConfig.getBoolean("enable_on_device_ai") &&
+            shouldUseOnDeviceAi() &&
             nanoModel.downloadState.value == AiDownloadState.READY
+    }
+
+    private fun shouldUseOnDeviceAi(): Boolean {
+        return remoteConfig.getBoolean("enable_on_device_ai") && isOnDeviceAiDeviceSupported()
+    }
+
+    /**
+     * Gemini Nano via ML Kit is currently flaky on many non-Pixel devices.
+     * Restrict on-device usage to Pixel devices for consistent behavior.
+     */
+    private fun isOnDeviceAiDeviceSupported(): Boolean {
+        val manufacturer = Build.MANUFACTURER
+        val model = Build.MODEL
+
+        val isPixel = manufacturer.equals("Google", ignoreCase = true) &&
+            model.contains("Pixel", ignoreCase = true)
+
+        if (!isPixel) {
+            Log.i("HybridAi", "[$label] Skipping Nano for non-Pixel device: $manufacturer $model")
+        }
+
+        return isPixel
     }
 
     private fun getActiveModel(): AiTextModel {
