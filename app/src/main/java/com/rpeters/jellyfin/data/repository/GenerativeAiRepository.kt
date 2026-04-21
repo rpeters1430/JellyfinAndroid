@@ -464,24 +464,29 @@ class GenerativeAiRepository @Inject constructor(
             }
             val success = response.isNotBlank()
             analytics.logAiEvent("person_bio", success, getBackendName(true))
-            response.ifBlank {
-                // Fallback bio
-                buildString {
-                    append("Featured in $movieCount ${if (movieCount == 1) "movie" else "movies"}")
-                    if (tvCount > 0) {
-                        append(" and $tvCount ${if (tvCount == 1) "show" else "shows"}")
-                    }
-                    append(" in your library.")
-                }
+            
+            if (response.isNotBlank()) {
+                response
+            } else {
+                generateFallbackBio(movieCount, tvCount, filmography.size)
             }
-        } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
-            Log.w("GenerativeAi", "Person bio generation timed out for: $personName")
-            analytics.logAiEvent("person_bio", false, getBackendName(true))
-            ""
         } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
             Log.e("GenerativeAi", "Person bio generation failed for: $personName", e)
             analytics.logAiEvent("person_bio", false, getBackendName(true))
-            ""
+            
+            // Return fallback even on error so UI isn't empty
+            generateFallbackBio(movieCount, tvCount, filmography.size)
+        }
+    }
+
+    private fun generateFallbackBio(movieCount: Int, tvCount: Int, totalAppearances: Int): String {
+        return buildString {
+            append("Featured in $movieCount ${if (movieCount == 1) "movie" else "movies"}")
+            if (tvCount > 0) {
+                append(" and $tvCount ${if (tvCount == 1) "show" else "shows"}")
+            }
+            append(" in your library ($totalAppearances total appearances).")
         }
     }
 
@@ -583,9 +588,16 @@ class GenerativeAiRepository @Inject constructor(
         viewingHistory: List<BaseItemDto>,
     ): String = withContext(Dispatchers.IO) {
         if (!isAiEnabled() || !remoteConfig.getBoolean("ai_why_youll_love_this")) return@withContext ""
-        if (viewingHistory.isEmpty()) return@withContext ""
-        logModelUsage("whyYoullLoveThis", usesPrimaryModel = false)
+        
+        val itemTitle = item.name ?: "this content"
+        val itemGenres = item.genres?.joinToString(", ") ?: ""
+        val itemOverview = item.overview?.take(300) ?: ""
 
+        if (viewingHistory.isEmpty()) {
+            return@withContext generateGenericVibe(itemTitle, itemGenres, itemOverview)
+        }
+        
+        logModelUsage("whyYoullLoveThis", usesPrimaryModel = false)
         val historySize = remoteConfig.getLong("ai_history_context_size").toInt()
             .let { if (it <= 0) 10 else it }
 
@@ -599,10 +611,6 @@ class GenerativeAiRepository @Inject constructor(
         val recentTitles = filteredHistory.take(historySize)
             .mapNotNull { it.name }
             .joinToString(", ")
-
-        val itemTitle = item.name ?: "this content"
-        val itemGenres = item.genres?.joinToString(", ") ?: ""
-        val itemOverview = item.overview?.take(300) ?: ""
 
         val template = remoteConfig.getString("ai_why_love_this_prompt_template").takeIf { it.isNotBlank() }
             ?: """
@@ -633,21 +641,47 @@ class GenerativeAiRepository @Inject constructor(
 
         try {
             // Use cloud model for user content to avoid Nano safety filter issues
-            // Increased timeout to 30s for Firebase AI API (can be slow on first calls)
             val response = withTimeout(30_000L) {
                 proModel.generateText(prompt)
             }
             val success = response.isNotBlank()
             analytics.logAiEvent("why_youll_love_this", success, getBackendName(false))
-            response.trim().takeIf { it.isNotBlank() } ?: ""
-        } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
-            Log.w("GenerativeAi", "Why you'll love this timed out for: $itemTitle")
-            analytics.logAiEvent("why_youll_love_this", false, getBackendName(false))
-            ""
+            
+            if (response.isNotBlank()) {
+                response.trim()
+            } else {
+                generateGenericVibe(itemTitle, itemGenres, itemOverview)
+            }
         } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
             Log.e("GenerativeAi", "Why you'll love this failed for: $itemTitle", e)
             analytics.logAiEvent("why_youll_love_this", false, getBackendName(false))
-            ""
+            
+            // Fallback to generic vibe if personalized pitch fails
+            generateGenericVibe(itemTitle, itemGenres, itemOverview)
+        }
+    }
+
+    /**
+     * Generates a generic "Vibe" analysis for a movie when viewing history is unavailable or AI fails.
+     */
+    private suspend fun generateGenericVibe(title: String, genres: String, overview: String): String {
+        val prompt = """
+            Describe the unique "vibe" or appeal of the movie "$title" in one short, engaging sentence (max 30 words).
+            Focus on what makes it special to watch.
+            
+            Context:
+            - Genres: $genres
+            - Overview: $overview
+        """.trimIndent()
+        
+        return try {
+            val response = withTimeout(10_000L) {
+                getPrimaryModel().generateText(prompt)
+            }
+            response.trim().ifBlank { "A great pick for your next movie night!" }
+        } catch (e: Exception) {
+            "A great pick for your next movie night!"
         }
     }
 
