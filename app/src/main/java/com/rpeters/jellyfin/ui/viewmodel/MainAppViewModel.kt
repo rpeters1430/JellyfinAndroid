@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -273,6 +274,92 @@ constructor(
             }.awaitAll().filterNotNull().toMap()
         }
 
+    private data class InitialSupplementalData(
+        val recentlyAdded: List<BaseItemDto>? = null,
+        val recentlyAddedByTypes: Map<String, List<BaseItemDto>>? = null,
+        val continueWatching: List<BaseItemDto>? = null,
+        val currentUser: CurrentUserDetails? = null,
+        val errors: List<String> = emptyList(),
+    )
+
+    private fun collectInitialLoadError(
+        label: String,
+        result: ApiResult<*>,
+        sink: MutableList<String>,
+    ) {
+        if (result is ApiResult.Error) {
+            SecureLogger.w(
+                "MainAppViewModel-Initial",
+                "$label failed during supplemental initial load: ${result.message}",
+            )
+            sink += "$label: ${result.message}"
+        }
+    }
+
+    private suspend fun loadInitialSupplementalData(
+        forceRefresh: Boolean,
+    ): InitialSupplementalData = withContext(dispatchers.io) {
+        supervisorScope {
+            val recentDeferred = async { mediaRepository.getRecentlyAdded(forceRefresh = forceRefresh) }
+            val recentByTypesDeferred = async { loadRecentlyAddedByTypes(forceRefresh = forceRefresh) }
+            val continueWatchingDeferred = async { mediaRepository.getContinueWatching(forceRefresh = forceRefresh) }
+            val currentUserDeferred = async { userRepository.getCurrentUser() }
+
+            val errors = mutableListOf<String>()
+
+            val recentResult = recentDeferred.await()
+            val recentlyAdded = when (recentResult) {
+                is ApiResult.Success -> recentResult.data
+                is ApiResult.Error -> {
+                    collectInitialLoadError("Recently added", recentResult, errors)
+                    null
+                }
+                is ApiResult.Loading -> null
+            }
+
+            val recentlyAddedByTypes = try {
+                recentByTypesDeferred.await()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (throwable: Exception) {
+                SecureLogger.w(
+                    "MainAppViewModel-Initial",
+                    "Recently added by types failed during supplemental initial load: ${throwable.message}",
+                )
+                errors += "Recently added by types: ${throwable.message ?: "Unknown error"}"
+                null
+            }
+
+            val continueWatchingResult = continueWatchingDeferred.await()
+            val continueWatching = when (continueWatchingResult) {
+                is ApiResult.Success -> continueWatchingResult.data
+                is ApiResult.Error -> {
+                    collectInitialLoadError("Continue watching", continueWatchingResult, errors)
+                    null
+                }
+                is ApiResult.Loading -> null
+            }
+
+            val currentUserResult = currentUserDeferred.await()
+            val currentUser = when (currentUserResult) {
+                is ApiResult.Success -> currentUserResult.data
+                is ApiResult.Error -> {
+                    collectInitialLoadError("Current user", currentUserResult, errors)
+                    null
+                }
+                is ApiResult.Loading -> null
+            }
+
+            InitialSupplementalData(
+                recentlyAdded = recentlyAdded,
+                recentlyAddedByTypes = recentlyAddedByTypes,
+                continueWatching = continueWatching,
+                currentUser = currentUser,
+                errors = errors,
+            )
+        }
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     fun loadInitialData(forceRefresh: Boolean = false) {
         viewModelScope.launch {
@@ -347,97 +434,60 @@ constructor(
             )
 
             try {
-                // Execute heavy work on IO dispatcher to prevent main thread blocking
-                withContext(dispatchers.io) {
-                    val librariesDeferred =
-                        async { mediaRepository.getUserLibraries(forceRefresh = forceRefresh) }
-                    val recentDeferred =
-                        async { mediaRepository.getRecentlyAdded(forceRefresh = forceRefresh) }
-                    val recentByTypesDeferred =
-                        async { loadRecentlyAddedByTypes(forceRefresh = forceRefresh) }
-                    val continueWatchingDeferred =
-                        async { mediaRepository.getContinueWatching(forceRefresh = forceRefresh) }
-                    val currentUserDeferred =
-                        async { userRepository.getCurrentUser() }
+                val librariesResult = withContext(dispatchers.io) {
+                    mediaRepository.getUserLibraries(forceRefresh = forceRefresh)
+                }
 
-                    awaitAll(
-                        librariesDeferred,
-                        recentDeferred,
-                        recentByTypesDeferred,
-                        continueWatchingDeferred,
-                        currentUserDeferred,
-                    )
+                SecureLogger.v(
+                    "MainAppViewModel-Initial",
+                    "  Libraries result: ${if (librariesResult is ApiResult.Success) "Success (${librariesResult.data.size})" else librariesResult::class.simpleName}",
+                )
 
-                    val librariesResult = librariesDeferred.getCompleted()
-                    val recentResult = recentDeferred.getCompleted()
-                    val recentlyAddedByTypes = recentByTypesDeferred.getCompleted()
-                    val continueWatchingResult = continueWatchingDeferred.getCompleted()
-                    val currentUserResult = currentUserDeferred.getCompleted()
-                    val resolvedCurrentUser = when (currentUserResult) {
-                        is ApiResult.Success -> currentUserResult.data
-                        else -> _appState.value.currentUser
-                    }
+                when (librariesResult) {
+                    is ApiResult.Success -> {
+                        val libraries = librariesResult.data
 
-                    SecureLogger.v("MainAppViewModel-Initial", "📦 API calls completed:")
-                    SecureLogger.v(
-                        "MainAppViewModel-Initial",
-                        "  Libraries result: ${if (librariesResult is ApiResult.Success) "Success (${librariesResult.data.size})" else librariesResult::class.simpleName}",
-                    )
-                    SecureLogger.v(
-                        "MainAppViewModel-Initial",
-                        "  Recent result: ${if (recentResult is ApiResult.Success) "Success (${recentResult.data.size})" else recentResult::class.simpleName}",
-                    )
-
-                    when (librariesResult) {
-                        is ApiResult.Success -> {
-                            val libraries = librariesResult.data
-                            val recentResultValue = recentResult
-                            val recentlyAdded = if (recentResultValue is ApiResult.Success) {
-                                recentResultValue.data
-                            } else {
-                                emptyList()
-                            }
-
-                            SecureLogger.v("MainAppViewModel-Initial", "✅ Setting new state:")
-                            libraries.forEach { lib ->
-                                SecureLogger.v(
-                                    "MainAppViewModel-Initial",
-                                    "  Library: ${lib.name} (${lib.collectionType}) id=${lib.id}",
-                                )
-                            }
-
-                            val continueWatching = if (continueWatchingResult is ApiResult.Success) {
-                                continueWatchingResult.data
-                            } else {
-                                emptyList()
-                            }
-
-                            _appState.value = _appState.value.copy(
-                                libraries = libraries,
-                                recentlyAdded = recentlyAdded,
-                                recentlyAddedByTypes = recentlyAddedByTypes,
-                                continueWatching = continueWatching,
-                                currentUser = resolvedCurrentUser,
-                                isLoading = false,
-                            )
-
+                        SecureLogger.v("MainAppViewModel-Initial", "✅ Publishing libraries immediately:")
+                        libraries.forEach { lib ->
                             SecureLogger.v(
                                 "MainAppViewModel-Initial",
-                                "🎯 loadInitialData completed - Libraries now: ${libraries.size}",
+                                "  Library: ${lib.name} (${lib.collectionType}) id=${lib.id}",
                             )
                         }
 
-                        is ApiResult.Error -> {
-                            _appState.value = _appState.value.copy(
-                                isLoading = false,
-                                errorMessage = "Failed to load libraries: ${librariesResult.message}",
-                                currentUser = resolvedCurrentUser,
+                        _appState.value = _appState.value.copy(
+                            libraries = libraries,
+                            isLoading = false,
+                            errorMessage = null,
+                        )
+
+                        val supplementalData = loadInitialSupplementalData(forceRefresh)
+
+                        _appState.update { state ->
+                            state.copy(
+                                recentlyAdded = supplementalData.recentlyAdded ?: state.recentlyAdded,
+                                recentlyAddedByTypes = supplementalData.recentlyAddedByTypes ?: state.recentlyAddedByTypes,
+                                continueWatching = supplementalData.continueWatching ?: state.continueWatching,
+                                currentUser = supplementalData.currentUser ?: state.currentUser,
+                                errorMessage = state.errorMessage ?: supplementalData.errors.firstOrNull(),
                             )
                         }
 
-                        is ApiResult.Loading -> {
-                            // Already handled
-                        }
+                        SecureLogger.v(
+                            "MainAppViewModel-Initial",
+                            "🎯 loadInitialData completed - Libraries now: ${libraries.size}",
+                        )
+                    }
+
+                    is ApiResult.Error -> {
+                        _appState.value = _appState.value.copy(
+                            isLoading = false,
+                            errorMessage = "Failed to load libraries: ${librariesResult.message}",
+                        )
+                    }
+
+                    is ApiResult.Loading -> {
+                        // Already handled
                     }
                 }
             } catch (e: CancellationException) {
