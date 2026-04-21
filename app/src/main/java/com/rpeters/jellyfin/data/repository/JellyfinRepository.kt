@@ -432,7 +432,7 @@ open class JellyfinRepository @Inject constructor(
             items.forEachIndexed { index, item ->
                 val dateFormatted = item.dateCreated?.toString() ?: AppResources.getString(R.string.unknown)
                 if (BuildConfig.DEBUG) {
-                    Log.d("JellyfinRepository", "getRecentlyAdded[$index]: ${item.type} - '${item.name}' (Created: $dateFormatted)")
+                    Log.d("JellyfinRepository", "getRecentlyAdded[$index]: ${item.type} - '${maskPii(item.name ?: "")}' (Created: $dateFormatted)")
                 }
             }
 
@@ -588,7 +588,7 @@ open class JellyfinRepository @Inject constructor(
                 items.forEachIndexed { index, item ->
                     val dateFormatted = item.dateCreated?.toString() ?: AppResources.getString(R.string.unknown)
                     if (BuildConfig.DEBUG) {
-                        Log.d("JellyfinRepository", "getRecentlyAddedByType[$itemType][$index]: '${item.name}' (Created: $dateFormatted)")
+                        Log.d("JellyfinRepository", "getRecentlyAddedByType[$itemType][$index]: '${maskPii(item.name ?: "")}' (Created: $dateFormatted)")
                     }
                 }
 
@@ -1400,4 +1400,9 @@ open class JellyfinRepository @Inject constructor(
     // ✅ PHASE 4: Utility methods replaced with centralized utilities
     private fun validateServer(): JellyfinServer = RepositoryUtils.validateServer(authRepository.getCurrentServer())
     private fun parseUuid(id: String, idType: String): UUID = RepositoryUtils.parseUuid(id, idType)
+
+    private fun maskPii(value: String): String {
+        if (value.length <= 4) return "***"
+        return value.take(2) + "***" + value.takeLast(2)
+    }
 }

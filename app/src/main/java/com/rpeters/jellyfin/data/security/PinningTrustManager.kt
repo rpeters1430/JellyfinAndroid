@@ -206,7 +206,7 @@ class PinningTrustManager(
                 return
             }
             val message = "Certificate pin mismatch for $hostname (Possible MITM attack detected!)"
-            Log.e(TAG, "$message - Expected: ${storedPin.primaryPin}, Got: ${chainPins.joinToString()}")
+            Log.e(TAG, message)
             throw PinningValidationException.PinMismatch(
                 hostname = hostname,
                 pinRecord = storedPin,

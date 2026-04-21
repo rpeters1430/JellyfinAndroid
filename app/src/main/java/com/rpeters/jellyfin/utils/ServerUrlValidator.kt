@@ -48,8 +48,18 @@ object ServerUrlValidator {
         return if (isValidUrl(url)) {
             url
         } else {
-            Log.w(TAG, "Invalid URL after normalization: $url")
+            Log.w(TAG, "Invalid URL after normalization: ${maskUrl(url)}")
             null
+        }
+    }
+
+    private fun maskUrl(url: String): String {
+        return try {
+            val uri = java.net.URI(url)
+            val host = uri.host ?: return "***"
+            "${uri.scheme}://${host.take(3)}***${host.takeLast(3)}"
+        } catch (e: Exception) {
+            "***"
         }
     }
 

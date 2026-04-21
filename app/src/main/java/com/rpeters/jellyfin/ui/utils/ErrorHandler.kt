@@ -375,8 +375,8 @@ object ErrorHandler {
             "operation" to operation,
             "errorType" to error.errorType.name,
             "isRetryable" to error.isRetryable,
-            "userId" to (userId ?: "unknown"),
-            "serverUrl" to (serverUrl ?: "unknown"),
+            "userId" to (userId?.let { maskPii(it) } ?: "unknown"),
+            "serverUrl" to (serverUrl?.let { maskUrl(it) } ?: "unknown"),
             "timestamp" to System.currentTimeMillis(),
         )
 
@@ -384,6 +384,20 @@ object ErrorHandler {
 
         // In a production app, you would send this to your analytics service
         // Example: Analytics.track("error_occurred", errorData)
+    }
+
+    private fun maskPii(value: String): String {
+        if (value.length <= 4) return "***"
+        return value.take(2) + "***" + value.takeLast(2)
+    }
+
+    private fun maskUrl(url: String): String {
+        return try {
+            val uri = java.net.URI(url)
+            "${uri.scheme}://${uri.host.take(3)}***${uri.host.takeLast(3)}"
+        } catch (e: Exception) {
+            "***"
+        }
     }
 }
 

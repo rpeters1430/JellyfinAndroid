@@ -340,7 +340,7 @@ class SecureCredentialManager @Inject constructor(
         val keys = generateKeys(serverUrl, username)
         val encryptedPassword = encrypt(password)
 
-        logDebug { "savePassword: Saving password for user='$username', serverUrl='$serverUrl'" }
+        logDebug { "savePassword: Saving password for user='${mask(username)}', serverUrl='${mask(serverUrl)}'" }
         logDebug { "savePassword: Generated key='${keys.newKey}'" }
 
         try {
@@ -426,7 +426,7 @@ class SecureCredentialManager @Inject constructor(
         activity: FragmentActivity? = null,
         requireStrongBiometric: Boolean = false,
     ): String? {
-        logDebug { "🔵 getPassword: CALLED - Retrieving password for user='$username', serverUrl='$serverUrl'" }
+        logDebug { "🔵 getPassword: CALLED - Retrieving password for user='${mask(username)}', serverUrl='${mask(serverUrl)}'" }
 
         return try {
             // If activity is provided and biometric auth is available, request auth
@@ -535,7 +535,7 @@ class SecureCredentialManager @Inject constructor(
         val hasPassword = candidates.any { key ->
             preferences[stringPreferencesKey(key)] != null
         }
-        logDebug { "hasSavedPassword: serverUrl='$serverUrl', username='$username', result=$hasPassword" }
+        logDebug { "hasSavedPassword: serverUrl='${mask(serverUrl)}', username='${mask(username)}', result=$hasPassword" }
         return hasPassword
     }
 
@@ -648,5 +648,10 @@ class SecureCredentialManager @Inject constructor(
         // Take first 16 bytes and encode as hex for the key
         val keyBytes = hash.sliceArray(0 until 16)
         return "pwd_${keyBytes.joinToString("") { "%02x".format(it) }}"
+    }
+
+    private fun mask(value: String): String {
+        if (value.length <= 4) return "***"
+        return value.take(2) + "***" + value.takeLast(2)
     }
 }

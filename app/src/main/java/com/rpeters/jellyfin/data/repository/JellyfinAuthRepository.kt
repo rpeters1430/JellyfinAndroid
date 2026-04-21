@@ -63,7 +63,18 @@ class JellyfinAuthRepository @Inject constructor(
     override suspend fun token(): String? = _tokenState.value
 
     private fun throwableMessageOrFallback(prefix: String, throwable: Throwable): String {
-        val detail = throwable.message?.takeIf { it.isNotBlank() } ?: throwable.javaClass.simpleName
+        // SECURITY: Raw exception messages can contain sensitive info (tokens, server paths).
+        // Only include raw message in debug builds.
+        val detail = if (BuildConfig.DEBUG) {
+            throwable.message?.takeIf { it.isNotBlank() } ?: throwable.javaClass.simpleName
+        } else {
+            // In release builds, provide a generic description based on exception type to avoid leaking internal details
+            when (throwable) {
+                is java.io.IOException -> "Network error"
+                is org.jellyfin.sdk.api.client.exception.InvalidStatusException -> "Server returned error ${throwable.status}"
+                else -> "Internal application error"
+            }
+        }
         return "$prefix: $detail"
     }
 
