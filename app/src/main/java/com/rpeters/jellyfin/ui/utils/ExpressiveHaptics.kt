@@ -79,8 +79,14 @@ class ExpressiveHaptics(
 fun rememberExpressiveHaptics(): ExpressiveHaptics {
     val hapticFeedback = LocalHapticFeedback.current
     val context = LocalContext.current
-    val vibrator = remember(context) { 
-        context.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? Vibrator 
+    val vibrator = remember(context) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            val vibratorManager = context.getSystemService(android.content.Context.VIBRATOR_MANAGER_SERVICE) as? android.os.VibratorManager
+            vibratorManager?.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            context.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? Vibrator
+        }
     }
     return remember(hapticFeedback, vibrator) { ExpressiveHaptics(hapticFeedback, vibrator) }
 }

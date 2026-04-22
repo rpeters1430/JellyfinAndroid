@@ -142,7 +142,7 @@ class DlnaPlaybackController @Inject constructor() {
                     SecureLogger.w(TAG, "DLNA action $action failed for ${device.friendlyName}: HTTP ${response.code}")
                     return@use null
                 }
-                response.body?.string()
+                response.body.string()
             }
         }.onFailure { e ->
             SecureLogger.w(TAG, "DLNA action $action threw for ${device.friendlyName}", e)

@@ -170,7 +170,7 @@ class MovieDetailViewModel @Inject constructor(
 
     private fun generateWhyYoullLoveThis(movie: BaseItemDto) {
         whyYoullLoveThisJob?.cancel()
-        val movieId = movie.id?.toString() ?: return
+        val movieId = movie.id.toString()
         whyYoullLoveThisJob = viewModelScope.launch {
             _state.value = _state.value.copy(isLoadingWhyYoullLoveThis = true)
             try {

@@ -8,6 +8,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeout
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.CollectionType
@@ -53,22 +55,31 @@ class LibraryLoadingManager @Inject constructor(
     suspend fun loadLibraries(forceRefresh: Boolean = false): ApiResult<List<BaseItemDto>> {
         val operationKey = "load_libraries"
 
-        return operationsMutex.withLock {
+        val operation = operationsMutex.withLock {
             // Check if operation is already in progress
             @Suppress("UNCHECKED_CAST")
             ongoingOperations[operationKey]?.let { ongoing ->
                 if (BuildConfig.DEBUG) {
                     Log.d(TAG, "Joining ongoing library loading operation")
                 }
-                return@withLock ongoing.await() as ApiResult<List<BaseItemDto>>
+                return@withLock ongoing as kotlinx.coroutines.Deferred<ApiResult<List<BaseItemDto>>>
             }
 
             // Start new operation
-            val operation = loadingScope.async {
+            val newOperation = loadingScope.async {
                 try {
                     updateLoadingState(operationKey, LibraryLoadingState.Loading)
 
-                    val result = mediaRepository.getUserLibraries(forceRefresh)
+                    val result = try {
+                        withTimeout(LOAD_TIMEOUT_MS) {
+                            mediaRepository.getUserLibraries(forceRefresh)
+                        }
+                    } catch (_: TimeoutCancellationException) {
+                        ApiResult.Error<List<BaseItemDto>>(
+                            "Library loading timed out. Please check your connection and try again.",
+                            errorType = ErrorType.NETWORK,
+                        )
+                    }
 
                     when (result) {
                         is ApiResult.Success -> {
@@ -85,9 +96,9 @@ class LibraryLoadingManager @Inject constructor(
                         }
                         else -> { /* Loading state already set */ }
                     }
-
                     result
-                } catch (e: CancellationException) {
+                }
+                catch (e: CancellationException) {
                     throw e
                 } finally {
                     operationsMutex.withLock {
@@ -96,9 +107,11 @@ class LibraryLoadingManager @Inject constructor(
                 }
             }
 
-            ongoingOperations[operationKey] = operation
-            operation.await()
+            ongoingOperations[operationKey] = newOperation as kotlinx.coroutines.Deferred<Any>
+            newOperation
         }
+
+        return operation.await()
     }
 
     /**
@@ -114,37 +127,48 @@ class LibraryLoadingManager @Inject constructor(
     ): ApiResult<com.rpeters.jellyfin.data.repository.LibraryItemsResult> {
         val operationKey = "load_library_${libraryId}_${startIndex}_$limit"
 
-        return operationsMutex.withLock {
+        val operation = operationsMutex.withLock {
             // Check for ongoing operation
             @Suppress("UNCHECKED_CAST")
             ongoingOperations[operationKey]?.let { ongoing ->
                 if (BuildConfig.DEBUG) {
                     Log.d(TAG, "Joining ongoing library items operation: $operationKey")
                 }
-                return@withLock ongoing.await() as ApiResult<com.rpeters.jellyfin.data.repository.LibraryItemsResult>
+                return@withLock ongoing as kotlinx.coroutines.Deferred<ApiResult<com.rpeters.jellyfin.data.repository.LibraryItemsResult>>
             }
 
             // Validate and sanitize parameters
             val validatedParams = validateLibraryParams(libraryId, collectionType, itemTypes, startIndex, limit)
             if (validatedParams == null) {
-                return@withLock ApiResult.Error<com.rpeters.jellyfin.data.repository.LibraryItemsResult>(
-                    "Invalid library parameters",
-                    null,
-                    ErrorType.VALIDATION,
-                )
+                return@withLock loadingScope.async {
+                    ApiResult.Error<com.rpeters.jellyfin.data.repository.LibraryItemsResult>(
+                        "Invalid library parameters",
+                        null,
+                        ErrorType.VALIDATION,
+                    )
+                }
             }
 
-            val operation = loadingScope.async {
+            val newOperation = loadingScope.async {
                 try {
                     updateLoadingState(operationKey, LibraryLoadingState.Loading)
 
-                    val result = mediaRepository.getLibraryItems(
-                        parentId = validatedParams.parentId,
-                        itemTypes = validatedParams.itemTypes,
-                        startIndex = validatedParams.startIndex,
-                        limit = validatedParams.limit,
-                        collectionType = validatedParams.collectionType,
-                    )
+                    val result = try {
+                        withTimeout(LOAD_TIMEOUT_MS) {
+                            mediaRepository.getLibraryItems(
+                                parentId = validatedParams.parentId,
+                                itemTypes = validatedParams.itemTypes,
+                                startIndex = validatedParams.startIndex,
+                                limit = validatedParams.limit,
+                                collectionType = validatedParams.collectionType,
+                            )
+                        }
+                    } catch (_: TimeoutCancellationException) {
+                        ApiResult.Error<com.rpeters.jellyfin.data.repository.LibraryItemsResult>(
+                            "Library items loading timed out. Please try again.",
+                            errorType = ErrorType.NETWORK,
+                        )
+                    }
 
                     when (result) {
                         is ApiResult.Success -> {
@@ -161,7 +185,6 @@ class LibraryLoadingManager @Inject constructor(
                         }
                         else -> { /* Loading state already set */ }
                     }
-
                     result
                 } catch (e: CancellationException) {
                     throw e
@@ -172,9 +195,11 @@ class LibraryLoadingManager @Inject constructor(
                 }
             }
 
-            ongoingOperations[operationKey] = operation as kotlinx.coroutines.Deferred<Any>
-            operation.await()
+            ongoingOperations[operationKey] = newOperation as kotlinx.coroutines.Deferred<Any>
+            newOperation
         }
+
+        return operation.await()
     }
 
     /**
