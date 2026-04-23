@@ -8,8 +8,10 @@ import com.rpeters.jellyfin.data.cache.JellyfinCache
 import com.rpeters.jellyfin.data.playback.EnhancedPlaybackManager
 import com.rpeters.jellyfin.data.preferences.PlaybackPreferencesRepository
 import com.rpeters.jellyfin.data.repository.ICastPlaybackRepository
+import com.rpeters.jellyfin.data.repository.IJellyfinAuthRefreshManager
 import com.rpeters.jellyfin.data.repository.IJellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.IJellyfinRepository
+import com.rpeters.jellyfin.data.repository.JellyfinAuthRefreshManager
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
@@ -113,10 +115,10 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideJellyfinAuthInterceptor(
-        authRepositoryProvider: Provider<IJellyfinAuthRepository>,
+        authRefreshManager: IJellyfinAuthRefreshManager,
         deviceIdentityProvider: DeviceIdentityProvider,
     ): JellyfinAuthInterceptor {
-        return JellyfinAuthInterceptor(authRepositoryProvider, deviceIdentityProvider)
+        return JellyfinAuthInterceptor(authRefreshManager, deviceIdentityProvider)
     }
 
     @Provides
@@ -217,6 +219,12 @@ object NetworkModule {
     fun provideIJellyfinAuthRepository(
         authRepository: JellyfinAuthRepository,
     ): IJellyfinAuthRepository = authRepository
+
+    @Provides
+    @Singleton
+    fun provideIJellyfinAuthRefreshManager(
+        refreshManager: JellyfinAuthRefreshManager,
+    ): IJellyfinAuthRefreshManager = refreshManager
 
     @Provides
     @Singleton
