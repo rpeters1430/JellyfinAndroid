@@ -31,7 +31,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -49,8 +48,6 @@ import com.rpeters.jellyfin.ui.image.rememberCoilSize
 import com.rpeters.jellyfin.ui.player.audio.AudioPlaybackState
 import com.rpeters.jellyfin.ui.theme.MusicGreen
 import com.rpeters.jellyfin.ui.viewmodel.AudioPlaybackViewModel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 
 /**
  * Mini player component that appears at the bottom of screens when audio is playing.
@@ -70,14 +67,6 @@ fun MiniPlayer(
     val playbackState by viewModel.playbackState.collectAsState()
     val currentPosition by viewModel.currentPosition.collectAsState()
     val duration by viewModel.duration.collectAsState()
-
-    // Update progress periodically when playing
-    LaunchedEffect(playbackState.isPlaying, playbackState.currentMediaItem) {
-        while (isActive && playbackState.isPlaying) {
-            delay(1000) // Update every second for mini player
-            // Updates happen via ViewModel
-        }
-    }
 
     // Only show if there's a current media item
     AnimatedVisibility(
