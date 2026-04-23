@@ -14,11 +14,12 @@ plugins {
 configurations.all {
     resolutionStrategy.eachDependency {
         if (requested.group in setOf(
-            "androidx.compose.ui",
-            "androidx.compose.foundation",
-            "androidx.compose.runtime",
-            "androidx.compose.animation",
-        )) {
+                "androidx.compose.ui",
+                "androidx.compose.foundation",
+                "androidx.compose.runtime",
+                "androidx.compose.animation",
+            )
+        ) {
             useVersion(libs.versions.composeCore.get())
             because("Align all core Compose libraries to prevent BOM internal version mismatches")
         }
@@ -153,6 +154,15 @@ android {
             isIncludeAndroidResources = true
             isReturnDefaultValues = true
         }
+    }
+
+    lint {
+        // CI consumes XML output for warning budget checks.
+        xmlReport = true
+        htmlReport = true
+        sarifReport = true
+        abortOnError = true
+        warningsAsErrors = false
     }
 
     packaging {
@@ -362,4 +372,3 @@ tasks.register<JacocoReport>("jacocoTestReport") {
 }
 
 apply(plugin = "jacoco")
-
