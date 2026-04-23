@@ -43,6 +43,35 @@ jobs:
       - name: Ensure Gradle wrapper executable
         run: chmod +x gradlew
 
+      - name: Create placeholder google-services.json for CI
+        shell: bash
+        run: |
+          cat > app/google-services.json <<'JSON'
+          {
+            "project_info": {
+              "project_number": "1234567890",
+              "project_id": "cinefin-ci",
+              "storage_bucket": "cinefin-ci.appspot.com"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:1234567890:android:abcdef123456",
+                  "android_client_info": {
+                    "package_name": "com.rpeters.jellyfin"
+                  }
+                },
+                "api_key": [
+                  {
+                    "current_key": "ci-placeholder-key"
+                  }
+                ]
+              }
+            ],
+            "configuration_version": "1"
+          }
+          JSON
+
       - name: Build debug APK
         run: ./gradlew --no-daemon --stacktrace :app:assembleDebug
 

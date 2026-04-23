@@ -67,8 +67,6 @@ import com.rpeters.jellyfin.ui.image.rememberScreenWidthHeight
 import com.rpeters.jellyfin.ui.theme.JellyfinExpressiveTheme
 import com.rpeters.jellyfin.ui.theme.MusicGreen
 import com.rpeters.jellyfin.ui.viewmodel.AudioPlaybackViewModel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 
 /**
  * Full-screen Now Playing screen for music playback.
@@ -89,22 +87,10 @@ fun NowPlayingScreen(
 ) {
     val playbackState by viewModel.playbackState.collectAsState()
     val queue by viewModel.queue.collectAsState()
-    val currentPosition by viewModel.currentPosition.collectAsState()
-    val duration by viewModel.duration.collectAsState()
 
     // Local state for smooth seeking
     var isSeeking by remember { mutableStateOf(false) }
     var seekPosition by remember { mutableLongStateOf(0L) }
-
-    // Update progress periodically when playing
-    LaunchedEffect(playbackState.isPlaying) {
-        while (isActive && playbackState.isPlaying) {
-            delay(100)
-            if (!isSeeking) {
-                // Progress updates happen via the ViewModel
-            }
-        }
-    }
 
     Scaffold(
         topBar = {
@@ -178,8 +164,9 @@ fun NowPlayingScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 ProgressSection(
-                    currentPosition = if (isSeeking) seekPosition else currentPosition,
-                    duration = duration,
+                    isSeeking = isSeeking,
+                    currentPosition = if (isSeeking) seekPosition else playbackState.currentPosition,
+                    duration = playbackState.duration,
                     onSeekStart = { isSeeking = true },
                     onSeekChange = { seekPosition = it },
                     onSeekEnd = { position ->
@@ -334,6 +321,7 @@ private fun TrackInfoSection(
 
 @Composable
 private fun ProgressSection(
+    isSeeking: Boolean,
     currentPosition: Long,
     duration: Long,
     onSeekStart: () -> Unit,
@@ -341,6 +329,14 @@ private fun ProgressSection(
     onSeekEnd: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var pendingSeekPosition by remember { mutableStateOf(currentPosition.toFloat()) }
+
+    LaunchedEffect(currentPosition, isSeeking) {
+        if (!isSeeking) {
+            pendingSeekPosition = currentPosition.toFloat()
+        }
+    }
+
     ExpressiveBlurSurface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
@@ -366,13 +362,14 @@ private fun ProgressSection(
             )
 
             Slider(
-                value = if (duration > 0) currentPosition.toFloat() else 0f,
+                value = if (duration > 0) pendingSeekPosition else 0f,
                 onValueChange = {
                     onSeekStart()
+                    pendingSeekPosition = it
                     onSeekChange(it.toLong())
                 },
                 valueRange = 0f..duration.toFloat().coerceAtLeast(1f),
-                onValueChangeFinished = { onSeekEnd(currentPosition) },
+                onValueChangeFinished = { onSeekEnd(pendingSeekPosition.toLong()) },
                 colors = SliderDefaults.colors(
                     thumbColor = MaterialTheme.colorScheme.primary,
                     activeTrackColor = Color.Transparent,
