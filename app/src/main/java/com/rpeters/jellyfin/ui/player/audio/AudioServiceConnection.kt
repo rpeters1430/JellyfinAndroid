@@ -348,7 +348,7 @@ class AudioServiceConnection @Inject constructor(
     }
 
     companion object {
-        private const val PROGRESS_UPDATE_INTERVAL = 5000L // 5 seconds
+        private const val PROGRESS_UPDATE_INTERVAL = 500L // keep UI progress reasonably smooth
     }
 }
 
