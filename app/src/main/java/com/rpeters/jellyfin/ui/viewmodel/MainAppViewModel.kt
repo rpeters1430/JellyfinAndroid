@@ -43,7 +43,6 @@ import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.BaseItemPerson
 import org.jellyfin.sdk.model.api.CollectionType
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 
 /**
@@ -150,8 +149,6 @@ constructor(
         private const val API_DEFAULT_LIMIT = 100
     }
 
-    private val libraryKeyCache = ConcurrentHashMap<String, String>()
-
     val aiDownloadState = generativeAiRepository.downloadState
     val isNanoActive = generativeAiRepository.isNanoActive
 
@@ -166,15 +163,7 @@ constructor(
         }
     }
 
-    internal fun libraryItemKey(item: BaseItemDto): String {
-        val explicitId = item.id?.toString().orEmpty()
-        if (explicitId.isNotBlank()) return explicitId
-
-        val cacheKey = "${item.name ?: "unknown"}-${item.sortName ?: "unknown"}-${item.type}"
-        return libraryKeyCache.getOrPut(cacheKey) {
-            UUID.nameUUIDFromBytes(cacheKey.toByteArray()).toString()
-        }
-    }
+    internal fun libraryItemKey(item: BaseItemDto): String = item.id.toString()
 
     internal fun mergeLibraryItems(currentItems: List<BaseItemDto>, newItems: List<BaseItemDto>): List<BaseItemDto> {
         val merged = LinkedHashMap<String, BaseItemDto>(currentItems.size + newItems.size)

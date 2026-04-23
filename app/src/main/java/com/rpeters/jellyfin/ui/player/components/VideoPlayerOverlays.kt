@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.ui.player.components
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -11,7 +12,7 @@ import com.rpeters.jellyfin.ui.player.*
 
 @UnstableApi
 @Composable
-internal fun VideoPlayerOverlays(
+internal fun BoxScope.VideoPlayerOverlays(
     state: VideoPlayerState,
     overlayState: VideoPlayerOverlayState,
     feedbackVisible: Boolean,
