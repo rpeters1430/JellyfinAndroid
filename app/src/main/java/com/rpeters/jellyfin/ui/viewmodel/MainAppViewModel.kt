@@ -12,9 +12,7 @@ import com.rpeters.jellyfin.data.common.DispatcherProvider
 import com.rpeters.jellyfin.data.model.CurrentUserDetails
 import com.rpeters.jellyfin.data.repository.IJellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.IJellyfinRepository
-import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
-import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinSearchRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import com.rpeters.jellyfin.data.repository.JellyfinUserRepository
@@ -165,13 +163,7 @@ constructor(
         }
     }
 
-    internal fun libraryItemKey(item: BaseItemDto): String =
-        item.id.toString().ifBlank {
-            // For items without IDs, generate a deterministic UUID from metadata
-            // This prevents exposing sensitive library content information
-            val fallbackString = "${item.name ?: "unknown"}-${item.sortName ?: "unknown"}-${item.type}"
-            UUID.nameUUIDFromBytes(fallbackString.toByteArray()).toString()
-        }
+    internal fun libraryItemKey(item: BaseItemDto): String = item.id.toString()
 
     internal fun mergeLibraryItems(currentItems: List<BaseItemDto>, newItems: List<BaseItemDto>): List<BaseItemDto> {
         val merged = LinkedHashMap<String, BaseItemDto>(currentItems.size + newItems.size)
@@ -515,12 +507,14 @@ constructor(
                 val data = item.data
                 val summary = generativeAiRepository.generateSummary(
                     data.name ?: "Unknown",
-                    data.overview ?: ""
+                    data.overview ?: "",
                 )
-                _appState.update { it.copy(
-                    aiSummary = summary,
-                    isLoadingAiSummary = false
-                ) }
+                _appState.update {
+                    it.copy(
+                        aiSummary = summary,
+                        isLoadingAiSummary = false,
+                    )
+                }
             } else {
                 _appState.update { it.copy(isLoadingAiSummary = false) }
             }
@@ -532,17 +526,20 @@ constructor(
             _appState.update { it.copy(isLoadingAiPitch = true) }
             val itemResult = repository.getItemDetails(itemId)
             val recentResult = repository.getRecentlyAdded()
-            
-            if (itemResult is ApiResult.Success && 
-                recentResult is ApiResult.Success) {
+
+            if (itemResult is ApiResult.Success &&
+                recentResult is ApiResult.Success
+            ) {
                 val pitch = generativeAiRepository.generateWhyYoullLoveThis(
                     itemResult.data,
-                    recentResult.data
+                    recentResult.data,
                 )
-                _appState.update { it.copy(
-                    aiPitch = pitch,
-                    isLoadingAiPitch = false
-                ) }
+                _appState.update {
+                    it.copy(
+                        aiPitch = pitch,
+                        isLoadingAiPitch = false,
+                    )
+                }
             } else {
                 _appState.update { it.copy(isLoadingAiPitch = false) }
             }
