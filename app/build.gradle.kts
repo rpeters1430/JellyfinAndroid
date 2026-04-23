@@ -14,11 +14,12 @@ plugins {
 configurations.all {
     resolutionStrategy.eachDependency {
         if (requested.group in setOf(
-            "androidx.compose.ui",
-            "androidx.compose.foundation",
-            "androidx.compose.runtime",
-            "androidx.compose.animation",
-        )) {
+                "androidx.compose.ui",
+                "androidx.compose.foundation",
+                "androidx.compose.runtime",
+                "androidx.compose.animation",
+            )
+        ) {
             useVersion(libs.versions.composeCore.get())
             because("Align all core Compose libraries to prevent BOM internal version mismatches")
         }
