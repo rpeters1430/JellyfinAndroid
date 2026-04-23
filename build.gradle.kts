@@ -20,9 +20,15 @@ tasks.register("ciTest") {
 tasks.register("verifyWarningBudget") {
     group = "verification"
     description = "Fails build when warning counts exceed the agreed baseline budget."
+    dependsOn(":app:lintDebug")
+
+    val lintReportPath = "app/build/reports/lint-results-debug.xml"
+    val warningSummaryPath = "app/build/reports/warnings/warning-budget-summary.md"
+    inputs.file(file(lintReportPath)).optional()
+    outputs.file(file(warningSummaryPath))
 
     doLast {
-        val lintReport = file("app/build/reports/lint-results-debug.xml")
+        val lintReport = file(lintReportPath)
         if (!lintReport.exists()) {
             throw GradleException(
                 "Missing lint report at ${lintReport.path}. Run :app:lintDebug before verifyWarningBudget.",
@@ -49,7 +55,7 @@ tasks.register("verifyWarningBudget") {
         )
 
         val warningCounts = baselineByCategory.keys.associateWith { 0 }.toMutableMap()
-        val uncategorizedWarnings = mutableListOf<String>()
+        val uncategorizedWarnings = mutableSetOf<String>()
 
         val documentBuilderFactory = DocumentBuilderFactory.newInstance().apply {
             setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
@@ -93,7 +99,7 @@ tasks.register("verifyWarningBudget") {
                 appendLine()
                 if (uncategorizedWarnings.isNotEmpty()) {
                     appendLine("## Uncategorized warning IDs")
-                    uncategorizedWarnings.distinct().sorted().forEach { appendLine("- $it") }
+                    uncategorizedWarnings.sorted().forEach { appendLine("- $it") }
                 }
             },
         )
@@ -103,7 +109,7 @@ tasks.register("verifyWarningBudget") {
                 val current = warningCounts.getValue(category)
                 if (current > baseline) "$category: $current > baseline $baseline" else null
             } + if (uncategorizedWarnings.isNotEmpty()) {
-            "uncategorized: ${uncategorizedWarnings.distinct().size} > baseline 0"
+            "uncategorized: ${uncategorizedWarnings.size} > baseline 0"
         } else {
             emptyList<String>()
         }
