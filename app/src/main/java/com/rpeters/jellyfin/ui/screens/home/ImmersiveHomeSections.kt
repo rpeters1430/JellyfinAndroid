@@ -4,8 +4,8 @@ import androidx.annotation.OptIn
 import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -264,7 +264,10 @@ private fun LibraryRecentSection(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            FilledTonalButton(onClick = { haptics.lightClick(); onLibraryClick(library) }) {
+            FilledTonalButton(onClick = {
+                haptics.lightClick()
+                onLibraryClick(library)
+            }) {
                 Text(text = androidx.compose.ui.res.stringResource(R.string.open))
             }
         }
@@ -357,7 +360,10 @@ private fun LibraryExpressiveCard(
     }
 
     ElevatedCard(
-        onClick = { haptics.lightClick(); onClick() },
+        onClick = {
+            haptics.lightClick()
+            onClick()
+        },
         modifier = modifier.then(sharedElementModifier),
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.elevatedCardColors(

@@ -15,7 +15,6 @@ import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
 import com.rpeters.jellyfin.data.preferences.SubtitleAppearancePreferences
@@ -44,7 +43,7 @@ fun VideoPlayerScreen(
 ) {
     val state by viewModel.collectAsState()
     val context = androidx.compose.ui.platform.LocalContext.current
-    
+
     viewModel.collectSideEffect { sideEffect ->
         when (sideEffect) {
             is VideoPlayerSideEffect.ClosePlayer -> onClose()
@@ -95,7 +94,7 @@ fun VideoPlayerScreen(
     }
 
     val playerColors = rememberVideoPlayerColors()
-    
+
     val overlayState = remember(state) { state.toOverlayState() }
 
     // Gesture feedback states
