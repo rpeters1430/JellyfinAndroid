@@ -34,7 +34,7 @@ class JellyfinAuthRefreshManagerTest {
 
         mockkStatic(Log::class)
         every { Log.i(any(), any()) } returns 0
-        every { Log.w(any(), any()) } returns 0
+        every { Log.w(any(), any<String>()) } returns 0
 
         refreshManager = JellyfinAuthRefreshManager(
             authRepository = authRepository,

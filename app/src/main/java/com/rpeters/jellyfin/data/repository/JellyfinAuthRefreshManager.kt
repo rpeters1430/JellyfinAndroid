@@ -1,7 +1,7 @@
 package com.rpeters.jellyfin.data.repository
 
-import android.util.Log
 import com.rpeters.jellyfin.di.ApplicationScope
+import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
@@ -84,8 +84,8 @@ class JellyfinAuthRefreshManager @Inject constructor(
 
     private suspend fun executeRefresh(trigger: String): RefreshResult {
         val elapsed = measureTimeMillis {
-            repeat(MAX_REFRESH_RETRIES) { retryIndex ->
-                val delayMs = RETRY_BACKOFF_MS[retryIndex]
+            repeat(RETRY_BACKOFF_MS.size) { retryIndex ->
+                val delayMs = RETRY_BACKOFF_MS.getOrElse(retryIndex) { RETRY_BACKOFF_MS.last() }
                 if (delayMs > 0L) {
                     delay(delayMs)
                 }
@@ -104,7 +104,7 @@ class JellyfinAuthRefreshManager @Inject constructor(
             }
         }
 
-        Log.w(TAG, "Auth refresh exhausted retries for trigger=$trigger durationMs=$elapsed")
+        SecureLogger.w(TAG, "Auth refresh exhausted retries for trigger=$trigger durationMs=$elapsed")
         return RefreshResult.Failure("retry_exhausted")
     }
 
@@ -115,7 +115,7 @@ class JellyfinAuthRefreshManager @Inject constructor(
         reason: String?,
     ) {
         val reasonPart = reason?.let { " reason=$it" } ?: ""
-        Log.i(TAG, "AuthRefreshEvent outcome=$outcome trigger=$trigger attempt=$attempt$reasonPart")
+        SecureLogger.i(TAG, "AuthRefreshEvent outcome=$outcome trigger=$trigger attempt=$attempt$reasonPart")
     }
 
     private sealed class RefreshResult {
@@ -128,7 +128,6 @@ class JellyfinAuthRefreshManager @Inject constructor(
         private const val REFRESH_TRIGGER_PROACTIVE = "proactive"
         private const val REFRESH_TRIGGER_401 = "http_401"
         private const val REFRESH_TIMEOUT_MS = 10_000L
-        private const val MAX_REFRESH_RETRIES = 3
         private val RETRY_BACKOFF_MS = longArrayOf(0L, 100L, 500L)
     }
 }
