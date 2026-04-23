@@ -67,7 +67,7 @@ internal fun BoxScope.VideoPlayerOverlays(
         onPlayPause = { onIntent(VideoPlayerIntent.TogglePlayPause) },
         onSeek = { onIntent(VideoPlayerIntent.SeekTo(it)) },
         onSeekBy = { delta ->
-            onIntent(VideoPlayerIntent.SeekTo((state.currentPosition + delta).coerceIn(0L, state.duration)))
+            onIntent(VideoPlayerIntent.SeekTo((currentPosMs + delta).coerceIn(0L, state.duration)))
         },
         onQualityClick = { onIntent(VideoPlayerIntent.ShowQualityDialog) },
         onAudioClick = { onIntent(VideoPlayerIntent.ShowAudioDialog) },

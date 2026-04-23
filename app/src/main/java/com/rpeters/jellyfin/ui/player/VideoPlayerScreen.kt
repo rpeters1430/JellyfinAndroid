@@ -95,7 +95,7 @@ fun VideoPlayerScreen(
 
     val playerColors = rememberVideoPlayerColors()
 
-    val overlayState = remember(state) { state.toOverlayState() }
+    val overlayState = state.toOverlayState()
 
     // Gesture feedback states
     var showSeekFeedback by remember { mutableStateOf(false) }
