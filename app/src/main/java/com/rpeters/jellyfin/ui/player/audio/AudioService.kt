@@ -3,15 +3,15 @@ package com.rpeters.jellyfin.ui.player.audio
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
 import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
-import androidx.media3.common.C
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.CommandButton
@@ -21,9 +21,9 @@ import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
 import com.google.common.util.concurrent.Futures
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import org.json.JSONArray
 import org.json.JSONObject
+import javax.inject.Inject
 
 @UnstableApi
 @AndroidEntryPoint
