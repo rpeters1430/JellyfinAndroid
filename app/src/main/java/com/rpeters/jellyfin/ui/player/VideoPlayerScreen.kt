@@ -14,12 +14,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
 import com.rpeters.jellyfin.data.preferences.SubtitleAppearancePreferences
+import com.rpeters.jellyfin.ui.player.components.VideoPlayerOverlays
+import com.rpeters.jellyfin.ui.player.components.toOverlayState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -95,29 +96,7 @@ fun VideoPlayerScreen(
 
     val playerColors = rememberVideoPlayerColors()
     
-    val showPrimaryLoadingUi = remember(
-        state.isLoading,
-        state.currentPosition,
-        state.isPlaying,
-    ) {
-        state.isLoading && state.currentPosition <= 0L && !state.isPlaying
-    }
-    val showNextEpisodePrompt = remember(
-        state.nextEpisode,
-        state.isNextEpisodePromptDismissed,
-        state.showNextEpisodeCountdown,
-        state.outroStartMs,
-        state.currentPosition,
-        state.duration,
-    ) {
-        val remainingMs = state.duration - state.currentPosition
-        val reachedOutro = state.outroStartMs?.let { state.currentPosition >= it } == true
-        val inFallbackWindow = state.duration > 60_000 && remainingMs in 1..30_000
-        state.nextEpisode != null &&
-            !state.isNextEpisodePromptDismissed &&
-            !state.showNextEpisodeCountdown &&
-            (reachedOutro || inFallbackWindow)
-    }
+    val overlayState = remember(state) { state.toOverlayState() }
 
     // Gesture feedback states
     var showSeekFeedback by remember { mutableStateOf(false) }
@@ -168,8 +147,8 @@ fun VideoPlayerScreen(
             viewModel.onIntent(VideoPlayerIntent.SetControlsVisible(false))
         }
     }
-    LaunchedEffect(state.isPlaying, showPrimaryLoadingUi) {
-        if (!state.isPlaying || showPrimaryLoadingUi) {
+    LaunchedEffect(state.isPlaying, overlayState.showPrimaryLoadingUi) {
+        if (!state.isPlaying || overlayState.showPrimaryLoadingUi) {
             viewModel.onIntent(VideoPlayerIntent.SetControlsVisible(true))
         }
     }
@@ -264,60 +243,19 @@ fun VideoPlayerScreen(
                 },
             )
 
-            GestureFeedbackOverlay(
-                visible = showSeekFeedback,
-                icon = seekFeedbackIcon,
-                text = seekFeedbackText,
+            VideoPlayerOverlays(
+                state = state,
+                overlayState = overlayState,
+                feedbackVisible = showSeekFeedback,
+                feedbackIcon = seekFeedbackIcon,
+                feedbackText = seekFeedbackText,
                 overlayScrim = playerColors.overlayScrim,
                 overlayContent = playerColors.overlayContent,
-                modifier = Modifier.align(Alignment.Center),
-            )
-
-            SkipIntroOutroButtons(
-                playerState = state,
                 currentPosMs = currentPosMs,
-                overlayScrim = playerColors.overlayScrim,
-                overlayContent = playerColors.overlayContent,
-                onSeek = { viewModel.onIntent(VideoPlayerIntent.SeekTo(it)) },
-            )
-
-            NextEpisodeCountdownOverlay(
-                visible = showNextEpisodePrompt || state.showNextEpisodeCountdown,
-                nextEpisode = state.nextEpisode,
-                countdown = state.nextEpisodeCountdown,
-                isCountdownActive = state.showNextEpisodeCountdown,
-                overlayScrim = playerColors.overlayScrim,
-                overlayContent = playerColors.overlayContent,
-                onCancel = { 
-                    if (state.showNextEpisodeCountdown) {
-                        viewModel.onIntent(VideoPlayerIntent.CancelNextEpisodeCountdown)
-                    } else {
-                        viewModel.onIntent(VideoPlayerIntent.DismissNextEpisodePrompt)
-                    }
-                },
-                onPlayNow = { viewModel.onIntent(VideoPlayerIntent.PlayNextEpisode) },
-                modifier = Modifier.align(Alignment.CenterEnd),
-            )
-
-            ExpressiveVideoControls(
-                playerState = state,
-                showPrimaryLoadingUi = showPrimaryLoadingUi,
-                onPlayPause = { viewModel.onIntent(VideoPlayerIntent.TogglePlayPause) },
-                onSeek = { viewModel.onIntent(VideoPlayerIntent.SeekTo(it)) },
-                onSeekBy = { delta -> viewModel.onIntent(VideoPlayerIntent.SeekTo((state.currentPosition + delta).coerceIn(0L, state.duration))) },
-                onQualityClick = { viewModel.onIntent(VideoPlayerIntent.ShowQualityDialog) },
-                onAudioClick = { viewModel.onIntent(VideoPlayerIntent.ShowAudioDialog) },
-                onToggleMute = { viewModel.onIntent(VideoPlayerIntent.ToggleMute) },
-                onCastClick = { viewModel.onIntent(VideoPlayerIntent.HandleCastButtonClick) },
-                onSubtitlesClick = { viewModel.onIntent(VideoPlayerIntent.ShowSubtitleDialog) },
-                onAspectRatioChange = { viewModel.onIntent(VideoPlayerIntent.ChangeAspectRatio(it)) },
-                onPlaybackSpeedChange = { viewModel.onIntent(VideoPlayerIntent.SetPlaybackSpeed(it)) },
-                onBackClick = onClose,
+                onIntent = viewModel::onIntent,
+                onClose = onClose,
                 onPictureInPictureClick = onPictureInPictureClick,
                 supportsPip = supportsPip,
-                isVisible = state.isControlsVisible,
-                overlayContent = playerColors.overlayContent,
-                overlayScrim = playerColors.overlayScrim,
             )
         }
 
@@ -353,15 +291,6 @@ fun VideoPlayerScreen(
                 discoveryState = state.castDiscoveryState,
                 onDeviceSelect = { viewModel.onIntent(VideoPlayerIntent.SelectCastDevice(it)) },
                 onDismiss = { viewModel.onIntent(VideoPlayerIntent.HideCastDialog) },
-            )
-        }
-
-        state.qualityRecommendation?.let { recommendation ->
-            QualityRecommendationNotification(
-                recommendation = recommendation,
-                onAccept = { viewModel.onIntent(VideoPlayerIntent.AcceptQualityRecommendation) },
-                onDismiss = { viewModel.onIntent(VideoPlayerIntent.DismissQualityRecommendation) },
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp),
             )
         }
 
