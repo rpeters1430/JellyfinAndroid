@@ -22,6 +22,15 @@ We use GitHub to host code, track issues and feature requests, as well as accept
 6. **Update documentation** as needed
 7. **Create a pull request**
 
+### **Documentation Maintenance Checklist (Required for shipped features)**
+When a PR ships a user-visible feature or closes a roadmap item, update docs in the same PR:
+
+- [ ] Update `docs/plans/CURRENT_STATUS.md` feature truth table and any affected status rows.
+- [ ] Update `docs/plans/ROADMAP.md` by checking off, relabeling, or removing completed scope.
+- [ ] Update `docs/features/KNOWN_ISSUES.md` so each open issue links to exactly one canonical implementation plan.
+- [ ] Update `docs/plans/IMPROVEMENT_PLAN.md` if technical debt scope changed.
+- [ ] Set the same `Last verified on YYYY-MM-DD` date across all status/planning docs touched.
+
 ### **Branch Naming**
 - `feature/description` - for new features
 - `bugfix/description` - for bug fixes

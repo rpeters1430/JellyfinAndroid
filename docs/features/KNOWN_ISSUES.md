@@ -1,8 +1,8 @@
 # Jellyfin Android - Known Issues
 
-**Last Updated**: January 30, 2026
+**Last verified on**: 2026-04-22
 
-This document tracks user-facing bugs, workarounds, and fix status. For technical debt and code quality improvements, see [docs/IMPROVEMENT_PLAN.md](docs/IMPROVEMENT_PLAN.md). For feature status, see [CURRENT_STATUS.md](CURRENT_STATUS.md). For planned features, see [ROADMAP.md](ROADMAP.md).
+This document tracks user-facing bugs, workarounds, and fix status. For technical debt and code quality improvements, see [docs/plans/IMPROVEMENT_PLAN.md](../plans/IMPROVEMENT_PLAN.md). For feature status, see [CURRENT_STATUS.md](../plans/CURRENT_STATUS.md). For planned features, see [ROADMAP.md](../plans/ROADMAP.md).
 
 ---
 
@@ -52,7 +52,8 @@ This document tracks user-facing bugs, workarounds, and fix status. For technica
 - None for users - token refresh is automatic
 - If experiencing network timeouts, restart app to force new session
 
-**Fix Status**: 🔜 Planned - [IMPROVEMENT_PLAN Priority 8](docs/IMPROVEMENT_PLAN.md)
+**Fix Status**: 🔜 Planned
+**Canonical Plan**: [IMPROVEMENT_PLAN §Phase C](../plans/IMPROVEMENT_PLAN.md#phase-c-reliability--error-handling-high)
 **Target**: Phase 3 - Code Quality
 
 **Code Location**:
@@ -86,41 +87,43 @@ private fun backoff(attempt: Int) {
 - Use screen timeout settings to keep app active longer
 - Consider using Jellyfin web player or other clients for music
 
-**Fix Status**: 🔜 In Progress - [ROADMAP §1.1](ROADMAP.md#11-music-background-playback)
+**Fix Status**: 🔜 In Progress
+**Canonical Plan**: [ROADMAP §1.1](../plans/ROADMAP.md#11-music-background-playback)
 **Target**: Phase 1 - Complete Core Features
 **Effort**: 5-7 days
 
 ---
 
-### #7: Offline Downloads Non-Functional
+### #7: Offline Downloads Reliability Edge Cases
 
-**Impact**: Cannot download media for offline viewing
-**Affected Users**: All users attempting offline downloads
+**Impact**: Core offline downloads work, but long-running/background edge cases can still fail
+**Affected Users**: Subset of users on constrained networks or aggressive OEM background policies
 **Files**:
 - `app/src/main/java/com/rpeters/jellyfin/data/offline/OfflineDownloadManager.kt`
 - `app/src/main/java/com/rpeters/jellyfin/ui/downloads/DownloadsScreen.kt`
 
 **Details**:
-- Downloads UI screens exist but core download logic is incomplete
-- No WorkManager integration for background downloads
-- No download progress tracking
-- No offline playback detection in `VideoPlayerViewModel`
-- No storage management UI
-- No WiFi-only download option
+- Offline downloads are implemented and generally functional
+- Remaining risk is reliability under prolonged background constraints and intermittent connectivity
+- Validation focus is WorkManager constraints, retry behavior, and resume handling after process death
 
 **Workaround**:
-- Use online streaming only
-- Ensure stable network connection for uninterrupted playback
-- Pre-buffer content by starting playback before watching
+- Keep app unrestricted by battery optimization when downloading large libraries
+- Prefer stable Wi-Fi for large jobs
 
-**Fix Status**: 🔜 In Progress - [ROADMAP §1.2](ROADMAP.md#12-offline-downloads)
-**Target**: Phase 1 - Complete Core Features
-**Effort**: 5-7 days
+**Fix Status**: 🔜 Planned
+**Canonical Plan**: [IMPROVEMENT_PLAN §Phase C](../plans/IMPROVEMENT_PLAN.md#phase-c-reliability--error-handling-high)
+**Target**: Reliability hardening
+**Effort**: 2-4 days of validation + fixes
+
+**Verification**:
+- Feature marked **Complete** in [CURRENT_STATUS truth table](../plans/CURRENT_STATUS.md#feature-truth-table-canonical)
+- Roadmap item is explicitly marked complete (section 1.2)
 
 **Recently Fixed** (January 2026):
 - ✅ Download hanging bug (infinite DataStore Flow collection) - Fixed
 - ✅ Download ID mismatch (placeholder UUID vs real ID) - Fixed
-- See [IMPROVEMENT_PLAN](docs/IMPROVEMENT_PLAN.md) for details
+- See [IMPROVEMENT_PLAN](../plans/IMPROVEMENT_PLAN.md) for details
 
 ---
 
@@ -143,9 +146,10 @@ private fun backoff(attempt: Int) {
 
 **Workaround**:
 - None for users
-- Developers: Refactor screens into smaller composables (see [ROADMAP §3.1](ROADMAP.md#31-refactor-large-files))
+- Developers: Refactor screens into smaller composables
 
-**Fix Status**: 🔜 Planned - [ROADMAP §3.1](ROADMAP.md#31-refactor-large-files)
+**Fix Status**: 🔜 Planned
+**Canonical Plan**: [IMPROVEMENT_PLAN §Phase F](../plans/IMPROVEMENT_PLAN.md#phase-f-code-quality--technical-debt-carried-forward)
 **Target**: Phase 3 - Code Quality
 **Effort**: 3-5 days
 
@@ -166,9 +170,10 @@ private fun backoff(attempt: Int) {
 
 **Workaround**:
 - Ignore warnings - they are non-critical
-- Developers: See [ROADMAP §3.2](ROADMAP.md#32-fix-build-warnings)
+- Developers: See canonical plan below
 
-**Fix Status**: 🔜 Planned - [ROADMAP §3.2](ROADMAP.md#32-fix-build-warnings)
+**Fix Status**: 🔜 Planned
+**Canonical Plan**: [IMPROVEMENT_PLAN §Phase F](../plans/IMPROVEMENT_PLAN.md#phase-f-code-quality--technical-debt-carried-forward)
 **Target**: Phase 3 - Code Quality
 **Effort**: 2-3 hours
 
@@ -196,7 +201,8 @@ private fun backoff(attempt: Int) {
 - Restart app if stuck in navigation dead-end
 - Report specific navigation issues on GitHub
 
-**Fix Status**: 🔜 Planned - [ROADMAP §2.1](ROADMAP.md#21-d-pad-navigation-audit)
+**Fix Status**: 🔜 Planned
+**Canonical Plan**: [ROADMAP §2.1](../plans/ROADMAP.md#21-d-pad-navigation-audit)
 **Target**: Phase 2 - Android TV Polish
 **Effort**: 3-5 days
 
@@ -311,7 +317,7 @@ For a summary of active issues and overall project status, please refer to the *
 
 ### Before Reporting
 1. **Check this document** to see if the issue is already known
-2. **Check [ROADMAP.md](ROADMAP.md)** to see if the feature is in progress
+2. **Check [ROADMAP.md](../plans/ROADMAP.md)** to see if the feature is in progress
 3. **Update to latest version** to ensure issue still exists
 4. **Check GitHub issues** for existing reports
 
@@ -372,10 +378,10 @@ We welcome contributions to fix these issues! See [CONTRIBUTING.md](CONTRIBUTING
 
 ## Related Documentation
 
-- **[CURRENT_STATUS.md](CURRENT_STATUS.md)** - What works now, feature status matrix
-- **[ROADMAP.md](ROADMAP.md)** - Future features and development roadmap
+- **[CURRENT_STATUS.md](../plans/CURRENT_STATUS.md)** - What works now, feature status matrix
+- **[ROADMAP.md](../plans/ROADMAP.md)** - Future features and development roadmap
 - **[UPGRADE_PATH.md](UPGRADE_PATH.md)** - Dependency upgrade strategy
-- **[docs/IMPROVEMENT_PLAN.md](docs/IMPROVEMENT_PLAN.md)** - Technical debt and code quality focus
+- **[docs/plans/IMPROVEMENT_PLAN.md](../plans/IMPROVEMENT_PLAN.md)** - Technical debt and code quality focus
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute fixes
 - **[CLAUDE.md](CLAUDE.md)** - Development guidelines and architecture
 
@@ -383,7 +389,7 @@ We welcome contributions to fix these issues! See [CONTRIBUTING.md](CONTRIBUTING
 
 ## Notes
 
-- **User vs Developer Issues**: This document focuses on user-facing bugs. For technical debt and code quality issues, see [docs/IMPROVEMENT_PLAN.md](docs/IMPROVEMENT_PLAN.md).
+- **User vs Developer Issues**: This document focuses on user-facing bugs. For technical debt and code quality issues, see [docs/plans/IMPROVEMENT_PLAN.md](../plans/IMPROVEMENT_PLAN.md).
 - **Priority Definitions**:
   - 🔴 **Critical**: App crashes, data loss, security issues
   - 🟠 **High**: Major functionality broken, affects all users, potential data corruption

@@ -1,8 +1,8 @@
 # Jellyfin Android - Roadmap
 
-**Last Updated**: February 4, 2026
+**Last verified on**: 2026-04-22
 
-> **Quick Links**: [Feature Status](CURRENT_STATUS.md) | [Known Issues](KNOWN_ISSUES.md) | [Upgrade Path](UPGRADE_PATH.md)
+> **Quick Links**: [Feature Status](CURRENT_STATUS.md) | [Known Issues](../features/KNOWN_ISSUES.md) | [Upgrade Path](UPGRADE_PATH.md)
 
 A clear, actionable improvement plan for the Jellyfin Android client.
 
@@ -28,18 +28,18 @@ Tasks:
 
 Files: `ui/player/audio/AudioService.kt`, `ui/components/MiniPlayer.kt`, `ui/screens/NowPlayingScreen.kt`
 
-### 1.2 Offline Downloads
-**Priority**: High | **Effort**: 5-7 days
+### 1.2 Offline Downloads — COMPLETE ✅
+**Status**: Verified complete (February 2026) per [CURRENT_STATUS truth table](CURRENT_STATUS.md#feature-truth-table-canonical)
 
-Tasks:
-- [ ] Complete `OfflineDownloadManager.kt` download logic
-- [ ] Add WorkManager for background downloads
-- [ ] Implement download progress tracking
-- [ ] Add offline playback detection in `VideoPlayerViewModel`
-- [ ] Add storage management UI
-- [ ] Support WiFi-only downloads
+Completed:
+- [x] `OfflineDownloadManager.kt` core download logic
+- [x] WorkManager background downloads
+- [x] Download progress tracking + notifications
+- [x] Offline playback routing in `VideoPlayerViewModel`
+- [x] Storage management UI + delete/cleanup
+- [x] Wi-Fi-only download option
 
-Files: `data/offline/OfflineDownloadManager.kt`, `ui/downloads/DownloadsScreen.kt`
+Follow-up reliability fixes are tracked in [IMPROVEMENT_PLAN §Phase C](IMPROVEMENT_PLAN.md#phase-c-reliability--error-handling-high).
 
 ### 1.3 Chromecast - COMPLETE
 **Status**: Verified and enhanced (January 2026)
@@ -70,9 +70,9 @@ Files: `ui/player/VideoPlayerActivity.kt`, `ui/player/PipActionReceiver.kt`
 
 ---
 
-## Phase 1.5: Transcoding & Playback System Overhaul
+## Phase 1.5: Transcoding & Playback System Overhaul — COMPLETED ✅
 
-> **Full Details**: [docs/IMPROVEMENT_PLAN.md - Phase A](docs/IMPROVEMENT_PLAN.md#phase-a-transcoding--playback-system-overhaul-critical)
+> **Full Details**: [IMPROVEMENT_PLAN.md - Phase A](IMPROVEMENT_PLAN.md#phase-a-transcoding--playback-system-overhaul-completed-)
 
 The transcoding system works for basic playback but has architectural gaps that cause unnecessary transcoding and degrade quality. This phase addresses the critical server communication and decision-making issues.
 
@@ -80,10 +80,10 @@ The transcoding system works for basic playback but has architectural gaps that 
 **Priority**: Critical | **Effort**: 5-7 days
 
 Tasks:
-- [ ] Implement Jellyfin DeviceProfile specification (send device capabilities to server)
-- [ ] Fix broken network quality assessment (currently hardcoded to HIGH)
-- [ ] Send AudioStreamIndex/SubtitleStreamIndex to server for multilingual content
-- [ ] Implement transcoding session lifecycle (heartbeat, cleanup)
+- [x] Implement Jellyfin DeviceProfile specification (send device capabilities to server)
+- [x] Fix broken network quality assessment (currently hardcoded to HIGH)
+- [x] Send AudioStreamIndex/SubtitleStreamIndex to server for multilingual content
+- [x] Implement transcoding session lifecycle (heartbeat, cleanup)
 
 Files: `data/DeviceCapabilities.kt`, `data/repository/JellyfinStreamRepository.kt`, `data/playback/EnhancedPlaybackManager.kt`
 
@@ -91,10 +91,10 @@ Files: `data/DeviceCapabilities.kt`, `data/repository/JellyfinStreamRepository.k
 **Priority**: High | **Effort**: 3-5 days
 
 Tasks:
-- [ ] Make bitrate thresholds configurable (WiFi/Cellular/LAN separate)
-- [ ] Add default playback quality user preference
-- [ ] Add adaptive bitrate during playback (detect buffering, auto-reduce quality)
-- [ ] Unify codec detection logic (3 separate implementations → 1 source of truth)
+- [x] Make bitrate thresholds configurable (WiFi/Cellular/LAN separate)
+- [x] Add default playback quality user preference
+- [x] Add adaptive bitrate during playback (detect buffering, auto-reduce quality)
+- [x] Unify codec detection logic (3 separate implementations → 1 source of truth)
 
 Files: `data/playback/EnhancedPlaybackManager.kt`, `ui/player/VideoPlayerViewModel.kt`, `data/DeviceCapabilities.kt`
 
@@ -102,10 +102,10 @@ Files: `data/playback/EnhancedPlaybackManager.kt`, `ui/player/VideoPlayerViewMod
 **Priority**: Medium | **Effort**: 2-3 days
 
 Tasks:
-- [ ] Replace string-matching fallback detection with ExoPlayer error codes
-- [ ] Distinguish codec errors vs bitrate errors vs resolution errors
-- [ ] Allow multiple fallback attempts (currently limited to 1)
-- [ ] Try lower quality before switching to full transcoding
+- [x] Replace string-matching fallback detection with ExoPlayer error codes
+- [x] Distinguish codec errors vs bitrate errors vs resolution errors
+- [x] Allow multiple fallback attempts (currently limited to 1)
+- [x] Try lower quality before switching to full transcoding
 
 Files: `ui/player/VideoPlayerViewModel.kt`
 
@@ -171,10 +171,10 @@ Tasks:
 ### 3.0 Security & Reliability
 **Priority**: High | **Effort**: 5-7 days
 
-> **Full Details**: [docs/IMPROVEMENT_PLAN.md - Phase B & C](docs/IMPROVEMENT_PLAN.md#phase-b-security-hardening-high)
+> **Full Details**: [IMPROVEMENT_PLAN.md - Phase B & C](IMPROVEMENT_PLAN.md#phase-b-security-hardening-high)
 
 Tasks:
-- [ ] Remove API tokens from URL query parameters (CWE-598) - use Authorization header
+- [x] Remove API tokens from URL query parameters (CWE-598) - use Authorization header
 - [ ] Restrict cleartext HTTP to RFC 1918 private networks only
 - [ ] Add progress sync resilience for network drops (queue and retry)
 - [ ] Fix Cast session initialization race condition
@@ -236,7 +236,7 @@ Target: 70%+ for ViewModels and Repositories
 
 ## Known Limitations
 
-> **Note**: For detailed bug tracking with workarounds, see [KNOWN_ISSUES.md](KNOWN_ISSUES.md)
+> **Note**: For detailed bug tracking with workarounds, see [KNOWN_ISSUES.md](../features/KNOWN_ISSUES.md)
 
 ### Material 3 Components
 - **Carousel**: Using official Material 3 carousel API via `HorizontalUncontainedCarousel`
@@ -290,7 +290,7 @@ When completing a task:
 
 ## Related Documentation
 
-- [docs/IMPROVEMENT_PLAN.md](docs/IMPROVEMENT_PLAN.md) - Detailed technical improvement plan (transcoding, security, accessibility)
+- [IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md) - Detailed technical improvement plan (transcoding, security, accessibility)
 - [CLAUDE.md](CLAUDE.md) - Development guidelines
 - [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution process
 - [MATERIAL3_EXPRESSIVE.md](MATERIAL3_EXPRESSIVE.md) - M3 Expressive components

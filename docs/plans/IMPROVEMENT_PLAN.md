@@ -1,10 +1,12 @@
 # Jellyfin Android Improvement Plan
 
-**Last Updated**: February 4, 2026
+**Last verified on**: 2026-04-22
 **Scope**: Full codebase audit covering transcoding/playback, security, accessibility, UX, and code quality
 **Previous Version**: January 30, 2026 (see docs/archive/ for older plans)
 
-> **Note**: For user-facing bugs with workarounds, see [KNOWN_ISSUES.md](../KNOWN_ISSUES.md). For feature roadmap, see [ROADMAP.md](../ROADMAP.md). This document focuses on technical debt, architecture improvements, and code quality.
+> **Note**: For user-facing bugs with workarounds, see [KNOWN_ISSUES.md](../features/KNOWN_ISSUES.md). For feature roadmap, see [ROADMAP.md](ROADMAP.md). This document focuses on technical debt, architecture improvements, and code quality.
+
+> **Status alignment**: Transcoding/playback overhaul and offline downloads are treated as completed baseline work; only follow-up hardening remains open.
 
 ---
 
@@ -389,7 +391,7 @@ Based on user impact and technical debt:
 
 ## Related Documentation
 
-- [KNOWN_ISSUES.md](../KNOWN_ISSUES.md)
-- [ROADMAP.md](../ROADMAP.md)
+- [KNOWN_ISSUES.md](../features/KNOWN_ISSUES.md)
+- [ROADMAP.md](ROADMAP.md)
 - [TRANSCODING_FIX_SUMMARY.md](../TRANSCODING_FIX_SUMMARY.md)
 - [TESTING_GUIDE.md](TESTING_GUIDE.md) - ViewModel testing patterns and best practices

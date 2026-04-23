@@ -1,12 +1,22 @@
 # Jellyfin Android - Current Status
 
-**Last Updated**: March 30, 2026
+**Last verified on**: 2026-04-22
 
 > **Quick Links**: [Feature Status](CURRENT_STATUS.md) | [Known Issues](../features/KNOWN_ISSUES.md) | [Roadmap](ROADMAP.md) | [Upgrade Path](UPGRADE_PATH.md)
 
 This document provides a comprehensive snapshot of what works RIGHT NOW in the Jellyfin Android client. For planned features and improvements, see [ROADMAP.md](ROADMAP.md). For known bugs and workarounds, see [KNOWN_ISSUES.md](../features/KNOWN_ISSUES.md). For dependency upgrade strategy, see [UPGRADE_PATH.md](UPGRADE_PATH.md).
 
 ---
+
+## Feature Truth Table (Canonical)
+
+| Status | Meaning | Current Features |
+|---|---|---|
+| **Complete** | Implemented and validated in current app behavior | Authentication, Secure Storage, Certificate Pinning, Video Playback, Adaptive Bitrate, Transcoding Diagnostics, AI Assistant, AI Summaries, Library Browsing, Search, Favorites, Resume Playback, Picture-in-Picture, Chromecast, Auto-Play Next Episode, **Offline Downloads**, Firebase Integration, Material 3 UI, Adaptive Navigation, Recently Added Carousel |
+| **Partial** | User-visible functionality exists but key capabilities are still missing | Music Playback, Android TV |
+| **Not started** | Not yet implemented (backlog only) | Live TV & DVR, Sync Play, Multi-Profile Support, Home Screen Widgets |
+
+This table is the source of truth used by [ROADMAP.md](ROADMAP.md), [KNOWN_ISSUES.md](../features/KNOWN_ISSUES.md), and [IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md).
 
 ## Feature Status Matrix
 
@@ -166,14 +176,13 @@ This document provides a comprehensive snapshot of what works RIGHT NOW in the J
 
 ### Active Development
 - 🔄 Music background playback (in progress - [ROADMAP §1.1](ROADMAP.md))
-- 🔄 Offline downloads reliability polish (Wi-Fi-only WorkManager constraints and long-run validation)
 - 🔄 Android TV D-pad navigation testing (in progress - [ROADMAP §2.1](ROADMAP.md))
 
 ### Code Quality Focus
 - 🎯 Test coverage target: 70%+ for ViewModels and Repositories
 - 🎯 Refactoring large composables (ongoing - [ROADMAP §3.1](ROADMAP.md))
 - 🎯 Fixing build warnings (planned - [ROADMAP §3.2](ROADMAP.md))
-- 🎯 Auth refresh retry improvements (planned - [KNOWN_ISSUES #5](../features/KNOWN_ISSUES.md))
+- 🎯 Auth refresh retry improvements (planned - [IMPROVEMENT_PLAN §Phase C](IMPROVEMENT_PLAN.md#phase-c-reliability--error-handling-high))
 
 ---
 
