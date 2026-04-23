@@ -4,6 +4,7 @@ import com.rpeters.jellyfin.di.ApplicationScope
 import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -43,12 +44,24 @@ class JellyfinAuthRefreshManager @Inject constructor(
     override fun refreshAfterUnauthorized(attempt: Int): String? {
         val trigger = "$REFRESH_TRIGGER_401-$attempt"
         val result = runBlocking {
-            withTimeoutOrNull(REFRESH_TIMEOUT_MS) {
-                runSingleFlightRefresh(trigger = trigger)
+            try {
+                withTimeoutOrNull(REFRESH_TIMEOUT_MS) {
+                    runSingleFlightRefresh(trigger = trigger)
+                } ?: run {
+                    clearInFlightRefresh()
+                    logTelemetry("failure", trigger, attempt, "timeout")
+                    RefreshResult.Failure("timeout")
+                }
+            } catch (error: Throwable) {
+                if (error is TimeoutCancellationException) {
+                    clearInFlightRefresh()
+                    logTelemetry("failure", trigger, attempt, "timeout_exception")
+                    return@runBlocking RefreshResult.Failure("timeout_exception")
+                }
+                clearInFlightRefresh()
+                SecureLogger.w(TAG, "Auth refresh exception for trigger=$trigger", error)
+                RefreshResult.Failure("exception")
             }
-        } ?: run {
-            logTelemetry("failure", trigger, attempt, "timeout")
-            RefreshResult.Failure("timeout")
         }
 
         return when (result) {
@@ -68,12 +81,16 @@ class JellyfinAuthRefreshManager @Inject constructor(
             }
             inFlightRefresh = created
             created.invokeOnCompletion {
-                applicationScope.launch {
-                    singleFlightMutex.withLock {
+                if (singleFlightMutex.tryLock()) {
+                    try {
                         if (inFlightRefresh === created) {
                             inFlightRefresh = null
                         }
+                    } finally {
+                        singleFlightMutex.unlock()
                     }
+                } else {
+                    applicationScope.launch { clearInFlightRefresh(expected = created, cancel = false) }
                 }
             }
             created
@@ -106,6 +123,19 @@ class JellyfinAuthRefreshManager @Inject constructor(
 
         SecureLogger.w(TAG, "Auth refresh exhausted retries for trigger=$trigger durationMs=$elapsed")
         return RefreshResult.Failure("retry_exhausted")
+    }
+
+    private suspend fun clearInFlightRefresh(expected: Deferred<RefreshResult>? = null, cancel: Boolean = true) {
+        singleFlightMutex.withLock {
+            val current = inFlightRefresh ?: return
+            if (expected != null && current !== expected) {
+                return
+            }
+            if (cancel) {
+                current.cancel()
+            }
+            inFlightRefresh = null
+        }
     }
 
     private fun logTelemetry(
