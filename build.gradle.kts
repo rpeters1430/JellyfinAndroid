@@ -51,7 +51,15 @@ tasks.register("verifyWarningBudget") {
         val warningCounts = baselineByCategory.keys.associateWith { 0 }.toMutableMap()
         val uncategorizedWarnings = mutableListOf<String>()
 
-        val documentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder()
+        val documentBuilderFactory = DocumentBuilderFactory.newInstance().apply {
+            setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
+            setFeature("http://xml.org/sax/features/external-general-entities", false)
+            setFeature("http://xml.org/sax/features/external-parameter-entities", false)
+            setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
+            isXIncludeAware = false
+            setExpandEntityReferences(false)
+        }
+        val documentBuilder = documentBuilderFactory.newDocumentBuilder()
         val document = documentBuilder.parse(lintReport)
         val issueNodes = document.getElementsByTagName("issue")
 
@@ -94,7 +102,11 @@ tasks.register("verifyWarningBudget") {
             .mapNotNull { (category, baseline) ->
                 val current = warningCounts.getValue(category)
                 if (current > baseline) "$category: $current > baseline $baseline" else null
-            }
+            } + if (uncategorizedWarnings.isNotEmpty()) {
+            "uncategorized: ${uncategorizedWarnings.distinct().size} > baseline 0"
+        } else {
+            emptyList<String>()
+        }
 
         if (regressions.isNotEmpty()) {
             throw GradleException(
