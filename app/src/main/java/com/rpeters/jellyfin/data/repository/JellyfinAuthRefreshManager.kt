@@ -22,6 +22,7 @@ class JellyfinAuthRefreshManager @Inject constructor(
 ) : IJellyfinAuthRefreshManager {
 
     private val singleFlightMutex = Mutex()
+
     @Volatile
     private var inFlightRefresh: Deferred<RefreshResult>? = null
 

@@ -149,6 +149,5 @@ class JellyfinAuthInterceptor @Inject constructor(
         private const val HEADER_USER_AGENT = "User-Agent"
         private const val MAX_AUTH_RETRIES = 3
         private val AUTH_PATHS = listOf("/Users/Authenticate", "/Sessions")
-
     }
 }
