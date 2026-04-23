@@ -1,6 +1,6 @@
 # Jellyfin Android - Known Issues
 
-**Last verified on**: 2026-04-22
+**Last verified on**: 2026-04-23
 
 This document tracks user-facing bugs, workarounds, and fix status. For technical debt and code quality improvements, see [docs/plans/IMPROVEMENT_PLAN.md](../plans/IMPROVEMENT_PLAN.md). For feature status, see [CURRENT_STATUS.md](../plans/CURRENT_STATUS.md). For planned features, see [ROADMAP.md](../plans/ROADMAP.md).
 
@@ -127,9 +127,32 @@ private fun backoff(attempt: Int) {
 
 ---
 
+### #8: Subtitle Feature Gaps (External + Styling + Sync)
+
+**Impact**: Incomplete subtitle experience for users with external subtitle files and styled subtitle formats
+**Affected Users**: Users needing external subtitles, ASS/SSA styling, or timing adjustments
+**Files**:
+- `app/src/main/java/com/rpeters/jellyfin/ui/player/VideoPlayerViewModel.kt`
+
+**Details**:
+- External subtitle support remains incomplete
+- ASS/SSA styling may be lost when converted/rendered as simpler formats
+- No in-player subtitle sync delay setting for manual correction
+
+**Workaround**:
+- Use embedded server subtitles where available
+- Prefer content with pre-synced subtitles
+
+**Fix Status**: 🔜 Planned
+**Canonical Plan**: [ROADMAP §1.6.1](../plans/ROADMAP.md#161-subtitle-system)
+**Target**: Subtitle system improvements
+**Effort**: 3-5 days
+
+---
+
 ## 🟢 LOW PRIORITY Issues (Minor Issues)
 
-### #8: Large Composables Impact Recomposition Performance
+### #9: Large Composables Impact Recomposition Performance
 
 **Impact**: Slower UI updates, increased memory during recomposition
 **Affected Users**: All users (noticeable on lower-end devices)
@@ -155,7 +178,7 @@ private fun backoff(attempt: Int) {
 
 ---
 
-### #9: Build Warnings (~150 Warnings)
+### #10: Build Warnings (~150 Warnings)
 
 **Impact**: Developer experience, potential future issues
 **Affected Users**: Developers only
@@ -179,7 +202,7 @@ private fun backoff(attempt: Int) {
 
 ---
 
-### #10: Android TV D-Pad Navigation Not Fully Tested
+### #11: Android TV D-Pad Navigation Not Fully Tested
 
 **Impact**: Potential navigation issues on Android TV
 **Affected Users**: Android TV users

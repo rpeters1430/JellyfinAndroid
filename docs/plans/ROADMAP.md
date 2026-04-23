@@ -1,6 +1,6 @@
 # Jellyfin Android - Roadmap
 
-**Last verified on**: 2026-04-22
+**Last verified on**: 2026-04-23
 
 > **Quick Links**: [Feature Status](CURRENT_STATUS.md) | [Known Issues](../features/KNOWN_ISSUES.md) | [Upgrade Path](UPGRADE_PATH.md)
 
@@ -128,12 +128,29 @@ Files: `ui/player/VideoPlayerViewModel.kt`
 **Priority**: Medium | **Effort**: 3-5 days
 
 Tasks:
-- [ ] Add preferred audio language setting (currently hardcoded to English)
-- [ ] Add auto-play next episode toggle with configurable countdown
+- [x] Add preferred audio language setting
+- [x] Add auto-play next episode toggle with configurable countdown
 - [ ] Add auto-skip intro/outro preference
-- [ ] Add resume playback mode (Always/Ask/Never)
+- [x] Add resume playback mode (Always/Ask/Never)
 
 Files: `ui/player/VideoPlayerViewModel.kt`, new DataStore preferences
+
+Status note:
+- Playback preferences are now mostly complete.
+- Remaining gap: auto-skip intro/outro preference and UI behavior wiring.
+
+---
+
+## New Priority List (Q2 2026 Refresh)
+
+Based on current shipped capabilities and open reliability gaps, this is the recommended near-term execution order:
+
+1. **Music background playback completion** (MediaSession + notification/lockscreen controls)
+2. **Auth interceptor non-blocking refresh** (remove `runBlocking` + `Thread.sleep` path)
+3. **Android TV D-pad hardening** (focus dead-ends and remote-only journeys)
+4. **Offline downloads reliability validation** (OEM background limits + long-run retries)
+5. **Subtitle system upgrades** (external subtitles, ASS/SSA styling, sync delay)
+6. **Accessibility and empty states sweep** (TalkBack content descriptions + retry UX)
 
 ---
 
