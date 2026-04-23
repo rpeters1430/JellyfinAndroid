@@ -52,6 +52,9 @@ jobs:
       - name: Run lint
         run: ./gradlew --no-daemon --stacktrace :app:lintDebug
 
+      - name: Enforce warning budget baseline
+        run: ./gradlew --no-daemon --stacktrace verifyWarningBudget
+
       - name: Upload debug APK
         if: always()
         uses: actions/upload-artifact@v4
@@ -81,5 +84,7 @@ jobs:
             app/build/reports/lint-results-debug.*
             app/build/reports/lint-results-*.html
             app/build/reports/lint-results-*.xml
+            app/build/reports/lint-results-*.sarif
+            app/build/reports/warnings/warning-budget-summary.md
           if-no-files-found: warn
           retention-days: 14

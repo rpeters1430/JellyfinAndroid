@@ -1,8 +1,49 @@
 # Jellyfin Android - Dependency Upgrade Path
 
-**Last Updated**: March 7, 2026
+**Last Updated**: April 22, 2026
 
 This document outlines the dependency upgrade strategy, current status, and roadmap for modernizing the Jellyfin Android client's dependencies. For current feature status, see [CURRENT_STATUS.md](CURRENT_STATUS.md). For known bugs, see [KNOWN_ISSUES.md](../features/KNOWN_ISSUES.md).
+
+---
+
+## Governance Rules (Stable-First Policy)
+
+1. **Stable preferred by default**: All dependencies must use stable releases unless a documented exception is approved.
+2. **Alpha/Beta allowed only for explicit blockers**:
+   - **Material3 family**: allowed only while Expressive components remain unavailable in stable.
+   - **Paging**: allowed only while required bug fixes/performance behavior are unavailable on latest stable.
+3. **Exception documentation is mandatory**: Every alpha/beta dependency must include entry criteria, exit criteria, and rollback steps in this document.
+4. **No silent upgrades**: Pre-release dependency changes require a short risk assessment in the PR description.
+
+---
+
+## Warning Management Plan
+
+### Warning categories
+
+Warnings are tracked in four CI categories:
+
+- **Deprecation**: deprecated API usage, old annotations, and deprecated Gradle/plugin APIs.
+- **Nullability**: platform type/nullness mismatches and nullable/nonnull contract warnings.
+- **API migration**: compatibility warnings tied to API-level or AndroidX migration work.
+- **Tooling**: lint/build-tooling, dependency metadata, and Gradle ecosystem warnings.
+
+### Warning budget trend target
+
+- **Target**: reduce each category baseline by **10% every sprint**.
+- **Guardrail**: CI fails if any category exceeds the current baseline.
+- **Cadence**:
+  - Weekly: monitor trend from CI artifact `warning-budget-summary.md`.
+  - Sprint boundary: reset baseline downward by 10% if target is met.
+
+### Current warning baseline (CI enforced)
+
+| Category | Baseline | Trend Target |
+|---|---:|---|
+| Deprecation | 24 | -10% per sprint |
+| Nullability | 16 | -10% per sprint |
+| API migration | 18 | -10% per sprint |
+| Tooling | 12 | -10% per sprint |
 
 ---
 
@@ -27,8 +68,6 @@ These dependencies are on stable releases and current versions:
 | **Desugar JDK Libs** | 2.1.5 | Java Compatibility | Latest stable |
 | **JUnit** | 4.13.2 | Testing | Latest stable |
 | **MockK** | 1.14.9 | Testing | Latest stable |
-| **Paging** | 3.4.1 | Paging | Latest stable |
-
 **Action**: ✅ **None** - These dependencies are current and stable.
 
 ---
@@ -54,7 +93,22 @@ These dependencies are intentionally on alpha/beta versions for specific reasons
 
 **Risk**: Low - Material 3 alphas are generally stable, and the app has been tested thoroughly with these versions.
 
-**Action**: 🔒 **Block upgrade** until Expressive components reach stable.
+**Action**: 🔒 **Block downgrade to stable-only stack** until Expressive components reach stable.
+
+**Entry criteria (continue alpha usage)**:
+1. At least one production UI flow depends on Expressive-only APIs/components.
+2. Alpha regressions are tracked and triaged within 48 hours.
+3. Smoke/regression UI tests pass for phone/tablet/foldable layouts.
+
+**Exit criteria (move to stable)**:
+1. Expressive parity is available in stable channels.
+2. No blocking issues remain after one full regression pass.
+3. Build/lint/test pass with stable Material3 family for one release candidate cycle.
+
+**Rollback plan**:
+1. Revert Material3 family versions to previous known-good alpha set in `gradle/libs.versions.toml`.
+2. Disable new expressive widgets behind feature flags if needed.
+3. Re-run `:app:assembleDebug`, `:app:testDebugUnitTest`, and `:app:lintDebug` before redeploy.
 
 ---
 
@@ -70,6 +124,7 @@ These dependencies are intentionally on alpha/beta versions for specific reasons
 | **AndroidX TV Material** | 1.1.0-alpha01 | 1.0.0 | TV enhancements | ⚠️ Evaluate |
 | **Lifecycle Runtime** | 2.11.0-alpha01 | 2.10.x | New lifecycle/runtime APIs | ⚠️ Evaluate |
 | **Media3** | 1.10.0-beta01 | 1.9.x | New playback/cast/session updates | ⚠️ Beta rollout validation |
+| **Paging** | 3.5.0-beta01 | 3.4.1 | Bug fixes/performance updates | ⚠️ Controlled beta usage |
 
 **Reason**: These dependencies are on alpha versions for:
 - **Core KTX, Activity Compose**: Latest feature set for modern Android development
@@ -89,6 +144,25 @@ These dependencies are intentionally on alpha/beta versions for specific reasons
 
 **Action**: 📋 **Evaluate on case-by-case basis** - See Phase 2 below.
 
+#### Paging (Beta Allowed with Controls)
+
+**Current**: `3.5.0-beta01` → **Stable fallback**: `3.4.1`
+
+**Entry criteria (beta allowed)**:
+1. Known issue in `3.4.1` is reproducible and addressed in `3.5.0-beta01`.
+2. Paging behavior validation passes (load states, retries, offline/online transitions).
+3. No crash increase in paging-related stack traces after rollout.
+
+**Exit criteria (return to stable-preferred state)**:
+1. Equivalent stable release available with required fix set.
+2. One sprint of production monitoring confirms no regressions on stable.
+3. Warning budget remains at or below baseline after migration.
+
+**Rollback plan**:
+1. Revert `paging` version in `gradle/libs.versions.toml` to `3.4.1`.
+2. Re-run paging-focused unit/integration tests.
+3. Roll back release if ANR/crash/session quality degrades.
+
 ---
 
 ### ✅ Recently Upgraded to Stable
@@ -97,7 +171,8 @@ The following upgrades are now complete:
 
 | Dependency | Previous Version | Current Version | Notes |
 |------------|------------------|-----------------|-------|
-| **Paging** | 3.4.0-rc01 | 3.4.1 | Stable release now in use |
+| **Core KTX** | 1.18.0-rc01 | 1.18.0 | Stable release now in use |
+| **Activity Compose** | 1.13.0-rc01 | 1.13.0 | Stable release now in use |
 
 **Action**: ✅ **No immediate upgrades pending** in this category.
 
@@ -121,11 +196,13 @@ The following upgrades are now complete:
 **Effort**: Minimal
 **Risk**: Low
 
-#### Upgrade Paging to Stable (Completed)
+#### Warning Reduction Program (In Progress)
 
-**Current**: `3.4.1` (stable)
+**Current state**: CI baseline enforcement active via `verifyWarningBudget`.
 
-**Status**: ✅ Completed (Jan 2026). No further action required.
+**Goal**: Reduce warning baseline by 10% each sprint until each category reaches zero or practical minimum.
+
+**Status**: 🚧 Ongoing through 2026 dependency stabilization phases.
 
 ---
 

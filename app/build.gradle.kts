@@ -155,6 +155,15 @@ android {
         }
     }
 
+    lint {
+        // CI consumes XML output for warning budget checks.
+        xmlReport = true
+        htmlReport = true
+        sarifReport = true
+        abortOnError = true
+        warningsAsErrors = false
+    }
+
     packaging {
         resources {
             excludes += "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
@@ -362,4 +371,3 @@ tasks.register<JacocoReport>("jacocoTestReport") {
 }
 
 apply(plugin = "jacoco")
-

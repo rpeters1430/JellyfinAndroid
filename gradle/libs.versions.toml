@@ -17,6 +17,9 @@ composeBom = "2026.03.01"
 # version the BOM resolves UI to, then set this to match.
 composeCore = "1.11.0-beta01"
 jellyfinSdk = "1.8.8"
+# Stable-first dependency policy:
+# - Prefer stable for all dependencies.
+# - Alpha/Beta/RC allowed only when blocked by required features documented in docs/plans/UPGRADE_PATH.md.
 material3 = "1.5.0-alpha18"
 material3AdaptiveNavigationSuite = "1.5.0-alpha18"
 material3Adaptive = "1.3.0-alpha10"
@@ -45,6 +48,8 @@ kotlinxCoroutinesTest = "1.10.2"
 androidxArchCoreTest = "2.2.0"
 androidxTvMaterial = "1.1.0-rc01"
 androidxTvFoundation = "1.0.0-rc01"
+# Paging is temporarily pre-release and must follow explicit entry/exit rules in
+# docs/plans/UPGRADE_PATH.md before any version change.
 paging = "3.5.0-beta01"
 sdk = "37"
 work = "2.11.2"
