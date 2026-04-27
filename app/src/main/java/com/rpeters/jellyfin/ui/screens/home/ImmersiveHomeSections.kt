@@ -79,18 +79,22 @@ internal fun MobileExpressiveHomeContent(
         ),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        val heroMovies = contentLists.recentMovies.take(5)
-        if (heroMovies.isNotEmpty() || appState.isLoading) {
+        val heroItems = if (contentLists.recentMovies.isNotEmpty()) {
+            contentLists.recentMovies.take(5)
+        } else {
+            contentLists.recentTVShows.take(5)
+        }
+        if (heroItems.isNotEmpty() || appState.isLoading) {
             item(key = "recently_added_hero", contentType = "hero_row") {
-                if (heroMovies.isNotEmpty()) {
-                    val featuredItems = remember(heroMovies, unknownText) {
-                        heroMovies.map { movie ->
+                if (heroItems.isNotEmpty()) {
+                    val featuredItems = remember(heroItems, unknownText) {
+                        heroItems.map { item ->
                             CarouselItem(
-                                id = movie.id.toString(),
-                                title = movie.name ?: unknownText,
-                                subtitle = movie.productionYear?.toString() ?: "",
-                                imageUrl = getBackdropUrl(movie) ?: getImageUrl(movie) ?: "",
-                                type = MediaType.MOVIE,
+                                id = item.id.toString(),
+                                title = item.name ?: unknownText,
+                                subtitle = item.productionYear?.toString() ?: "",
+                                imageUrl = getBackdropUrl(item) ?: getImageUrl(item) ?: "",
+                                type = if (item.type == BaseItemKind.SERIES) MediaType.TV_SHOW else MediaType.MOVIE,
                             )
                         }
                     }
@@ -98,10 +102,10 @@ internal fun MobileExpressiveHomeContent(
                     ImmersiveHeroCarousel(
                         items = featuredItems,
                         onItemClick = { selected ->
-                            heroMovies.firstOrNull { it.id.toString() == selected.id }?.let(onItemClick)
+                            heroItems.firstOrNull { it.id.toString() == selected.id }?.let(onItemClick)
                         },
                         onPlayClick = { selected ->
-                            heroMovies.firstOrNull { it.id.toString() == selected.id }?.let(onItemClick)
+                            heroItems.firstOrNull { it.id.toString() == selected.id }?.let(onItemClick)
                         },
                         modifier = Modifier.fillMaxWidth(),
                     )
