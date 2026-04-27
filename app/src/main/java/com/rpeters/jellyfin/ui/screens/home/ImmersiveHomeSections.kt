@@ -144,8 +144,21 @@ internal fun MobileExpressiveHomeContent(
             }
         }
 
-        if (contentLists.recentEpisodes.isNotEmpty()) {
+        if (contentLists.nextUp.isNotEmpty()) {
             item(key = "next_up", contentType = "next_up") {
+                PosterRowSection(
+                    title = androidx.compose.ui.res.stringResource(id = R.string.home_next_up),
+                    items = contentLists.nextUp,
+                    getImageUrl = { item -> getSeriesImageUrl(item) ?: getImageUrl(item) },
+                    onItemClick = onItemClick,
+                    onItemLongPress = onItemLongPress,
+                    cardWidth = 200.dp,
+                )
+            }
+        }
+
+        if (contentLists.recentEpisodes.isNotEmpty()) {
+            item(key = "recently_added_tv_episodes", contentType = "recent_episodes") {
                 PosterRowSection(
                     title = androidx.compose.ui.res.stringResource(id = R.string.home_recently_added_tv_episodes),
                     items = contentLists.recentEpisodes,

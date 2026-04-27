@@ -13,6 +13,7 @@ import kotlinx.coroutines.CancellationException
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.libraryApi
+import org.jellyfin.sdk.api.client.extensions.tvShowsApi
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFilter
@@ -51,6 +52,22 @@ class JellyfinMediaRepository @Inject constructor(
         "photos" -> listOf(BaseItemKind.PHOTO)
         "books" -> listOf(BaseItemKind.BOOK, BaseItemKind.AUDIO_BOOK)
         else -> null
+    }
+
+    suspend fun getNextUp(limit: Int = 24): ApiResult<List<BaseItemDto>> {
+        return withServerClient("getNextUp") { server, client ->
+            val userUuid = parseUuid(server.userId ?: "", "user")
+            val response = client.tvShowsApi.getNextUp(
+                userId = userUuid,
+                limit = limit,
+                fields = listOf(
+                    org.jellyfin.sdk.model.api.ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+                    org.jellyfin.sdk.model.api.ItemFields.OVERVIEW,
+                    org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
+                ),
+            )
+            response.content.items ?: emptyList()
+        }
     }
 
     suspend fun getUserLibraries(forceRefresh: Boolean = false): ApiResult<List<BaseItemDto>> {

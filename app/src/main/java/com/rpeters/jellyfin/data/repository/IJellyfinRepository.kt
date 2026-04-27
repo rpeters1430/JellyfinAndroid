@@ -65,6 +65,10 @@ interface IJellyfinRepository {
     suspend fun getMovieDetails(movieId: String): ApiResult<BaseItemDto>
     suspend fun getEpisodeDetails(episodeId: String): ApiResult<BaseItemDto>
     suspend fun getItemDetails(itemId: String): ApiResult<BaseItemDto>
+    suspend fun getNextUp(
+        limit: Int = 24,
+    ): ApiResult<List<BaseItemDto>>
+
     suspend fun getRecentlyAdded(limit: Int = 10): ApiResult<List<BaseItemDto>>
     suspend fun getRecentlyAddedByType(itemType: BaseItemKind, limit: Int = 10): ApiResult<List<BaseItemDto>>
     suspend fun getFavorites(): ApiResult<List<BaseItemDto>>

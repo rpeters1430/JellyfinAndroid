@@ -58,6 +58,7 @@ data class MainAppState(
     val allItems: List<BaseItemDto> = emptyList(),
     val itemsByLibrary: Map<String, List<BaseItemDto>> = emptyMap(),
     val continueWatching: List<BaseItemDto> = emptyList(),
+    val nextUp: List<BaseItemDto> = emptyList(),
 
     // Loading states
     val isLoading: Boolean = false,
@@ -270,6 +271,7 @@ constructor(
         val recentlyAdded: List<BaseItemDto>? = null,
         val recentlyAddedByTypes: Map<String, List<BaseItemDto>>? = null,
         val continueWatching: List<BaseItemDto>? = null,
+        val nextUp: List<BaseItemDto>? = null,
         val currentUser: CurrentUserDetails? = null,
         val errors: List<String> = emptyList(),
     )
@@ -295,6 +297,7 @@ constructor(
             val recentDeferred = async { mediaRepository.getRecentlyAdded(forceRefresh = forceRefresh) }
             val recentByTypesDeferred = async { loadRecentlyAddedByTypes(forceRefresh = forceRefresh) }
             val continueWatchingDeferred = async { mediaRepository.getContinueWatching(forceRefresh = forceRefresh) }
+            val nextUpDeferred = async { mediaRepository.getNextUp() }
             val currentUserDeferred = async { userRepository.getCurrentUser() }
 
             val errors = mutableListOf<String>()
@@ -332,6 +335,16 @@ constructor(
                 is ApiResult.Loading -> null
             }
 
+            val nextUpResult = nextUpDeferred.await()
+            val nextUp = when (nextUpResult) {
+                is ApiResult.Success -> nextUpResult.data
+                is ApiResult.Error -> {
+                    collectInitialLoadError("Next up", nextUpResult, errors)
+                    null
+                }
+                is ApiResult.Loading -> null
+            }
+
             val currentUserResult = currentUserDeferred.await()
             val currentUser = when (currentUserResult) {
                 is ApiResult.Success -> currentUserResult.data
@@ -346,6 +359,7 @@ constructor(
                 recentlyAdded = recentlyAdded,
                 recentlyAddedByTypes = recentlyAddedByTypes,
                 continueWatching = continueWatching,
+                nextUp = nextUp,
                 currentUser = currentUser,
                 errors = errors,
             )
@@ -460,6 +474,7 @@ constructor(
                                 recentlyAdded = supplementalData.recentlyAdded ?: state.recentlyAdded,
                                 recentlyAddedByTypes = supplementalData.recentlyAddedByTypes ?: state.recentlyAddedByTypes,
                                 continueWatching = supplementalData.continueWatching ?: state.continueWatching,
+                                nextUp = supplementalData.nextUp ?: state.nextUp,
                                 currentUser = supplementalData.currentUser ?: state.currentUser,
                                 errorMessage = state.errorMessage ?: supplementalData.errors.firstOrNull(),
                             )

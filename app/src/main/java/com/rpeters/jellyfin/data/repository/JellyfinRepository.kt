@@ -33,6 +33,7 @@ import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.api.client.extensions.mediaInfoApi
 import org.jellyfin.sdk.api.client.extensions.sessionApi
 import org.jellyfin.sdk.api.client.extensions.systemApi
+import org.jellyfin.sdk.api.client.extensions.tvShowsApi
 import org.jellyfin.sdk.api.client.extensions.userApi
 import org.jellyfin.sdk.api.client.extensions.userLibraryApi
 import org.jellyfin.sdk.model.UUID
@@ -370,6 +371,23 @@ open class JellyfinRepository @Inject constructor(
             }
         } catch (e: Exception) {
             handleExceptionSafely(e, "getItemsByPerson")
+        }
+    }
+
+    override suspend fun getNextUp(limit: Int): ApiResult<List<BaseItemDto>> {
+        return withServerClient("getNextUp") { server, client ->
+            val userUuid = runCatching { UUID.fromString(server.userId ?: "") }.getOrNull()
+                ?: throw IllegalStateException("Invalid user ID")
+            val response = client.tvShowsApi.getNextUp(
+                userId = userUuid,
+                limit = limit,
+                fields = listOf(
+                    ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+                    ItemFields.OVERVIEW,
+                    ItemFields.DATE_CREATED,
+                ),
+            )
+            response.content.items ?: emptyList()
         }
     }
 

@@ -68,6 +68,7 @@ fun HomeContent(
     val contentLists by remember(
         appState.allItems,
         appState.continueWatching,
+        appState.nextUp,
         appState.recentlyAddedByTypes,
         adaptiveConfig.continueWatchingLimit,
         adaptiveConfig.rowItemLimit,
@@ -75,6 +76,7 @@ fun HomeContent(
     ) {
         derivedStateOf {
             val continueWatching = getContinueWatchingItems(appState, adaptiveConfig.continueWatchingLimit)
+            val nextUp = appState.nextUp.take(adaptiveConfig.rowItemLimit)
             val movies = appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name]
                 ?.take(adaptiveConfig.rowItemLimit) ?: emptyList()
             val tvShows = appState.recentlyAddedByTypes[BaseItemKind.SERIES.name]
@@ -89,6 +91,7 @@ fun HomeContent(
 
             HomeContentLists(
                 continueWatching = continueWatching,
+                nextUp = nextUp,
                 recentMovies = movies,
                 recentTVShows = tvShows,
                 featuredItems = featured,
@@ -103,6 +106,14 @@ fun HomeContent(
         listOf(
             HomeRowSectionConfig(
                 key = HomeSectionKeys.NEXT_UP,
+                contentType = HomeSectionContentTypes.POSTER_ROW,
+                titleRes = R.string.home_next_up,
+                items = contentLists.nextUp,
+                rowKind = HomeRowKind.POSTER,
+                imageSelector = HomeImageSelector.SERIES_OR_DEFAULT,
+            ),
+            HomeRowSectionConfig(
+                key = HomeSectionKeys.RECENT_EPISODES,
                 contentType = HomeSectionContentTypes.POSTER_ROW,
                 titleRes = R.string.home_recently_added_tv_episodes,
                 items = contentLists.recentEpisodes,
@@ -416,19 +427,35 @@ private fun TabletHomeLayout(
         }
 
         // Next Up Grid
-        if (contentLists.recentEpisodes.isNotEmpty()) {
+        if (contentLists.nextUp.isNotEmpty()) {
             item(key = "next_up_header", contentType = "section_header") {
-                SectionHeader(title = stringResource(id = R.string.home_recently_added_tv_episodes))
+                SectionHeader(title = stringResource(id = R.string.home_next_up))
             }
             item(key = "next_up_grid", contentType = "grid") {
-                val nextUpItems = contentLists.recentEpisodes.take(gridColumns * MAX_NEXT_UP_ROWS)
+                val nextUpItems = contentLists.nextUp.take(gridColumns * MAX_NEXT_UP_ROWS)
                 NonScrollablePosterGrid(
                     items = nextUpItems,
                     columns = gridColumns,
-                    rows = MAX_NEXT_UP_ROWS,
+                    rows = calculateRequiredRows(itemCount = nextUpItems.size, columns = gridColumns),
                     getImageUrl = { item -> getSeriesImageUrl(item) ?: getImageUrl(item) },
                     onItemClick = onItemClick,
                     onItemLongPress = onItemLongPress,
+                )
+            }
+        }
+
+        // Recently Added TV Episodes
+        if (contentLists.recentEpisodes.isNotEmpty()) {
+            item(key = "recent_episodes_header", contentType = "section_header") {
+                SectionHeader(title = stringResource(id = R.string.home_recently_added_tv_episodes))
+            }
+            item(key = "recent_episodes_row", contentType = "row") {
+                PosterCardRow(
+                    items = contentLists.recentEpisodes,
+                    getImageUrl = { item -> getSeriesImageUrl(item) ?: getImageUrl(item) },
+                    onItemClick = onItemClick,
+                    onItemLongPress = onItemLongPress,
+                    cardWidth = adaptiveConfig.posterCardWidth,
                 )
             }
         }
@@ -609,6 +636,7 @@ private val POSTER_GRID_ROW_HEIGHT = 200.dp
  */
 data class HomeContentLists(
     val continueWatching: List<BaseItemDto> = emptyList(),
+    val nextUp: List<BaseItemDto> = emptyList(),
     val recentMovies: List<BaseItemDto> = emptyList(),
     val recentTVShows: List<BaseItemDto> = emptyList(),
     val featuredItems: List<BaseItemDto> = emptyList(),
@@ -641,6 +669,7 @@ internal data class HomeRowSectionConfig(
 internal object HomeSectionKeys {
     const val CONTINUE_WATCHING = "continue_watching"
     const val NEXT_UP = "next_up"
+    const val RECENT_EPISODES = "recent_episodes"
     const val RECENT_MOVIES = "recent_movies"
     const val RECENT_TV_SHOWS = "recent_tv_shows"
     const val RECENT_MUSIC = "recent_music"
