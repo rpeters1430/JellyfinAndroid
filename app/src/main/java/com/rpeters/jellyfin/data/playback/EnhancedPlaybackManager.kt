@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.data.playback
 import android.content.Context
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.DeviceCapabilities
+import com.rpeters.jellyfin.data.DevicePerformanceProfile
 import com.rpeters.jellyfin.data.preferences.PlaybackPreferences
 import com.rpeters.jellyfin.data.preferences.PlaybackPreferencesRepository
 import com.rpeters.jellyfin.data.preferences.TranscodingQuality
@@ -687,6 +688,7 @@ class EnhancedPlaybackManager @Inject constructor(
      */
     private fun getBestVideoCodec(supportedCodecs: List<String>): String {
         return when {
+            supportedCodecs.contains("apv") && deviceCapabilities.getDirectPlayCapabilities().deviceTier == DevicePerformanceProfile.HIGH_END -> "apv"
             supportedCodecs.contains("h265") || supportedCodecs.contains("hevc") -> "h265"
             supportedCodecs.contains("h264") -> "h264"
             supportedCodecs.contains("vp9") -> "vp9"

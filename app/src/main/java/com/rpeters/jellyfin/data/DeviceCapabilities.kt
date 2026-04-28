@@ -28,7 +28,7 @@ class DeviceCapabilities @Inject constructor(
         // Supported video codecs
         val SUPPORTED_VIDEO_CODECS = setOf(
             "h264", "h265", "hevc", "mpeg4", "mpeg2", "h263",
-            "vp8", "vp9", "av1", "mpeg1",
+            "vp8", "vp9", "av1", "mpeg1", "apv",
         )
 
         // Supported audio codecs
@@ -380,6 +380,7 @@ class DeviceCapabilities @Inject constructor(
             "video/x-vnd.on2.vp8" -> if (isVideo) "vp8" else null
             "video/x-vnd.on2.vp9" -> if (isVideo) "vp9" else null
             "video/av01" -> if (isVideo) "av1" else null
+            "video/apv" -> if (isVideo) "apv" else null
             // Audio codecs
             "audio/mp4a-latm" -> if (!isVideo) "aac" else null
             "audio/mpeg" -> if (!isVideo) "mp3" else null
@@ -510,6 +511,7 @@ class DeviceCapabilities @Inject constructor(
             "vp8" -> if (isVideo) "video/x-vnd.on2.vp8" else null
             "vp9" -> if (isVideo) "video/x-vnd.on2.vp9" else null
             "av1" -> if (isVideo) "video/av01" else null
+            "apv" -> if (isVideo) "video/apv" else null
             "aac" -> if (!isVideo) "audio/mp4a-latm" else null
             "mp3" -> if (!isVideo) "audio/mpeg" else null
             "ac3" -> if (!isVideo) "audio/ac3" else null

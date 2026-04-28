@@ -72,8 +72,10 @@ sealed class Screen(val route: String) {
     object HomeVideoDetail : Screen("home_video_detail/{videoId}") {
         fun createRoute(videoId: String) = "home_video_detail/$videoId"
     }
-    object ItemDetail : Screen("item_detail/{itemId}") {
-        fun createRoute(itemId: String) = "item_detail/$itemId"
+    object ItemDetail : Screen("item_detail/{itemId}?startPosition={startPosition}") {
+        fun createRoute(itemId: String, startPosition: Long? = null) =
+            if (startPosition != null) "item_detail/$itemId?startPosition=$startPosition"
+            else "item_detail/$itemId"
     }
 
     // For navigation arguments
@@ -86,6 +88,7 @@ sealed class Screen(val route: String) {
         const val ARTIST_ID_ARG = "artistId"
         const val VIDEO_ID_ARG = "videoId"
         const val ITEM_ID_ARG = "itemId"
+        const val START_POSITION_ARG = "startPosition"
         const val LIBRARY_ID_ARG = "libraryId"
         const val COLLECTION_TYPE_ARG = "collectionType"
     }

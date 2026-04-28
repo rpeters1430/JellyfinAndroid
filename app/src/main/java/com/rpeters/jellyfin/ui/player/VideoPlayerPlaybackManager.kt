@@ -12,10 +12,12 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.MediaSession
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import com.rpeters.jellyfin.data.offline.OfflinePlaybackManager
 import com.rpeters.jellyfin.data.playback.AdaptiveBitrateMonitor
 import com.rpeters.jellyfin.data.playback.EnhancedPlaybackManager
+import com.rpeters.jellyfin.data.playback.HandoffManager
 import com.rpeters.jellyfin.data.playback.PlaybackResult
 import com.rpeters.jellyfin.utils.AnalyticsHelper
 import com.rpeters.jellyfin.utils.SecureLogger
@@ -47,10 +49,14 @@ class VideoPlayerPlaybackManager @Inject constructor(
     private val offlinePlaybackManager: OfflinePlaybackManager,
     private val playbackProgressManager: PlaybackProgressManager,
     private val adaptiveBitrateMonitor: AdaptiveBitrateMonitor,
+    private val handoffManager: HandoffManager,
     private val analytics: AnalyticsHelper,
     private val okHttpClient: okhttp3.OkHttpClient
 ) {
     var exoPlayer: ExoPlayer? = null
+        private set
+
+    var mediaSession: MediaSession? = null
         private set
     var trackSelector: DefaultTrackSelector? = null
         private set
@@ -141,6 +147,10 @@ class VideoPlayerPlaybackManager @Inject constructor(
             .build()
 
         exoPlayer?.addListener(listener)
+
+        mediaSession = MediaSession.Builder(applicationContext, exoPlayer!!)
+            .setId("VideoPlayerSession_" + java.util.UUID.randomUUID().toString())
+            .build()
     }
 
     suspend fun startPlayback(
@@ -180,6 +190,8 @@ class VideoPlayerPlaybackManager @Inject constructor(
         } else {
             initializeNetworkPlayback(itemId, itemName, startPosition, metadata, sideLoadedSubs, audioIndex, subtitleIndex, scope)
         }
+
+        handoffManager.startBroadcasting(itemId, itemName, startPosition)
     }
 
     private suspend fun initializeOfflinePlayback(
@@ -334,6 +346,9 @@ class VideoPlayerPlaybackManager @Inject constructor(
     suspend fun releasePlayer(reportStop: Boolean = true) {
         withContext(Dispatchers.Main) {
             stopPositionUpdates()
+            handoffManager.stopBroadcasting()
+            mediaSession?.release()
+            mediaSession = null
             exoPlayer?.let { p ->
                 try {
                     p.stop()
@@ -360,6 +375,7 @@ class VideoPlayerPlaybackManager @Inject constructor(
                     duration = duration
                 ) }
                 playbackProgressManager.updateProgress(player.currentPosition, duration)
+                handoffManager.updatePosition(player.currentPosition)
                 delay(500)
             }
         }
@@ -376,6 +392,9 @@ class VideoPlayerPlaybackManager @Inject constructor(
      */
     fun releasePlayerImmediate() {
         stopPositionUpdates()
+        handoffManager.stopBroadcasting()
+        mediaSession?.release()
+        mediaSession = null
         exoPlayer?.let { p ->
             try {
                 p.stop()

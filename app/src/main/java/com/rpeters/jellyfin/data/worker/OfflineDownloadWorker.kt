@@ -158,7 +158,7 @@ class OfflineDownloadWorker @AssistedInject constructor(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
-        val notification = NotificationCompat.Builder(applicationContext, CHANNEL_DOWNLOADS)
+        val builder = NotificationCompat.Builder(applicationContext, CHANNEL_DOWNLOADS)
             .setSmallIcon(R.drawable.ic_launcher_monochrome)
             .setContentTitle("Downloading")
             .setContentText(itemName)
@@ -166,7 +166,34 @@ class OfflineDownloadWorker @AssistedInject constructor(
             .setOngoing(true)
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
             .setPriority(NotificationCompat.PRIORITY_LOW)
-            .apply {
+            .addAction(R.drawable.ic_launcher_monochrome, "Pause", pausePendingIntent)
+            .addAction(R.drawable.ic_launcher_monochrome, "Cancel", cancelPendingIntent)
+
+        // ✅ Android 16: Use ProgressStyle for Live Updates
+        if (Build.VERSION.SDK_INT >= 36) {
+            val progressStyle = NotificationCompat.ProgressStyle()
+                .setProgress(progressPercent)
+            
+            if (isTranscoding) {
+                val tcPercent = transcodingProgress?.toInt()?.coerceIn(0, 100)
+                if (tcPercent != null) {
+                    progressStyle.setProgress(tcPercent)
+                } else {
+                    progressStyle.setProgressIndeterminate(true)
+                }
+                val etaText = transcodingEtaMs?.let { " · ETA ${formatDuration(it)}" } ?: ""
+                builder.setSubText("Server transcoding: ${tcPercent ?: "starting"}%$etaText")
+            } else if (totalBytes > 0L) {
+                progressStyle.setProgress(progressPercent)
+                builder.setSubText("${formatBytes(downloadedBytes)} / ~${formatBytes(totalBytes)}")
+            } else {
+                progressStyle.setProgressIndeterminate(true)
+                builder.setSubText("Preparing download")
+            }
+            builder.setStyle(progressStyle)
+        } else {
+            // Legacy progress reporting
+            builder.apply {
                 if (isTranscoding) {
                     val tcPercent = transcodingProgress?.toInt()?.coerceIn(0, 100)
                     if (tcPercent != null) {
@@ -178,22 +205,19 @@ class OfflineDownloadWorker @AssistedInject constructor(
                     val progressText = tcPercent?.let { "$it%" } ?: "starting"
                     setSubText("Server transcoding: $progressText$etaText")
                 } else if (totalBytes > 0L) {
-                    // Known or estimated size - show determinate progress
                     setProgress(100, progressPercent, false)
                     setSubText("${formatBytes(downloadedBytes)} / ~${formatBytes(totalBytes)}")
                 } else if (downloadedBytes > 0L) {
-                    // Unknown size, data flowing - show downloaded amount
                     setProgress(100, 0, true)
                     setSubText("Downloaded ${formatBytes(downloadedBytes)}")
                 } else {
-                    // Initial state before data starts flowing
                     setProgress(100, 0, true)
                     setSubText("Preparing download")
                 }
             }
-            .addAction(R.drawable.ic_launcher_monochrome, "Pause", pausePendingIntent)
-            .addAction(R.drawable.ic_launcher_monochrome, "Cancel", cancelPendingIntent)
-            .build()
+        }
+
+        val notification = builder.build()
 
         val notificationId = NOTIFICATION_ID_FOREGROUND_BASE + (downloadId.hashCode() and 0x7FFFFFFF) % 1000
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

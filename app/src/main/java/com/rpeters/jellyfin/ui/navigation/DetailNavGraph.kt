@@ -177,10 +177,16 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
         route = Screen.ItemDetail.route,
         arguments = listOf(
             navArgument(Screen.ITEM_ID_ARG) { type = NavType.StringType },
+            navArgument(Screen.START_POSITION_ARG) {
+                type = NavType.LongType
+                defaultValue = -1L
+            },
         ),
     ) { backStackEntry ->
         val itemId =
             backStackEntry.arguments?.getString(Screen.ITEM_ID_ARG) ?: return@composable
+        val handoffPosition = backStackEntry.arguments?.getLong(Screen.START_POSITION_ARG) ?: -1L
+        
         val mainViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
         val detailViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<ItemDetailViewModel>()
         val downloadsViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<DownloadsViewModel>()
@@ -195,6 +201,15 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
         val playbackAnalysis by detailViewModel.playbackAnalysis
         val playbackProgress by detailViewModel.playbackProgress
         val error by detailViewModel.error
+
+        // Handle auto-resume if handoffPosition is valid
+        LaunchedEffect(item, handoffPosition) {
+            if (item != null && handoffPosition > 0L) {
+                // Future: Show a prompt instead of auto-starting if desired
+                SecureLogger.i("Handoff", "Auto-resuming $itemId at $handoffPosition")
+            }
+        }
+
         item?.let { videoItem ->
             ImmersiveHomeVideoDetailScreen(
                 item = videoItem,
@@ -202,13 +217,18 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 getBackdropUrl = { mainViewModel.getBackdropUrl(it) },
                 onBackClick = { navController.popBackStack() },
                 onPlayClick = { video, startPosition ->
+                    val finalPosition = if (handoffPosition > 0L && startPosition == null) {
+                        handoffPosition
+                    } else {
+                        startPosition
+                    }
                     val streamUrl = mainViewModel.getStreamUrl(video)
                     if (streamUrl != null) {
                         MediaPlayerUtils.playMedia(
                             context = navController.context,
                             streamUrl = streamUrl,
                             item = video,
-                            startPosition = startPosition,
+                            startPosition = finalPosition,
                         )
                     }
                 },
@@ -241,7 +261,14 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                     item?.id?.toString()?.let { detailViewModel.load(it) }
                 },
                 playbackAnalysis = playbackAnalysis,
-                playbackProgress = playbackProgress,
+                playbackProgress = playbackProgress ?: if (handoffPosition > 0L) {
+                    com.rpeters.jellyfin.ui.player.PlaybackProgress(
+                        itemId = itemId,
+                        positionMs = handoffPosition,
+                        durationMs = 0L, // Will be updated when loaded
+                        isWatched = false
+                    )
+                } else null,
             )
         } ?: if (error != null) {
             Column(

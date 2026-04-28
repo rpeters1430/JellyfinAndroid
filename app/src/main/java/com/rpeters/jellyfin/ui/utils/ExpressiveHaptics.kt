@@ -73,6 +73,34 @@ class ExpressiveHaptics(
             hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
         }
     }
+
+    /**
+     * Subtle tick for seeking.
+     */
+    fun seekTick() {
+        if (Build.VERSION.SDK_INT >= 36 && vibrator != null) {
+            val effect = VibrationEffect.startComposition()
+                .addPrimitive(VibrationEffect.Composition.PRIMITIVE_LOW_TICK, 0.4f)
+                .compose()
+            vibrator.vibrate(effect)
+        } else {
+            hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        }
+    }
+
+    /**
+     * Stronger feedback when a limit is reached (e.g., end of list or slider).
+     */
+    fun limitReached() {
+        if (Build.VERSION.SDK_INT >= 36 && vibrator != null) {
+            val effect = VibrationEffect.startComposition()
+                .addPrimitive(VibrationEffect.Composition.PRIMITIVE_THUD, 1.0f)
+                .compose()
+            vibrator.vibrate(effect)
+        } else {
+            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+        }
+    }
 }
 
 @Composable

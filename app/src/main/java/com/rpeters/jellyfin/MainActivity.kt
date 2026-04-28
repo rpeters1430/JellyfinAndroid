@@ -13,6 +13,7 @@ import com.rpeters.jellyfin.ui.tv.TvJellyfinApp
 import com.rpeters.jellyfin.utils.DeviceTypeUtils
 import com.rpeters.jellyfin.utils.MainThreadMonitor
 import com.rpeters.jellyfin.utils.SecureLogger
+import com.rpeters.jellyfin.data.playback.HandoffManager
 import dagger.hilt.android.AndroidEntryPoint
 
 @androidx.media3.common.util.UnstableApi
@@ -35,6 +36,7 @@ class MainActivity : FragmentActivity() {
         SecureLogger.d(TAG, "isTvDevice=${deviceType == DeviceTypeUtils.DeviceType.TV}")
 
         handleShortcutIntent(intent)
+        handleHandoffIntent(intent)
 
         // Workaround for Compose fontWeightAdjustment crash on some API 31+ devices
         // Some OEMs don't implement Configuration.fontWeightAdjustment field properly
@@ -64,6 +66,21 @@ class MainActivity : FragmentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         handleShortcutIntent(intent)
+        handleHandoffIntent(intent)
+    }
+
+    private fun handleHandoffIntent(intent: Intent?) {
+        if (intent?.action == HandoffManager.ACTION_HANDOFF_RESUME) {
+            val itemId = intent.getStringExtra(HandoffManager.EXTRA_ITEM_ID)
+            val positionMs = intent.getLongExtra(HandoffManager.EXTRA_POSITION_MS, 0L)
+            
+            if (itemId != null) {
+                SecureLogger.i(TAG, "Received handoff intent for $itemId at $positionMs ms")
+                // For now, we reuse the shortcut mechanism to navigate to the item
+                // In a future update, we can add a specific handoff UI prompt
+                shortcutDestination = "item_detail/$itemId?startPosition=$positionMs"
+            }
+        }
     }
 
     private fun handleShortcutIntent(intent: Intent?) {
@@ -125,8 +142,8 @@ class MainActivity : FragmentActivity() {
         const val TAG = "MainActivity"
         const val EXTRA_SHORTCUT_DESTINATION = "destination"
 
-        // Pattern to validate basic format (alphanumeric, dash, underscore, slash, braces)
-        private val SHORTCUT_DESTINATION_PATTERN = Regex("^[a-zA-Z0-9_\\-/{}]+$")
+        // Pattern to validate basic format (alphanumeric, dash, underscore, slash, braces, query params)
+        private val SHORTCUT_DESTINATION_PATTERN = Regex("^[a-zA-Z0-9_\\-/{}?=&.]+$")
 
         // SECURITY: Whitelist of allowed shortcut routes
         // Only these base routes can be navigated to via shortcuts/deep links

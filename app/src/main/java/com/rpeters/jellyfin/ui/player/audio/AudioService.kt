@@ -164,6 +164,14 @@ class AudioService : androidx.media3.session.MediaSessionService() {
         return mediaSession
     }
 
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        // Android 17 Hardening: Ensure we clean up when task is removed
+        if (!player.playWhenReady || player.mediaItemCount == 0) {
+            stopSelf()
+        }
+    }
+
     override fun onDestroy() {
         AudioSessionStateStore(this).persist(player)
         super.onDestroy()
