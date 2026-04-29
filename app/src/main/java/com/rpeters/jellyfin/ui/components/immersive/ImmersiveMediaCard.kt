@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.ui.components.immersive
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,15 +23,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -46,7 +43,6 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
@@ -54,44 +50,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.ui.components.expressiveGlow
-import com.rpeters.jellyfin.ui.components.primaryExpressiveGlow
 import com.rpeters.jellyfin.ui.image.ImageQuality
 import com.rpeters.jellyfin.ui.image.ImageSize
 import com.rpeters.jellyfin.ui.image.OptimizedImage
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.MotionTokens
-
-/**
- * Immersive media card with larger imagery and overlaid text for cinematic experiences.
- * Based on ExpressiveMediaCard but optimized for full-bleed immersive layouts.
- *
- * **Performance Optimizations** (Phase 5):
- * - Conditional image loading via `loadImage` parameter (use with PerformanceOptimizedLazyRow)
- * - Adaptive image quality via `imageQuality` parameter (set from ImmersivePerformanceConfig)
- *
- * Key differences from ExpressiveMediaCard:
- * - Larger default size (280dp width vs 200dp)
- * - Full-bleed image with gradient overlay
- * - Text overlaid on image (not in separate section)
- * - Minimal chrome, more focus on imagery
- *
- * @param title The title to display
- * @param subtitle Optional subtitle text
- * @param imageUrl URL of the image to display
- * @param rating Optional rating value (e.g., 8.5)
- * @param isFavorite Whether the item is marked as favorite
- * @param isWatched Whether the item has been watched (shows checkmark badge)
- * @param watchProgress Progress value from 0.0 to 1.0 (shows progress bar)
- * @param unwatchedEpisodeCount For series - shows count badge if > 0
- * @param onCardClick Click handler for the card
- * @param onPlayClick Click handler for play action
- * @param onFavoriteClick Click handler for favorite action
- * @param loadImage Whether to load the image (use false for off-screen items to save memory)
- * @param imageQuality Image quality setting (adaptive based on device tier)
- * @param modifier Optional modifier
- * @param cardSize Size variant for the card
- */
-import androidx.compose.animation.AnimatedVisibilityScope
 
 @Composable
 fun ImmersiveMediaCard(
@@ -114,7 +77,7 @@ fun ImmersiveMediaCard(
 ) {
     val sharedTransitionScope = com.rpeters.jellyfin.ui.navigation.LocalSharedTransitionScope.current
     val animatedVisibilityScope = com.rpeters.jellyfin.ui.navigation.LocalAnimatedVisibilityScope.current
-    
+
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.96f else 1.0f,
@@ -145,7 +108,7 @@ fun ImmersiveMediaCard(
         with(sharedTransitionScope) {
             Modifier.sharedElement(
                 rememberSharedContentState(key = "media_$itemId"),
-                animatedVisibilityScope = animatedVisibilityScope
+                animatedVisibilityScope = animatedVisibilityScope,
             )
         }
     } else {
@@ -165,7 +128,7 @@ fun ImmersiveMediaCard(
                 alpha = glowAlpha,
                 borderRadius = ImmersiveDimens.CornerRadiusCinematic,
                 blurRadius = 24.dp,
-                offsetY = 10.dp
+                offsetY = 10.dp,
             )
             .then(sharedElementModifier)
             // Allow call sites to override default immersive size when needed (e.g. episode rows).
