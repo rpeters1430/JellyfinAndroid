@@ -496,8 +496,8 @@ private fun ImmersiveMovieDetailContent(
                                                 title = relatedMovie.name ?: "Unknown",
                                                 imageUrl = getImageUrl(relatedMovie) ?: "",
                                                 onCardClick = { onRelatedMovieClick(relatedMovie.id.toString()) },
-                                                cardSize = com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize.SMALL,
-                                                modifier = Modifier.width(ImmersiveDimens.CardWidthSmall),
+                                                cardSize = com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize.X_SMALL,
+                                                modifier = Modifier.width(ImmersiveDimens.CardWidthXSmall),
                                             )
                                         }
                                     }

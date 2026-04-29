@@ -134,6 +134,7 @@ fun ImmersiveMediaCard(
     )
 
     val (width, height) = when (cardSize) {
+        ImmersiveCardSize.X_SMALL -> ImmersiveDimens.CardWidthXSmall to ImmersiveDimens.CardHeightXSmall
         ImmersiveCardSize.SMALL -> ImmersiveDimens.CardWidthSmall to ImmersiveDimens.CardHeightSmall
         ImmersiveCardSize.MEDIUM -> ImmersiveDimens.CardWidthMedium to ImmersiveDimens.CardHeightMedium
         ImmersiveCardSize.LARGE -> ImmersiveDimens.CardWidthLarge to ImmersiveDimens.CardHeightLarge
@@ -386,6 +387,7 @@ private fun ImmersiveCardContent(
 }
 
 enum class ImmersiveCardSize {
+    X_SMALL,
     SMALL,
     MEDIUM,
     LARGE,
