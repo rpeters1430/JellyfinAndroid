@@ -389,7 +389,7 @@ private fun ImmersiveShowDetailContent(
                                 onCardClick = {
                                     onSeriesClick(similarShow.id.toString())
                                 },
-                                cardSize = ImmersiveCardSize.SMALL,
+                                cardSize = ImmersiveCardSize.X_SMALL,
                             )
                         }
                     }

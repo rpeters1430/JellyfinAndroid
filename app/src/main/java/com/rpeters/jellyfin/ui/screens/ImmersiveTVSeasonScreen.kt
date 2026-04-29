@@ -1042,7 +1042,7 @@ private fun ImmersiveMoreLikeThisSection(
             ) {
                 items(5) {
                     ExpressiveLoadingCard(
-                        modifier = Modifier.size(width = 200.dp, height = 300.dp),
+                        modifier = Modifier.size(width = ImmersiveDimens.CardWidthXSmall, height = ImmersiveDimens.CardHeightXSmall),
                     )
                 }
             }
@@ -1061,7 +1061,7 @@ private fun ImmersiveMoreLikeThisSection(
                     onCardClick = {
                         onSeriesClick(series.id.toString())
                     },
-                    cardSize = ImmersiveCardSize.SMALL,
+                    cardSize = ImmersiveCardSize.X_SMALL,
                 )
             }
         }
