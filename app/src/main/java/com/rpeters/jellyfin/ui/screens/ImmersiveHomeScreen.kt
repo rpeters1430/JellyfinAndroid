@@ -144,6 +144,18 @@ fun ImmersiveHomeScreen(
         val gridState = rememberLazyGridState()
         val listState = rememberLazyListState()
 
+        // Scroll to top once when the initial data load completes so the hero is always visible.
+        // The `initialLoadComplete` flag ensures this only runs on the first successful load,
+        // and is not re-triggered by subsequent refreshes.
+        var initialLoadComplete by remember { mutableStateOf(false) }
+        LaunchedEffect(appState.isLoading) {
+            if (!appState.isLoading && !initialLoadComplete) {
+                initialLoadComplete = true
+                listState.scrollToItem(0)
+                gridState.scrollToItem(0)
+            }
+        }
+
         // Use hero height as threshold to avoid flickering within hero
         val topBarVisible = if (adaptiveConfig.isTablet) {
             rememberAutoHideTopBarVisible(
@@ -187,16 +199,20 @@ fun ImmersiveHomeScreen(
                                 onSettingsClick()
                             },
                             shape = CircleShape,
-                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                            tonalElevation = 2.dp,
                             modifier = Modifier
                                 .statusBarsPadding()
-                                .padding(horizontal = 12.dp, vertical = 12.dp),
+                                .padding(horizontal = 12.dp, vertical = 12.dp)
+                                .size(48.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Settings,
                                 contentDescription = stringResource(id = R.string.settings),
                                 tint = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.padding(12.dp).size(24.dp),
+                                modifier = Modifier
+                                    .padding(12.dp)
+                                    .size(24.dp),
                             )
                         }
                     }
