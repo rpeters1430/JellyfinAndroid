@@ -66,7 +66,7 @@ class JellyfinMediaRepository @Inject constructor(
                     org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
                 ),
             )
-            response.content.items ?: emptyList()
+            response.content.items
         }
     }
 

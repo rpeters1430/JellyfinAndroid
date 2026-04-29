@@ -387,7 +387,7 @@ open class JellyfinRepository @Inject constructor(
                     ItemFields.DATE_CREATED,
                 ),
             )
-            response.content.items ?: emptyList()
+            response.content.items
         }
     }
 

@@ -84,7 +84,6 @@ internal fun MobileExpressiveHomeContent(
         } else {
             contentLists.recentTVShows.take(5)
         }
-
         if (heroItems.isNotEmpty() || appState.isLoading) {
             item(key = "recently_added_hero", contentType = "hero_row") {
                 if (heroItems.isNotEmpty()) {
